@@ -2,7 +2,7 @@
 
 Este repositorio contiene las guías de estudio interactivas (SPA) creadas a partir de los manuales en PDF de Red Hat para los siguientes cursos:
 
-*   **[199 (RH199)](./199)**: Red Hat Certified System Administrator (RHCSA) - Rapid Track (RHEL 10.0). Contenido extraído del manual original en inglés y traducido al español.
+*   **[199 (RH199)](./199)**: Red Hat Certified System Administrator (RHCSA) - Rapid Track (RHEL 10.0). 
 *   **[294 (RH294)](./294)**: Red Hat Certified Engineer (RHCE) - Ansible Automation (RHEL 9.0).
 
 ---
