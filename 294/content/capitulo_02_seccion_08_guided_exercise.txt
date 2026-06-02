@@ -1,0 +1,352 @@
+# Ejercicio Guiado: Implementación de varios plays
+# Tipo: guided_exercise
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Implementación de varios plays
+Escribir y usar un playbook que contiene varios plays.
+Resultados
+• Usted deberá ser capaz de construir y ejecutar un playbook para gestionar la
+configuración y realizar la administración de un host gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-multi
+Instrucciones
+ 1.
+El directorio /home/student/playbook-multi se ha creado en la máquina
+workstation para su proyecto de Ansible. El directorio ya se ha llenado con un archivo de
+configuración ansible.cfg y un archivo de inventario denominado inventory. El host
+gestionado, servera.lab.example.com, ya está definido en este archivo de inventario.
+Cree un playbook denominado /home/student/playbook-multi/intranet.yml y
+agregue las líneas necesarias para iniciar el primer play. Debería apuntar al host gestionado
+servera.lab.example.com y habilitar el aumento de privilegios.
+1.1.
+Cambie al directorio /home/student/playbook-multi.
+[student@workstation ~]$ cd ~/playbook-multi
+[student@workstation playbook-multi]$
+1.2.
+Use un editor de texto para crear un nuevo playbook denominado /home/student/
+playbook-multi/intranet.yml. Agregue una línea que conste de tres guiones al
+comienzo del archivo para indicar el comienzo del archivo YAML.
+---
+1.3.
+Agregue la siguiente línea al archivo /home/student/playbook-multi/
+intranet.yml para denotar el comienzo de un play denominado Enable
+intranet services.
+- name: Enable intranet services
+68
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+1.4.
+Agregue la siguiente línea para indicar que el play se aplica al host gestionado
+servera.lab.example.com. Aplique una sangría de dos espacios en la línea
+(alineada con la palabras clave name sobre esta) para indicar que es parte del primer
+play.
+  hosts: servera.lab.example.com
+1.5.
+Agregue la siguiente línea para permitir el aumento de privilegios. Aplique una sangría
+de dos espacios en la línea (alineada con las palabras claves sobre esta) para indicar
+que es parte del primer play.
+  become: true
+1.6.
+Agregue la siguiente línea para definir el comienzo de la lista tasks. Aplique una
+sangría de dos espacios en la línea (y alinearla con las palabras claves sobre esta)
+para indicar que es parte del primer play.
+  tasks:
+ 2.
+Como primera tarea en el primer play, defina una tarea que garantice que los paquetes
+httpd y firewalld estén actualizados.
+Aplique una sangría de cuatro espacios a la primera línea de la tarea. Bajo la palabra clave
+tasks en el primer play, agregue las siguientes líneas.
+    - name: Latest version of httpd and firewalld installed 
+      ansible.builtin.dnf: 
+        name: 
+          - httpd
+          - firewalld
+        state: latest 
+Un nombre descriptivo para la tarea.
+Aplica una sangría de seis espacios y llama al módulo ansible.builtin.dnf.
+La palabra clave name, que es un parámetro del módulo ansible.builtin.dnf,
+tiene una sangría de ocho espacios. La palabra clave name especifica qué paquetes
+debe garantizar el módulo que estén actualizados. La palabra clave name (que es
+diferente del nombre de la tarea) puede tomar una lista de paquetes, que tienen una
+sangría de diez espacios en las dos líneas siguientes.
+Después de la lista de paquetes, la palabra clave state especifica que el módulo
+debe asegurarse de que esté instalada la versión más reciente de los paquetes. La
+palabra clave state también es un parámetro del módulo ansible.builtin.dnf y
+tiene una sangría de ocho espacios.
+ 3.
+Agregue una tarea a la lista del primer play que garantice que el contenido correcto está en
+el archivo /var/www/html/index.html.
+Agregue las siguientes líneas para definir el contenido de /var/www/html/index.html.
+Aplique una sangría de cuatro espacios a la primera línea.
+RH294-RHEL9.0-es-3-20240620
+69
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    - name: Test html page is installed
+      ansible.builtin.copy:
+        content: "Welcome to the example.com intranet!\n"
+        dest: /var/www/html/index.html
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.builtin.copy.
+• Las líneas restantes tienen una sangría de ocho espacios y envían los argumentos
+necesarios para garantizar que el contenido correcto esté en la página web.
+ 4.
+Defina dos tareas más en el play para garantizar que se esté ejecutando el servicio
+firewalld y que se iniciará en el arranque, y permita conexiones con el servicio httpd.
+4.1.
+Agregue las siguientes líneas para garantizar que el servicio firewalld esté
+habilitado y ejecutándose. Aplique una sangría de cuatro espacios a la primera línea.
+    - name: Firewall enabled and running
+      ansible.builtin.service:
+        name: firewalld
+        enabled: true
+        state: started
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de ocho espacios e invoca al módulo
+ansible.builtin.service.
+• Las líneas restantes tienen una sangría de diez espacios y envían los argumentos
+necesarios para garantizar que el servicio firewalld esté habilitado y se haya
+ejecutado.
+4.2.
+Agregue las siguientes líneas para garantizar que firewalld permita conexiones
+HTTP desde los sistemas remotos. Aplique una sangría de cuatro espacios a la
+primera línea.
+    - name: Firewall permits access to httpd service
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.posix.firewalld.
+• Las líneas restantes tienen una sangría de ocho espacios y envían los argumentos
+necesarios para garantizar que se permitan conexiones HTTP remotas
+permanentemente.
+70
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+ 5.
+Agregue una tarea final al primer play que garantice que el servicio httpd se esté
+ejecutando y que se iniciará en el arranque.
+Agregue las siguientes líneas para garantizar que el servicio httpd esté habilitado y
+ejecutándose. Aplique una sangría de cuatro espacios a la primera línea.
+    - name: Web server enabled and running
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.builtin.service.
+• Las entradas restantes están marcadas con ocho espacios y envían los argumentos
+necesarios para garantizar que el servicio httpd esté habilitado y en funcionamiento.
+ 6.
+En el archivo /home/student/playbook-multi/intranet.yml, defina un segundo
+play que tenga como destino workstation.lab.example.com y pruebe el servidor
+web de la intranet. Al probar desde la máquina workstation.lab.example.com, puede
+verificar que la máquina servera.lab.example.com permita solicitudes web externas a
+través del firewall. Este play no requiere de escalamiento de privilegios.
+6.1.
+Agregue la siguiente línea para definir el comienzo de un segundo play. Tenga en
+cuenta que no hay sangría.
+- name: Test intranet web server
+6.2.
+Agregue la siguiente línea para indicar que el play se ejecuta en la máquina
+workstation.lab.example.com. Aplique una sangría de dos espacios a la línea
+para indicar que está contenida por el segundo play.
+  hosts: workstation.lab.example.com
+6.3.
+Agregue la siguiente línea para deshabilitar el aumento de privilegios. Alinee la
+sangría con la palabra clave hosts sobre ella.
+  become: false
+6.4.
+Agregue la siguiente línea al archivo /home/student/playbook-multi/
+intranet.yml para definir el comienzo de la lista tasks. Aplique una sangría de
+dos espacios a la línea para indicar que está contenida por el segundo play.
+  tasks:
+ 7.
+Agregue una sola tarea al segundo play y use el módulo ansible.builtin.uri para
+solicitar contenido de http://servera.lab.example.com. La tarea debe verificar un
+código de estado HTTP de retorno de 200. Configure la tarea para colocar el contenido
+devuelto en la variable de resultados de la tarea.
+RH294-RHEL9.0-es-3-20240620
+71
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Agregue las siguientes líneas para crear la tarea a fin de verificar el servicio web. Aplique
+una sangría de cuatro espacios a la primera línea.
+    - name: Connect to intranet web server
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        return_content: true
+        status_code: 200
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.builtin.uri.
+• Las líneas restantes tienen una sangría de ocho espacios y envían los argumentos
+necesarios para ejecutar una consulta de contenido web y verifican el código de estado
+recibido.
+• La palabra clave return_content garantiza que la respuesta del servidor se agregue a
+los resultados de la tarea.
+ 8.
+Verifique que el playbook /home/student/playbook-multi/intranet.yml final
+refleje el siguiente contenido estructurado y, luego, guarde y cierre el archivo.
+---
+- name: Enable intranet services
+  hosts: servera.lab.example.com
+  become: true
+  tasks:
+    - name: Latest version of httpd and firewalld installed
+      ansible.builtin.dnf:
+        name:
+          - httpd
+          - firewalld
+        state: latest
+    - name: Test html page is installed
+      ansible.builtin.copy:
+        content: "Welcome to the example.com intranet!\n"
+        dest: /var/www/html/index.html
+    - name: Firewall enabled and running
+      ansible.builtin.service:
+        name: firewalld
+        enabled: true
+        state: started
+    - name: Firewall permits access to httpd service
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+72
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    - name: Web server enabled and running
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+- name: Test intranet web server
+  hosts: workstation.lab.example.com
+  become: false
+  tasks:
+    - name: Connect to intranet web server
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        return_content: true
+        status_code: 200
+ 9.
+Ejecute el comando ansible-navigator run --syntax-check para validar la sintaxis
+del playbook /home/student/playbook-multi/intranet.yml.
+[student@workstation playbook-multi]$ ansible-navigator run \
+> -m stdout intranet.yml --syntax-check
+playbook: /home/student/playbook-multi/intranet.yml
+ 10. Ejecute el playbook con el comando ansible-navigator run. Lea la salida generada
+para garantizar que todas las tareas se hayan completado satisfactoriamente. Verifique
+que una solicitud HTTP GET para http://servera.lab.example.com proporcione el
+contenido correcto.
+10.1.
+Ejecute el playbook con el comando ansible-navigator run.
+[student@workstation playbook-multi]$ ansible-navigator run \
+> -m stdout intranet.yml
+PLAY [Enable intranet services] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Latest version of httpd and firewalld installed] *************************
+changed: [servera.lab.example.com]
+TASK [Test html page is installed] *********************************************
+changed: [servera.lab.example.com]
+TASK [Firewall enabled and running] ********************************************
+changed: [servera.lab.example.com]
+TASK [Firewall permits access to httpd service] ********************************
+changed: [servera.lab.example.com]
+TASK [Web server enabled and running] ******************************************
+changed: [servera.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+73
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+PLAY [Test intranet web server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [workstation.lab.example.com]
+TASK [Connect to intranet web server] ******************************************
+ok: [workstation.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=5    unreachable=0    failed=0  ...
+workstation.lab.example.com : ok=2    changed=0    unreachable=0    failed=0 ...
+10.2. Use el comando curl para verificar una solicitud HTTP GET para http://
+servera.lab.example.com proporcione el contenido correcto.
+[student@workstation playbook-multi]$ curl http://servera.lab.example.com
+Welcome to the example.com intranet!
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-multi
+74
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Trabajo de laboratorio
+Implementación de un playbook de
+Ansible
+Configurar y realizar tareas administrativas en hosts gestionados usando un playbook.
+Resultados
+• Usted debe ser capaz de construir y ejecutar un playbook de Ansible para instalar,
+configurar y verificar el estado de los servicios web y de bases de datos en un host
+gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-review
+El directorio de trabajo /home/student/playbook-review se ha creado en la
+máquina workstation para su proyecto de Ansible. El directorio ya se completó con un
+archivo de configuración ansible.cfg y un archivo inventory. El host gestionado,
+serverb.lab.example.com, ya está definido en este archivo de inventario.
+Instrucciones
+1.
+Cambie al directorio /home/student/playbook-review y cree un nuevo playbook
+denominado internet.yml. Agregue las entradas necesarias para iniciar un primer play
+denominado Enable internet services y especifique su host gestionado previsto,
+serverb.lab.example.com. Agregue la entrada necesaria para permitir el aumento de
+privilegios y otra para iniciar una lista de tareas.
+2.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir una tarea que instale las últimas versiones de los paquetes
+firewalld, httpd, mariadb-server, php y php-mysqlnd. Aplique una sangría al
+comienzo de la entrada con cuatro espacios.
+3.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir las tareas de configuración del firewall. Deben asegurarse de
+que el servicio firewalld esté habilitado y en ejecución, y que se permita el acceso al
+servicio http. Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+4.
+Agregue las entradas necesarias para asegurar que los servicios httpd y mariadb estén
+habilitados y en ejecución. Aplique una sangría al comienzo de estas entradas con cuatro
+espacios.
+5.
+Agregue la entrada necesaria que usa el módulo ansible.builtin.copy para copiar el
+archivo /home/student/playbook-review/index.php al directorio /var/www/html/
+RH294-RHEL9.0-es-3-20240620
+75
+
+

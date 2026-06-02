@@ -1,0 +1,225 @@
+# Ejercicio Guiado: Ejercicio guiado Configurar redes desde la línea de comandos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 11. Gestión de la configuración de red
+
+11.2. Ejercicio guiado Configurar redes desde la línea de comandos 11.2. Ejercicio guiado Configurar redes desde la línea de comandos Administre la configuración de red y los dispositivos desde la línea de comandos mediante el comando nmcli. Resultados Actualice una configuración de conexión de red de DHCP a estática. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-configure
+
+Instrucciones Los nombres de las interfaces de red están determinados por su tipo de bus y el orden de detección de los dispositivos durante el arranque. Los nombres de sus interfaces de red pueden variar según la plataforma del curso y el hardware en uso. En su sistema, ubique el nombre de la interfaz (como eth1, ens06 o enp0p2) asociada con la red Ethernet.
+
+address 52:54:00:01:fa:1e. Use this interface name to replace the ens4 placeholder throughout this exercise if
+
+diferente. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Muestre la lista de interfaces de red en su sistema usando el comando ip. Localice el nombre de la interfaz de red asociada con la dirección Ethernet 52:54:00:01:fa:1e. Registre o recuerde este nombre y utilícelo para reemplazar el nombre ens4 en comandos posteriores si es necesario. 2.
+
+
+
+
+
+11.2. Ejercicio guiado Configurar redes desde la línea de comandos
+
+[root@servera ~]# ip link
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state Modo DESCONOCIDO DEFAULT grupo predeterminado qlen 1000
+
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:00:fa:0a brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname enx52540000fa0a
+
+3: ens4: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8942 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:01:fa:1e brd ff:ff:ff:ff:ff:ff
+    altname enp0s4
+    altname enx52540001fa1e
+
+Utilice el comando nmcli para ver las conexiones de red actuales. Las conexiones activas tienen nombres de dispositivos asociados. El comando nmcli muestra dos guiones (--) en la columna del dispositivo para conexiones inactivas.
+
+[root@servera ~]# nmcli con show
+
+NOMBRE UUID TIPO DISPOSITIVO cloud-init ens3 fab1e257-61a6-3526-abf9-8c50c83a28c7 ethernet ens3 lo 1fdb0926-cde3-40ab-b68d-14068716c650 loopback lo Conexión por cable 1 e5a48013-c870-3a20-9ad2-b5d13d9603f2 ethernet: aunque NetworkManager creó la conexión temporal 1 por cable, no se activa
+
+successfully. You might observe the connection briefly highlighted in yellow after a reboot; however it consistently
+
+falla después de unos minutos, lo que provoca que aparezcan dos guiones (--) en la columna del dispositivo. 3. Muestre todas las configuraciones para la conexión Conexión por cable 1 para investigar por qué no está activa actualmente.
+
+[root@servera ~]# nmcli con show 'Wired connection 1'
+connection.id:                          Wired connection 1
+connection.uuid:                        508dcf19-e8dc-345c-b04d-217bfbcc4ed2
+connection.stable-id:                   --
+connection.type:                        802-3-ethernet
+connection.interface-name:              ens4
+
+...salida omitida...
+
+ipv4.method:                            auto
+ipv4.dns:                               --
+ipv4.dns-search:                        --
+ipv4.dns-options:                       --
+ipv4.dns-priority:                      0
+ipv4.addresses:                         --
+ipv4.gateway:                           --
+
+...salida omitida... La conexión Conexión por cable 1 está asociada con la interfaz de red secundaria; el dispositivo ens4 en este entorno. Observe el método de configuración automática de direcciones que se muestra en el resultado anterior. Esta conexión está intentando utilizar el protocolo DHCP para configurar la interfaz. Esta conexión permaneció inactiva durante el inicio porque no hay un servidor DHCP presente en la red del aula. 4. Muestre el estado de los dispositivos de red mediante el comando nmcli. Observe que la interfaz secundaria está desconectada. 5.
+
+
+
+
+
+11.2. Ejercicio guiado Configurar redes desde la línea de comandos
+
+[root@servera ~]# nmcli dev status
+
+TIPO DE DISPOSITIVO ESTADO CONEXIÓN ens3 ethernet conectado cloud-init ens3 lo loopback conectado (externamente) lo ens4 ethernet desconectado: cree la conexión estática static-addr con la dirección 172.24.250.30 y el prefijo de red /24.
+
+[root@servera ~]# nmcli con add con-name static-addr type ethernet ifname ens4 \
+
+ipv4.method manual ipv4.addresses 172.24.250.30/24 Conexión 'static-addr' (227e5a9e-b96b-45e7-ac90-ca8f9c3a71bc) agregada correctamente. 6. Muestre el estado actual de la interfaz secundaria que configuró.
+
+[root@servera ~]# nmcli device show ens4
+
+GENERAL.DEVICE: ens4 GENERAL.TYPE: ethernet GENERAL.HWADDR: 52:54:00:01:FA:1E GENERAL.MTU: 8942 GENERAL.STATE: 100 (conectado) GENERAL.CONNECTION: static-addr GENERAL.CON-PATH: /org/freedesktop/NetworkManager/ActiveConnection/20 WIRED-PROPERTIES.CARRIER: activado IP4.DIRECCIÓN[1]: 172.24.250.30/24 IP4.GATEWAY: -- IP4.RUTA[1]: dst = 172.24.250.0/24, nh = 0.0.0.0, mt = 101 IP6.DIRECCIÓN[1]: fe80::5054:ff:fe01:fa1e/64 IP6.GATEWAY: -- IP6.ROUTE[1]: dst = fe80::/64, nh = ::, mt = 1024 7. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+8. Verifique que la conexión de dirección estática esté activa después del reinicio. 9. Vuelva a iniciar sesión en la máquina del servidor.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... 9.1. Muestra la lista de todas las conexiones de red en el sistema.
+
+[student@servera ~]$ nmcli con show
+
+NOMBRE UUID TIPO DISPOSITIVO cloud-init ens3 fab1e257-61a6-3526-abf9-8c50c83a28c7 ethernet ens3 static-addr 227e5a9e-b96b-45e7-ac90-ca8f9c3a71bc ethernet ens4 lo 4614a696-227a-4b8e-adab-4105feabb95e loopback lo Observe que la interfaz secundaria, ens4, ha sido activada por la conexión estática que creó. Además, la conexión temporal basada en DHCP de la conexión por cable 1 desapareció después del reinicio. 9.2. Verifique la dirección IP configurada en la interfaz ens4 mediante el comando nmcli dev. 9.3.
+
+
+
+
+
+11.2. Ejercicio guiado Configurar redes desde la línea de comandos
+
+[student@servera ~]$ nmcli -f IP4 dev show ens4
+
+IP4.ADDRESS[1]: 172.24.250.30/24 IP4.GATEWAY: -- IP4.ROUTE[1]: dst = 172.24.250.0/24, nh = 0.0.0.0, mt = 101 Regrese al sistema de estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+9.4. Cree una conexión de red estática en la máquina del servidor para comunicarse con el sistema del servidor en la red secundaria. De manera similar, esta máquina tiene una interfaz de red secundaria que falla debido a la conexión DHCP predeterminada. 10. Inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 10.1. Identifique el nombre de la interfaz de red secundaria que tiene la dirección MAC 52:54:00:01:fa:28.
+
+[root@serverb ~]# ip link
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state Modo DESCONOCIDO DEFAULT grupo predeterminado qlen 1000
+
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:00:fa:0b brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname enx52540000fa0b
+
+3: ens4: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8942 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:01:fa:28 brd ff:ff:ff:ff:ff:ff
+    altname enp0s4
+    altname enx52540001fa28
+
+Observe que en el resultado anterior, la interfaz correcta se denomina ens4. Dependiendo de su hardware, el nombre de interfaz correcto puede ser diferente en su sistema. 10.2. Elimine la conexión temporal por cable 1 que NetworkManager creó para la interfaz ens4.
+
+[root@serverb ~]# nmcli con del 'Wired connection 1'
+
+Conexión 'Conexión por cable 1' (508dcf19-e8dc-345c-b04d-217bfbcc4ed2) eliminada correctamente. 10.3. Cree la conexión estática static-addr para la interfaz ens4 con la dirección 172.24.250.40 y el prefijo de red /24.
+
+[root@serverb ~]# nmcli con add con-name static-addr type ethernet ifname ens4 \
+
+ipv4.method manual ipv4.addresses 172.24.250.40/24 Conexión 'static-addr' (c2131041-1fec-4563-9856-3bc582801758) agregada correctamente. 10.4. Muestra la lista de conexiones de red para verificar que la nueva conexión se haya activado automáticamente. 10.5.
+
+
+
+
+
+11.2. Ejercicio guiado Configurar redes desde la línea de comandos Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish net-configure
+[root@serverb ~]# nmcli con show
+
+NOMBRE UUID TIPO DISPOSITIVO cloud-init ens3 fab1e257-61a6-3526-abf9-8c50c83a28c7 ethernet ens3 static-addr c2131041-1fec-4563-9856-3bc582801758 ethernet ens4 lo 9c62f5c6-d9fb-4088-8308-50fcdace41b5 loopback lo Verifique el estado del dispositivo de la interfaz ens4 mediante el comando nmcli dev.
+
+[root@serverb ~]# nmcli dev show ens4
+
+GENERAL.DEVICE: ens4 GENERAL.TYPE: ethernet GENERAL.HWADDR: 52:54:00:01:FA:28 GENERAL.MTU: 8942 GENERAL.STATE: 100 (conectado) GENERAL.CONNECTION: static-addr GENERAL.CON-PATH: /org/freedesktop/NetworkManager/ActiveConnection/10 WIRED-PROPERTIES.CARRIER: activado IP4.DIRECCIÓN[1]: 172.24.250.40/24 IP4.GATEWAY: -- IP4.RUTA[1]: dst = 172.24.250.0/24, nh = 0.0.0.0, mt = 101 IP6.DIRECCIÓN[1]: fe80::5054:ff:fe01:fa28/64 IP6.GATEWAY: -- IP6.RUTA[1]: dst = fe80::/64, nh = ::, mt = 1024 10.6. Para validar la configuración de red, pruebe la conectividad con la máquina del servidor mediante el comando ping.
+
+[root@serverb ~]# ping -c 3 172.24.250.30
+
+PING 172.24.250.30 (172.24.250.30) 56(84) bytes de datos. 64 bytes desde 172.24.250.30: icmp_seq=1 ttl=64 tiempo=3,83 ms 64 bytes desde 172.24.250.30: icmp_seq=2 ttl=64 tiempo=0,339 ms 64 bytes desde 172.24.250.30: icmp_seq=3 ttl=64 tiempo=0,347 ms
+
+--- 172.24.250.30 ping statistics ---
+
+3 paquetes transmitidos, 3 recibidos, 0% de pérdida de paquetes, tiempo 2008 ms
+
+rtt min/avg/max/mdev = 0.339/1.505/3.830/1.643 ms
+
+11. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+12.
+
+
+
+
+
+11.3. Edición de archivos de configuración de red 11.3. Edición de archivos de configuración de red Objetivos Modificar la configuración de red editando archivos de configuración. Archivos de configuración de conexión Como alternativa al uso del comando nmcli, puede configurar redes editando directamente los archivos de configuración de conexión. Aunque el comando nmcli es el método preferido para la gestión de perfiles, puede crear o modificar manualmente estos archivos de configuración. Esta alternativa es especialmente útil cuando planeas utilizar archivos de configuración iguales o similares para varios servidores. Los perfiles de conexión de NetworkManager se almacenan en el directorio /etc/NetworkManager/system-connections/. Estos archivos utilizan la sintaxis de archivo de claves, que reemplaza el formato ifcfg obsoleto. Cuando agrega o modifica conexiones mediante el comando nmcli, esos cambios también se almacenan persistentemente en este directorio como archivos que terminan con la extensión .nmconnection. Después de cualquier edición manual, debe utilizar el comando nmcli con reload para recargar los archivos de configuración e informar a NetworkManager de los cambios. Para aplicar los cambios, debe activar manualmente la conexión mediante el comando nmcli con up. Sintaxis de archivos de claves NetworkManager emplea una sintaxis de archivos de claves de estilo INI para sus perfiles de conexión de red. Los elementos de configuración están estructurados en secciones (grupos), y cada configuración se representa como un par clave-valor dentro de estos grupos. Esta sintaxis de configuración ofrece beneficios de legibilidad, como especificar direcciones IP como 192.168.0.1/24 en lugar de matrices de enteros menos intuitivas. La siguiente tabla muestra algunos comandos nmcli junto con sus configuraciones equivalentes en el archivo *.nmconnection. Tabla 16. Comparación de la configuración de NetworkManager y la sintaxis del archivo de claves ipv4.method manual [ipv4]
+
+method=manual
+
+Configure direcciones IPv4 de forma estática. ipv4.método automático [ipv4]
+
+method=auto
+
+Obtenga los ajustes de configuración de un servidor DHCPv4.
+
+nmcli con mod
+
+*.nmefecto de archivo de conexión
+
+
+
+
+

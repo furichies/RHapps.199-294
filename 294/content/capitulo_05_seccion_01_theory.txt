@@ -1,0 +1,294 @@
+# Modificación y copia de archivos a hosts
+# Tipo: theory
+# Capítulo: Capítulo 5. Implementación de archivos en hosts gestionados
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Modificación y copia de archivos a hosts
+Objetivos
+• Crear, instalar, editar y eliminar archivos en hosts gestionados; gestionar permisos, propiedades,
+contextos de SELinux y otras características de esos archivos.
+Descripción de los módulos de archivos
+La mayoría de los módulos de uso común relacionados con la gestión de archivos de Linux se
+proporcionan con ansible-core en la colección ansible.builtin. Realizan tareas como
+crear, copiar, editar y modificar permisos y otros atributos de archivos. En la siguiente tabla, se
+proporciona una lista de los módulos de administración de archivos de uso frecuente:
+Módulos de archivos de uso común en ansible.builtin
+Nombre del módulo
+Descripción del módulo
+blockinfile
+Inserte, actualice o elimine un bloque de texto multilínea rodeado
+por líneas de marcador personalizables.
+copy
+Copie un archivo de la máquina local o remota a una ubicación en un
+host gestionado. Similar al módulo file, el módulo copy también
+puede establecer atributos de archivo, incluido el contexto SELinux.
+fetch
+Este módulo funciona como el módulo copy, pero a la inversa. Este
+módulo se usa para recuperar archivos de máquinas remotas al nodo
+de control y para almacenarlos en un árbol de archivos, organizado
+por nombre de host.
+file
+Establezca atributos tales como permisos, propiedad, contextos
+SELinux y marcas de tiempo de archivos regulares, enlaces
+simbólicos, enlaces físicos y directorios. Este módulo también puede
+crear o eliminar archivos regulares, enlaces simbólicos, enlaces
+físicos y directorios. Una serie de otros módulos relacionados con
+archivos soportan las mismas opciones para establecer atributos
+como el módulo file, incluido el módulo copy.
+lineinfile
+Asegúrese de que una línea particular esté en un archivo o
+reemplace una línea existente usando una expresión regular de
+referencia inversa. Este módulo es principalmente útil cuando desea
+cambiar una sola línea en un archivo.
+stat
+Recupere información de estado de un archivo, similar al comando
+stat de Linux.
+Además, la colección ansible.posix, que se incluye en el entorno de ejecución de
+automatización predeterminado, proporciona algunos módulos adicionales que son útiles para la
+gestión de archivos:
+192
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Módulos de archivos de uso común en ansible.posix
+Nombre del módulo
+Descripción del módulo
+patch
+Aplique parches a los archivos usando patch GNU.
+synchronize
+Un contenedor alrededor del comando rsync para simplificar
+las tareas comunes. El módulo synchronize no está destinado
+a proporcionar acceso a toda la potencia del comando rsync,
+pero hace que las invocaciones más comunes sean más fáciles
+de implementar. Es posible que aún necesite invocar el comando
+rsync directamente a través del módulo command según su caso
+de uso.
+Ejemplos de automatización con módulos de archivos
+Los siguientes ejemplos muestran formas en que puede usar estos módulos para automatizar las
+tareas comunes de administración de archivos.
+Garantía de que exista un archivo en los hosts gestionados
+Use el módulo ansible.builtin.file para tocar un archivo en los hosts gestionados. Esto
+funciona como el comando touch, creando un archivo vacío si no existe y actualizando su hora de
+modificación si existe. En este ejemplo, además de tocar el archivo, Ansible se asegura de que el
+usuario propietario, el grupo y los permisos del archivo estén configurados con valores específicos.
+- name: Touch a file and set permissions
+  ansible.builtin.file:
+    path: /path/to/file
+    owner: user1
+    group: group1
+    mode: 0640
+    state: touch
+Resultado de ejemplo:
+[user@host ~]$ ls -l file
+-rw-r-----.  user1 group1 0 Nov 25 08:00 file
+Modificación de los atributos del archivo
+Puede usar el módulo ansible.builtin.file para garantizar que un archivo nuevo o existente
+tenga los permisos correctos o el tipo SELinux también.
+Por ejemplo, el siguiente archivo ha conservado el contexto predeterminado de SELinux en
+relación con el directorio de inicio de un usuario, que no es el contexto deseado.
+[user@host ~]$ ls -Z samba_file
+-rw-r--r--.  owner group unconfined_u:object_r:user_home_t:s0 samba_file
+La siguiente tarea garantiza que el atributo de tipo de contexto SELinux del archivo samba_file
+es el tipo samba_share_t deseado. Este comportamiento es similar al comando chcon de Linux.
+RH294-RHEL9.0-es-3-20240620
+193
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+- name: SELinux type is set to samba_share_t
+  ansible.builtin.file:
+    path: /path/to/samba_file
+    setype: samba_share_t
+Resultado de ejemplo:
+[user@host ~]$ ls -Z samba_file
+-rw-r--r--.  owner group unconfined_u:object_r:samba_share_t:s0 samba_file
+Los parámetros de atributos de archivo están disponibles en varios módulos de administración
+de archivos. Use el comando ansible-navigator doc para obtener información adicional,
+proporcionando el módulo ansible.builtin.file o ansible.builtin.copy como
+argumento.
+nota
+Para establecer contextos de archivos SELinux de forma persistente en la política,
+algunas opciones incluyen:
+• Si sabe cómo usar los roles de Ansible, puede usar el rol
+redhat.rhel_system_roles.selinux soportado. Esto se trata en el
+Capítulo 7 del curso de capacitación Red Hat Enterprise Linux Automation with
+Ansible (RH294).
+• Puede usar el módulo community.general.sefcontext en Ansible Content
+Collection community.general compatible con la comunidad.
+Copia y edición de archivos en hosts gestionados
+En este ejemplo, el módulo ansible.builtin.copy se usa para copiar un archivo ubicado en el
+directorio de trabajo de Ansible en el nodo de control a los hosts gestionados seleccionados.
+De forma predeterminada, este módulo supone que force: true está configurado. Eso obliga
+al módulo a sobrescribir el archivo remoto si existe, pero tiene un contenido diferente del archivo
+que se está copiando. Si se configura force: false, solo copia el archivo al host gestionado si
+no existe.
+- name: Copy a file to managed hosts
+  ansible.builtin.copy:
+    src: file
+    dest: /path/to/file
+Para recuperar archivos de hosts gestionados, use el módulo ansible.builtin.fetch. Esto
+puede usarse para recuperar un archivo como una clave pública SSH de un sistema de referencia
+antes de distribuirlo a otros hosts gestionados.
+- name: Retrieve SSH key from reference host
+  ansible.builtin.fetch:
+    src: "/home/{{ user }}/.ssh/id_rsa.pub
+    dest: "files/keys/{{ user }}.pub"
+194
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Para asegurarse de que existe una línea de texto específica en un archivo existente, use el módulo
+lineinfile.
+- name: Add a line of text to a file
+  ansible.builtin.lineinfile:
+    path: /path/to/file
+    line: 'Add this line to the file'
+    state: present
+Para agregar un bloque de texto a un archivo existente, use el módulo
+ansible.builtin.blockinfile.
+- name: Add additional lines to a file
+  ansible.builtin.blockinfile:
+    path: /path/to/file
+    block: |
+      First line in the additional block of text
+      Second line in the additional block of text
+    state: present
+nota
+Al usar el módulo ansible.builtin.blockinfile, los marcadores de
+bloque comentados se insertan al principio y al final del bloque para garantizar la
+idempotencia.
+# BEGIN ANSIBLE MANAGED BLOCK
+First line in the additional block of text
+Second line in the additional block of text
+# END ANSIBLE MANAGED BLOCK
+Puede usar el parámetro marker en el módulo para garantizar que se esté usando
+el texto o carácter de comentario correcto para el archivo en cuestión.
+Eliminación de un archivo de los hosts gestionados
+Un ejemplo básico para eliminar un archivo de los hosts gestionados es usar el módulo
+ansible.builtin.file con el parámetro state: absent. El parámetro state es opcional
+para muchos módulos. Siempre debe aclarar si desea state: present o state: absent
+por varias razones. Algunos módulos soportan otras opciones también. Es posible que el valor
+predeterminado pueda cambiar en algún momento, pero quizás lo más importante es que facilita
+la comprensión del estado en el que debe estar el sistema según su tarea.
+- name: Make sure a file does not exist on managed hosts
+  ansible.builtin.file:
+    dest: /path/to/file
+    state: absent
+RH294-RHEL9.0-es-3-20240620
+195
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Recuperación del estado de un archivo en hosts gestionados
+El módulo ansible.builtin.stat recupera datos para un archivo, de manera similar al
+comando stat de Linux. Los parámetros proporcionan la funcionalidad para recuperar atributos
+de archivo, determinar la suma de comprobación de un archivo y más.
+El módulo ansible.builtin.stat devuelve un diccionario de los valores que contienen datos
+de estado del archivo, lo que le permite referirse a partes individuales de información mediante
+variables separadas.
+En el siguiente ejemplo, se registran los resultados de un módulo ansible.builtin.stat y,
+luego, se imprime la checksum MD5 del archivo que verificó. (El algoritmo SHA256 más moderno
+también está disponible; aquí se usa MD5 para mejorar la legibilidad).
+- name: Verify the checksum of a file
+  ansible.builtin.stat:
+    path: /path/to/file
+    checksum_algorithm: md5
+  register: result
+- ansible.builtin.debug
+    msg: "The checksum of the file is {{ result.stat.checksum }}"
+El resultado debe ser similar a lo siguiente:
+TASK [Get md5 checksum of a file] *****************************************
+ok: [hostname]
+TASK [debug] **************************************************************
+ok: [hostname] => {
+    "msg": "The checksum of the file is 5f76590425303022e933c43a7f2092a3"
+}
+La información sobre los valores devueltos por el módulo ansible.builtin.stat son
+registrados en ansible-navigator doc ansible.builtin.stat, o puede registrar una
+variable y visualizar su contenido para ver qué hay disponible:
+- name: Examine all stat output of /etc/passwd
+  hosts: workstation
+  tasks:
+    - name: stat /etc/passwd
+      ansible.builtin.stat:
+        path: /etc/passwd
+      register: results
+    - name: Display stat results
+      debug:
+        var: results
+196
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Sincronización de archivos entre el nodo de control y los hosts
+gestionados
+El módulo ansible.posix.synchronize es un contenedor alrededor de la herramienta
+rsync, que simplifica las tareas comunes de administración de archivos en sus playbooks. La
+herramienta rsync debe instalarse en el host local y remoto. De forma predeterminada, cuando
+usa el módulo ansible.posix.synchronize, el "host local" es el host en el que se origina la
+tarea ansible.posix.synchronize (por lo general, el nodo de control), y el "host de destino"
+es el host al que se conecta ansible.posix.synchronize.
+En el siguiente ejemplo se sincroniza un archivo ubicado en el directorio de trabajo de Ansible con
+los hosts gestionados:
+- name: synchronize local file to remote files
+  ansible.posix.synchronize:
+    src: file
+    dest: /path/to/file
+Hay muchas maneras de usar el módulo ansible.posix.synchronize y sus diversos
+parámetros, incluida la sincronización de directorios. Ejecute el comando ansible-navigator
+doc ansible.posix.synchronize para obtener ejemplos de parámetros y de playbooks
+adicionales.
+Referencias
+Páginas del manual chmod(1), chown(1), rsync(1), stat(1) y touch(1)
+Comando ansible-navigator doc
+Documentación de Ansible: índice de todos los módulos: ansible.builtin
+https://docs.ansible.com/ansible/latest/collections/index_module.html#ansible-
+builtin
+RH294-RHEL9.0-es-3-20240620
+197
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Ejercicio Guiado
+Modificación y copia de archivos a hosts
+Usa los módulos estándar de Ansible para crear, instalar, editar y eliminar archivos en hosts
+gestionados y gestionar permisos, propiedad y contextos de SELinux de esos archivos.
+Resultados
+• Recuperar archivos de hosts gestionados por nombre de host y almacenarlos localmente.
+• Cree playbooks que usen módulos comunes de gestión de archivos de Ansible
+Content Collection ansible.builtin, como copy, fetch, file, lineinfile y
+blockinfile.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-manage
+Instrucciones
+ 1.
+El comando lab creó el directorio /home/student/file-manage con el archivo de
+configuración ansible.cfg y un archivo de inventario denominado inventory. Revise el
+contenido de ambos archivos antes de continuar.
+1.1.
+Cambie al directorio /home/student/file-manage.
+[student@workstation ~]$ cd ~/file-manage
+[student@workstation file-manage]$
+1.2.
+Revise el contenido del archivo ansible.cfg. Verifique que esté habilitado el
+aumento de privilegios y que esté usando sudo como método de aumento de
+privilegios para el usuario remoto devops.
+[defaults]
+inventory=inventory
+remote_user=devops
+[privilege_escalation]
+become=true
+become_method=sudo
+become_user=root
+become_ask_pass=false
+198
+RH294-RHEL9.0-es-3-20240620
+
+

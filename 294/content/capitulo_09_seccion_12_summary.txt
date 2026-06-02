@@ -1,0 +1,52 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Resumen
+• El módulo ansible.builtin.yum_repository configura un repositorio Yum en un host
+gestionado. Para los repositorios que usan claves públicas, puede verificar que la clave esté
+disponible con el módulo ansible.builtin.rpm_key.
+• Los módulos ansible.builtin.user y ansible.builtin.group crean usuarios y grupos
+respectivamente en un host gestionado.
+• El módulo ansible.builtin.known_hosts configura hosts conocidos SSH para un servidor
+y los módulos ansible.posix.authorized_key configuran claves autorizadas para la
+autenticación de usuarios.
+• El módulo ansible.builtin.cron configura trabajos Cron del sistema o del usuario en hosts
+gestionados.
+• El módulo ansible.posix.at configura trabajos at únicos en hosts gestionados.
+• La Ansible Content Collection redhat.rhel_system_roles certificada por Red Hat
+incluye dos roles de sistema particularmente útiles: storage, que admite la configuración de
+volúmenes lógicos LVM, y network, que permite la configuración de interfaces y conexiones de
+red.
+RH294-RHEL9.0-es-3-20240620
+497
+
+
+498
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10
+Revisión exhaustiva
+Meta
+Revisar tareas de Red Hat Enterprise Linux
+Automation with Ansible.
+Secciones
+•
+Revisión exhaustiva
+Trabajo de
+laboratorio
+•
+Implementación de Ansible
+•
+Creación de playbooks
+•
+Administración de hosts de Linux y uso de roles
+del sistema
+•
+Creación de roles
+RH294-RHEL9.0-es-3-20240620
+499
+
+

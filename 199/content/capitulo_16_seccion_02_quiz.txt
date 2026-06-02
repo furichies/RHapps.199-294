@@ -1,0 +1,42 @@
+# Cuestionario: Prueba la arquitectura de registro del sistema
+# Tipo: quiz
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.2. Prueba la arquitectura de registro del sistema 13.2. Cuestionario sobre la arquitectura de registro del sistema Elija las respuestas correctas a las siguientes preguntas: ¿Qué archivo de registro almacena la mayoría de los mensajes de syslog, excepto los relacionados con autenticación, correo, trabajos programados y depuración? 1. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué archivo de registro almacena mensajes de syslog sobre operaciones de seguridad y autenticación en el sistema? 2. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué servicio clasifica y organiza los mensajes de syslog en archivos en el directorio /var/log? 3.
+
+rsyslog
+
+a. diario systemd b. registro del sistema c. sintonizado d. ¿Qué directorio alberga los archivos syslog legibles por humanos? 4. /sys/kernel/debug a. /var/log/diario b. /ejecutar/log/diario c. /var/log d. ¿Qué archivo almacena mensajes syslog sobre el servidor de correo? 5. /var/log/lastlog a. /var/log/maillog b. /var/log/tallylogc. /var/log/boot.log d. ¿Qué archivo almacena mensajes de syslog sobre trabajos programados? 6. /var/log/cron a. /var/log/tallylogb. /var/log/spooler c. /var/log/secure d.
+
+
+
+
+
+13.2. Cuestionario sobre la arquitectura del registro del sistema ¿Qué archivo almacena los mensajes de la consola sobre el inicio del sistema? 7. /var/log/messages a. /var/log/cron b. /var/log/boot.logc. /var/log/secure d.
+
+
+
+
+
+13.2. Cuestionario sobre la solución de arquitectura de registro del sistema ¿Qué archivo de registro almacena la mayoría de los mensajes de syslog, excepto los relacionados con autenticación, correo, trabajos programados y depuración? 1. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué archivo de registro almacena mensajes de syslog sobre operaciones de seguridad y autenticación en el sistema? 2. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué servicio clasifica y organiza los mensajes de syslog en archivos en el directorio /var/log? 3.
+
+rsyslog
+
+a. diario systemd b. registro del sistema c. sintonizado d. ¿Qué directorio alberga los archivos syslog legibles por humanos? 4. /sys/kernel/debug a. /var/log/diario b. /ejecutar/log/diario c. /var/log d. ¿Qué archivo almacena mensajes syslog sobre el servidor de correo? 5. /var/log/lastlog a. /var/log/maillog b. /var/log/tallylogc. /var/log/boot.log d. ¿Qué archivo almacena mensajes de syslog sobre trabajos programados? 6. /var/log/cron a. /var/log/tallylogb. /var/log/spooler c. /var/log/secure d.
+
+
+
+
+
+13.2. Cuestionario sobre la arquitectura del registro del sistema ¿Qué archivo almacena los mensajes de la consola sobre el inicio del sistema? 7. /var/log/messages a. /var/log/cron b. /var/log/boot.logc. /var/log/secure d.
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog 13.3. Interpretación y gestión de eventos de Syslog Objetivos Encontrar los archivos de registro de syslog, interpretar los mensajes de syslog y configurar qué mensajes de syslog se graban en qué archivos u otros destinos. Registrar eventos en el sistema Muchos programas utilizan el protocolo syslog para registrar eventos en el sistema. Cada mensaje de registro se clasifica por instalación (el subsistema que produce el mensaje) y prioridad (la gravedad del mensaje). La siguiente tabla enumera las funciones de syslog estándar: Tabla 18. Descripción general de las funciones de Syslog 0 kern Mensajes del kernel 1 usuario Mensajes de nivel de usuario 2 mail Mensajes del sistema de correo 3 demonio Mensajes del demonio del sistema 4 auth Mensajes de autenticación y seguridad 5 syslog Mensajes de syslog internos 6 lpr Mensajes de impresora 7 news Mensajes de noticias de red 8 uucp Mensajes del protocolo UUCP 9 cron Mensajes del demonio de reloj 10 authpriv Mensajes de autorización no del sistema 11 ftp Mensajes del protocolo FTP 16-23 local0 a local7 Mensajes locales personalizados Código Instalación Descripción de la instalación
+
+
+
+
+

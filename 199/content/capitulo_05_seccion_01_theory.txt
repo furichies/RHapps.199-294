@@ -1,0 +1,187 @@
+# 2.1. Administrar archivos con herramientas de línea de comandos
+# Tipo: theory
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.1. Administrar archivos con herramientas de línea de comandos 2.1. Administrar archivos con herramientas de línea de comandos Objetivos Crear, copiar, mover y eliminar archivos y directorios. Gestión de archivos de línea de comandos Crear, copiar, mover y eliminar archivos y directorios son operaciones comunes para un administrador del sistema. Cuando ejecute un comando para administrar archivos, tenga en cuenta las opciones del comando. Sin opciones, algunos comandos se utilizan para interactuar con archivos. O, con el conjunto de opciones adecuado, algunos comandos pueden manipular directorios. Además, el significado de algunas opciones puede diferir entre los comandos. Creación de archivos En Linux, puede utilizar varias herramientas de línea de comandos para crear archivos. Por ejemplo, puede utilizar los comandos cat y echo para dirigir la salida a un nombre de archivo específico. O puede utilizar editores de texto de línea de comandos, como Vim y nano. En algunos casos, es posible que desee crear un archivo vacío para reservar un nombre de archivo para su uso posterior. En este escenario, puede utilizar el comando táctil. El comando táctil crea un nuevo archivo o, si el nombre del archivo existe, el comando táctil actualiza la marca de tiempo del archivo.
+
+user@host:~$ touch mytasklist.txt
+user@host:~$ ls mytasklist.txt
+
+mytasklist.txt Creación de directorios El comando mkdir crea uno o más directorios o subdirectorios. Toma como argumento una lista de rutas a los directorios que desea crear. En el siguiente ejemplo, los archivos y directorios se organizan bajo el directorio /home/user/Documents. Utilice el
+
+mkdir command and a space-delimited list of the directory names to create multiple directories.
+user@host:~$ cd Documents
+user@host:~/Documents$ mkdir ProjectX ProjectY ProjectZ
+user@host:~/Documents$ ls
+
+ProjectX ProjectY ProjectZ Si el directorio que está intentando crear ya existe, el comando mkdir falla y muestra un error. El comando mkdir también falla si no existe un directorio principal del directorio solicitado. El comando mkdir y la opción -p (principal) crean los directorios principales que faltan para el destino solicitado. En el siguiente ejemplo, el
+
+mkdir command creates three ChapterN subdirectories with one command. The -p option creates the missing
+
+Directorio de padres de tesis.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos
+
+user@host:~/Documents$ mkdir -p Thesis/Chapter1 Thesis/Chapter2 Thesis/Chapter3
+user@host:~/Documents$ ls -R Thesis/
+
+Tesis/: Capítulo1 Capítulo2 Capítulo3 Tesis/Capítulo1: Tesis/Capítulo2: Tesis/Capítulo3: Utilice la opción -p del comando mkdir con precaución, porque los errores ortográficos pueden crear directorios no deseados sin generar mensajes de error. En el siguiente ejemplo, imagine que está intentando crear un subdirectorio supervisado en
+
+the Videos directory, but you accidentally omit the letter "s" in Videos in your mkdir command:
+user@host:~$ mkdir Video/Watched
+mkdir: cannot create directory Video/Watched: No such file or directory
+
+El comando mkdir falla porque el directorio de vídeo no existe. Si hubiera utilizado el comando mkdir con la opción -p, entonces el directorio de vídeo se crearía sin querer. El subdirectorio Vigilado se crearía en ese directorio incorrecto. Copiar archivos y directorios El comando cp copia un archivo y crea un archivo en el directorio actual o en un directorio especificado diferente.
+
+user@host:~$ cd Videos
+user@host:~/Videos$ cp blockbuster1.ogg blockbuster3.ogg
+user@host:~/Videos$ ls -l
+
+total 0 -rw-rw-r--. 1 usuario usuario 0 8 de febrero 16:23 blockbuster1.ogg -rw-rw-r--. 1 usuario usuario 0 8 de febrero 16:24 blockbuster2.ogg -rw-rw-r--. 1 usuario usuario 0 8 de febrero 16:34 blockbuster3.ogg También puede utilizar el comando cp para copiar varios archivos a un directorio. En este escenario, el último argumento debe ser un directorio. Los archivos copiados conservan sus nombres originales en el nuevo directorio. Si existe un archivo con el mismo nombre en el directorio de destino, se sobrescribe el archivo existente. Nota De forma predeterminada, el comando cp no copia directorios; los ignora. En el siguiente ejemplo, se enumeran dos directorios como argumentos, los directorios Thesis y ProjectX. El último argumento, el directorio ProjectX, es el destino y es válido como destino. El argumento de la tesis es ignorado por el
+
+cp command, because it is intended to be copied and it is a directory.
+user@host:~/Documents$ cp thesis_chapter1.txt thesis_chapter2.txt Thesis ProjectX
+cp: -r not specified; omitting directory 'Thesis'
+user@host:~/Documents$ ls Thesis ProjectX
+
+ProyectoX: thesis_chapter1.txt thesis_chapter2.txt Thesis: Chapter1 Chapter2 Chapter3 El directorio Thesis no se pudo copiar, pero la copia de los archivos thesis_chapter1.txt y thesis_chapter2.txt tuvo éxito.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos Puede copiar directorios y su contenido usando el comando cp con la opción -r. Tenga en cuenta que puede utilizar el . y .. directorios especiales en combinaciones de comandos. En el siguiente ejemplo, el directorio Tesis y su contenido
+
+are copied to the ProjectY directory:
+user@host:~/Documents$ cd ProjectY
+user@host:~/ProjectY$ cp -r ../Thesis/ .
+user@host:~/ProjectY$ ls -lR
+
+.: total 0
+
+drwxr-xr-x. 5 user user 54 Mar  7 15:08 Thesis
+
+./Tesis: total 0
+
+drwxr-xr-x. 2 user user 6 Mar  7 15:08 Chapter1
+drwxr-xr-x. 2 user user 6 Mar  7 15:08 Chapter2
+drwxr-xr-x. 2 user user 6 Mar  7 15:08 Chapter3
+
+./Thesis/Chapter1: total 0 ./Thesis/Chapter2: total 0 ./Thesis/Chapter3: total 0 Cambiar el nombre y mover archivos y directorios Si piensa en la ruta absoluta a un archivo como su nombre completo, mover un archivo es efectivamente lo mismo que cambiarle el nombre. El comando mv mueve archivos de una ubicación a otra. El contenido de los archivos que se mueven permanece sin cambios. Puede utilizar el comando mv para cambiar el nombre de un archivo. En el siguiente ejemplo, el comando mv thesis_chapter2.txt cambia el nombre del archivo thesis_chapter2.txt a thesis_chapter2_reviewed.txt en el mismo directorio.
+
+user@host:~/Documents$ ls -l
+
+-rw-r--r--. 1 usuario usuario 7100 7 de marzo 14:37 thesis_chapter1.txt -rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2.txt ...salida omitida...
+
+user@host:~/Documents$ mv thesis_chapter2.txt thesis_chapter2_reviewed.txt
+user@host:~/Documents$ ls -l
+
+-rw-r--r--. 1 usuario usuario 7100 7 de marzo 14:37 thesis_chapter1.txt -rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2_reviewed.txt ... salida omitida... Utilice el comando mv para mover un archivo a un directorio diferente. En el siguiente ejemplo, el archivo thesis_chapter1.txt se mueve del directorio ~/Documents al directorio ~/Documents/Thesis/Chapter1. Puede utilizar el comando mv con la opción -v para mostrar un resultado detallado de las operaciones del comando.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos
+
+user@host:~/Documents$ ls Thesis/Chapter1
+user@host:~/Documents$
+user@host:~/Documents$ mv -v thesis_chapter1.txt Thesis/Chapter1
+
+renombrado 'thesis_chapter1.txt' -> 'Tesis/Capítulo1/thesis_chapter1.txt'
+
+user@host:~/Documents$ ls Thesis/Chapter1
+
+tesis_capítulo1.txt
+
+user@host:~/Documents$ ls -l
+
+-rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2_reviewed.txt ... salida omitida... Eliminación de archivos y directorios El comando rm elimina archivos. De forma predeterminada, rm no elimina directorios. Puede utilizar el comando rm con la opción -r o la opción --recursive para permitir que el comando rm elimine directorios y sus contenidos. El comando rm -r atraviesa cada subdirectorio primero y elimina individualmente sus archivos antes de eliminar cada directorio. En el siguiente ejemplo, el comando rm elimina el archivo thesis_chapter1.txt sin opciones, pero para eliminar el directorio Thesis/Chapter1, debe agregar la opción -r.
+
+user@host:~/Documents$ ls -l Thesis/Chapter1
+
+-rw-r--r--. 1 usuario usuario 7100 7 de marzo 14:37 thesis_chapter1.txt
+
+user@host:~/Documents$ rm Thesis/Chapter1/thesis_chapter1.txt
+user@host:~/Documents$ rm Thesis/Chapter1
+rm: cannot remove 'Thesis/Chapter1': Is a directory
+user@host:~/Documents$ rm -r Thesis/Chapter1
+user@host:~/Documents$ ls -l Thesis
+drwxr-xr-x. 2 user user 6 Mar  7 12:37 Chapter2
+drwxr-xr-x. 2 user user 6 Mar  7 12:37 Chapter3
+
+Importante Red Hat Enterprise Linux no proporciona una forma de deshacer eliminaciones ni una "papelera" desde la cual pueda restaurar archivos retenidos para su eliminación. Una papelera es un componente de un entorno de escritorio como GNOME, pero no la utilizan los comandos que se ejecutan desde un shell. Una buena práctica es verificar su directorio de trabajo actual antes de eliminar un archivo o directorio utilizando rutas relativas.
+
+user@host:~/Documents$ pwd
+
+/home/usuario/Documentos
+
+user@host:~/Documents$ ls -l thesis*
+
+-rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2_reviewed.txt
+
+user@host:~/Documents$ rm thesis_chapter2_reviewed.txt
+user@host:~/Documents$ ls -l thesis*
+ls: cannot access 'thesis*': No such file or directory
+
+Puede utilizar el comando rm con la opción -i para solicitar confirmación de forma interactiva antes de eliminar. Esta opción es lo opuesto al uso de la opción -f del comando rm, que fuerza la eliminación sin pedir confirmación al usuario.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos
+
+user@host:~/Documents$ rm -ri Thesis
+rm: descend into directory 'Thesis'? y
+rm: descend into directory 'Thesis/Chapter2'? y
+rm: remove regular empty file 'Thesis/Chapter2/thesis_chapter2.txt'? y
+rm: remove directory 'Thesis/Chapter2'? y
+rm: remove directory 'Thesis/Chapter3'? y
+rm: remove directory 'Thesis'? y
+
+Advertencia Si especifica las opciones -i y -f, la opción -f tiene prioridad y no se le solicitará confirmación antes de que el comando rm elimine los archivos. También puede utilizar el comando rmdir para eliminar directorios vacíos. Utilice la opción rm comando -r para eliminar directorios que no estén vacíos.
+
+user@host:~/Documents$ pwd
+
+/home/usuario/Documentos
+
+user@host:~/Documents$ rmdir ProjectZ
+user@host:~/Documents$ rmdir ProjectX
+rmdir: failed to remove 'ProjectX': Directory not empty
+user@host:~/Documents$ rm -r ProjectX
+user@host:~/Documents$
+
+Referencias a las páginas man cp(1), mkdir(1), mv(1), rm(1) y rmdir(1)
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos 2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Cree, copie, mueva y elimine archivos y directorios. Resultados Crear, organizar, copiar y eliminar archivos y directorios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-manage
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante. En el directorio de inicio del usuario estudiante, cree tres
+
+subdirectories: Music, Pictures, and Videos.
+
+1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. En el directorio de inicio del usuario estudiante, use el comando mkdir para crear tres subdirectorios: Música, Imágenes y Videos.
+
+[student@servera ~]$ mkdir Music Pictures Videos
+
+1.2. Utilice el comando táctil para crear conjuntos de archivos de práctica vacíos para usar durante esta actividad. En cada conjunto, reemplace el marcador de posición X en el nombre del archivo con los números 1 y 2. 2. Cree dos archivos con nombres en el siguiente formato: songX.mp3. Cree dos archivos con nombres en el siguiente formato: snapX.jpg. Cree dos archivos con nombres en el siguiente formato: filmX.avi.
+
+
+
+
+

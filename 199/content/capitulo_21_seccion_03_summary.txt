@@ -1,0 +1,20 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 18. Recuperar el acceso de superusuario
+
+18.3. Resumen 18.3. Resumen En esta lección, aprendió a recuperar o restablecer la contraseña del usuario root. Puede utilizar la imagen boot.iso como medio de rescate para restablecer la contraseña de root. Inicie en modo de rescate y luego
+
+mount the system in read/write mode. At the shell prompt, change the root directory to the /mnt/sysroot directory
+
+y establezca la contraseña del usuario root. También puede recuperar o restablecer la contraseña de root sin utilizar medios de rescate. Pase la opción init=/bin/bash al kernel y luego vuelva a montar el sistema de archivos raíz en modo lectura/escritura para cambiar la contraseña de raíz. Vuelva a etiquetar todos los archivos en el próximo reinicio para establecer el contexto SELinux correcto.
+
+
+
+
+
+Capítulo 19. Gestión de la seguridad de la red Objetivo Controlar las conexiones de red a los servicios mediante el firewall del sistema y los servicios de red que pueden vincularse a puertos particulares mediante SELinux. Secciones Administración de firewalls de servidores (y ejercicio guiado) Etiquetado de puertos SELinux (y ejercicio guiado) Práctica de laboratorio Administración de seguridad de red
+
+
+
+
+

@@ -1,0 +1,116 @@
+# Trabajo de laboratorio: Control de laboratorio y solución de problemas del proceso de arranque
+# Tipo: lab
+# Capítulo: Capítulo 17. Control y solución de problemas del proceso de arranque
+
+17.7. Control de laboratorio y solución de problemas del proceso de arranque 17.7. Control de laboratorio y solución de problemas del proceso de arranque Administre el arranque de un sistema, controle los servicios y repare problemas de tiempo de arranque solucionando los problemas. Resultados Diagnosticar y solucionar problemas de arranque. Establezca el objetivo de unidad systemd predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade boot-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-review
+
+Abra la consola de la máquina del servidor. Reinicie la máquina del servidor. El proceso de arranque no se completa. Solucione el problema de arranque para que el sistema arranque como se esperaba. 1. Cambie el objetivo de unidad systemd predeterminado en la máquina serverb para que el sistema inicie automáticamente una interfaz gráfica cuando se inicie. No hay ninguna interfaz gráfica instalada en la máquina del servidor. Establezca sólo el destino predeterminado y no instale los paquetes. 2. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+
+17.7. Laboratorio de control y resolución de problemas de la solución del proceso de inicio Administre el inicio de un sistema, controle los servicios y repare los problemas de tiempo de inicio solucionando los problemas. Resultados Diagnosticar y solucionar problemas de arranque. Establezca el objetivo de unidad systemd predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-review
+
+Instrucciones Abra la consola de la máquina del servidor. Reinicie la máquina del servidor. El proceso de arranque no se completa. Solucione el problema de arranque para que el sistema arranque como se esperaba. 1. Reinicie la máquina del servidor enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. Observe que un trabajo de inicio no parece completarse y el sistema finalmente abre un shell de emergencia. 1.1. Inicie sesión en el shell de emergencia. Utilice redhat como contraseña. ...salida omitida... Proporcione la contraseña de root para mantenimiento (o presione Control-D para continuar): redhat [root@serverb ~]# 1.2. Compruebe si es necesario montar el sistema de archivos raíz en modo lectura/escritura.
+
+[root@serverb ~]# mount
+/dev/sda3 on / type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+...salida omitida... 1.3. Intente montar todos los sistemas de archivos. Utilice la opción mount comando -a para montar todos los sistemas de archivos enumerados en el archivo /etc/fstab que aún no están montados. El UUID del dispositivo puede ser diferente en su sistema.
+
+[root@serverb ~]# mount -a
+mount: /olddata: can't find UUID=4d5c85a5-8921-4a06-8aff-80567e9689bc.
+
+1.4. Edite el archivo /etc/fstab para eliminar o comentar la línea incorrecta que monta el punto de montaje /olddata. 1.5.
+
+
+
+
+
+17.7. Control de laboratorio y solución de problemas de la evaluación del proceso de arranque Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. ...salida omitida...
+
+# UUID=4d5c85a5-8921-4a06-8aff-80567e9689bc  /olddata  xfs  defaults  0 0
+
+Vuelva a cargar la unidad systemd para registrar la nueva configuración del archivo /etc/fstab.
+
+[root@serverb ~]# systemctl daemon-reload
+
+1.6. Verifique que el archivo /etc/fstab ahora sea correcto intentando montar todas las entradas.
+
+[root@serverb ~]# mount -a
+
+1.7. Reinicie la máquina del servidor y espere a que se complete el inicio. El sistema ahora debe iniciarse como se esperaba.
+
+[root@serverb ~]# systemctl reboot
+
+1.8. Cierre la consola de la máquina del servidor. 1.9. Cambie el objetivo de unidad systemd predeterminado en la máquina serverb para que el sistema inicie automáticamente una interfaz gráfica cuando se inicie. No hay ninguna interfaz gráfica instalada en la máquina del servidor. Establezca sólo el destino predeterminado y no instale los paquetes. 2. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 2.1. Establezca el objetivo gráfico como objetivo predeterminado.
+
+[root@serverb ~]# systemctl set-default graphical.target
+
+Se eliminó /etc/systemd/system/default.target. Enlace simbólico creado /etc/systemd/system/default.target → /usr/lib/systemd/system/graphical.target. 2.2. Verifique que el objetivo gráfico esté configurado.
+
+[root@serverb ~]# systemctl get-default
+
+objetivo.gráfico 2.3. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+3.
+
+
+
+
+
+17.7. Control de laboratorio y solución de problemas del proceso de arranque
+
+student@workstation:~$ lab grade boot-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-review
+
+
+
+
+
+17.8. Resumen 17.8. Resumen En esta lección, aprendió sobre el proceso de inicio de Red Hat Enterprise Linux, cómo controlar qué servicios se inician en el inicio y cómo diagnosticar y reparar problemas del sistema de archivos durante el inicio. El cargador de arranque GRUB2 es el cargador de arranque predeterminado para RHEL 10. Es responsable de cargar el kernel y la imagen initramfs, y de pasar el control al kernel. GRUB2 también proporciona una interfaz de menú para seleccionar qué instancia de inicio iniciar y modificar la configuración de inicio en tiempo de ejecución. Puede utilizar el comando grubby para realizar diversas tareas de administración de inicio, como agregar o eliminar argumentos del kernel, cambiar la entrada predeterminada del menú de inicio y ver información sobre las entradas existentes del menú de inicio. La unidad systemd toma el control total de la última parte de la secuencia de inicio, según el objetivo predeterminado. El comando systemctl get-default proporciona información sobre el objetivo de unidad systemd predeterminado y el subcomando set-default establece un nuevo objetivo predeterminado. Los administradores pueden cambiar a un destino diferente durante el tiempo de ejecución utilizando el
+
+systemctl isolate command.
+
+El proceso de arranque podría verse interrumpido por un problema del sistema de archivos, como un sistema de archivos dañado o una configuración incorrecta del archivo /etc/fstab. El objetivo de emergencia arranca en un entorno mínimo que permite la resolución de problemas. El comando xfs_repair comprueba y repara problemas con los sistemas de archivos XFS. El archivo /etc/fstab puede incluir un dispositivo inexistente, lo que genera un error en el momento del arranque e interrumpe el proceso de arranque.
+
+
+
+
+

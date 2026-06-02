@@ -1,0 +1,138 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar el espacio de intercambio
+# Tipo: guided_exercise
+# Capítulo: Capítulo 15. Gestión del almacenamiento básico
+
+15.4. Ejercicio guiado Administrar el espacio de intercambio 15.4. Ejercicio guiado Administrar el espacio de intercambio Cree y active un espacio de intercambio para complementar la memoria física. Resultados Crear una partición de intercambio. Activa el espacio de intercambio y hazlo disponible de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start storage-swap
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Inspeccione el disco /dev/sdb. El disco ya tiene una tabla de particiones y utiliza el esquema de partición GPT. Además, el disco tiene una partición de 1 GB existente.
+
+[root@servera ~]# parted /dev/sdb print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5369 MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049 kB 1001 MB 1000 MB de datos 2. Cree una partición llamada myswap con un tamaño de 500 MB para usar como intercambio espacio. Configure la partición al tipo de partición de intercambio de Linux. 3. Utilice el comando parted no interactivo para crear la partición myswap. Debido a que el disco utiliza el esquema de partición GPT, debe nombrar la partición. Especifique la posición inicial como 1001 MB, que es el final de la partición existente. El comando parted garantiza que la nueva partición siga inmediatamente a la anterior, sin ningún espacio. Debido a que la partición myswap comienza en la posición de 1001 MB, establezca la posición final en 1501 MB para configurar un tamaño de partición de 500 MB. 3.1.
+
+
+
+
+
+15.4. Ejercicio guiado Administrar el espacio de intercambio
+
+[root@servera ~]# parted /dev/sdb mkpart myswap linux-swap 1001MB 1501MB
+
+Información: Es posible que necesite actualizar /etc/fstab. Imprima las particiones en el disco /dev/sdb. El tamaño de la nueva partición no es exactamente 500 MB. La diferencia de tamaño se debe a que el comando parted debe alinear la partición con el diseño del disco.
+
+[root@servera ~]# parted /dev/sdb print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5369MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049kB 1001MB 1000MB datos 2 1001MB 1501MB 499MB myswap swap 3.2. Utilice el comando udevadm set para que el sistema registre la nueva partición.
+
+[root@servera ~]# udevadm settle
+
+3.3. Inicialice la nueva partición como un espacio de intercambio. El UUID de la partición puede ser diferente en su sistema.
+
+[root@servera ~]# mkswap /dev/sdb2
+
+Configurando swapspace versión 1, tamaño = 476 MiB (499118080 bytes)
+
+no label, UUID=968e395a-8d1a-4ff0-95aa-71e6671e0ecf
+
+4. Verifica que puedes activar y desactivar la partición myswap. 5. Verifique que la creación e inicialización del espacio de intercambio aún no permita su uso.
+
+[root@servera ~]# swapon --show
+
+[root@servera ~]# 5.1. Activa el nuevo espacio de intercambio.
+
+[root@servera ~]# swapon /dev/sdb2
+
+5.2. Verifique que el nuevo espacio de intercambio ya esté disponible.
+
+[root@servera ~]# swapon --show
+
+NOMBRE TIPO TAMAÑO UTILIZADO PRIO /dev/sdb2 partición 476M 0B -2 5.3. Desactiva el espacio de intercambio.
+
+[root@servera ~]# swapoff /dev/sdb2
+
+5.4. Confirma que el espacio de intercambio está desactivado.
+
+[root@servera ~]# swapon --show
+
+[root@servera ~]# 5.5. Habilite el nuevo espacio de intercambio al iniciar el sistema. 6. Utilice la opción --fs del comando lsblk para recuperar el UUID de la partición del dispositivo /dev/sdb2. Anote el UUID de la partición que se utilizará en pasos futuros. El UUID de la partición puede ser diferente en su sistema. 6.1.
+
+
+
+
+
+15.4. Ejercicio guiado Administrar el espacio de intercambio Finalizar En la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[root@servera ~]# lsblk --fs /dev/sdb2
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID ... sdb2 swap 1 968e395a-8d1a-4ff0-95aa-71e6671e0ecf Agregue una entrada al archivo /etc/fstab. En el siguiente comando, reemplace el UUID de la partición con el que recuperó en el paso anterior. ... salida omitida... UUID=968e395a-8d1a-4ff0-95aa-71e6671e0ecf swap valores predeterminados de swap 0 0 6.2. Actualice el demonio systemd para que el sistema registre la configuración del archivo /etc/fstab.
+
+[root@servera ~]# systemctl daemon-reload
+
+6.3. Habilite el espacio de intercambio utilizando la entrada en el archivo /etc/fstab.
+
+[root@servera ~]# swapon -a
+
+6.4. Verifique que el nuevo espacio de intercambio esté habilitado.
+
+[root@servera ~]# swapon --show
+
+NOMBRE TIPO TAMAÑO UTILIZADO PRIO /dev/sdb2 partición 476M 0B -2 6.5. Reinicie la máquina del servidor. Después de que la máquina del servidor se reinicie, inicie sesión en la máquina como usuario estudiante y verifique que el espacio de intercambio esté habilitado. 7. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+7.1. Espere a que la máquina del servidor se reinicie e inicie sesión como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 7.2. Verifique que el espacio de intercambio esté habilitado.
+
+[student@servera ~]$ swapon --show
+
+NOMBRE TIPO TAMAÑO UTILIZADO PRIO /dev/sdb2 partición 476M 0B -2 7.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+8.
+
+
+
+
+
+15.4. Ejercicio guiado Administrar el espacio de intercambio
+
+student@workstation:~$ lab finish storage-swap
+
+
+
+
+
+15.5. Laboratorio Administrar almacenamiento básico 15.5. Práctica de laboratorio Administrar almacenamiento básico Cree particiones, formatee particiones con un sistema de archivos o un espacio de intercambio, monte el sistema de archivos y active el espacio de intercambio cuando se inicie el sistema. Resultados Mostrar y crear particiones. Formatee una partición con un sistema de archivos XFS y monte el sistema de archivos de forma persistente. Crea espacios de intercambio y actívalos de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start storage-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. La máquina del servidor tiene varios discos sin usar. Utilice el comando parted para crear una partición GPT llamada backup con un tamaño de 2 GB en el disco /dev/sdb. Dado que el comando dividido requiere el uso de compensaciones, es aceptable un tamaño entre 1,8 GB y 2,2 GB. Etiquete la partición de respaldo con el tipo de sistema de archivos XFS. 1. Formatee la partición de respaldo con un sistema de archivos XFS y monte persistentemente el sistema de archivos en el directorio /backup usando el UUID de la partición. 2. En el disco /dev/sdb, cree dos particiones denominadas swap1 y swap2, ambas con un tamaño de 512 MB. Para ambas particiones, configure el tipo de sistema de archivos para alojar espacios de intercambio. Se acepta un tamaño entre 460 MB y 564 MB. 3. Inicialice los espacios de intercambio swap1 y swap2 y configúrelos para que se activen en el arranque. Establezca el orden de prioridad para que se prefiera la partición swap2 a la partición swap1. Configure el espacio de intercambio swap1 para usar una prioridad de 10 y el espacio de intercambio swap2 para usar una prioridad de 20. 4. Reinicie la máquina del servidor. Confirme que el sistema monta automáticamente la partición de respaldo en el directorio /backup. Además, confirme que el sistema active los espacios de intercambio swap1 y swap2. 5. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 6.
+
+
+
+
+

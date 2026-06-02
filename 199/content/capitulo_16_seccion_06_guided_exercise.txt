@@ -1,0 +1,91 @@
+# Ejercicio Guiado: Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema
+# Tipo: guided_exercise
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema 13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema Encuentre entradas de registro del diario del sistema utilizando diferentes criterios para revisar el estado del sistema. Resultados Busque en el diario del sistema entradas para registrar eventos según diferentes criterios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-systemd
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Utilice la opción _PID=1 del comando journalctl para mostrar solo los eventos de registro que se originan en el proceso systemd PID 1. Para salir del comando journalctl, presione q. El siguiente resultado puede diferir en su sistema:
+
+[student@servera ~]$ journalctl _PID=1
+
+05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-sysctl.service... 05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-tmpfiles-setup-dev... 05 de junio 18:46:37 localhost systemd[1]: iniciando systemd-sysusers.service... 05 de junio 18:46:38 localhost systemd[1]: finalizado systemd-vconsole-setup... 05 de junio 18:46:38 localhost systemd[1]: dracut-cmdline-ask.service - dracut... 05 de junio 18:46:38 localhost systemd[1]: iniciando dracut-cmdline.service... 05 de junio 18:46:38 localhost systemd[1]: terminado systemd-sysusers.service... líneas 1-5 q 2. Utilice la opción del comando journalctl _UID=81 para mostrar todos los eventos de registro que se originaron en un servicio del sistema con un UID de 81.
+
+[student@servera ~]$ journalctl _UID=81
+
+05 de junio 18:46:47 servera.lab.example.com dbus-broker-launch[907]: Listo 3. Utilice la opción de advertencia -p del comando journalctl para mostrar eventos de registro con la advertencia o una prioridad más alta. 4.
+
+
+
+
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[student@servera ~]$ journalctl -p warning
+
+05 de junio 18:46:37 kernel localhost: acpi PNP0A03:00: no se puede agregar MMCONFIG... 05 de junio 18:46:38 kernel de localhost: device-mapper: core: CONFIG_IMA++... 05 de junio 18:46:38 localhost rpc.idmapd[450]: Configuración del nivel de registro en 0 05 de junio 18:46:38 localhost rpc.idmapd[450]: libnfsidmap: No se puede determinar... _...salida omitida... 05 de junio 18:46:47 servera.lab.example.com (qbalance)[935]: irqbalance.service:... 05 de junio 18:46:47 servera.lab.example.com chronyd[955]: directiva commandkey... 05 de junio 18:46:47 servera.lab.example.com chronyd[955]: generarcommandkey... 05 de junio 18:46:47 servera.lab.example.com chronyd[955]: No se pudo abrir el archivo clave... líneas 1-14 q Muestra todos los eventos de registro registrados en los últimos 10 minutos desde la hora actual.
+
+[student@servera ~]$ journalctl --since "-10min"
+
+05 de junio 19:02:41 servera sshd-session[2261]: Conexión cerrada por 172.25.250.254 puerto 57114 05 de junio 19:02:53 servera NetworkManager[1029]: <info> [1749150173.4104]... 05 de junio 19:02:53 servera NetworkManager[1029]: <info> [1749150173.4118]... ...salida omitida... 05 de junio 19:03:38 servera NetworkManager[1029]: <info> [1749150218.4063]... 05 de junio 19:03:38 servera NetworkManager[1029]: <advertir> [1749150218.4075]... 05 de junio 19:03:38 servera NetworkManager[1029]: <info> [1749150218.4077]... líneas 1-14 q 5. Utilice el comando journalctl --since y _SYSTEMD_UNIT="sshd.service" opciones para mostrar todas las opciones
+
+recorded log events that originated from the sshd service since 09:00:00 this morning.
+
+Nota Las aulas en línea normalmente se ejecutan en la zona horaria UTC. Para obtener resultados que comiencen a las 9:00:00 a. m. en su zona horaria local, ajuste su valor --since por la cantidad de su compensación de UTC. Alternativamente, ignorar
+
+your local time and use a value of 9:00 to locate journal entries that occurred since 9:00:00 in the time
+
+zona (probablemente UTC) que utilizó la máquina del servidor.
+
+[student@servera ~]$ journalctl --since 9:00:00 _SYSTEMD_UNIT="sshd.service"
+
+05 de junio 18:47:54 servera (sshd)[1409]: sshd.service: referenciado pero no configurado... 05 de junio 18:47:54 servera sshd[1409]: Servidor escuchando en 0.0.0.0 puerto 22. 05 de junio 18:47:54 servera sshd[1409]: Servidor escuchando en :: puerto 22. Jun 05 18:48:02 servera sshd-session[1463]: Conexión cerrada por 172.25.... 05 de junio 18:48:14 servera sshd-session[1470]: Conexión cerrada por 172.25.... 05 de junio 18:48:39 servera sshd-session[1492]: Conexión cerrada por 172.25.... 05 de junio 18:48:51 servera sshd-session[1499]: Conexión cerrada por 172.25.... ...salida omitida... líneas 1-14 q 6. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema
+
+student@workstation:~$ lab finish logs-systemd
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente 13.7. Configuración de un diario del sistema persistente Objetivos Configurar un diario del sistema para almacenar de manera persistente los eventos de registro después de un reinicio y rotar los eventos de registro automáticamente. Almacenamiento del diario del sistema De forma predeterminada, Red Hat Enterprise Linux almacena los archivos del diario del sistema en el directorio /run/log/journal y el sistema borra el diario del sistema después de reiniciar. Puede configurar el servicio systemd-journald para mantener los archivos del diario de forma persistente, de modo que pueda revisar los eventos del diario al reiniciar el sistema. Configurar un diario persistente del sistema Configure el servicio systemd-journald de la siguiente manera para conservar los diarios del sistema de manera persistente durante un reinicio: Importante Este servicio funciona porque la configuración predeterminada del parámetro Almacenamiento en la configuración del diario está establecida en Almacenamiento=auto. Este parámetro significa que si el directorio /var/log/journal existe, entonces el almacenamiento persistente se habilita automáticamente, pero si el almacenamiento no se habilita, entonces se usa el almacenamiento volátil en el directorio /run/log/journal. Los archivos de configuración del diario se analizan con más detalle más adelante en esta sección. Revisar las entradas del diario en relación con el tiempo de inicio Aunque los diarios del sistema persisten después de un reinicio, la salida del comando journalctl incluye entradas del inicio actual del sistema así como de los inicios anteriores del sistema. Para limitar la salida a un inicio del sistema específico, use Crear el directorio /var/log/journal.
+
+root@host:~# mkdir /var/log/journal
+
+1. Ejecute el comando journalctl --flush para vaciar el diario actual en el almacenamiento. Si el servicio systemd-journald vacía con éxito el diario actual, entonces el servicio crea subdirectorios en el directorio /var/log/journal.
+
+root@host:~# journalctl --flush
+
+2. El subdirectorio del directorio /var/log/journal tiene caracteres hexadecimales en su nombre largo y contiene archivos con la extensión .journal.
+
+root@host:~# ls /var/log/journal
+
+4ec03abd2f7b40118b1b357f479b3112 3. Los archivos binarios .journal almacenan entradas de diario estructuradas e indexadas.
+
+root@host:~# ls /var/log/journal/4ec03abd2f7b40118b1b357f479b3112
+
+sistema.diario usuario-1000.diario 4.
+
+
+
+
+

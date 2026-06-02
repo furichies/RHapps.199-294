@@ -1,0 +1,444 @@
+# Ejercicio Guiado: Obtención de roles y módulos de las colecciones de contenido
+# Tipo: guided_exercise
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Obtención de roles y módulos de las
+colecciones de contenido
+Instalar una Ansible Content Collection y usar un rol o módulo de esa colección de contenido
+en un playbook.
+Resultados
+• Use el comando ansible-galaxy para instalar un Ansible Content Collection.
+• Use el archivo requirements.yml para instalar varias Ansible Content Collections.
+• Ejecute playbooks que usen roles y módulos de Ansible Content Collections.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-collections
+Instrucciones
+ 1.
+Instale e inspeccione la colección gls.utils.
+1.1.
+Cambie al directorio /home/student/role-collections.
+[student@workstation ~]$ cd ~/role-collections
+[student@workstation role-collections]$
+1.2.
+Use el archivo de almacenamiento gls-utils-0.0.1.tar.gz en su directorio del
+proyecto para instalar la colección gls.utils en el directorio collections.
+[student@workstation role-collections]$ ansible-galaxy collection \
+> install gls-utils-0.0.1.tar.gz -p collections
+...output omitted...
+gls.utils:0.0.1 was installed successfully
+RH294-RHEL9.0-es-3-20240620
+323
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Cuando se usa para colecciones, el comando ansible-galaxy usa los directorios
+definidos por la variable collections_paths. Puede definir un conjunto diferente
+de directorios mediante la configuración de la variable collections_paths en
+la sección [defaults] de su archivo de configuración de Ansible, o puede usar la
+opción -p para especificar un directorio desde la línea de comandos.
+De manera predeterminada, el comando ansible-navigator busca colecciones
+instaladas en el directorio del proyecto collections y el directorio /usr/share/
+ansible/collections en el entorno de ejecución de la automatización.
+1.3.
+Use el comando ansible-navigator collections para iniciar la interfaz de
+usuario interactiva basada en texto (TUI) y enumere las colecciones instaladas.
+[student@workstation role-collections]$ ansible-navigator collections
+1.4.
+Identifique la colección gls.utils en la lista de colecciones instaladas.
+   Name                 Version Shadowed Type       Path
+ 0│amazon.aws           3.2.0   False    contained  /usr/share/ansible/
+collections/ansible_collections/amazon/aws
+ 1│ansible.builtin      2.13.3  False    contained  /usr/lib/python3.9/site-
+packages/ansible
+ ...output omitted...
+17│gls.utils            0.0.1   False    bind_mount /home/student/role-
+collections/collections/ansible_collections/gls/utils
+...output omitted...
+1.5.
+Escriba :17 y, luego, presione Enter. Observe que la colección gls.utils
+proporciona dos roles: backup y restore.
+  Gls.utils Type   Added      Deprecated  Description
+0│backup    role   Unknown    Unknown     Curriculum Developer
+1│newping   module historical False       Try to connect to host, verify a usable
+ python and return C(pong) on success
+2│restore   role   Unknown    Unknown     Curriculum Developer
+1.6.
+Presione 0 para leer la documentación del rol gls.utils.backup y, luego,
+identifique las variables aceptadas por el rol.
+Image: gls.utils.backup
+Description: Curriculum Developer
+...output omitted...
+24│  backup
+25│  ======
+26│
+27│  This role backups up the files and directories provided using the
+ `backup_files` variable.
+28│  The backup is identified with a given name (`backup_id`) and can be restored
+ using the `gls.utils.restore` role.
+324
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+29│
+30│  If a backup with the same name already exists, then the role immediately
+ returns.
+31│
+...output omitted...
+38│
+39│  Role Variables
+40│  --------------
+41│
+42│  The role accepts the following variables:
+43│
+44│  * `backup_id`: The name (or ID) for the backup. This can be any string you
+ want (without spaces). This name is used to identify the backup when you call the
+ `restore` role.
+45│    By default, `backup_id` is set to `test`.
+46│  * `backup_files`: The list of files and directories to backup. You can use
+ globs (`*`) in those path names. Files and directories that do not exist on the
+ system are silently skipped.
+47│    `/etc` by default.
+...output omitted...
+1.7.
+Presione Esc para regresar a la pantalla anterior. Observe que la colección
+gls.utils proporciona el módulo newping.
+  Gls.utils Type   Added      Deprecated  Description
+0│backup    role   Unknown    Unknown     Curriculum Developer
+1│newping   module historical False       Try to connect to host, verify a usable
+ python and return C(pong) on success
+2│restore   role   Unknown    Unknown     Curriculum Developer
+1.8.
+Presione 1 para leer la documentación del módulo newping.
+Image: gls.utils.myping
+...output omitted...
+21│doc:
+22│  author:
+23│  - Ansible Core Team
+24│  description:
+25│  - A trivial test module, this module always returns C(pong) on successful
+ contact.
+26│    It does not make sense in playbooks, but it is useful from C(/usr/bin/
+ansible)
+27│    to verify the ability to login and that a usable Python is configured.
+28│  - This is NOT ICMP ping, this is just a trivial test module that requires
+ Python
+29│    on the remote-node.
+30│  - For Windows targets, use the M(ansible.windows.win_ping) module instead.
+31│  - For Network targets, use the M(ansible.netcommon.net_ping) module instead.
+32│  module: newping
+33│  options:
+34│    data:
+35│  default: pong
+36│  description:
+37│  - Data to return for the C(ping) return value.
+RH294-RHEL9.0-es-3-20240620
+325
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+38│  - If this parameter is set to C(crash), the module will cause an exception.
+39│  type: str
+...output omitted...
+nota
+También puede ejecutar ansible-navigator doc gls.utils.newping
+desde la línea de comandos para mostrar la documentación del módulo.
+1.9.
+Escriba :q y, luego, presione Enter para salir.
+ 2.
+Complete y luego ejecute el playbook /home/student/role-collections/bck.yml.
+El playbook use el módulo gls.utils.newping y el rol gls.utils.backup.
+2.1.
+Edite el playbook bck.yml. En la primera tarea, use el módulo
+gls.utils.newping.
+...output omitted...
+  tasks:
+    - name: Ensure the machine is up
+      gls.utils.newping:
+        data: pong
+...output omitted...
+No cierre el archivo aún.
+2.2.
+En la segunda tarea, incluya el rol gls.utils.backup. Al finalizar la edición del
+archivo, guárdelo y ciérrelo.
+...output omitted...
+    - name: Ensure configuration files are saved
+      ansible.builtin.include_role:
+        name: gls.utils.backup
+      vars:
+        backup_id: backup_etc
+        backup_files:
+          - /etc/sysconfig
+          - /etc/yum.repos.d
+El archivo resultante debe incluir el siguiente contenido:
+---
+- name: Backup the system configuration
+  hosts: servera.lab.example.com
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Ensure the machine is up
+      gls.utils.newping:
+        data: pong
+    - name: Ensure configuration files are saved
+      ansible.builtin.include_role:
+326
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        name: gls.utils.backup
+      vars:
+        backup_id: backup_etc
+        backup_files:
+          - /etc/sysconfig
+          - /etc/yum.repos.d
+2.3.
+Verifique la sintaxis del playbook bck.yml. Si recibe algún error, compare su
+playbook con el ejemplo anterior.
+[student@workstation role-collections]$ ansible-navigator run \
+> -m stdout bck.yml --syntax-check
+playbook: /home/student/role-collections/bck.yml
+2.4.
+Ejecute el playbook.
+[student@workstation role-collections]$ ansible-navigator run \
+> -m stdout bck.yml
+PLAY [Backup the system configuration] *****************************************
+TASK [Ensure the machine is up] ************************************************
+ok: [servera.lab.example.com]
+TASK [Ensure configuration files are saved] ************************************
+TASK [gls.utils.backup : Ensure the backup directory exists] *******************
+changed: [servera.lab.example.com]
+TASK [gls.utils.backup : Ensure the backup exists] *****************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 3.
+En la segunda parte de este ejercicio, instale las Ansible Content Collections especificadas
+por el archivo requirements.yml del proyecto de Ansible.
+Para probar su trabajo, ejecute el playbook new_system.yml. Ese playbook usa los roles
+redhat.insights.insights_client y redhat.rhel_system_roles.selinux
+para configurar Red Hat Insights y SELinux en la máquina servera.lab.example.com.
+3.1.
+Revise el archivo requirements.yml. El archivo enumera tres Ansible Content
+Collections para instalar desde archivos de almacenamiento tar en el directorio de
+su proyecto de Ansible. Actualmente, la colección redhat.insights requiere el
+módulo community.general.ini_file no soportado.
+El script lab start descarga estos archivos de almacenamiento tar en el
+directorio de su proyecto desde el centro de automatización de Red Hat en https://
+console.redhat.com/ansible/automation-hub.
+RH294-RHEL9.0-es-3-20240620
+327
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+collections:
+  - name: /home/student/role-collections/redhat-insights-1.0.7.tar.gz
+  - name: /home/student/role-collections/redhat-rhel_system_roles-1.19.3.tar.gz
+  - name: /home/student/role-collections/community-general-5.5.0.tar.gz
+3.2.
+Use el comando ansible-galaxy con el archivo requirements.yml para instalar
+las colecciones.
+[student@workstation role-collections]$ ansible-galaxy collection install \
+> -r requirements.yml -p collections
+...output omitted...
+redhat.insights:1.0.7 was installed successfully
+...output omitted...
+redhat.rhel_system_roles:1.19.3 was installed successfully
+...output omitted...
+community.general:5.5.0 was installed successfully
+3.3.
+Use el comando ansible-galaxy collection list para verificar que las
+colecciones estén instaladas.
+[student@workstation role-collections]$ ansible-galaxy collection list \
+> -p collections
+...output omitted...
+# /home/student/role-collections/collections/ansible_collections
+Collection               Version
+------------------------ -------
+community.general        5.5.0
+gls.utils                0.0.1
+redhat.insights          1.0.7
+redhat.rhel_system_roles 1.19.3
+Puede haber otras colecciones instaladas en /usr/share/ansible/
+collections/ansible_collections.
+3.4.
+Use el comando ansible-navigator collections para iniciar la TUI interactiva
+y enumere las colecciones instaladas.
+[student@workstation role-collections]$ ansible-navigator collections
+3.5.
+Identifique la colección redhat.insights en la lista de colecciones instaladas.
+328
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-collections]$ ansible-navigator collections
+   Name                 Version Shadowed Type       Path
+ 0│amazon.aws           3.2.0   False    contained  /usr/share/ansible/
+collections/ansible_collections/amazon/aws
+ 1│ansible.builtin      2.13.3  False    contained  /usr/lib/python3.9/site-
+packages/ansible
+ ...output omitted...
+23│redhat.insights      1.0.7   False    bind_mount /home/student/role-
+collections/collections/ansible_collections/redhat/insights
+...output omitted...
+3.6.
+Escriba :23 y, luego, presione Enter. Observe que la colección redhat.insights
+proporciona el rol insights_client.
+  Redhat.insights   Type      Added   Deprecated Description
+0│compliance        role      Unknown Unknown    Install and configure Red Hat
+ Insights Client
+1│insights          inventory None    False      insights inventory source
+2│insights_client   role      Unknown Unknown    Install and configure Red Hat
+ Insights Client
+3│insights_config   module    None    False      This module handles initial
+ configuration of the insights client on install
+4│insights_register module    None    False      This module registers the
+ insights client
+3.7.
+Presione 2 para revisar la documentación del rol insights_client.
+Image: redhat.insights.insights_client
+Description: Install and configure Red Hat Insights Client
+  0│---
+  1│argument_specs: {}
+  2│argument_specs_path: ''
+  3│defaults: {}
+  4│defaults_path: ''
+  5│full_name: redhat.insights.insights_client
+  6│info:
+  7│  galaxy_info:
+  8│    author: Red Hat, Inc
+  9│    categories:
+ 10│    - packaging
+ 11│    - system
+ 12│    company: Red Hat, Inc.
+ 13│    dependencies: []
+ 14│    description: Install and configure Red Hat Insights Client
+...output omitted...
+Escriba :q y, luego, presione Enter para salir de la TUI ansible-navigator.
+3.8.
+Revise el playbook new_system.yml. Este playbook usa roles de las colecciones
+redhat.insights y redhat.rhel_system_roles.
+RH294-RHEL9.0-es-3-20240620
+329
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+- name: Configure the system
+  hosts: servera.lab.example.com
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ensure the system is registered with Insights
+      ansible.builtin.include_role:
+        name: redhat.insights.insights_client
+      vars:
+        auto_config: false
+        insights_proxy: http://proxy.example.com:8080
+    - name: Ensure SELinux mode is Enforcing
+      ansible.builtin.include_role:
+        name: redhat.rhel_system_roles.selinux
+      vars:
+        selinux_state: enforcing
+3.9.
+Ejecute el playbook new_system.yml en modo de comprobación para confirmar
+que instaló correctamente las colecciones requeridas.
+[student@workstation role-collections]$ ansible-navigator run \
+> -m stdout new_system.yml --check
+...output omitted...
+TASK [redhat.insights.insights_client : Set Insights Configuration Values] ***
+changed: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Register Insights Client] ************
+ok: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Change permissions of Insights Config
+ directory so that Insights System ID can be read] ***************************
+ok: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Change permissions of machine_id file so
+ that Insights System ID can be read] ****************************************
+ok: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Create directory for ansible custom facts]
+changed: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Install custom insights fact] *******
+changed: [servera.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.selinux : Install SELinux python3 tools] *****
+ok: [servera.lab.example.com]
+330
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [redhat.rhel_system_roles.selinux : refresh facts] *********************
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.selinux : Install SELinux tool semanage] *****
+ok: [servera.lab.example.com]
+...output omitted...
+Importante
+Debido a que los sistemas de aula no están registrados con Red Hat Subscription
+Management y es posible que no tengan acceso a Internet, el playbook
+new_system.yml no se puede completar correctamente. No obstante, para
+confirmar que instaló correctamente las colecciones requeridas, aún podrá ejecutar
+el playbook en modo de comprobación.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-collections
+RH294-RHEL9.0-es-3-20240620
+331
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Reutilización de contenido con roles de
+sistema
+Objetivos
+• Escribir playbooks que aprovechen los roles del sistema de Red Hat Enterprise Linux para
+realizar operaciones estándares.
+Roles de sistema
+Roles del sistema son un conjunto de roles de Ansible que puede usar para configurar y gestionar
+diversos componentes, subsistemas y paquetes de software incluidos en Red Hat Enterprise
+Linux. Los roles del sistema proporcionan automatización para muchas tareas comunes de
+configuración del sistema, incluida la sincronización de la hora, las redes, el firewall, el ajuste y el
+registro.
+Estos roles están destinados a proporcionar una API de automatización que sea uniforme en
+varias versiones principales y secundarias de Red Hat Enterprise Linux. El artículo de la base
+de conocimiento en https://access.redhat.com/articles/3050101 documenta las
+versiones de Red Hat Enterprise Linux en sus hosts gestionados que admiten roles específicos.
+Gestión simplificada de la configuración
+Los roles del sistema pueden ayudarlo a simplificar la automatización en varias versiones de
+Red Hat Enterprise Linux. Por ejemplo, el servicio de sincronización de hora recomendado es
+diferente en diferentes versiones de Red Hat Enterprise Linux.
+• Se prefiere el servicio chronyd en RHEL 9.
+• Se prefiere el servicio ntpd en RHEL 6.
+En un entorno con una combinación de versiones de Red Hat Enterprise Linux, debe gestionar los
+archivos de configuración para ambos servicios.
+Puede usar un playbook de Ansible que ejecute el rol redhat.rhel_system_roles.timesync
+para configurar la sincronización de la hora para los hosts gestionados que ejecutan cualquiera de
+las versiones de Red Hat Enterprise Linux.
+Con los roles del sistema, ya no necesita mantener los archivos de configuración para ambos
+servicios.
+Soporte para roles de sistema
+Los roles del sistema se proporcionan como Ansible Content Collections
+redhat.rhel_system_roles certificadas por Red Hat a través del centro de automatización
+para los clientes de Red Hat Ansible Automation Platform, como parte de su suscripción.
+Además, los roles se proporcionan como un paquete RPM (rhel-system-roles) con Red Hat
+Enterprise Linux 9 para su uso con la versión de Ansible Core proporcionada por ese sistema
+operativo. Estos roles del sistema tienen los mismos beneficios de soporte de ciclo de vida que la
+suscripción a Red Hat Enterprise Linux.
+La mayoría de los roles de sistema son "totalmente soportados" y tienen interfaces estables.
+Para cualquier rol del sistema con "soporte completo", Red Hat se esfuerza por garantizar que
+332
+RH294-RHEL9.0-es-3-20240620
+
+

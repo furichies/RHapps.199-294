@@ -1,0 +1,154 @@
+# 7.3. Administrar aplicaciones desde Flatpak
+# Tipo: theory
+# Capítulo: Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak
+
+7.3. Gestionando Aplicaciones desde Flatpak 7.3. Administrar aplicaciones desde Flatpak Objetivos Utilice Flatpak para enumerar, buscar, instalar, actualizar, eliminar y obtener información de metadatos de aplicaciones. Administrar aplicaciones con la CLI de Flatpak Al utilizar los comandos de la CLI de Flatpak, puede enumerar, buscar, instalar, actualizar, eliminar y obtener información de metadatos para las aplicaciones de Flatpak y sus dependencias de tiempo de ejecución. Puede utilizar contenido del repositorio de Red Hat y de repositorios remotos de terceros. Red Hat no admite aplicaciones ni tiempos de ejecución de repositorios remotos de terceros. Identificadores de Flatpak Las aplicaciones y los tiempos de ejecución de Flatpak utilizan identificadores únicos que siguen el formato dominio.organización.Aplicación. Este identificador de tres partes permite a una empresa, desarrollador u organización publicar muchas aplicaciones con un prefijo compartido, como com.company. El último segmento (.App) identifica el nombre de la aplicación. Puedes usar el completo o el corto.
+
+object identifier for Flatpak operations: com.company.App or App.
+
+En algunos escenarios, debe especificar la arquitectura o versión de la CPU, como estable o beta. Puede solicitar estas especificaciones adicionales utilizando el identificador triple de un objeto. El formato de un triple identificador es ID/arquitectura/rama, como por ejemplo org.organization.App/x86_64/stable. En Flatpak, rama se refiere a diferentes versiones del mismo objeto. Puedes dejar en blanco algunas partes del identificador triple para especificar parte del objeto. Por ejemplo, org.organization.App/x86_64// especifica solo la arquitectura y org.organization.App//stable especifica solo la rama. Consulta de repositorios remotos para objetos disponibles El comando de búsqueda flatpak enumera las aplicaciones y tiempos de ejecución coincidentes que están disponibles en todos los repositorios remotos que están habilitados en el sistema. Este comando utiliza metadatos de appstream almacenados en caché que ya se descargaron del repositorio remoto. Si los metadatos almacenados en caché tienen más de un día de antigüedad, los metadatos se actualizan automáticamente cuando se ejecuta el comando. El comando utiliza una palabra clave para encontrar una coincidencia en cualquiera de los atributos de metadatos que define el archivo XML de la aplicación: Nombre de la aplicación o tiempo de ejecución Descripción Identificador de la aplicación Palabra clave que define el desarrollador La palabra clave no distingue entre mayúsculas y minúsculas y devuelve información para las aplicaciones y tiempos de ejecución que coinciden con la consulta. El siguiente ejemplo muestra una búsqueda que utiliza la palabra clave Thunderbird para encontrar aplicaciones en Flatpak Remote.
+
+repositories:
+
+
+
+
+
+7.3. Administrar aplicaciones desde Flatpak
+
+user@host:~$ flatpak -v search thunderbird 
+
+F: No hay directorio de instalaciones en /etc/flatpak/installations.d. Saltando F: Abrir la instalación de Flatpak del sistema en la ruta /var/lib/flatpak F: Abrir la instalación de Flatpak del usuario en la ruta /home/user/.local/share/flatpak F: fedora:x86_64 la edad de appstream 491 es menor que ttl 86400 F: rhel:x86_64 la edad de appstream 1136 es menor que ttl 86400 F: Abrir la instalación de flatpak del sistema en la ruta /var/lib/flatpak F: Abrir la instalación de Flatpak del usuario en la ruta /home/user/.local/share/flatpak Thunderbird Thunderbird es un cliente gratuito y de código abierto de correo electrónico, suministro de noticias, chat y calendario net.thunderbird.Thunderbird fedora estable Thunderbird Thunderbird es un cliente gratuito y de código abierto de correo electrónico, suministro de noticias, chat y calendario org.mozilla.Thunderbird fedora estable La búsqueda Flatpak se ejecuta con la opción -v para una salida detallada. Esta opción se recomienda para solucionar problemas. Flatpak primero verifica si los metadatos del flujo de aplicaciones almacenado en caché están actualizados, tanto en la ruta de instalación del sistema como del usuario. Después de la verificación, Flatpak detecta que los metadatos almacenados en caché para el repositorio remoto rhel son menores que los metadatos ascendentes. La antigüedad (1136) de los datos almacenados en caché es inferior a 86400 ttl (tiempo de vida), por lo que se considera que el caché está actualizado y Flatpak no descargará nuevos metadatos del repositorio. Esto hace que la búsqueda sea más rápida. Flatpak comienza su búsqueda buscando en el directorio predeterminado /var/lib/flatpak donde están instaladas todas las aplicaciones y tiempos de ejecución para todos los usuarios. Flatpak verifica el directorio de instalación local del usuario en busca de aplicaciones y tiempos de ejecución en /home/user/.local/share/. En esta ruta /home/user/.local/share/, Flatpak instala software específicamente para el usuario actual. Una vez verificados o actualizados todos los repositorios remotos, Flatpak muestra la salida coincidente en columnas categorizadas. Instalación de objetos Flatpak desde repositorios remotos El comando de instalación de Flatpak instala los objetos solicitados, incluidas todas las dependencias.
+
+
+
+
+
+7.3. Administrar aplicaciones desde Flatpak
+
+user@host:~$ flatpak install thunderbird
+
+Buscando coincidencias... Se encontraron controles remotos con referencias similares a 'thunderbird':
+
+   1) 'fedora' (system)
+   2) 'rhel' (system)
+
+¿Cuál quieres usar (0 para cancelar)? [0-2]: 2 Se encontró la referencia 'app/org.mozilla.Thunderbird/x86_64/stable' en el 'rhel' remoto (sistema). ¿Usar esta referencia? [Y/n]: y Tiempo de ejecución requerido para org.mozilla.Thunderbird/x86_64/stable (runtime/com.redhat.Platform/x86_64/el10) encontrado en rhel remoto ¿Quieres instalarlo? [T/n]: sí
+
+org.mozilla.Thunderbird permissions: 
+    ipc       network       pcsc                  pulseaudio
+    x11       dri           file access [1]       dbus access [2]
+    [1] home:ro, xdg-download, xdg-run/dconf,
+        ~/.cache/thunderbird:create, ~/.config/dconf:ro,
+        ~/.mozilla:create, ~/.thunderbird:create
+    [2] ca.desrt.dconf, org.a11y., org.freedesktop.Notifications
+        ID                      Branch Op Remote Download 
+
+1. com.redhat.Platform el10 i rhel < 395,1 MB 2. org.mozilla.Thunderbird estable i rhel < 147,7 MB ¿Continuar con estos cambios en la instalación del sistema? [S/n]: *y Instalando 1/2… ████████████████████ 100% 21,5 MB/s 00:00 Instalando 2/2… ████████████████████ 100% 22,1 MB/s 00:00 Instalación completa. Si no especifica el repositorio remoto para buscar y hay más de un repositorio configurado para el usuario que está ejecutando el comando, Flatpak busca todos los repositorios remotos con referencias que coincidan con el identificador en la operación. El identificador puede estar completo o abreviado (por ejemplo, org.mozilla.thunderbird o thunderbird). Flatpak resuelve automáticamente los tiempos de ejecución necesarios para la aplicación y solicita permiso para instalarla. Si otra aplicación requiere el mismo tiempo de ejecución en el futuro, utiliza el objeto descargado previamente, lo que evita la duplicación y ahorra ancho de banda. Flatpak mantiene todas las aplicaciones en entornos aislados, que requieren permisos para acceder a los recursos en el sistema host. Los recursos a los que se debe acceder con permisos específicos se detallan en este punto del proceso de instalación. Flatpak resume la operación y enumera los objetos que se instalarán, con información sobre el identificador completo, la rama, el repositorio remoto y el tamaño de descarga estimado. Después de este paso, el proceso continúa sin interrupción hasta su finalización. La siguiente tabla muestra algunas opciones útiles para el comando de instalación de Flatpak: --runtime Instala solo tiempos de ejecución --app Instala solo aplicaciones --or-update Realiza una actualización si la aplicación o el tiempo de ejecución ya está instalado Opción Descripción
+
+
+
+
+
+7.3. Administrar aplicaciones desde Flatpak --system Instala la aplicación o el tiempo de ejecución en la instalación predeterminada para todo el sistema -u, --user Instala la aplicación o el tiempo de ejecución solo para el usuario actual -y, --assumeyes Responde automáticamente sí a todas las preguntas --no-deploy Descarga al caché local sin instalar --no-pull Se instala solo desde el caché local --noninteractive Produce un resultado mínimo y asume que sí para todas las preguntas Consulta de objetos Flatpak localmente Puede enumerar todos los objetos Flatpak instalados mediante usando el comando de lista flatpak.
+
+user@host:~$ flatpak list
+
+Nombre ID de aplicación Versión Rama Instalación Plataforma Red Hat com.redhat.Platform 10 sistema el10 Thunderbird org.mozilla.Thunderbird sistema estable El comando flatpak info muestra información sobre el objeto instalado según el identificador del objeto.
+
+user@host:~$ flatpak info org.mozilla.Thunderbird
+          ID: org.mozilla.Thunderbird
+         Ref: app/org.mozilla.Thunderbird/x86_64/stable
+        Arch: x86_64
+      Branch: stable
+      Origin: rhel
+  Collection:
+
+Instalación: sistema
+
+   Installed: 324.3 MB
+     Runtime: com.redhat.Platform/x86_64/el10
+         Sdk: com.redhat.Sdk/x86_64/el10
+      Commit: 3dd6...1ae3
+     Subject: Export org.mozilla.Thunderbird
+        Date: 2025-05-27 09:39:04 +0000
+      Alt-id: 3a6f...8b6f
+
+Instalación de objetos Flatpak desde ramas específicas Es posible que haya varias versiones de un objeto Flatpak disponibles en un repositorio remoto. Esas versiones se identifican como ramas. Las ramas se pueden designar por números de versión, como 1.1 y 1.2, o por términos que representan el ciclo de vida de la aplicación, como estable, beta o nocturno. Descripción de la opción
+
+
+
+
+
+7.3. Administrar aplicaciones desde Flatpak Utilice el comando flatpak remote-info para verificar qué ramas están disponibles para un objeto específico. Si solo hay una rama disponible para el identificador solicitado, el comando muestra el resultado inmediatamente. Si existe más de una rama para el identificador solicitado, el comando devuelve un error y solicita más información.
+
+user@host:~$ flatpak remote-info rhel com.redhat.Platform
+error: Multiple branches available for com.redhat.Platform, you must specify one of: 
+
+com.redhat.Platform/x86_64/el10, com.redhat.Platform/x86_64/el9, com.redhat.Platform/x86_64/el8 Si sabe a qué rama apuntar, puede especificar la versión del objeto utilizando su identificador triple.
+
+user@host:~$ flatpak install com.redhat.Platform/x86_64/el8
+
+...salida omitida... Actualización de objetos Flatpak Utilice el comando de actualización de Flatpak para actualizar todos sus objetos instalados a la última versión en sus respectivas ramas. Este comando actualiza todos los objetos. Para actualizar un solo objeto, agregue el identificador del objeto como argumento.
+
+user@host:~$ flatpak update com.redhat.Platform
+
+Buscando actualizaciones… Nada que hacer. Nota El comando de actualización de flatpak busca actualizaciones dentro de la misma rama desde la que se instaló inicialmente la aplicación. Si existe una versión posterior en una rama diferente, Flatpak no reconoce la actualización. Este
+
+behavior is similar to branches in a Git repository: checking out a branch means that you work only on that
+
+rama. Para evitar la actualización no deseada de ciertos objetos, use el comando de máscara Flatpak. Para enmascarar un solo objeto, agregue el identificador del objeto como argumento.
+
+user@host:~$ flatpak mask com.redhat.Platform
+
+Para desenmascarar un objeto, use el comando flatpak mask --remove con el identificador del objeto.
+
+user@host:~$ flatpak mask --remove com.redhat.Platform
+
+Desinstalación de objetos Flatpak El comando de desinstalación de Flatpak elimina los objetos Flatpak del sistema. Si tiene la intención de desinstalar un objeto de tiempo de ejecución, debe asegurarse de que ninguna aplicación instalada use el objeto como una dependencia, o debe usar la opción --force-remove para ignorar la resolución de dependencia. Cuando desinstala una aplicación, el directorio de datos de la aplicación permanece en el sistema, en el directorio ~/.var/app. Para evitar consumir espacio de almacenamiento con datos obsoletos, puede utilizar la opción --delete-data.
+
+user@host:~$ flatpak uninstall --delete-data thunderbird
+
+Se encontró la referencia instalada 'app/org.mozilla.Thunderbird/x86_64/stable' (sistema). ¿Es esto correcto? [T/n]: sí
+
+        ID                             Branch        Op
+
+1. [-] org.mozilla.Thunderbird stable r Desinstalando… ¿Eliminar datos de org.mozilla.Thunderbird? [t/n]: sí
+
+
+
+
+
+7.3. Administrar aplicaciones desde Flatpak Administrar objetos Flatpak con la herramienta gráfica del software GNOME Puede buscar, instalar, desinstalar o actualizar aplicaciones Flatpak utilizando la herramienta gráfica del software GNOME. Desde el entorno de escritorio gráfico GNOME, haga clic en Actividades y luego seleccione Software en el panel o use el botón Mostrar aplicaciones para encontrar la herramienta. También puede utilizar el comando gnome-software para abrir la herramienta de software GNOME. El software GNOME integra paquetes DNF y Flatpak a la perfección independientemente de sus diferentes repositorios de origen. Puede explorar las aplicaciones recomendadas por categoría, eliminar componentes instalados o buscar actualizaciones. Puede buscar aplicaciones específicas utilizando la barra de búsqueda en la esquina superior izquierda. En la barra de búsqueda, escriba la palabra clave que desea buscar y la herramienta de software GNOME devolverá todos los resultados que coincidan, incluidos los paquetes DNF y los objetos Flatpak. Después de seleccionar el objeto deseado, la herramienta de software GNOME muestra los detalles del componente Flatpak. Figura 14. Detalles del objeto Flatpak Para instalar el objeto, seleccione la rama deseada (si hay más de una rama disponible para el objeto) y haga clic en Instalar. La herramienta de software GNOME resuelve todas las dependencias automáticamente y no busca más confirmación. Para desinstalar un objeto Flatpak, haga clic en Desinstalar. Referencias
+
+flatpak-remote-ls(1), flatpak-search(1), flatpak-install(1),flatpak-list(1), flatpak-
+
+páginas man info(1), flatpak-remote-info(1), flatpak-update(1), flatpak-mask(1) y flatpak-uninstall(1) Cómo usar Flatpak
+
+
+
+
+
+7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak 7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak Enumere, busque, instale, elimine y obtenga información de metadatos de aplicaciones mediante Flatpak. Resultados Utilice comandos Flatpak para administrar aplicaciones y tiempos de ejecución. Instalar aplicaciones y revisar su información. Desinstale las aplicaciones Flatpak y sus dependencias. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start flatpak-application
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, verifique que los repositorios remotos rhel y myrepo Flatpak estén configurados.
+
+student@workstation:~$ flatpak remotes
+
+Nombre Opciones rhel system,oci,no-gpg-verify myrepo user,no-gpg-verify 1. Verifique que no haya aplicaciones Flatpak presentes en el sistema.
+
+student@workstation:~$ flatpak list --app
+
+2. Identifique e instale codium y Obsidian Flatpaks en modo de instalación de usuario desde el repositorio remoto de myrepo. 3. Enumere los objetos Flatpak disponibles desde el repositorio remoto de myrepo. Tenga en cuenta los identificadores y ramas de la aplicación.
+
+student@workstation:~$ flatpak remote-ls myrepo
+
+Nombre ID de aplicación Versión Rama codium com.vscodium.codium estable Obsidian md.obsidian.Obsidian plataforma freedesktop estable org.freedesktop.Platform 24.08 plataforma de desarrollo freedesktop org.freedesktop.Sdk 24.08 3.1. Instale las últimas versiones disponibles de los paquetes codium y Obsidian utilizando los triples de identificadores que utiliza la rama estable. 3.2.
+
+
+
+
+

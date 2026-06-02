@@ -1,0 +1,659 @@
+# Trabajo de laboratorio: Administración de variables y datos
+# Tipo: lab
+# Capítulo: Capítulo 3. Administración de variables y datos
+
+capítulo 3 |  Administración de variables y datos
+Trabajo de laboratorio
+Administración de variables y datos
+Escribir y ejecutar un playbook de Ansible que use variables, secretos y datos.
+Resultados
+• Debe ser capaz de definir variables y usar datos en un playbook, así como usar variables
+definidas en un archivo cifrado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+El host gestionado serverb.lab.example.com está definido en este inventario como
+miembro del grupo de hosts webserver. Un desarrollador le ha pedido que escriba un
+playbook de Ansible para automatizar la configuración de un entorno de servidor web
+en serverb.lab.example.com, que controla el acceso de los usuarios a su sitio web
+mediante autenticación básica.
+El subdirectorio files contiene los siguientes archivos:
+• Un archivo de configuración httpd.conf para el servicio web Apache para autenticación
+básica
+• Un archivo .htaccess que se usa para controlar el acceso al directorio raíz de
+documentos del servidor web.
+• Un archivo htpasswd que contiene credenciales para los usuarios permitidos
+[student@workstation ~]$ lab start data-review
+Instrucciones
+1.
+En el directorio de trabajo, cree el playbook playbook.yml. En el playbook, comience a
+crear un play para instalar y configurar los hosts del servidor web con un servidor HTTP
+de Apache que tenga habilitada la autenticación básica. Configure el grupo de hosts
+webserver para que contenga los hosts gestionados para el play.
+Defina las siguientes variables de play:
+RH294-RHEL9.0-es-3-20240620
+125
+
+
+capítulo 3 |  Administración de variables y datos
+Variable
+Valores
+firewall_pkg
+firewalld
+firewall_svc
+firewalld
+web_pkg
+httpd
+web_svc
+httpd
+ssl_pkg
+mod_ssl
+httpdconf_src
+files/httpd.conf
+httpdconf_dest
+/etc/httpd/conf/httpd.conf
+htaccess_src
+files/.htaccess
+secrets_dir
+/etc/httpd/secrets
+secrets_src
+files/htpasswd
+secrets_dest
+"{{ secrets_dir }}/htpasswd"
+web_root
+/var/www/html
+2.
+Agregue una sección tasks al play. Escriba una tarea que garantice que esté instalada la
+última versión de los paquetes necesarios. Estos paquetes están definidos por las variables
+firewall_pkg, web_pkg y ssl_pkg.
+3.
+Agregue una segunda tarea al play que garantice que el archivo especificado por la variable
+httpdconf_src ha sido copiado (con el módulo ansible.builtin.copy) en la
+ubicación especificada por la variable httpdconf_dest en el host gestionado. El archivo
+debe ser propiedad del usuario root y el grupo root. Establezca 0644 como los permisos
+de archivo.
+4.
+Agregue una tercera tarea que use el módulo ansible.builtin.file para crear el
+directorio especificado por la variable secrets_dir en el host gestionado. Este directorio
+contiene los archivos de contraseña usados para la autenticación básica de los servicios web.
+El directorio debe ser propiedad del usuario apache y el grupo apache. Defina 0500 como
+los permisos del directorio.
+5.
+Agregue una cuarta tarea que use el módulo ansible.builtin.copy para colocar un
+archivo htpasswd que se usará para la autenticación básica de los usuarios web. El origen
+debe estar definido por la variable secrets_src. El destino debe estar definido por
+la variable secrets_dest. El archivo debe ser propiedad del usuario y grupo apache.
+Establezca 0400 como los permisos de archivo.
+6.
+Agregue una quinta tarea que use el módulo ansible.builtin.copy para crear un
+archivo .htaccess en el directorio root del documento del servidor web. Copie el archivo
+especificado por la variable htaccess_src en {{ web_root }}/.htaccess. El archivo
+debe ser propiedad del usuario apache y el grupo apache. Establezca 0400 como los
+permisos de archivo.
+7.
+Agregue una tercera tarea que use el módulo ansible.builtin.copy para crear el
+archivo de contenido web, index.html, en el directorio especificado por la variable
+web_root. El archivo debe contener el mensaje HOSTNAME (IPADDRESS) has been
+customized by Ansible., donde HOSTNAME es el nombre de host completamente
+126
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+calificado del host gestionado y IPADDRESS es su dirección IP IPv4. Use la opción content
+con el módulo ansible.builtin.copy para especificar el contenido del archivo y los
+datos de Ansible para especificar el nombre de host y la dirección IP.
+8.
+Agregue una séptima tarea que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio de firewall en el host gestionado.
+9.
+Agregue una octava tarea que use el módulo ansible.posix.firewalld para permitir
+el acceso al servicio https necesario para que los usuarios accedan a servicios web en
+el host gestionado. Este cambio de firewall debe ser permanente y debe tener lugar
+inmediatamente.
+10.
+Agregue una tarea final que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio web en el host gestionado para que todos los cambios de configuración se
+hagan efectivos. El nombre del servicio web está definido por la variable web_svc.
+11.
+Defina un segundo play en el archivo playbook.yml que usa la máquina workstation
+como host gestionado para probar la autenticación en el servidor web. No necesita aumento
+de privilegios. Defina una variable denominada web_user con el valor guest.
+12.
+Agregue una directiva al play que agregue variables adicionales de un archivo de variables
+llamado vars/secret.yml. Este archivo contiene una variable denominada web_pass que
+especifica la contraseña para el usuario web. Crea este archivo más adelante en el trabajo de
+laboratorio.
+Defina el inicio de la lista de tareas.
+13.
+Agregue dos tareas al segundo play.
+La primera tarea usa el módulo ansible.builtin.uri para solicitar contenido de
+https://serverb.lab.example.com mediante la autenticación básica. Use las variables
+web_user y web_pass para autenticarse en el servidor web. La tarea debe verificar un
+código de estado HTTP de retorno de 200. Registre el resultado de la tarea en una variable
+denominada auth_test.
+Tenga en cuenta que el certificado presentado por serverb no será de confianza, por lo que
+deberá evitar la validación de certificados.
+La segunda tarea usa el módulo ansible.builtin.debug para imprimir el contenido
+devuelto desde el servidor web, contenido en la variable auth_test.
+14.
+Cree un archivo vars/secret.yml, cifrado con Ansible Vault. Use la contraseña redhat
+para cifrarlo. Debe establecer la variable web_pass en redhat, que será la contraseña del
+usuario web.
+15.
+Ejecute el playbook playbook.yml. Verifique que el contenido se haya devuelto
+correctamente desde el servidor web y que coincida con lo que se configuró en una tarea
+anterior.
+Evaluación
+En workstation, ejecute el comando lab grade data-review para confirmar que ha realizado
+correctamente este ejercicio. Corrija los errores informados y vuelva a ejecutar el script hasta
+obtener un resultado satisfactorio.
+[student@workstation ~]$ lab grade data-review
+RH294-RHEL9.0-es-3-20240620
+127
+
+
+capítulo 3 |  Administración de variables y datos
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-review
+128
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Solución
+Administración de variables y datos
+Escribir y ejecutar un playbook de Ansible que use variables, secretos y datos.
+Resultados
+• Debe ser capaz de definir variables y usar datos en un playbook, así como usar variables
+definidas en un archivo cifrado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+El host gestionado serverb.lab.example.com está definido en este inventario como
+miembro del grupo de hosts webserver. Un desarrollador le ha pedido que escriba un
+playbook de Ansible para automatizar la configuración de un entorno de servidor web
+en serverb.lab.example.com, que controla el acceso de los usuarios a su sitio web
+mediante autenticación básica.
+El subdirectorio files contiene los siguientes archivos:
+• Un archivo de configuración httpd.conf para el servicio web Apache para autenticación
+básica
+• Un archivo .htaccess que se usa para controlar el acceso al directorio raíz de
+documentos del servidor web.
+• Un archivo htpasswd que contiene credenciales para los usuarios permitidos
+[student@workstation ~]$ lab start data-review
+Instrucciones
+1.
+En el directorio de trabajo, cree el playbook playbook.yml. En el playbook, comience a
+crear un play para instalar y configurar los hosts del servidor web con un servidor HTTP
+de Apache que tenga habilitada la autenticación básica. Configure el grupo de hosts
+webserver para que contenga los hosts gestionados para el play.
+Defina las siguientes variables de play:
+RH294-RHEL9.0-es-3-20240620
+129
+
+
+capítulo 3 |  Administración de variables y datos
+Variable
+Valores
+firewall_pkg
+firewalld
+firewall_svc
+firewalld
+web_pkg
+httpd
+web_svc
+httpd
+ssl_pkg
+mod_ssl
+httpdconf_src
+files/httpd.conf
+httpdconf_dest
+/etc/httpd/conf/httpd.conf
+htaccess_src
+files/.htaccess
+secrets_dir
+/etc/httpd/secrets
+secrets_src
+files/htpasswd
+secrets_dest
+"{{ secrets_dir }}/htpasswd"
+web_root
+/var/www/html
+1.1.
+Cambie al directorio /home/student/data-review.
+[student@workstation ~]$ cd ~/data-review
+[student@workstation data-review]$
+1.2.
+Cree el archivo de playbook playbook.yml y edítelo en un editor de texto. El inicio
+del archivo debe aparecer de la siguiente manera:
+---
+- name: Install and configure webserver with basic auth
+  hosts: webserver
+  vars:
+    firewall_pkg: firewalld
+    firewall_svc: firewalld
+    web_pkg: httpd
+    web_svc: httpd
+    ssl_pkg: mod_ssl
+    httpdconf_src: files/httpd.conf
+    httpdconf_dest: /etc/httpd/conf/httpd.conf
+    htaccess_src: files/.htaccess
+    secrets_dir: /etc/httpd/secrets
+    secrets_src: files/htpasswd
+    secrets_dest: "{{ secrets_dir }}/htpasswd"
+    web_root: /var/www/html
+2.
+Agregue una sección tasks al play. Escriba una tarea que garantice que esté instalada la
+última versión de los paquetes necesarios. Estos paquetes están definidos por las variables
+firewall_pkg, web_pkg y ssl_pkg.
+130
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+2.1.
+Defina el comienzo de la sección tasks agregando la siguiente línea al play:
+  tasks:
+2.2.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.dnf para instalar los paquetes necesarios.
+    - name: Latest version of necessary packages installed
+      ansible.builtin.dnf:
+        name:
+          - "{{ firewall_pkg }}"
+          - "{{ web_pkg }}"
+          - "{{ ssl_pkg }}"
+        state: latest
+3.
+Agregue una segunda tarea al play que garantice que el archivo especificado por la variable
+httpdconf_src ha sido copiado (con el módulo ansible.builtin.copy) en la
+ubicación especificada por la variable httpdconf_dest en el host gestionado. El archivo
+debe ser propiedad del usuario root y el grupo root. Establezca 0644 como los permisos
+de archivo.
+Agregue las siguientes líneas al play para definir una tarea que usa el módulo
+ansible.builtin.copy para copiar el contenido del archivo definido por la variable
+httpdconf_src en la ubicación especificada por la variable httpdconf_dest.
+    - name: Configure web service
+      ansible.builtin.copy:
+        src: "{{ httpdconf_src }}"
+        dest: "{{ httpdconf_dest }}"
+        owner: root
+        group: root
+        mode: 0644
+4.
+Agregue una tercera tarea que use el módulo ansible.builtin.file para crear el
+directorio especificado por la variable secrets_dir en el host gestionado. Este directorio
+contiene los archivos de contraseña usados para la autenticación básica de los servicios web.
+El directorio debe ser propiedad del usuario apache y el grupo apache. Defina 0500 como
+los permisos del directorio.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.file para crear el directorio definido por la variable secrets_dir.
+    - name: Secrets directory exists
+      ansible.builtin.file:
+        path: "{{ secrets_dir }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: 0500
+5.
+Agregue una cuarta tarea que use el módulo ansible.builtin.copy para colocar un
+archivo htpasswd que se usará para la autenticación básica de los usuarios web. El origen
+debe estar definido por la variable secrets_src. El destino debe estar definido por
+RH294-RHEL9.0-es-3-20240620
+131
+
+
+capítulo 3 |  Administración de variables y datos
+la variable secrets_dest. El archivo debe ser propiedad del usuario y grupo apache.
+Establezca 0400 como los permisos de archivo.
+    - name: htpasswd file exists
+      ansible.builtin.copy:
+        src: "{{ secrets_src }}"
+        dest: "{{ secrets_dest }}"
+        owner: apache
+        group: apache
+        mode: 0400
+6.
+Agregue una quinta tarea que use el módulo ansible.builtin.copy para crear un
+archivo .htaccess en el directorio root del documento del servidor web. Copie el archivo
+especificado por la variable htaccess_src en {{ web_root }}/.htaccess. El archivo
+debe ser propiedad del usuario apache y el grupo apache. Establezca 0400 como los
+permisos de archivo.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.copy para crear el archivo .htaccess definido por la variable
+htaccess_src.
+    - name: .htaccess file installed in docroot
+      ansible.builtin.copy:
+        src: "{{ htaccess_src }}"
+        dest: "{{ web_root }}/.htaccess"
+        owner: apache
+        group: apache
+        mode: 0400
+7.
+Agregue una tercera tarea que use el módulo ansible.builtin.copy para crear el
+archivo de contenido web, index.html, en el directorio especificado por la variable
+web_root. El archivo debe contener el mensaje HOSTNAME (IPADDRESS) has been
+customized by Ansible., donde HOSTNAME es el nombre de host completamente
+calificado del host gestionado y IPADDRESS es su dirección IP IPv4. Use la opción content
+con el módulo ansible.builtin.copy para especificar el contenido del archivo y los
+datos de Ansible para especificar el nombre de host y la dirección IP.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.copy para crear el archivo index.html directorio definido por la
+variable web_root. Rellene el archivo con el contenido especificado usando los datos de
+Ansible ansible_facts['fqdn'] y ansible_facts['default_ipv4']['address']
+recuperados del host gestionado.
+    - name: Create index.html
+      ansible.builtin.copy:
+        content: >
+          {{ ansible_facts['fqdn'] }}
+          ({{ ansible_facts['default_ipv4']['address'] }})
+          has been customized by Ansible.
+        dest: "{{ web_root }}/index.html"
+132
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+8.
+Agregue una séptima tarea que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio de firewall en el host gestionado.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.service para habilitar e iniciar el servicio de firewall.
+    - name: Firewall service enabled and started
+      ansible.builtin.service:
+        name: "{{ firewall_svc }}"
+        state: started
+        enabled: true
+9.
+Agregue una octava tarea que use el módulo ansible.posix.firewalld para permitir
+el acceso al servicio https necesario para que los usuarios accedan a servicios web en
+el host gestionado. Este cambio de firewall debe ser permanente y debe tener lugar
+inmediatamente.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.posix.firewalld para abrir el puerto HTTPS para el servicio web.
+    - name: Open the port for the web server
+      ansible.posix.firewalld:
+        service: https
+        state: enabled
+        immediate: true
+        permanent: true
+10.
+Agregue una tarea final que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio web en el host gestionado para que todos los cambios de configuración se
+hagan efectivos. El nombre del servicio web está definido por la variable web_svc.
+    - name: Web service enabled and started
+      ansible.builtin.service:
+        name: "{{ web_svc }}"
+        state: started
+        enabled: true
+11.
+Defina un segundo play en el archivo playbook.yml que usa la máquina workstation
+como host gestionado para probar la autenticación en el servidor web. No necesita aumento
+de privilegios. Defina una variable denominada web_user con el valor guest.
+11.1.
+Agregue la siguiente línea para definir el comienzo de un segundo play. Tenga en
+cuenta que no hay sangría.
+- name: Test web server with basic auth
+11.2.
+Agregue la siguiente línea para indicar que el play se aplica al host gestionado
+workstation.
+  hosts: workstation
+11.3.
+Agregue la siguiente línea para deshabilitar el aumento de privilegios.
+RH294-RHEL9.0-es-3-20240620
+133
+
+
+capítulo 3 |  Administración de variables y datos
+  become: false
+11.4.
+Agregue las siguientes líneas para definir la variable del play web_user.
+  vars:
+    web_user: guest
+12.
+Agregue una directiva al play que agregue variables adicionales de un archivo de variables
+llamado vars/secret.yml. Este archivo contiene una variable denominada web_pass que
+especifica la contraseña para el usuario web. Crea este archivo más adelante en el trabajo de
+laboratorio.
+Defina el inicio de la lista de tareas.
+12.1.
+Con la palabra clave vars_files, agregue las siguientes líneas al play para indicar
+a Ansible que use las variables que se encuentran en el archivo de variables vars/
+secret.yml.
+  vars_files:
+    - vars/secret.yml
+12.2. Agregue la siguiente línea para definir el comienzo de la lista tasks.
+  tasks:
+13.
+Agregue dos tareas al segundo play.
+La primera tarea usa el módulo ansible.builtin.uri para solicitar contenido de
+https://serverb.lab.example.com mediante la autenticación básica. Use las variables
+web_user y web_pass para autenticarse en el servidor web. La tarea debe verificar un
+código de estado HTTP de retorno de 200. Registre el resultado de la tarea en una variable
+denominada auth_test.
+Tenga en cuenta que el certificado presentado por serverb no será de confianza, por lo que
+deberá evitar la validación de certificados.
+La segunda tarea usa el módulo ansible.builtin.debug para imprimir el contenido
+devuelto desde el servidor web, contenido en la variable auth_test.
+13.1.
+Agregue las siguientes líneas para crear la tarea a fin de verificar el servicio web del
+nodo de control. Asegúrese de aplicar una sangría de cuatro espacios a la primera línea.
+    - name: Connect to web server with basic auth
+      ansible.builtin.uri:
+        url: https://serverb.lab.example.com
+        validate_certs: false
+        force_basic_auth: true
+        user: "{{ web_user }}"
+        password: "{{ web_pass }}"
+        return_content: true
+        status_code: 200
+      register: auth_test
+134
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+13.2. Cree la segunda tarea usando el módulo ansible.builtin.debug. El contenido
+devuelto desde el servidor web se agrega a la variable registrada como la clave
+content.
+    - name: Display auth_test content
+      ansible.builtin.debug:
+        var: auth_test['content']
+13.3. El playbook completo debe incluir el siguiente contenido:
+---
+- name: Install and configure webserver with basic auth
+  hosts: webserver
+  vars:
+    firewall_pkg: firewalld
+    firewall_svc: firewalld
+    web_pkg: httpd
+    web_svc: httpd
+    ssl_pkg: mod_ssl
+    httpdconf_src: files/httpd.conf
+    httpdconf_dest: /etc/httpd/conf/httpd.conf
+    htaccess_src: files/.htaccess
+    secrets_dir: /etc/httpd/secrets
+    secrets_src: files/htpasswd
+    secrets_dest: "{{ secrets_dir }}/htpasswd"
+    web_root: /var/www/html
+  tasks:
+    - name: Latest version of necessary packages installed
+      ansible.builtin.dnf:
+        name:
+          - "{{ firewall_pkg }}"
+          - "{{ web_pkg }}"
+          - "{{ ssl_pkg }}"
+        state: latest
+    - name: Configure web service
+      ansible.builtin.copy:
+        src: "{{ httpdconf_src }}"
+        dest: "{{ httpdconf_dest }}"
+        owner: root
+        group: root
+        mode: 0644
+    - name: Secrets directory exists
+      ansible.builtin.file:
+        path: "{{ secrets_dir }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: 0500
+    - name: htpasswd file exists
+      ansible.builtin.copy:
+        src: "{{ secrets_src }}"
+RH294-RHEL9.0-es-3-20240620
+135
+
+
+capítulo 3 |  Administración de variables y datos
+        dest: "{{ secrets_dest }}"
+        owner: apache
+        group: apache
+        mode: 0400
+    - name: .htaccess file installed in docroot
+      ansible.builtin.copy:
+        src: "{{ htaccess_src }}"
+        dest: "{{ web_root }}/.htaccess"
+        owner: apache
+        group: apache
+        mode: 0400
+    - name: Create index.html
+      ansible.builtin.copy:
+        content: >
+          {{ ansible_facts['fqdn'] }}
+          ({{ ansible_facts['default_ipv4']['address'] }})
+          has been customized by Ansible.
+        dest: "{{ web_root }}/index.html"
+    - name: Firewall service enabled and started
+      ansible.builtin.service:
+        name: "{{ firewall_svc }}"
+        state: started
+        enabled: true
+    - name: Open the port for the web server
+      ansible.posix.firewalld:
+        service: https
+        state: enabled
+        immediate: true
+        permanent: true
+    - name: Web service enabled and started
+      ansible.builtin.service:
+        name: "{{ web_svc }}"
+        state: started
+        enabled: true
+- name: Test web server with basic auth
+  hosts: workstation
+  become: false
+  vars:
+    web_user: guest
+  vars_files:
+    - vars/secret.yml
+  tasks:
+    - name: Connect to web server with basic auth
+      ansible.builtin.uri:
+        url: https://serverb.lab.example.com
+        validate_certs: false
+        force_basic_auth: true
+        user: "{{ web_user }}"
+        password: "{{ web_pass }}"
+136
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+        return_content: true
+        status_code: 200
+      register: auth_test
+    - name: Display auth_test content
+      ansible.builtin.debug:
+        var: auth_test['content']
+13.4. Guarde y cierre el archivo playbook.yml.
+14.
+Cree un archivo vars/secret.yml, cifrado con Ansible Vault. Use la contraseña redhat
+para cifrarlo. Debe establecer la variable web_pass en redhat, que será la contraseña del
+usuario web.
+14.1.
+Cree un subdirectorio llamado vars en el directorio de trabajo.
+[student@workstation data-review]$ mkdir vars
+14.2. Cree el archivo de variables cifrado, vars/secret.yml, usando Ansible Vault.
+Establezca la contraseña para el archivo cifrado en redhat.
+[student@workstation data-review]$ ansible-vault create vars/secret.yml
+New Vault password: redhat
+Confirm New Vault password: redhat
+14.3. Agregue la siguiente definición de variables al archivo:
+web_pass: redhat
+14.4. Guarde y cierre el archivo.
+15.
+Ejecute el playbook playbook.yml. Verifique que el contenido se haya devuelto
+correctamente desde el servidor web y que coincida con lo que se configuró en una tarea
+anterior.
+15.1.
+Antes de ejecutar el playbook, ejecute ansible-navigator con la opción --
+syntax-check para verificar que su sintaxis sea correcta.
+Use --vault-id @prompt para que se le solicite la contraseña de Vault. Escriba
+redhat como contraseña cuando se le indique.
+Si informa errores, corríjalos antes de pasar al siguiente paso.
+Debe ver una salida similar a la siguiente:
+[student@workstation data-review]$ ansible-navigator run -m stdout \
+> --pae false playbook.yml --syntax-check --vault-id @prompt
+Vault password (default): redhat
+playbook: /home/student/data-review/playbook.yml
+15.2. Con el comando ansible-navigator, ejecute el playbook con la opción --vault-
+id @prompt. Escriba redhat como contraseña cuando se le indique.
+RH294-RHEL9.0-es-3-20240620
+137
+
+
+capítulo 3 |  Administración de variables y datos
+[student@workstation data-review]$ ansible-navigator run -m stdout \
+> --pae false playbook.yml --vault-id @prompt
+Vault password: redhat
+PLAY [Install and configure webserver with basic auth] *************************
+...output omitted...
+TASK [Connect to web server with basic auth] ***********************************
+ok: [workstation]
+TASK [Display auth_test content] ***********************************************
+ok: [workstation] => {
+    "auth_test['content']": "serverb.lab.example.com (172.25.250.11) has been
+ customized by Ansible.\n"
+}
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=10   changed=9    unreachable=0    failed=0  ...
+workstation                : ok=3    changed=0    unreachable=0    failed=0  ...
+Evaluación
+En workstation, ejecute el comando lab grade data-review para confirmar que ha realizado
+correctamente este ejercicio. Corrija los errores informados y vuelva a ejecutar el script hasta
+obtener un resultado satisfactorio.
+[student@workstation ~]$ lab grade data-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-review
+138
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Resumen
+• Las variables de Ansible lo ayudan a volver a usar valores en los archivos de un proyecto
+completo de Ansible.
+• Puede definir las variables para los hosts y los grupos de hosts en el archivo de inventario.
+• Puede definir variables para plays y tareas en el playbook o en archivos externos.
+• Se definen variables extra en la línea de comandos y preceden a todas las demás variables.
+• Puede usar la palabra clave register para capturar la salida de un comando en una variable.
+• Ansible Vault proporciona una manera de proteger los datos confidenciales, como los hash de
+contraseñas y las claves privadas que usa sus playbooks de Ansible.
+• Los datos de Ansible son variables que Ansible detecta automáticamente desde un host
+gestionado.
+RH294-RHEL9.0-es-3-20240620
+139
+
+

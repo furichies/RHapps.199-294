@@ -1,0 +1,85 @@
+# 9.3. Gestión de procesos con control de trabajos
+# Tipo: theory
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.3. Gestión de Procesos con Control de Trabajos 9.3. Gestión de procesos con objetivos de control de trabajos Controlar los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Trabajos y sesiones Con la función de shell de control de trabajos, puede ejecutar y administrar múltiples comandos en una única instancia de shell. Se asocia un trabajo con cada canalización que se ingresa en un símbolo del shell. Todos los procesos en esa canalización son parte del trabajo y son miembros del mismo grupo de procesos. Puede considerar que una canalización mínima es solo un comando que se ingresa en el símbolo del shell para crear un trabajo con un solo miembro. Sólo un trabajo a la vez puede leer señales de entrada y generadas por el teclado desde una ventana de terminal particular. Los procesos que forman parte de ese trabajo son procesos de primer plano de esa terminal de control. Un proceso en segundo plano de ese terminal de control es cualquier otro trabajo asociado con ese terminal. Los procesos en segundo plano de un terminal no pueden leer entradas ni recibir interrupciones generadas por el teclado desde el terminal, pero pueden escribir en el terminal. Es posible que un trabajo en segundo plano esté detenido (suspendido) o que se esté ejecutando. Si un trabajo en segundo plano en ejecución intenta leer desde la terminal, el kernel lo suspende automáticamente y el proceso permanece en estado detenido hasta que se mueve al primer plano. Cada terminal se ejecuta en su propia sesión y puede tener un proceso en primer plano y cualquier número de procesos en segundo plano. Un trabajo que se ejecuta en su propia sesión pertenece a su terminal de control. El comando ps muestra el nombre del dispositivo del terminal de control en la columna TTY.
+
+user@host:~$ ps
+    PID TTY          TIME CMD
+   2328 pts/0    00:00:00 bash
+   8910 pts/0    00:00:00 ps
+
+Algunos procesos, como los demonios del sistema, los inicia el sistema y no desde una terminal de control. Estos procesos no son miembros de un trabajo y no pueden ponerse en primer plano. El comando ps muestra un signo de interrogación (?) en la columna TTY para estos procesos. Utilice el comando ps j para buscar información sobre procesos y sesiones, así como detalles sobre trabajos. En el siguiente ejemplo, el comando de suspensión está actualmente suspendido y el estado del proceso es T (detenido).
+
+user@host:~$ ps j
+
+PPID PID PGID SID TTY TPGID STAT UID HORA COMANDO ...salida omitida... 8527 8528 8528 8528 pts/0 8633 Ss 1000 0:00 -bash 8528 8559 8559 8528 pts/0 8633 T 1000 0:00 dormir 10000 8528 8633 8633 8528 pts/0 8633 R+ 1000 0:00 ps j El PID es el ID de proceso único del proceso. El ID del proceso principal (PPID) es el PID del proceso principal que inició (bifurcó) este proceso. El PGID es el PID del líder del grupo de procesos, normalmente el primer proceso en la canalización del trabajo.
+
+
+
+
+
+9.3. Gestión de procesos con control de trabajos El SID es el PID del líder de sesión, que (para un trabajo) suele ser el shell interactivo que se ejecuta en su terminal de control. Ejecución de trabajos en segundo plano Puede iniciar cualquier comando o canalización en segundo plano agregando un signo (&) al comando. El shell Bash muestra un número de trabajo (único para la sesión) y el ID del proceso (PID) del nuevo proceso hijo. El shell no espera a que finalice el proceso hijo, sino que muestra el indicador del shell. En el siguiente ejemplo, el comando de suspensión se ejecuta en segundo plano con el operador & y hace una pausa de 10 000 segundos. El resultado muestra el número de trabajo que asigna el shell ([1]) y un ID de proceso (PID) de 5947.
+
+user@host:~$ sleep 10000 &
+
+[1] 5947 Cuando una línea de comando con una tubería (|) se envía a segundo plano, se muestra el PID del último comando en la tubería. Todos los procesos de canalización son miembros de ese trabajo. En el siguiente ejemplo, el comando ls se canaliza a través del comando sort y la salida ordenada se envía por correo electrónico mediante el comando mail -s. Todo el proceso se ejecuta en segundo plano con el operador &, lo que permite que la terminal permanezca disponible.
+
+user@host:~$ ls | sort | mail -s "Sort output" &
+
+[1] 5998 Utilice el comando jobs para mostrar la lista de trabajos para la sesión del shell.
+
+user@host:~$ jobs
+
+[1]+ Ejecutar sleep 10000 y poner un trabajo en segundo plano en primer plano Utilice el comando fg para poner un trabajo en segundo plano en primer plano. Utilice el formato (%jobNumber) para especificar qué proceso poner en primer plano.
+
+user@host:~$ fg %1
+
+sleep 10000 En el ejemplo anterior, el comando de suspensión se ejecuta en primer plano en el terminal de control. El shell en sí está inactivo y esperando que salga este proceso hijo. Envío de un proceso en primer plano a segundo plano Para enviar un proceso en primer plano a segundo plano, presione la solicitud de suspensión generada por el teclado ( Ctrl+Z ) en la terminal. El trabajo pasa a un segundo plano y se suspende.
+
+user@host:~$ sleep 10000
+
+^Z [1]+ Detenido el sueño 10000 Iniciando un proceso suspendido Para comenzar a ejecutar el proceso suspendido, use el comando bg con el ID del trabajo:
+
+
+
+
+
+9.3. Gestión de procesos con control de trabajos
+
+user@host:~$ bg %1
+
+[1]+ sleep 10000 & El shell advierte a un usuario que intenta salir de una ventana de terminal (sesión) con trabajos suspendidos. Si el usuario vuelve a intentar salir inmediatamente, los trabajos suspendidos se detienen. Nota En los ejemplos anteriores, el signo más (+) indica que este trabajo es el predeterminado actual. Si utiliza un comando de control de trabajo sin el argumento %jobNumber, la acción se realiza en el trabajo predeterminado. El signo menos (-) indica que el trabajo anterior se convertirá en el trabajo predeterminado cuando finalice el actual. Referencias info bash (Manual de referencia de GNU Bash) Sección 7: Control de trabajos Páginas man de bash(1), funciones integradas(1), ps(1) y sleep(1)
+
+
+
+
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos 9.4. Ejercicio guiado Administrar procesos con control de trabajos Controle los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Resultados Utilice el control de trabajos para suspender y reiniciar procesos de usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-control
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estas dos terminales se denominan izquierda y derecha. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado control en el directorio /home/student/bin. Cambie los permisos del script para que sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree un archivo llamado control en el directorio /home/student/bin con el siguiente contenido: #!/bin/bash
+
+while true; do
+  echo -n "$@ " >> ~/control_outfile
+  sleep 1
+
+done El script de control agrega argumentos de línea de comandos al archivo ~/control_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso. 2.2. Haga que el archivo de control sea ejecutable.
+
+[student@servera ~]$ chmod +x /home/student/bin/control
+
+2.3. Ejecute el script de control. El script agrega continuamente la palabra "técnico" y un espacio al archivo ~/control_outfile en intervalos de un segundo. 3.
+
+
+
+
+

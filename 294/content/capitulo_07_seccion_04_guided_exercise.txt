@@ -1,0 +1,367 @@
+# Ejercicio Guiado: Creación de roles
+# Tipo: guided_exercise
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Creación de roles
+Crear un rol de Ansible que usa variables, archivos, plantillas, tareas y manejadores para
+implementar un servicio de red.
+Resultados
+• Crear un rol que use variables y parámetros.
+El rol myvhost instala y configura el servicio Apache en un host. Se provee una plantilla
+llamada vhost.conf.j2 para generar /etc/httpd/conf.d/vhost.conf.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-create
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-create.
+[student@workstation ~]$ cd ~/role-create
+[student@workstation role-create]$
+ 2.
+Cree la estructura de directorio para un rol denominado myvhost. El rol incluye archivos,
+plantillas, tareas y manejadores corregidos. Los directorios defaults, vars y tests no se
+usan en este rol, por lo que puede eliminarlos.
+[student@workstation role-create]$ mkdir -v roles; cd roles
+mkdir: created directory 'roles'
+[student@workstation roles]$ ansible-galaxy role init myvhost
+- Role myvhost was created successfully
+[student@workstation roles]$ rm -rvf myvhost/{defaults,vars,tests}
+removed 'myvhost/defaults/main.yml'
+removed directory: 'myvhost/defaults'
+removed 'myvhost/vars/main.yml'
+removed directory: 'myvhost/vars'
+removed 'myvhost/tests/inventory'
+removed 'myvhost/tests/test.yml'
+removed directory: 'myvhost/tests'
+[student@workstation roles]$ cd ..
+[student@workstation role-create]$
+294
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ 3.
+Edite el archivo main.yml en el subdirectorio tasks del rol. El rol debe ejecutar las
+siguientes tareas:
+• Instale el paquete httpd.
+• Habilite e inicie el servicio httpd.
+• Instale el archivo de configuración del servidor web, con una plantilla proporcionada por
+el rol.
+3.1.
+Edite el archivo roles/myvhost/tasks/main.yml. Incluya el código para usar el
+módulo ansible.builtin.dnf a fin de instalar el paquete httpd. Asegúrese de
+que el archivo contenga el siguiente contenido:
+---
+# tasks file for myvhost
+- name: Ensure httpd is installed
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+3.2.
+Agregue un código al archivo roles/myvhost/tasks/main.yml para usar el
+módulo ansible.builtin.service para iniciar y habilitar el servicio httpd.
+- name: Ensure httpd is started and enabled
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: true
+3.3.
+Agregue otra estrofa para usar el módulo ansible.builtin.template para crear
+/etc/httpd/conf.d/vhost.conf en el host gestionado. El módulo invoca un
+manejador para reiniciar el daemon httpd cuando se actualiza este archivo.
+- name: vhost file is installed
+  ansible.builtin.template:
+    src: vhost.conf.j2
+    dest: /etc/httpd/conf.d/vhost.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart httpd
+3.4.
+Guarde sus cambios y salga del archivo roles/myvhost/tasks/main.yml.
+ 4.
+Cree el manejador para reiniciar el servicio httpd. Edite el archivo roles/
+myvhost/handlers/main.yml e incluya el código para usar el módulo
+ansible.builtin.service, luego guarde el archivo y salga. Asegúrese de que el
+archivo contenga el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+295
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+# handlers file for myvhost
+- name: restart httpd
+  ansible.builtin.service:
+    name: httpd
+    state: restarted
+ 5.
+El archivo vhost.conf.j2 es una plantilla que se usa para configurar el servidor web
+Apache mediante el uso de variables:
+# {{ ansible_managed }}
+<VirtualHost *:80>
+    ServerAdmin webmaster@{{ ansible_fqdn }}
+    ServerName {{ ansible_fqdn }}
+    ErrorLog logs/{{ ansible_hostname }}-error.log
+    CustomLog logs/{{ ansible_hostname }}-common.log common
+    DocumentRoot /var/www/vhosts/{{ ansible_hostname }}/
+    <Directory /var/www/vhosts/{{ ansible_hostname }}/>
+    Options +Indexes +FollowSymlinks +Includes
+    Order allow,deny
+    Allow from all
+    </Directory>
+</VirtualHost>
+Mueva la plantilla vhost.conf.j2 del directorio del proyecto al subdirectorio templates
+del rol.
+[student@workstation role-create]$ mv -v vhost.conf.j2 roles/myvhost/templates/
+renamed 'vhost.conf.j2' -> 'roles/myvhost/templates/vhost.conf.j2'
+ 6.
+Cree el contenido HTML que alojará el servidor web.
+6.1.
+Cree el directorio files/html/ para almacenar el contenido.
+[student@workstation role-create]$ mkdir -pv files/html
+mkdir: created directory 'files'
+mkdir: created directory 'files/html'
+6.2.
+Cree un archivo index.html debajo del directorio con el contenido: simple
+index.
+[student@workstation role-create]$ echo 'simple index' > files/html/index.html
+ 7.
+Pruebe el rol myvhost para asegurarse de que funciona adecuadamente.
+7.1.
+Escriba un playbook que use el rol, denominado use-vhost-role.yml. Incluya una
+tarea para copiar el contenido HTML del directorio files/html/. Use el módulo
+296
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ansible.builtin.copy e incluya una barra oblicua final (/) después del nombre
+del directorio fuente. Asegúrese de que el archivo contenga el siguiente contenido:
+---
+- name: Use myvhost role playbook
+  hosts: webservers
+  pre_tasks:
+    - name: pre_tasks message
+      ansible.builtin.debug:
+        msg: 'Ensure web server configuration.'
+  roles:
+    - myvhost
+  post_tasks:
+    - name: HTML content is installed
+      ansible.builtin.copy:
+        src: files/html/
+        dest: "/var/www/vhosts/{{ ansible_hostname }}"
+    - name: post_tasks message
+      ansible.builtin.debug:
+        msg: 'Web server is configured.'
+nota
+La barra trailing hace que el directorio de origen y todo su contenido se copien en el
+host gestionado.
+7.2.
+Antes de ejecutar el playbook use-vhost-role.yml, ejecute el comando
+ansible-navigator con la opción --syntax-check para verificar que su sintaxis
+sea correcta. Si informa errores, corríjalos antes de pasar al siguiente paso. Debe ver
+una salida similar a la siguiente:
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout use-vhost-role.yml --syntax-check
+playbook: /home/student/role-create/use-vhost-role.yml
+7.3.
+Ejecute el playbook use-vhost-role.yml. Revise la salida para confirmar que
+Ansible realizó las acciones en el servidor web servera.
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout use-vhost-role.yml
+PLAY [Use myvhost role playbook] *********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [pre_tasks message] *****************************************************
+ok: [servera.lab.example.com] => {
+    "msg": "Ensure web server configuration."
+}
+RH294-RHEL9.0-es-3-20240620
+297
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [myvhost : Ensure httpd is installed] ***********************************
+changed: [servera.lab.example.com]
+TASK [myvhost : Ensure httpd is started and enabled] *************************
+changed: [servera.lab.example.com]
+TASK [myvhost : vhost file is installed] *************************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [myvhost : restart httpd] ************************************
+changed: [servera.lab.example.com]
+TASK [HTML content is installed] *********************************************
+changed: [servera.lab.example.com]
+TASK [post_tasks message] ****************************************************
+ok: [servera.lab.example.com] => {
+    "msg": "Web server is configured."
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=8    changed=5    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.4.
+Ejecute el playbook verify-httpd.yml para confirmar que el rol funcionó.
+El paquete httpd debe instalarse y el servicio httpd debe estar habilitado y
+ejecutándose.
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout verify-httpd.yml
+PLAY [Verify the httpd service] **********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify the httpd service is installed] *********************************
+changed: [servera.lab.example.com]
+TASK [Is the httpd service installed] ****************************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': 'httpd-2.4.51-7.el9_0.x86_64',
+ 'stderr': '', 'rc': 0, 'cmd': ['rpm', '-q', 'httpd'], 'start': '2022-07-18
+ 15:56:40.412987', 'end': '2022-07-18 15:56:40.429762', 'delta': '0:00:00.016775',
+ 'msg': '', 'stdout_lines': ['httpd-2.4.51-7.el9_0.x86_64'], 'stderr_lines': [],
+ 'failed': False}.stdout"
+}
+TASK [Verify the httpd service is started] ***********************************
+changed: [servera.lab.example.com]
+TASK [Is the httpd service started] ******************************************
+ok: [servera.lab.example.com] => {
+298
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+    "msg": "{'changed': True, 'stdout': 'active', 'stderr': '', 'rc': 0, 'cmd':
+ ['systemctl', 'is-active', 'httpd'], 'start': '2022-07-18 15:56:40.853778',
+ 'end': '2022-07-18 15:56:40.863193', 'delta': '0:00:00.009415', 'msg': '',
+ 'stdout_lines': ['active'], 'stderr_lines': [], 'failed': False}.stdout"
+}
+TASK [Verify the httpd service is enabled] ***********************************
+changed: [servera.lab.example.com]
+TASK [Is the httpd service enabled] ******************************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': 'enabled', 'stderr': '', 'rc': 0, 'cmd':
+ ['systemctl', 'is-enabled', 'httpd'], 'start': '2022-07-18 15:56:41.282211',
+ 'end': '2022-07-18 15:56:41.291881', 'delta': '0:00:00.009670', 'msg': '',
+ 'stdout_lines': ['enabled'], 'stderr_lines': [], 'failed': False}.stdout"
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=7    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.5.
+Ejecute el playbook verify-config.yml para confirmar que el archivo de
+configuración de Apache está implementado y que todas las variables en la plantilla
+se expandieron correctamente.
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout verify-config.yml
+PLAY [Verify the httpd config] ***********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify the httpd config file is in place] ******************************
+changed: [servera.lab.example.com]
+TASK [What does the httpd config file contain] *******************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': '# Ansible managed\\n\\n<VirtualHost
+ \*:80>\\n    ServerAdmin webmaster@servera.lab.example.com\\n   
+ ServerName servera.lab.example.com\\n    ErrorLog logs/servera-error.log\
+\n    CustomLog logs/servera-common.log common\\n    DocumentRoot /var/www/
+vhosts/servera/\\n\\n    <Directory /var/www/vhosts/servera/>\\n\\tOptions
+ +Indexes +FollowSymlinks +Includes\\n\\tOrder allow,deny\\n\\tAllow from all
+\\n    </Directory>\\n</VirtualHost>', 'stderr': '', 'rc': 0, 'cmd': ['cat',
+ '/etc/httpd/conf.d/vhost.conf'], 'start': '2022-07-18 16:15:11.441593',
+ 'end': '2022-07-18 16:15:11.445100', 'delta': '0:00:00.003507', 'msg': '',
+ 'stdout_lines': ['# Ansible managed', '', '<VirtualHost *:80>', '    ServerAdmin
+ webmaster@servera.lab.example.com', '    ServerName servera.lab.example.com',
+ '    ErrorLog logs/servera-error.log', '    CustomLog logs/servera-common.log
+ common', '    DocumentRoot /var/www/vhosts/servera/', '', '    <Directory /
+var/www/vhosts/servera/>', '\\tOptions +Indexes +FollowSymlinks +Includes', '\
+\tOrder allow,deny', '\\tAllow from all', '    </Directory>', '</VirtualHost>'],
+ 'stderr_lines': [], 'failed': False}.stdout_lines"
+RH294-RHEL9.0-es-3-20240620
+299
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.6.
+El contenido HTML se sirve desde un directorio llamado /var/www/vhosts/
+servera. Ejecute el playbook verify-content.yml para confirmar que el archivo
+index.html en ese directorio contiene la cadena "simple index".
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout verify-content.yml
+PLAY [Verify the index.html file] ********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify the index.html file is in place] ********************************
+changed: [servera.lab.example.com]
+TASK [What does the index.html config file contain] **************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': 'simple index', 'stderr': '', 'rc':
+ 0, 'cmd': ['cat', '/var/www/vhosts/servera/index.html'], 'start': '2022-07-18
+ 16:24:54.665447', 'end': '2022-07-18 16:24:54.669959', 'delta': '0:00:00.004512',
+ 'msg': '', 'stdout_lines': ['simple index'], 'stderr_lines': [], 'failed':
+ False}.stdout_lines"
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.7.
+Confirme que el contenido del servidor web esté disponible.
+[student@workstation role-create]$ curl http://servera.lab.example.com
+simple index
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-create
+300
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Implementación de roles desde fuentes
+externas de contenido
+Objetivos
+• Seleccionar y recuperar roles de fuentes externas, como repositorios de Git o Ansible Galaxy, y
+usarlos en sus playbooks.
+Fuentes de contenido externo
+Si está usando roles en sus playbooks de Ansible, debe obtener esos roles de alguna fuente
+administrada centralmente. Esta práctica garantiza que todos sus proyectos tengan la versión
+actual del rol y que cada proyecto pueda beneficiarse de las correcciones de errores descubiertas
+por otros proyectos con los que comparten el rol.
+Por ejemplo, si el rol es contenido privado creado y coordinado por su organización, podría
+almacenarse en un repositorio de Git administrado por su organización. Alternativamente, podría
+distribuirse como un archivo de almacenamiento tar desde un sitio web o por otros medios.
+Además, la comunidad de código abierto mantiene algunos roles a través del sitio web de Ansible
+Galaxy. Red Hat no son revisa ni respalda oficialmente estos roles, pero pueden contener código
+que su organización considere útil.
+Importante
+Es cada vez más común que los roles se empaqueten como Ansible Content
+Collections y que sus autores los ofrezcan a través de distintos métodos:
+• En Ansible Content Collections certificadas por Red Hat desde el centro de
+automatización alojado de Red Hat en https://console.redhat.com o a
+través de un centro de automatización privado
+• Como contenido privado empaquetado desde un centro de automatización
+privado
+• Por la comunidad de Ansible Galaxy en https://galaxy.ansible.com
+Esta sección solo cubre cómo obtener roles que no están empaquetados en Ansible
+Content Collections.
+Lo ideal sería poder descargar la última versión del rol en el directorio roles de su proyecto de
+forma sencilla, siempre que sea necesario.
+Presentación de Ansible Galaxy
+Una librería pública de contenido de Ansible programada por una variedad de administradores y
+usuarios de Ansible se encuentra disponible en Ansible Galaxy [https://galaxy.ansible.com]. Esta
+librería contiene miles de roles de Ansible y cuenta con una base de datos de búsqueda que lo
+ayuda a identificar roles que podrían ayudarlos a realizar una tarea administrativa.
+El comando ansible-galaxy que usa para descargar y gestionar roles de Ansible Galaxy
+también se puede usar para descargar y gestionar roles de sus propios repositorios de Git.
+RH294-RHEL9.0-es-3-20240620
+301
+
+

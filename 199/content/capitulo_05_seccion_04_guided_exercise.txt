@@ -1,0 +1,64 @@
+# Ejercicio Guiado: Ejercicio guiado Crear vínculos entre archivos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.4. Ejercicio guiado Crear vínculos entre archivos 2.4. Ejercicio guiado Crear vínculos entre archivos Cree y compare el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Resultados Crear vínculos físicos y vínculos simbólicos entre archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-make
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Cree el enlace físico /home/student/links/file.hardlink para el archivo /home/student/files/target.file. Verifique el recuento de enlaces para el archivo original y el nuevo archivo vinculado. 2. Vea el recuento de enlaces y el número de índice (inodo) para el archivo /home/student/files/target.file. El número de inodo del archivo puede variar en su entorno.
+
+[student@servera ~]$ ls -li files/target.file
+
+8838187 -rw-r--r--. 1 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file El recuento de enlaces de files/target.file es 1 porque el archivo no tiene enlaces adicionales. 2.1. Cree el enlace físico /home/student/links/file.hardlink. Vincúlelo al archivo /home/student/files/target.file.
+
+[student@servera ~]$ ln files/target.file links/file.hardlink
+
+2.2. Verifique el recuento de enlaces y el número de inodo para el archivo original y el nuevo enlace físico. El recuento de enlaces debe ser 2 y el número de inodo debe ser el mismo para ambos archivos.
+
+[student@servera ~]$ ls -li files/target.file links/file.hardlink
+
+8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file 8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 enlaces/archivo.hardlink El archivo y el enlace tienen el mismo número de inodo porque apuntan a los mismos datos. 2.3. Cree el enlace simbólico /home/student/tempdir que apunte al directorio /tmp en la máquina del servidor. Verifique el enlace simbólico recién creado. 3.
+
+
+
+
+
+2.4. Ejercicio guiado Crear vínculos entre archivos Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-make
+
+Cree el enlace simbólico /home/student/tempdir al directorio /tmp.
+
+[student@servera ~]$ ln -s /tmp /home/student/tempdir
+
+3.1. Utilice el comando ls -l para verificar el enlace simbólico recién creado.
+
+[student@servera ~]$ ls -l /home/student/tempdir
+lrwxrwxrwx. 1 student student 4 May 27 13:53 /home/student/tempdir -> /tmp
+
+3.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+4.
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell 2.5. Coincidencia de nombres de archivos con expansiones de Shell Objetivos Ejecutar eficientemente comandos que afectan a muchos archivos mediante el uso de funciones de coincidencia de patrones del Shell Bash. Expansiones de la línea de comandos Cuando escribe un comando en el símbolo del shell Bash, el shell procesa esa línea de comandos a través de múltiples expansiones antes de ejecutarla. Puede utilizar estas expansiones de shell para realizar tareas complejas que de otro modo serían difíciles o imposibles. El shell Bash realiza las siguientes expansiones: Expansión de nombre de ruta, que ayuda a seleccionar uno o más archivos mediante coincidencia de patrones. Expansión de llaves, que puede generar múltiples cadenas de caracteres. Expansión de tilde, que se expande a una ruta al directorio de inicio de un usuario. Expansión de variable, que reemplaza el texto con el valor almacenado en una variable de shell. Sustitución de comandos, que reemplaza el texto con la salida de un comando. Expansión de nombres de rutas y coincidencia de patrones La expansión de nombres de rutas, históricamente llamada globalización, es una de las características más útiles de Bash. La expansión del nombre de ruta utiliza comodines, que son metacaracteres que se expanden para coincidir con los nombres de archivo y ruta que está buscando. Como resultado, los comandos pueden actuar sobre un conjunto específico de archivos durante una única ejecución. Esta característica ayuda a los administradores del sistema a administrar muchos archivos. La expansión del nombre de ruta expande un patrón de caracteres especiales que representan comodines o clases de caracteres en una lista de nombres de archivos que coinciden con el patrón. Antes de que el shell ejecute su comando, reemplaza el patrón con la lista de nombres de archivos que coinciden. Si el patrón no coincide con nada, entonces el shell intenta utilizar el patrón como argumento literal para el comando que ejecuta. La siguiente tabla enumera metacaracteres y clases de patrones comunes que se utilizan para la coincidencia de patrones. Tabla 2. Tabla de metacaracteres y coincidencias * ¿Alguna cadena de cero o más caracteres? Cualquier carácter [abc…​] Cualquier carácter en la clase encerrada (entre corchetes) [!abc…​] Cualquier carácter que no esté en la clase encerrada [^abc…​] Cualquier carácter que no esté en la clase encerrada Coincidencias de patrones
+
+
+
+
+

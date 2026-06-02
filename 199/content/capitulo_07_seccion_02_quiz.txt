@@ -1,0 +1,32 @@
+# Cuestionario: Usuarios y grupos de Linux
+# Tipo: quiz
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.2. Quiz Usuarios y Grupos de Linux 4.2. Prueba Usuarios y grupos de Linux Elija la respuesta correcta a las siguientes preguntas: ¿Qué elemento utiliza Linux para identificar internamente a un usuario? 1. Usuario principal a. UID b. DIG c. Nombre de usuario d. ¿Qué elemento o archivo almacena información del grupo local? 2. Directorio de inicio a. /etc/contraseña b. /etc/GID c. /etc/grupo d. ¿Qué elemento o archivo almacena los archivos personales del usuario? 3. Directorio de inicio a. Shell de inicio de sesión b. /etc/contraseña c. /etc/grupo d. ¿Qué elemento utiliza Linux para identificar grupos internamente? 4. Grupo primario a. UID b. DIG c. Clave de grupo d. ¿Qué elemento o archivo almacena información de la cuenta de usuario local? 5. Directorio de inicio a. /etc/contraseña b. /etc/UID c. /etc/grupo d. ¿Cuál es el cuarto campo en una entrada de usuario en el archivo /etc/passwd? 6. Directorio de inicio a. UID b. Shell de inicio de sesión c. GID del grupo primario d.
+
+
+
+
+
+4.2. Prueba de usuarios y grupos de Linux ¿Qué elemento representa el programa que proporciona la línea de comandos inicial del usuario? 7. Mensaje principal a. Directorio de inicio b. Shell predeterminado c. Nombre del comando d.
+
+
+
+
+
+4.2. Quiz Solución de usuarios y grupos de Linux ¿Qué elemento utiliza Linux para identificar internamente a un usuario? 1. Usuario principal a. UID b. DIG c. Nombre de usuario d. ¿Qué elemento o archivo almacena información del grupo local? 2. Directorio de inicio a. /etc/contraseña b. /etc/GID c. /etc/grupo d. ¿Qué elemento o archivo almacena los archivos personales del usuario? 3. Directorio de inicio a. Shell de inicio de sesión b. /etc/contraseña c. /etc/grupo d. ¿Qué elemento utiliza Linux para identificar grupos internamente? 4. Grupo primario a. UID b. DIG c. Clave de grupo d. ¿Qué elemento o archivo almacena información de la cuenta de usuario local? 5. Directorio de inicio a. /etc/contraseña b. /etc/UID c. /etc/grupo d. ¿Cuál es el cuarto campo en una entrada de usuario en el archivo /etc/passwd? 6. Directorio de inicio a. UID b. Shell de inicio de sesión c. GID del grupo primario d. ¿Qué elemento representa el programa que proporciona la línea de comandos inicial del usuario? 7. Mensaje principal a. Directorio de inicio b. Shell predeterminado c. Nombre del comando d.
+
+
+
+
+
+4.3. Obtener acceso de superusuario 4.3. Obtención de acceso de superusuario Objetivos Cambie a la cuenta de superusuario para administrar un sistema Linux y conceda acceso de superusuario a otros usuarios mediante Sudo. El superusuario La mayoría de los sistemas operativos tienen un superusuario que tiene todo el poder sobre el sistema. En Red Hat Enterprise Linux, el superusuario es el usuario root. Este usuario tiene el poder de anular los privilegios regulares en el sistema de archivos y usted puede usarlo para gestionar y administrar el sistema. Para tareas como instalar o eliminar software y administrar archivos y directorios del sistema, los usuarios deben escalar sus privilegios al usuario raíz. Por lo general, sólo el usuario root puede controlar la mayoría de los dispositivos, pero se aplican algunas excepciones. Por ejemplo, los usuarios habituales pueden controlar dispositivos extraíbles, como dispositivos USB. Por lo tanto, los usuarios normales pueden agregar y eliminar archivos y administrar un dispositivo extraíble, pero solo el usuario raíz puede administrar los discos duros de forma predeterminada. Este privilegio ilimitado, sin embargo, conlleva responsabilidad. El usuario root tiene poder ilimitado para dañar el sistema: puede eliminar archivos y directorios, eliminar cuentas de usuario, agregar puertas traseras, etc. Si la cuenta de usuario root se ve comprometida, entonces el sistema está en peligro y usted podría perder el control administrativo. Red Hat anima a los administradores de sistemas a iniciar sesión siempre como usuarios normales y a escalar privilegios a root solo cuando sea necesario. Importante En RHEL 10, la cuenta raíz no tiene una contraseña válida de forma predeterminada, por lo que no puede iniciar sesión directamente como usuario raíz con una contraseña. La cuenta raíz en Linux es similar a la cuenta de administrador local en Microsoft Windows. En Linux, la mayoría de los administradores de sistemas inician sesión en el sistema como usuarios sin privilegios y utilizan varias herramientas para obtener privilegios de root temporalmente. Advertencia Los usuarios de Microsoft Windows pueden estar familiarizados con la práctica de iniciar sesión como usuario administrador local.
+
+to perform system administrator duties. Today, this practice is not recommended; users obtain privileges to
+
+realizar la administración por membresía en el grupo de Administradores. De manera similar, en RHEL, Red Hat recomienda que los administradores del sistema nunca inicien sesión directamente como root. En cambio, los administradores del sistema inician sesión como un usuario normal y utilizan mecanismos para obtener temporalmente privilegios de superusuario (su, sudo o PolicyKit, por ejemplo). Cuando se inicia sesión como root, todo el entorno de escritorio se ejecuta innecesariamente con privilegios administrativos. Una vulnerabilidad de seguridad que normalmente podría comprometer sólo una cuenta de usuario normal puede potencialmente comprometer todo el sistema. Cambio de cuentas de usuario Con el comando su, los usuarios pueden cambiar a una cuenta de usuario diferente. Si ejecuta el comando su desde una cuenta de usuario normal con otra cuenta de usuario como parámetro, debe proporcionar la contraseña de la cuenta a la que cambiar.
+
+
+
+
+

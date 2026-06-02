@@ -1,0 +1,173 @@
+# Ejercicio Guiado: Ejercicio guiado Identificar procesos del sistema que se inician automáticamente
+# Tipo: guided_exercise
+# Capítulo: Capítulo 10. Control de servicios y demonios
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente 10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente Enumere las unidades de servicio instaladas e identifique qué servicios están actualmente habilitados y activos en un servidor. Resultados Enumerar las unidades de servicio instaladas. Identificar servicios activos y habilitados en el sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-identify
+
+Instrucciones Enumere todas las unidades de servicio instaladas en la máquina del servidor. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1.1. Enumere todas las unidades de servicio instaladas.
+
+[student@servera ~]$ systemctl list-units --type=service
+
+SUBDESCRIPCIÓN ACTIVA DE CARGA UNIDAD
+
+  atd.service            loaded active   running  Deferred execution scheduler
+  auditd.service         loaded active   running  Security Audit Logging Service
+  chronyd.service        loaded active   running  NTP client/server
+  cloud-config.service   loaded active   exited   Cloud-init: Config Stage
+  cloud-final.service    loaded active   exited   Cloud-init: Final Stage
+
+...salida omitida... Presione Q para salir del comando. 1.2. Enumere todas las unidades de socket, tanto activas como inactivas, en la máquina del servidor. 2.
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente
+
+[student@servera ~]$ systemctl list-units --type=socket --all
+  UNIT                 LOAD   ACTIVE SUB       DESCRIPTION
+  cockpit.socket       loaded active running   Cockpit Web Service Socket
+  dbus.socket          loaded active running   D-Bus System Message Bus Socket
+  dm-event.socket      loaded active listening Device-mapper event daemon FIFOs
+  lvm2-lvmpolld.socket loaded active listening LVM2 poll daemon socket
+
+...salida omitida... Leyenda: LOAD → Refleja si la definición de unidad se cargó correctamente.
+
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+29 unidades cargadas listadas. Para mostrar todos los archivos de unidades instalados, utilice 'systemctl list-unit-files'. Presione Q para salir del comando. Explore el estado del servicio chronyd. Este servicio realiza la sincronización del protocolo de tiempo de red (NTP). 3. Muestra el estado del servicio chronyd. Tenga en cuenta el ID del proceso de cualquier demonio activo.
+
+[student@servera ~]$ systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; ...
+     Active: active (running) since Thu 2025-05-22 14:47:06 UTC; 4h 0min ago
+
+Invocación: c9e1ab4edb1d426bbc065db07ee1d475
+
+       Docs: man:chronyd(8)
+             man:chrony.conf(5)
+    Process: 929 ExecStart=/usr/sbin/chronyd $OPTIONS (code=exited, ...
+   Main PID: 946 (chronyd)
+      Tasks: 1 (limit: 9897)
+     Memory: 4.4M (peak: 5.2M)
+        CPU: 96ms
+     CGroup: /system.slice/chronyd.service
+             └─946 /usr/sbin/chronyd -F 2
+
+22 de mayo 14:47:06 servera.lab.example.com chronyd[946]: chronyd versión 4.6.1... 22 de mayo 14:47:06 servera.lab.example.com chronyd[946]: la directiva de clave de comando es... 22 de mayo 14:47:06 servera.lab.example.com chronyd[946]: generatecommandkey... ...salida omitida... 22 de mayo 14:47:12 servera chronyd[946]: Fuente 172.25.254.254 en línea 22 de mayo 14:47:16 servera chronyd[946]: Fuente seleccionada 172.25.254.254 Presione Q para salir del comando. 3.1. Confirme que el demonio chronyd se esté ejecutando utilizando su ID de proceso. En el comando anterior, el resultado del ID del proceso asociado con el servicio chronyd es 946. El ID del proceso puede diferir en su sistema.
+
+[student@servera ~]$ ps -p 946
+    PID TTY          TIME CMD
+    946 ?        00:00:00 chronyd
+
+3.2. Explore el estado del servicio sshd. Puede utilizar este servicio para una comunicación cifrada segura entre sistemas. 4. Determine si el servicio sshd está habilitado para iniciarse en el inicio del sistema. 4.1.
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente y finalizan En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[student@servera ~]$ systemctl is-enabled sshd
+
+habilitado Determine si el servicio sshd está activo sin mostrar toda la información de estado.
+
+[student@servera ~]$ systemctl is-active sshd
+
+activo 4.2. Muestra el estado del servicio sshd.
+
+[student@servera ~]$ systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; ...
+     Active: active (running) since Thu 2025-05-22 14:48:13 UTC; 4h ...
+
+Invocación: 8dfdf690e8134f4b9e317b91fe84ebda
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 1403 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 6.8M (peak: 9.8M)
+        CPU: 12.525s
+     CGroup: /system.slice/sshd.service
+             └─1403 "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 ...
+
+22 de mayo 18:48:24 servera sshd-session[13035]: Conexión cerrada por... 22 de mayo 18:48:48 servera sshd-session[13074]: Conexión cerrada por... 22 de mayo 18:49:00 servera sshd-session[13081]: Conexión cerrada por... ...salida omitida... Presione Q para salir del comando. 4.3. Enumere los estados habilitados o deshabilitados de todas las unidades de servicio.
+
+[student@servera ~]$ systemctl list-unit-files --type=service
+
+UNIDAD ESTADO DE ARCHIVO PRESET arp-ethers.service deshabilitado deshabilitado atd.service habilitado habilitado auditd.service habilitado habilitado autovt@.service alias - blk-availability.service deshabilitado deshabilitado bluetooth.service habilitado habilitado Capsule@.service estático -
+
+chronyd.service                 enabled         enabled
+
+cloud-config.service habilitado habilitado... salida omitida... Presione Q para salir del comando. 5. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente
+
+student@workstation:~$ lab finish services-identify
+
+
+
+
+
+10.3. Servicios del sistema de control 10.3. Control de los servicios del sistema Objetivos Controlar los demonios del sistema y los servicios de red con el comando systemctl. Iniciar y detener servicios Puede iniciar, detener o recargar servicios manualmente para actualizar el servicio, actualizar el archivo de configuración, desinstalar el servicio o administrar manualmente un servicio que se utiliza con poca frecuencia. Para verificar el estado de un servicio, incluido si el servicio se está ejecutando o detenido, use el estado systemctl
+
+command:
+root@host:~# systemctl status sshd.service
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:33 UTC; 7h ago
+
+...salida omitida... Para iniciar un servicio, utilice el comando systemctl start como usuario root (con el comando sudo si es necesario). Si ejecuta el comando systemctl start solo con el nombre del servicio (sin el tipo de servicio), entonces el servicio systemd busca archivos .service.
+
+root@host:~# systemctl start sshd
+
+Para detener un servicio en ejecución, utilice la opción de detención del comando systemctl. El siguiente ejemplo detiene el
+
+sshd.service service:
+root@host:~# systemctl stop sshd.service
+
+Reinicio y recarga de servicios Cuando reinicia un servicio en ejecución, el servicio primero se detiene y luego se reinicia. Al reiniciar el servicio, el nuevo proceso obtiene una nueva ID durante el inicio y, por lo tanto, la ID del proceso cambia. Para reiniciar un servicio en ejecución, use la opción de reinicio del comando systemctl. El siguiente ejemplo reinicia el sshd
+
+service:
+root@host:~# systemctl restart sshd.service
+
+Algunos servicios pueden recargar sus archivos de configuración sin necesidad de reiniciar, lo que se denomina recarga del servicio. Recargar un servicio no cambia el ID de proceso asociado con varios procesos de servicio. Para recargar un servicio en ejecución, use la opción de recarga del comando systemctl. El siguiente ejemplo muestra cómo recargar el servicio sshd.service
+
+after configuration changes:
+root@host:~# systemctl reload sshd.service
+
+Si no está seguro de si el servicio tiene la función para recargar los cambios del archivo de configuración, use la opción recargar o reiniciar del comando systemctl. El comando recarga los cambios de configuración si la función de recarga está
+
+available. Otherwise, the command restarts the service to implement the new configuration changes:
+
+
+
+
+

@@ -1,0 +1,87 @@
+# 14.5. Ajuste de la política SELinux ajustando valores booleanos
+# Tipo: theory
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.5. Ajuste de la política SELinux ajustando valores booleanos 14.5. Ajuste de la política de SELinux ajustando los objetivos booleanos Ajuste el sistema cambiando el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. SELinux Booleanos Un desarrollador de aplicaciones o servicios escribe una política específica de SELinux para definir el comportamiento permitido de la aplicación específica. Un desarrollador puede incluir un comportamiento de aplicación opcional en la política de SELinux que se puede habilitar cuando el comportamiento está permitido en un sistema específico. Los booleanos de SELinux habilitan o deshabilitan el comportamiento opcional de la política de SELinux. Con los booleanos, puedes ajustar selectivamente el comportamiento de una aplicación. Estos comportamientos opcionales son específicos de la aplicación y deben descubrirse y seleccionarse para cada aplicación de destino. Los valores booleanos específicos del servicio están documentados en la página de manual de SELinux de ese servicio. Por ejemplo, el servicio httpd del servidor web tiene su página de manual httpd(8) y una página de manual httpd_selinux(8) para documentar su política SELinux, incluidos los tipos de procesos admitidos, contextos de archivos y los comportamientos booleanos disponibles. Las páginas de manual de SELinux las proporciona el paquete selinux-policy-doc. Utilice el comando getsebool para enumerar los booleanos disponibles para las políticas específicas en este sistema y el estado booleano actual. Utilice el comando setsebool para habilitar o deshabilitar el estado de ejecución de estos comportamientos. El
+
+setsebool -P command makes the setting persistent by writing to the policy file. Only privileged users can set
+
+Booleanos de SELinux. En el siguiente ejemplo, utilice el comando getsebool para enumerar todos los booleanos disponibles junto con el estado:
+
+root@host:~# getsebool -a
+
+abrt_anon_write --> desactivado abrt_handle_event --> desactivado abrt_upload_watch_anon_write --> activado ... salida omitida... Ejemplo de política Httpd booleana La política de servicio httpd incluye el booleano httpd_enable_homedirs, que permite compartir directorios personales con el servicio httpd. Normalmente, el usuario solo puede acceder al directorio de inicio local de un usuario cuando inicia sesión en el sistema local. Alternativamente, los directorios principales se comparten y se accede a ellos mediante un protocolo de intercambio remoto de archivos, como NFS. En ambos escenarios, los directorios principales no se comparten mediante el servicio httpd de forma predeterminada y no están disponibles para el usuario a través de un navegador. En el siguiente ejemplo, enumere el estado del booleano httpd_enable_homedirs:
+
+root@host:~# getsebool httpd_enable_homedirs
+
+httpd_enable_homedirs --> off Puede habilitar el uso compartido y permitir que los usuarios accedan a sus directorios de inicio con un navegador. Cuando está habilitado, el servicio httpd comparte directorios de inicio que están etiquetados con el contexto del archivo user_home_dir_t. Luego, los usuarios pueden acceder y administrar los archivos de su directorio de inicio desde un navegador.
+
+
+
+
+
+14.5. Ajustar la política de SELinux ajustando los valores booleanos Administrar la política booleana La configuración de los valores booleanos de SELinux con el comando setsebool sin la opción -P es temporal y la configuración vuelve a los valores persistentes después de reiniciar. Vea información adicional con el comando semanage boolean -l, que enumera los booleanos de los archivos de políticas, incluido si un booleano es persistente, los valores predeterminados y actuales, y una breve descripción. En el siguiente ejemplo, enumere el booleano httpd_enable_homedirs:
+
+root@host:~# semanage boolean -l | grep httpd_enable_homedirs
+
+httpd_enable_homedirs (off , off) Permitir que httpd habilite homedirs En el siguiente ejemplo, habilite el booleano httpd_enable_homedirs:
+
+root@host:~# setsebool httpd_enable_homedirs on
+
+En el siguiente ejemplo, enumere el booleano httpd_enable_homedirs:
+
+root@host:~# semanage boolean -l | grep httpd_enable_homedirs
+
+httpd_enable_homedirs (activado, desactivado) Permitir que httpd habilite homedirs En el siguiente ejemplo, verifique que el booleano httpd_enable_homedirs esté habilitado:
+
+root@host:~# getsebool httpd_enable_homedirs
+
+httpd_enable_homedirs --> on El ejemplo anterior estableció temporalmente el valor actual del booleano httpd_enable_homedirs en on, hasta que el sistema se reinicie. Para cambiar la configuración predeterminada, use el comando setsebool -P para hacer que la configuración sea persistente:
+
+root@host:~# setsebool -P httpd_enable_homedirs on
+
+Vea la información booleana del archivo de política:
+
+root@host:~# semanage boolean -l | grep httpd_enable_homedirs
+
+httpd_enable_homedirs (activado, activado) Permitir que httpd habilite homedirs Para enumerar solo valores booleanos persistentes con configuraciones personalizadas en comparación con la política original, use el comando semanage boolean -l -C.
+
+root@host:~# semanage boolean -l -C
+
+SELinux Estado booleano Descripción predeterminada httpd_enable_homedirs (activado, activado) Permitir que httpd habilite homedirs Referencias a las páginas man booleans(8), getsebool(8), setsebool(8), semanage(8) y semanage-boolean(8)
+
+
+
+
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos 14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los booleanos Cambie el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Configure el servicio web Apache para publicar contenido web desde el directorio de inicio del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-booleans
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Edite el archivo de configuración /etc/httpd/conf.d/userdir.conf para habilitar la función Apache para que los usuarios puedan publicar contenido web desde su directorio de inicio. Comente la línea en la sección IfModule que establece la variable UserDir en el valor deshabilitado y descomente la línea que establece la variable UserDir en el valor public_html. ...salida omitida... <IfModule mod_userdir.c> ...salida omitida...
+
+    # UserDir disabled
+
+...salida omitida...
+
+    UserDir public_html
+
+...salida omitida... </IfModule> 2. Inicie y habilite el servicio web Apache.
+
+[root@servera ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. 3. Regrese como usuario estudiante en la máquina del servidor. Cree el archivo ~/public_html/index.html con el contenido Esto es para estudiantes en SERVERA. contenido. 4. Regrese como usuario estudiante en la máquina del servidor. 4.1.
+
+
+
+
+

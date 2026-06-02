@@ -1,0 +1,512 @@
+# Administración de software y suscripciones
+# Tipo: theory
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Administración de software y
+suscripciones
+Objetivos
+• Suscribir sistemas, configurar canales de software y repositorios, habilitar flujos de módulos y
+gestionar paquetes RPM en hosts gestionados.
+Administración de paquetes con Ansible
+El módulo ansible.builtin.dnf de Ansible usa dnf en los hosts gestionados para manejar las
+operaciones de paquetes. El siguiente playbook instala el paquete httpd en el host gestionado
+servera.lab.example.com:
+---
+- name: Install the required packages on the web server
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Install the httpd packages
+      ansible.builtin.dnf:
+        name: httpd    
+        state: present 
+La palabra clave name especifica el nombre del paquete para instalar.
+La palabra clave state indica el estado esperado del paquete en el host gestionado:
+present
+Ansible instala el paquete si aún no está instalado.
+absent
+Ansible elimina el paquete si está instalado.
+latest
+Ansible actualiza el paquete si aún no está en la versión más reciente disponible. Si el
+paquete no está instalado, Ansible lo instala.
+La siguiente tabla compara algunos usos del módulo de Ansible ansible.builtin.dnf con el
+comando equivalente dnf.
+Tarea de Ansible
+Comando DNF
+- name: Install httpd
+  ansible.builtin.dnf:
+    name: httpd
+    state: present
+dnf install httpd
+RH294-RHEL9.0-es-3-20240620
+407
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Tarea de Ansible
+Comando DNF
+- name: Install or upgrade httpd
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+dnf upgrade httpd o dnf install
+httpd si el paquete aún no está instalado.
+- name: Upgrade all packages
+  ansible.builtin.dnf:
+    name: '*'
+    state: latest
+dnf upgrade
+- name: Remove httpd
+  ansible.builtin.dnf:
+    name: httpd
+    state: absent
+dnf remove httpd
+- name: Install Development Tools
+  ansible.builtin.dnf:
+    name: '@Development Tools' 
+    state: present
+Con el módulo de Ansible
+ansible.builtin.dnf, debe agregar
+a los nombres de grupos el prefijo con
+el signo de arroba @. Recuerde que
+puede recuperar la lista de grupos con el
+comando dnf group list.
+dnf group install "Development
+Tools"
+- name: Remove Development Tools
+  ansible.builtin.dnf:
+    name: '@Development Tools'
+    state: absent
+dnf group remove "Development
+Tools"
+- name: Install perl DNF module
+  ansible.builtin.dnf:
+    name: '@perl:5.26/minimal' 
+    state: present
+Para gestionar un módulo de paquete,
+anteponga su nombre con el signo de
+arroba (@). La sintaxis es la misma que
+para el comando dnf. Por ejemplo,
+puede omitir la parte del perfil para usar
+el perfil predeterminado: @perl:5.26.
+Recuerde que puede enumerar los
+módulos de paquetes disponibles con el
+comando dnf module list.
+dnf module install perl:5.26/
+minimal
+408
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Importante
+Red Hat Enterprise Linux 8 proporciona varios módulos de paquetes, pero Red Hat
+Enterprise Linux 9.0 no lo hizo cuando se lanzó inicialmente. Se espera que los
+módulos de paquetes para versiones adicionales de componentes de software
+estén disponibles en futuras versiones menores de Red Hat Enterprise Linux.
+Ejecute el comando ansible-navigator doc ansible.builtin.dnf para obtener
+ejemplos de parámetros y de playbooks adicionales.
+Optimización de la instalación de varios paquetes
+Para operar en varios paquetes, la palabra clave name acepta una lista. El siguiente playbook
+instala tres paquetes en el host gestionado servera.lab.example.com.
+---
+- name: Install the required packages on the web server
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Install the packages
+      ansible.builtin.dnf:
+        name:
+          - httpd
+          - mod_ssl
+          - httpd-tools
+        state: present
+Con esta sintaxis, Ansible instala los paquetes en una sola transacción de DNF. Esto es equivalente
+a ejecutar el comando dnf install httpd mod_ssl httpd-tools.
+Una versión más común pero menos eficiente y más lenta de esta tarea es usar un bucle.
+---
+- name: Install the required packages on the web server
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Install the packages
+      ansible.builtin.dnf:
+        name: "{{ item }}""
+        state: present
+      loop:
+        - httpd
+        - mod_ssl
+        - httpd-tools
+Evite usar este método, ya que requiere que el módulo realice tres transacciones individuales, una
+para cada paquete.
+Recopilación de datos sobre paquetes instalados
+El módulo de Ansible ansible.builtin.package_facts recopila los detalles del paquete
+instalado en los hosts gestionados. Establece la variable ansible_facts['packages'] con los
+detalles del paquete.
+RH294-RHEL9.0-es-3-20240620
+409
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+El playbook siguiente llama al módulo ansible.builtin.package_facts y
+el módulo ansible.builtin.debug para visualizar el contenido de la variable
+ansible_facts['packages'] y la versión del paquete NetworkManager instalado.
+---
+- name: Display installed packages
+  hosts: servera.lab.example.com
+  gather_facts: false
+  tasks:
+    - name: Gather info on installed packages
+      ansible.builtin.package_facts:
+        manager: auto
+    - name: List installed packages
+      ansible.builtin.debug:
+        var: ansible_facts['packages']
+    - name: Display NetworkManager version
+      ansible.builtin.debug:
+        var: ansible_facts['packages']['NetworkManager'][0]['version'] 
+      when: ansible_facts['packages']['NetworkManager'] is defined
+La variable ansible_facts['packages'] contiene una lista para cada paquete instalado.
+Cuando una lista contiene un ítem, use [0] para seleccionar ese ítem.
+Cuando se ejecuta, el playbook muestra la lista de paquetes y la versión del paquete
+NetworkManager:
+[user@controlnode ~]$ ansible-navigator run -m stdout lspackages.yml
+PLAY [Display installed packages] **********************************************
+TASK [Gather info on installed packages] ***************************************
+ok: [servera.lab.example.com]
+TASK [List installed packages] *************************************************
+ok: [servera.lab.example.com] => {
+    "ansible_facts['packages']": {
+        "NetworkManager": [
+            {
+                "arch": "x86_64",
+                "epoch": 1,
+                "name": "NetworkManager",
+                "release": "4.el9_0",
+                "source": "rpm",
+                "version": "1.36.0"
+            }
+        ],
+...output omitted...
+        "zstd": [
+            {
+                "arch": "x86_64",
+                "epoch": null,
+                "name": "zstd",
+410
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+                "release": "2.el9",
+                "source": "rpm",
+                "version": "1.5.1"
+            }
+        ]
+    }
+}
+TASK [Display NetworkManager version] ******************************************
+ok: [servera.lab.example.com] => {
+    "ansible_facts['packages']['NetworkManager'][0]['version']": "1.36.0"
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=0    unreachable=0    failed=0  ...
+Revisión de módulos alternativos para administrar paquetes
+Para otros administradores de paquetes, Ansible generalmente proporciona un módulo dedicado.
+El módulo ansible.builtin.apt usa la herramienta de paquetes APT disponible en Debian o
+Ubuntu. El módulo ansible.windows.win_package puede instalar software en sistemas de
+Microsoft Windows.
+El playbook siguiente usa condicionales para seleccionar el módulo apropiado en un entorno
+compuesto por sistemas de Red Hat Enterprise Linux que ejecuta las versiones principales 7, 8 y 9.
+---
+- name: Install the required packages on the web servers
+  hosts: webservers
+  tasks:
+    - name: Install httpd on RHEL 8 and 9
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+      when:
+        - "ansible_facts['distribution'] == 'RedHat'"
+        - "ansible_facts['distribution_major_version'] >= '8'`"
+    - name: Install httpd on RHEL 7 and earlier
+      `ansible.builtin.yum:
+        name: httpd
+        state: present
+      when:
+        - "ansible_facts['distribution'] == 'RedHat'"
+        - "ansible_facts['distribution_major_version'] <= `'7'`"
+Como alternativa, el módulo genérico ansible.builtin.package detecta y usa
+automáticamente el administrador de paquetes disponible en los hosts gestionados. Con el
+módulo ansible.builtin.package, puede volver a escribir el playbook anterior de la siguiente
+manera:
+RH294-RHEL9.0-es-3-20240620
+411
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+---
+- name: Install the required packages on the web servers
+  hosts: webservers
+  tasks:
+    - name: Install httpd
+      ansible.builtin.package:
+        name: httpd
+        state: present
+Sin embargo, el módulo ansible.builtin.package no soporta todas las características que
+proporcionan los módulos más especializados.
+Además, los sistemas operativos a menudo tienen nombres diferentes para los paquetes que
+proporcionan. Por ejemplo, el paquete que instala el servidor HTTP Apache es httpd en Red Hat
+Enterprise Linux y apache2 en Ubuntu.
+En ese caso, aún necesita un condicional para seleccionar el nombre correcto del paquete en
+función del sistema operativo del host gestionado.
+Registro y gestión de sistemas con Red Hat
+Subscription Management
+Puede habilitar sus sistemas Red Hat Enterprise Linux para suscripciones de productos mediante
+el uso de algunos métodos diferentes:
+• Puede usar el comando subscription-manager.
+• En los sistemas Red Hat Enterprise Linux 9.2 y posteriores, puede usar el rol rhel-system-
+roles.rhc disponible en el RPM rhel-system-roles (versión 1.21.1 y posteriores).
+• Puede usar el rol redhat.rhel_system_roles.rhc de la colección
+redhat.rhel_system_roles (versión 1.21.1 y posteriores).
+nota
+El entorno de ejecución de automatización registry.redhat.io/ansible-
+automation-platform-24/ee-supported-rhel8 contiene la colección
+redhat.rhel_system_roles. También puede instalar la colección
+redhat.rhel_system_roles en su proyecto de Ansible y, luego, usar el entorno
+de ejecución de automatización ee-supported-rhel8 disponible para Ansible
+Automation Platform 2.2 o 2.3.
+Gestión de Red Hat Subscription Management desde la línea
+de comandos
+Sin Ansible, puede usar el comando subscription-manager para registrar un sistema:
+[user@host ~]$ sudo subscription-manager register
+Registering to: subscription.rhsm.redhat.com:443/subscription
+Username: yourusername
+Password: yourpassword
+...output omitted...
+412
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+El siguiente comando adjunta una suscripción con un ID de conjunto. Puede enumerar los
+conjuntos disponibles para su cuenta con el comando subscription-manager list --
+available.
+[user@host ~]$ sudo subscription-manager attach --pool=poolID
+Después de registrar un sistema y adjuntar una suscripción, puede usar el comando
+subscription-manager para habilitar los repositorios de software de Red Hat en el sistema.
+Puede usar el comando subscription-manager repos --list para identificar los
+repositorios disponibles y, luego, usar el comando subscription-manager repos enable
+para habilitar los repositorios:
+[user@host ~]$ sudo subscription-manager repos \
+> --enable "rhel-9-for-x86_64-baseos-rpms" \
+> --enable "rhel-9-for-x86_64-appstream-rpms"
+Gestión de Red Hat Subscription Management mediante el uso
+de un rol
+Ya sea que use el rol rhel-system-roles.rhc del RPM rhel-system-roles o el rol
+redhat.rhel_system_roles.rhc de la colección redhat.rhel_system_roles, los pasos
+para administrar la gestión de suscripciones a Red Hat son esencialmente los mismos.
+1.
+Cree un play que incluya el rol deseado:
+---
+- name: Register systems
+  hosts: all
+  become: true
+  tasks:
+    - name: Include the rhc role
+      ansible.builtin.include_role:
+        name: redhat.rhel_system_roles.rhc
+2.
+Defina las variables para el rol. Puede definir estas variables en el play, en un directorio
+group_vars, en un directorio host_vars o en un archivo de variables separado:
+---
+rhc_state: present 
+rhc_auth: 
+  login:
+    username: yourusername
+    password: yourpassword
+rhc_insights: 
+  state: present
+rhc_repositories: 
+  - name: rhel-9-for-x86_64-baseos-rpms
+    state: enabled
+  - name: rhel-9-for-x86_64-appstream-rpms
+    state: enabled
+RH294-RHEL9.0-es-3-20240620
+413
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+La variable rhc_state especifica si el sistema debe estar conectado (o registrado) a
+Red Hat. Los valores válidos son present, absent y reconnect. Cuando se establece
+en present o reconnect, el rol intenta conectar automáticamente una suscripción.
+La variable rhc_auth define variables adicionales relacionadas con la autenticación
+en la gestión de suscripciones a Red Hat, como las variables rhc_auth['login'] y
+rhc_auth['activation_keys']. Una opción para la autenticación es especificar su
+nombre de usuario y contraseña. Si usa esta opción, puede considerar proteger estas
+variables con Ansible Vault. Una segunda opción es definir claves de activación para su
+organización.
+La variable rhc_insights define variables adicionales relacionadas con Red Hat
+Insights. De manera predeterminada, la variable rhc_insights['state']
+tiene un valor de present, que habilita la integración de Red Hat Insights.
+Hay variables adicionales disponibles para Red Hat Insights cuando la variable
+rhc_insights['state'] tiene un valor de present. Establezca la variable
+rhc_insights['state'] en absent para deshabilitar la integración de Red Hat
+Insights.
+La variable rhc_repositories define una lista de repositorios para habilitar o
+deshabilitar.
+3.
+Después de crear el playbook y definir las variables para el rol, ejecute el playbook para aplicar
+la configuración.
+Configuración de un repositorio de paquetes RPM
+Para habilitar el soporte para un repositorio Yum de terceros en un host gestionado, Ansible
+proporciona el módulo ansible.builtin.yum_repository.
+Configuración de un repositorio de paquetes RPM
+Cuando se ejecuta, el playbook siguiente declara un nuevo repositorio Yum en
+servera.lab.example.com.
+---
+- name: Configure the company YUM/DNF repositories
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Ensure Example Repo exists
+      ansible.builtin.yum_repository:
+        file: example   
+        name: example-internal
+        description: Example Inc. Internal YUM/DNF repo
+        baseurl: http://materials.example.com/yum/repository/
+        enabled: true
+        gpgcheck: true   
+        state: present  
+La palabra clave file especifica el nombre del archivo que se creará en el directorio /etc/
+yum.repos.d/. El módulo agrega automáticamente la extensión .repo a ese nombre.
+Por lo general, los proveedores de software firman digitalmente paquetes RPM con claves
+GPG. Al establecer la palabra clave gpgcheck en true, el sistema RPM verifica la integridad
+del paquete al confirmar que el paquete fue firmado por la clave GPG apropiada. El sistema
+414
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+RPM no instala ningún paquete cuya firma GPG no coincide. Use el módulo de Ansible
+ansible.builtin.rpm_key, descrito más adelante en esta sección, para instalar la clave
+GPG pública requerida.
+Al configurar la palabra clave state en present, Ansible crea o actualiza el archivo .repo.
+Al configurar state en absent, Ansible elimina el archivo.
+El archivo /etc/yum.repos.d/example.repo resultante en servera.lab.example.com es
+de la siguiente forma:
+[example-internal]
+async = 1
+baseurl = http://materials.example.com/yum/repository/
+enabled = 1
+gpgcheck = 1
+name = Example Inc. Internal YUM/DNF repo
+El módulo ansible.builtin.yum_repository expone la mayoría de los parámetros de
+configuración del repositorio como palabras clave. Ejecute el comando ansible-navigator
+doc ansible.builtin.yum_repository para obtener ejemplos de parámetros y de
+playbooks adicionales.
+nota
+Algunos repositorios de terceros proporcionan el archivo de configuración y la
+clave pública de GPG como parte del paquete de RPM que puede descargarse e
+instalarse con el comando dnf install.
+Por ejemplo, el proyecto Extra Packages for Enterprise Linux (EPEL) proporciona
+el paquete https://dl.fedoraproject.org/pub/epel/epel-release-
+latest-9.noarch.rpm que implementa el archivo de configuración /etc/
+yum.repos.d/epel.repo.
+Para este repositorio, use el módulo ansible.builtin.dnf para instalar el
+paquete EPEL en lugar del módulo ansible.builtin.yum_repository.
+Importación de una clave GPG de RPM
+Cuando la palabra clave gpgcheck se establece en true en el módulo
+ansible.builtin.yum_repository, también debe instalar la clave GPG en el
+host gestionado. El módulo ansible.builtin.rpm_key del siguiente ejemplo
+implementa la clave pública GPG alojada en un servidor web remoto en el host gestionado
+servera.lab.example.com.
+---
+- name: Configure the company YUM/DNF repositories
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Deploy the GPG public key
+      ansible.builtin.rpm_key:
+        key: http://materials.example.com/yum/repository/RPM-GPG-KEY-example
+        state: present
+    - name: Ensure Example Repo exists
+RH294-RHEL9.0-es-3-20240620
+415
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+      ansible.builtin.yum_repository:
+        file: example
+        name: example-internal
+        description: Example Inc. Internal YUM/DNF repo
+        baseurl: http://materials.example.com/yum/repository/
+        enabled: true
+        gpgcheck: true
+        state: present
+Referencias
+Páginas del manual: dnf(8), yum.conf(5) y subscription-manager(8)
+ansible.builtin.dnf module - Manages Packages with the DNF Package
+Manager - Ansible Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+dnf_module.html
+ansible.builtin.package_facts module - Package Information as Facts - Ansible
+Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+package_facts_module.html
+Introduction to the rhel-system-roles.rhc Role
+https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/
+html-single/automating_system_administration_by_using_rhel_system_roles/
+index#using-the-rhc-system-role-to-register-the-system_automating-system-
+administration-by-using-rhel-system-roles
+Using the redhat.rhel_system_roles.rhc Collection Role
+https://console.redhat.com/ansible/automation-hub/repo/published/redhat/
+rhel_system_roles/content/role/rhc/
+ansible.builtin.yum_repository module - Add or Remove YUM
+Repositories - Ansible Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+yum_repository_module.html
+ansible.builtin.rpm_key module - Adds or Removes a GPG Key from the RPM
+DB - Ansible Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+rpm_key_module.html
+416
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración de software y
+suscripciones
+Configurar un nuevo repositorio Yum y, desde allí, instala paquetes en sus hosts gestionados.
+Resultados
+• Configurar un repositorio Yum con el módulo ansible.builtin.yum_repository.
+• Administrar las claves GPG de RPM con el módulo ansible.builtin.rpm_key.
+• Obtener información sobre los paquetes instalados en un host con el módulo
+ansible.builtin.package_facts.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-software
+Instrucciones
+Su organización requiere que el paquete RPM simple-agent esté instalado en todos los hosts.
+Este paquete lo proporciona un repositorio Yum interno que mantiene su organización para alojar
+paquetes de software desarrollados internamente.
+Debe escribir un playbook para asegurarse de que el paquete simple-agent esté instalado
+en todos los hosts gestionados. El playbook también debe garantizar que todos los hosts
+gestionados estén configurados para usar el repositorio Yum interno.
+El repositorio se encuentra en http://materials.example.com/yum/repository. Todos
+los paquetes RPM en el repositorio están firmados con un par de claves GPG. La clave pública de
+GPG para los paquetes del repositorio está disponible en http://materials.example.com/
+yum/repository/RPM-GPG-KEY-example.
+ 1.
+Cambie al directorio /home/student/system-software.
+[student@workstation ~]$ cd ~/system-software
+[student@workstation system-software]$
+ 2.
+Empiece a escribir el playbook repo_playbook.yml. Defina un solo play en el playbook
+que se dirige a todos los hosts. Agregue una cláusula vars al play que defina una sola
+variable, custom_pkg, con el valor simple-agent (el nombre del paquete RPM que debe
+instalarse en todas partes). Agregue una cláusula tasks vacía al play.
+RH294-RHEL9.0-es-3-20240620
+417
+
+

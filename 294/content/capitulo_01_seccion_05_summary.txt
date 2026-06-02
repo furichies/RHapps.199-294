@@ -1,0 +1,81 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 1. Presentación de Ansible
+
+capítulo 1 |  Presentación de Ansible
+Resumen
+• La automatización lo ayuda a mitigar los errores humanos y garantizar que su infraestructura de
+TI se encuentre en un estado correcto y coherente.
+• Ansible es una plataforma de automatización de código abierto que puede adaptarse a muchos
+flujos de trabajo y entornos.
+• Red Hat Ansible Automation Platform es una versión totalmente compatible de Ansible
+que también incluye una serie de componentes y herramientas adicionales para ayudarlo a
+desarrollar, implementar y gestionar su código de automatización.
+• Ansible puede usarse para gestionar muchos tipos de sistemas diferentes, incluidos los
+servidores que ejecutan Linux, Microsoft Windows y dispositivos de red.
+• Los playbooks de Ansible son archivos de texto legibles por humanos que describen el estado
+deseado de una infraestructura de TI.
+• Ansible se conecta con hosts gestionados con protocolos de red estándar, como SSH, y
+ejecuta códigos o comandos en los hosts gestionados para garantizar que tengan el estado
+especificado.
+• Ansible se basa en una arquitectura sin agentes en la que el software Ansible solo se instala en
+un nodo de control y en entornos de ejecución de automatización.
+• El navegador de contenido de automatización (ansible-navigator) es una herramienta
+clave que lo ayuda a desarrollar y ejecutar su código de automatización de Ansible.
+RH294-RHEL9.0-es-3-20240620
+19
+
+
+20
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2
+Implementación de un playbook
+de Ansible
+Meta
+Crear un inventario de hosts gestionados, escribir
+un playbook de Ansible simple y ejecutarlo para
+automatizar las tareas en esos hosts.
+Objetivos
+•
+Describir los conceptos de inventario de Ansible
+y administrar un archivo de inventario estático.
+•
+Describir dónde se encuentran los archivos de
+configuración de Ansible, cómo los selecciona
+Ansible y editarlos para aplicar los cambios a la
+configuración predeterminada.
+•
+Escribir un playbook de Ansible básico y
+ejecutarlo con el navegador de contenido de
+automatización.
+•
+Escribir un playbook que use múltiples
+plays con aumento de privilegios por play
+y aprovechar eficazmente el navegador de
+contenido de automatización para encontrar
+nuevos módulos en Ansible Content Collections
+disponibles a fin de implementar tareas para un
+play.
+Secciones
+•
+Compilación de un inventario de Ansible (y
+ejercicio guiado)
+•
+Administración de archivos de configuración de
+Ansible (y ejercicio guiado)
+•
+Escritura y ejecución de playbooks (y ejercicio
+guiado)
+•
+Implementación de varios plays (y ejercicio
+guiado)
+Trabajo de
+laboratorio
+•
+Implementación de un playbook de Ansible
+RH294-RHEL9.0-es-3-20240620
+21
+
+

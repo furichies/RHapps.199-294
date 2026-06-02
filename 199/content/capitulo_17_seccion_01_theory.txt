@@ -1,0 +1,144 @@
+# 14.1. Operando SELinux
+# Tipo: theory
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.1. Operando SELinux 14.1. Operación de SELinux Objetivos Describir cómo funciona SELinux y controlar el modo SELinux predeterminado y actual. SELinux Architecture Security Enhanced Linux (SELinux) es una característica de seguridad crítica de Linux. El acceso a archivos, puertos y otros recursos se controla a nivel granular. A los procesos se les permite acceder solo a los recursos que especifican su política SELinux o su configuración booleana. Los permisos de archivos controlan el acceso a los archivos para un usuario o grupo específico. Sin embargo, los permisos de archivos no impiden que un usuario autorizado con acceso a archivos utilice un archivo para un fin no deseado. Por ejemplo, con acceso de escritura a un archivo, otros editores o programas aún pueden abrir y modificar un archivo de datos estructurados que está diseñado para que escriba únicamente un programa específico. Estas operaciones podrían provocar daños en los archivos o un problema de seguridad de los datos. Los permisos de archivos no impiden dicho acceso no deseado, porque no controlan cómo se utiliza un archivo, sino sólo quién puede leerlo, escribirlo o ejecutarlo. SELinux consta de políticas específicas de la aplicación que los desarrolladores de la aplicación definen para declarar qué acciones y accesos están permitidos para cada ejecutable binario, archivo de configuración y archivo de datos que utiliza la aplicación. Esta política se conoce como política dirigida porque una política define las actividades de una aplicación. Las políticas declaran las etiquetas predefinidas que se configuran en programas, archivos y puertos de red individuales. Uso de SELinux SELinux impone un conjunto de reglas de acceso que definen explícitamente acciones permitidas entre procesos y recursos. No se permite ninguna acción que no esté definida en una regla de acceso. Como sólo se permiten acciones definidas, las aplicaciones con un diseño de seguridad deficiente siguen estando protegidas contra el uso malicioso. Las aplicaciones o servicios con una política específica se ejecutan en un dominio confinado, mientras que una aplicación sin una política se ejecuta de forma ilimitada y sin ninguna protección SELinux. Las políticas específicas individuales se pueden deshabilitar para ayudar con el desarrollo y la depuración de políticas de seguridad y aplicaciones. SELinux tiene los siguientes modos operativos: Aplicación: SELinux aplica las políticas de seguridad en todo el sistema. El modo de aplicación es el modo predeterminado y recomendado en Red Hat Enterprise Linux. Permisivo: SELinux carga las políticas y está activo, pero en lugar de imponer reglas de control de acceso, registra las violaciones de acceso. Este modo es útil para probar y solucionar problemas de aplicaciones y reglas. Deshabilitado: SELinux está desactivado y las violaciones de SELinux no se implementan ni se registran. Este modo también evita etiquetar archivos o directorios con contextos de seguridad, lo que dificulta la habilitación de SELinux en el futuro. Se desaconseja encarecidamente deshabilitar SELinux. Importante RHEL ya no admite la configuración de la opción SELINUX=disabled en el archivo /etc/selinux/config.
+
+
+
+
+
+14.1. Operación de SELinux Conceptos de SELinux El objetivo principal de SELinux es proteger los datos del usuario del uso inadecuado por parte de aplicaciones o servicios del sistema comprometidos. La mayoría de los administradores de Linux están familiarizados con el modelo de seguridad estándar de permisos de archivos de usuarios, grupos y mundos, que se conoce como Control de acceso discrecional (DAC) porque los administradores establecen los permisos de archivos según sus necesidades. SELinux proporciona una capa adicional de seguridad basada en objetos, que se define en reglas granulares. Esta capa de seguridad se conoce como Control de acceso obligatorio (MAC). Las políticas MAC se aplican a todos los usuarios y no se pueden omitir para usuarios específicos mediante ajustes de configuración discrecionales. Por ejemplo, el puerto de firewall abierto de un servidor web permite el acceso anónimo remoto a un cliente web. Sin embargo, un usuario malintencionado que acceda a ese puerto podría intentar comprometer un sistema a través de una vulnerabilidad existente. Si una vulnerabilidad compromete los permisos del usuario y grupo de Apache, entonces un usuario malintencionado podría acceder directamente al contenido raíz del documento /var/www/html, o a los directorios /tmp y /var/tmp del sistema, u otros archivos y directorios accesibles. Las políticas de SELinux son reglas de seguridad que definen cómo procesos específicos acceden a archivos, directorios y puertos relevantes. Cada entidad de recurso, como un archivo, proceso, directorio o puerto, tiene una etiqueta de contexto SELinux. La etiqueta de contexto coincide con una regla de política SELinux definida para permitir que un proceso acceda al recurso etiquetado. De forma predeterminada, una política SELinux no permite ningún acceso a menos que una regla explícita lo otorgue. Cuando no se define ninguna regla de permiso, no se permite ningún acceso. Las etiquetas SELinux tienen campos de usuario, rol, tipo y nivel de seguridad. La política dirigida, que está habilitada en RHEL de forma predeterminada, define reglas utilizando el contexto de tipo. Los nombres de contexto de tipo normalmente terminan con _t. Figura 17. Conceptos de reglas de acceso a políticas de contexto de archivo SELinux Por ejemplo, un proceso de servidor web está etiquetado con el contexto de tipo httpd_t. Los archivos y directorios del servidor web en el directorio /var/www/html/ y otras ubicaciones están etiquetados con el contexto de tipo httpd_sys_content_t. Los archivos temporales en los directorios /tmp y /var/tmp tienen contextos de tipo tmp_t como etiqueta. Los puertos del servidor web tienen como etiqueta el contexto de tipo http_port_t. Un proceso del servidor web Apache se ejecuta con el contexto de tipo httpd_t. Una regla de política permite que el servidor Apache acceda a archivos y directorios etiquetados con el contexto de tipo httpd_sys_content_t. De forma predeterminada, los archivos en el directorio /var/www/html tienen el contexto de tipo httpd_sys_content_t. De forma predeterminada, una política de servidor web no permite reglas para el uso de archivos etiquetados como tmp_t, como en los directorios /tmp y /var/tmp, por lo que no permite el acceso. Con SELinux habilitado, un usuario malintencionado que utilice un proceso Apache comprometido aún no tendría acceso a los archivos del directorio /tmp. Un proceso del servidor MariaDB se ejecuta con el contexto de tipo mysqld_t. De forma predeterminada, los archivos en el directorio /data/mysql tienen el contexto de tipo mysqld_db_t. Un servidor MariaDB puede acceder a los archivos etiquetados mysqld_db_t, pero no tiene reglas para permitir el acceso a archivos para otros servicios, como los archivos etiquetados httpd_sys_content_t.
+
+
+
+
+
+14.1. Operación de SELinux Figura 18. Flujo de toma de decisiones de SELinux Muchos comandos que enumeran recursos utilizan la opción -Z para administrar contextos de SELinux. Por ejemplo, ps, ls, cp y
+
+mkdir commands all use the -Z option.
+
+En el siguiente ejemplo, utilice la opción -Z del comando ps para ver los contextos SELinux de los procesos:
+
+root@host:~# ps axZ
+
+ETIQUETA PID TTY COMANDO DE HORA DE ESTADO
+
+system_u:system_r:init_t:s0      1 ?    Ss    0:03 /usr/lib/systemd/systemd...
+system_u:system_r:kernel_t:s0    2 ?    S     0:00 [kthreadd]
+system_u:system_r:kernel_t:s0    3 ?    S     0:00 [pool_workqueue_release]
+system_u:system_r:kernel_t:s0    4 ?    I<    0:00 [kworker/R-rcu_gp]
+system_u:system_r:kernel_t:s0    5 ?    I<    0:00 [kworker/R-sync_wq]
+
+...salida omitida... En el siguiente ejemplo, utilice la opción -Z del comando ps para ver el contexto SELinux del servicio httpd:
+
+root@host:~# ps -ZC httpd
+
+ETIQUETA PID TTY TIEMPO CMD
+
+system_u:system_r:httpd_t:s0       6780 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6781 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6782 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6783 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6789 ?        00:00:00 httpd
+
+En el siguiente ejemplo, utilice la opción -Z del comando ls para ver el contexto SELinux del directorio /var/www:
+
+root@host:~# ls -Z /var/www
+system_u:object_r:httpd_sys_script_exec_t:s0 cgi-bin
+system_u:object_r:httpd_sys_content_t:s0 html
+
+Cambiar el modo SELinux Utilice el comando getenforce para ver el modo SELinux actual:
+
+
+
+
+
+14.1. Operando SELinux
+
+root@host:~# getenforce
+
+Aplicación Utilice el comando setenforce para cambiar el modo SELinux:
+
+root@host:~# setenforce
+usage:  setenforce [ Enforcing | Permissive | 1 | 0 ]
+
+Utilice el comando setenforce para cambiar al modo permisivo:
+
+root@host:~# setenforce 0
+
+Utilice el comando getenforce para ver el modo SELinux actual:
+
+root@host:~# getenforce
+
+Permisivo Alternativamente, configure el modo SELinux en el momento del arranque con un parámetro del kernel. Pase el parámetro del kernel enforcing=0 a
+
+boot the system into the permissive mode, or pass the enforcing=1 kernel parameter to boot into the enforcing
+mode. You can disable SELinux by passing the selinux=0 kernel parameter, or pass selinux=1 to enable SELinux.
+
+Red Hat recomienda reiniciar el servidor cuando cambia el modo SELinux del modo permisivo al modo obligatorio. Un reinicio garantiza que los servicios que se inician en el modo permisivo estén confinados en el siguiente inicio. Establezca el modo SELinux predeterminado Para configurar SELinux de manera persistente, use el archivo /etc/selinux/config. En el siguiente ejemplo predeterminado, la configuración establece SELinux en el modo obligatorio. Los comentarios enumeran otros valores válidos, como los modos permisivo y deshabilitado.
+
+# This file controls the state of SELinux on the system.
+# SELINUX= can take one of these three values:
+#     enforcing - SELinux security policy is enforced.
+#     permissive - SELinux prints warnings instead of enforcing.
+#     disabled - No SELinux policy is loaded.
+
+...salida omitida... SELINUX=aplicando
+
+# SELINUXTYPE= can take one of these three values:
+#     targeted - Targeted processes are protected,
+#     minimum - Modification of targeted policy. Only selected processes are protected.
+#     mls - Multi Level Security protection.
+
+SELINUXTYPE=targeted El sistema lee este archivo en el momento del arranque e inicia SELinux en consecuencia. Los argumentos del kernel selinux=0|1 y enforcing=0|1 anulan esta configuración.
+
+
+
+
+
+14.1. Operación de SELinux Referencias páginas man de getenforce(8), setenforce(8) y selinux_config(5) Para obtener más información sobre SELinux para Red Hat Enterprise Linux 10, consulte el capítulo Introducción a SELinux en la guía Uso de SELinux en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_selinux/index#getting-started-with-selinux Para obtener más información sobre los estados y modos de SELinux para Red Hat Enterprise Linux 10, consulte el capítulo Cómo cambiar los estados y modos de SELinux en la guía Uso de SELinux en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_selinux/index#cambiando-estados-y-modos-de-selinux
+
+
+
+
+
+14.2. Ejercicio guiado Operar SELinux 14.2. Ejercicio guiado Operar SELinux Controle el modo SELinux actual y ajuste el modo SELinux predeterminado que se utiliza en el momento del arranque. Resultados Ver y configurar el modo SELinux actual. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-opsmode
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cambie el modo SELinux predeterminado al modo permisivo. 2. Utilice el comando getenforce para verificar el modo SELinux actual en la máquina del servidor.
+
+[root@servera ~]# getenforce
+
+Hacer cumplir 2.1. Edite el archivo de configuración /etc/selinux/config para cambiar el parámetro SELINUX del modo obligatorio al modo permisivo. ...salida omitida... SELINUX=permisivo ...salida omitida... 2.2. Utilice el comando setenforce para cambiar el parámetro SELINUX al modo permisivo.
+
+[root@servera ~]# setenforce 0
+
+2.3. Utilice el comando getenforce para verificar el modo SELinux actual.
+
+[root@servera ~]# getenforce
+
+Permisivo 2.4. Cambie el modo SELinux predeterminado nuevamente al modo obligatorio en el archivo de configuración. 3.
+
+
+
+
+

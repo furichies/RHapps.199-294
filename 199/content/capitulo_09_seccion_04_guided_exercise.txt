@@ -1,0 +1,235 @@
+# Ejercicio Guiado: Ejercicio guiado de instalación y actualización de paquetes con DNF
+# Tipo: guided_exercise
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF 6.4. Ejercicio guiado Instalar y actualizar paquetes con DNF Encuentre, instale y actualice paquetes de software con DNF. Resultados Instalar y eliminar paquetes con dependencias. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-dnf
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale y luego elimine el paquete nmap. 2. Primero, intente utilizar el paquete nmap ejecutando el comando nmap.
+
+[root@servera ~]# nmap
+
+-bash: nmap: comando no encontrado El paquete nmap no está instalado. 2.1. Busque paquetes con nmap como parte de su nombre o resumen.
+
+[root@servera ~]# dnf search nmap
+
+...salida omitida... ========================== Nombre que coincide exactamente: nmap ===========================
+
+nmap.x86_64 : Network exploration tool and security scanner
+
+========================= Nombre y resumen coincidentes: nmap ==========================
+
+nmap-ncat.x86_64 : Nmap's Netcat replacement
+
+2.2. Obtenga más información sobre el paquete nmap. 2.3.
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF
+
+[root@servera ~]# dnf info nmap
+
+...salida omitida... Nombre de paquetes disponibles: nmap Época: 4 Versión: 7.92 Versión: 3.el10 Arquitectura: x86_64 Tamaño: 5,6 M Fuente: nmap-7.92-3.el10.src.rpm Repositorio: rhel-10.0-for-x86_64-appstream-rpms ...salida omitida... Instale el paquete nmap. Cuando se le solicite, presione Y para instalar el paquete.
+
+[root@servera ~]# dnf install nmap
+
+...salida omitida... Dependencias resueltas. =================================================================================== Paquete
+
+        Arch     Version            Repository                             Size
+
+================================================================================== Instalación:
+
+ nmap   x86_64   4:7.92-3.el10      rhel-10.0-for-x86_64-appstream-rpms   5.6 M
+
+Resumen de transacción ================================================================================================ Instalar 1 paquete Tamaño total de descarga: 5,6 M Tamaño instalado: 24 M ¿Está bien [s/n]: y ...salida omitido... ¡Completo! 2.4. Verifique que el paquete nmap esté instalado obteniendo la versión de la herramienta.
+
+[root@servera ~]# nmap -V
+
+Nmap versión 7.92 ( https://nmap.org ) ... salida omitida... 2.5. Elimine el paquete nmap. Cuando se le solicite, presione Y para eliminar el paquete. 2.6.
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF
+
+[root@servera ~]# dnf remove nmap
+
+Dependencias resueltas. =================================================================================== Paquete
+
+        Arch     Version           Repository                              Size
+
+================================================================================== Eliminando:
+
+ nmap   x86_64   4:7.92-3.el10     @rhel-10.0-for-x86_64-appstream-rpms    24 M
+
+Resumen de transacción ================================================================================================ Quitar 1 paquete Espacio liberado: 24 M ¿Está bien? [y/N]: y ...salida omitida... ¡Completa! Instale y luego elimine el grupo de componentes de Herramientas de seguridad. 3. Enumere los grupos de componentes disponibles.
+
+[root@servera ~]# dnf group list
+
+Grupos de entorno disponibles:
+
+   Server with GUI
+   Server
+
+...salida omitida...
+
+   Virtualization Host
+
+Grupos disponibles: ...salida omitida...
+
+   RPM Development Tools
+   Scientific Support
+   Security Tools
+   System Tools
+
+3.1. Obtenga más información sobre el grupo de componentes de Herramientas de seguridad y revise la lista de paquetes incluidos.
+
+[root@servera ~]# dnf group info 'Security Tools'
+
+...output omitted... Grupo: Herramientas de seguridad Descripción: Herramientas de seguridad para verificación de integridad y confianza. Paquetes predeterminados:
+
+   scap-security-guide
+
+Paquetes opcionales:
+
+   aide
+   hmaccalc
+   openscap
+   openscap-engine-sce
+   openscap-utils
+   scap-security-guide-doc
+   tpm2-tools
+   tss2
+   udica
+
+3.2. Instale el grupo de componentes de herramientas de seguridad. Cuando se le solicite, presione Y para instalar el paquete. 3.3.
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF
+
+[root@servera ~]# dnf group install 'Security Tools'
+
+...salida omitida... Instalación de grupos: Resumen de transacciones de herramientas de seguridad =========================================================================================== Instalar 7 paquetes Tamaño total de descarga: 3,3 M Tamaño instalado: 100 M ¿Esto está bien? [s/N]: y ...salida omitida... Instalado:
+
+  libtool-ltdl-2.4.7-13.el10.x86_64
+  libxslt-1.1.39-6.el10.x86_64
+  openscap-1:1.4.1-1.el10.x86_64
+  openscap-scanner-1:1.4.1-1.el10.x86_64
+  scap-security-guide-0.1.76-2.el10.noarch
+  xmlsec1-1:1.2.39-3.el10.x86_64
+  xmlsec1-openssl-1:1.2.39-3.el10.x86_64
+
+¡Completo! Verifique que el grupo Herramientas de seguridad esté instalado.
+
+[root@servera ~]# dnf group list --installed
+
+...salida omitida... Grupos instalados:
+
+   Security Tools
+
+3.4. Elimine el grupo Herramientas de seguridad. Cuando se le solicite, presione Y para eliminar el paquete.
+
+[root@servera ~]# dnf group remove 'Security Tools'
+
+...salida omitida... Eliminando grupos: Resumen de transacciones de herramientas de seguridad ========================================================================================== Quitar 7 paquetes Espacio liberado: 100 M ¿Está bien? [y/N]: y ...salida omitida... Eliminado:
+
+  libtool-ltdl-2.4.7-13.el10.x86_64
+  libxslt-1.1.39-6.el10.x86_64
+  openscap-1:1.4.1-1.el10.x86_64
+  openscap-scanner-1:1.4.1-1.el10.x86_64
+  scap-security-guide-0.1.76-2.el10.noarch
+  xmlsec1-1:1.2.39-3.el10.x86_64
+  xmlsec1-openssl-1:1.2.39-3.el10.x86_64
+
+¡Completo! 3.5. Explore la opción de historial del comando dnf. 4. Muestra el historial reciente de dnf. La historia puede variar en su entorno. 4.1.
+
+
+
+
+
+6.4. Ejercicio guiado Instalación y actualización de paquetes con finalización DNF En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-dnf
+[root@servera ~]# dnf history
+
+identificación | Línea de comando | Fecha y hora | Acción(es) | alterado
+
+--------------------------------------------------------------------------------
+     9 | group remove Security Too | 2025-06-12 00:07 | Removed        |    8
+     8 | group install Security To | 2025-06-11 23:57 | Install        |    8
+     7 | remove nmap               | 2025-06-11 23:41 | Removed        |    1
+     6 | install nmap              | 2025-06-11 23:35 | Install        |    1
+
+...salida omitida... Inspeccione la última ID en su salida del paso anterior. El ID puede variar en su entorno.
+
+[root@servera ~]# dnf history info 9
+
+ID de transacción: 9 Hora de inicio: jueves 12 de junio 00:07:29 2025 Inicio rpmdb: a62d...dada Hora de finalización: jueves 12 de junio 00:07:30 2025 (1 segundo) Fin rpmdb: 85cd...2800 Usuario: Usuario estudiante <estudiante> Código de retorno: Versión exitosa: 10 Línea de comando: eliminación de grupo Herramientas de seguridad Comentario: Paquetes modificados:
+
+    Removed libtool-ltdl-2.4.7-13.el10.x86_64        @@System
+    Removed libxslt-1.1.39-6.el10.x86_64             @@System
+    Removed openscap-1:1.4.1-1.el10.x86_64           @@System
+    Removed openscap-scanner-1:1.4.1-1.el10.x86_64   @@System
+    Removed scap-security-guide-0.1.76-2.el10.noarch @@System
+    Removed xmlsec1-1:1.2.39-3.el10.x86_64           @@System
+    Removed xmlsec1-openssl-1:1.2.39-3.el10.x86_64   @@System
+    Removed @security-tools
+
+4.2. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+6.5. Habilitación de repositorios de software DNF 6.5. Habilitación de repositorios de software DNF Objetivos Habilitar y deshabilitar el uso del servidor de Red Hat o repositorios DNF de terceros. Gestión de repositorios de software De forma predeterminada, los sistemas RHEL incluyen configuración para acceder a los repositorios de Red Hat. En muchas situaciones, debe configurar repositorios adicionales para acceder al software de su organización o de un tercero. Por ejemplo, Adobe proporciona parte de su software para Linux a través de repositorios DNF. En el aula de Red Hat proporcionada para este contenido, el servidor content.example.com aloja repositorios DNF. El comando dnf puede acceder a los repositorios desde un sitio web, un servidor FTP o el sistema de archivos local. Es posible que también necesite habilitar o deshabilitar repositorios para evitar conflictos al instalar paquetes de diferentes fuentes. Puede administrar los repositorios del sistema actualizando manualmente los archivos del repositorio o utilizando DNF. el dnf
+
+repolist all command lists all available repositories and their statuses:
+root@host:~# dnf repolist all
+
+ID de repositorio Nombre de repositorio Estado rhel-10-for-x86_64-appstream-rpms RHEL 10: AppStream (RPM) habilitado rhel-10-for-x86_64-baseos-rpms RHEL 10: BaseOS (RPM) habilitado Nota Las suscripciones de Red Hat otorgan acceso a repositorios específicos. En el pasado, los administradores necesitaban adjuntar suscripciones por sistema. Simple Content Access (SCA) simplifica la forma en que los sistemas acceden a los repositorios. Con SCA, los sistemas pueden acceder a cualquier repositorio desde cualquier suscripción que compre, sin adjuntar una suscripción. Puede habilitar SCA en el Portal del cliente de Red Hat dentro de Mis suscripciones › Asignaciones de suscripción o en su servidor Red Hat Satellite. El comando dnf config-manager puede habilitar y deshabilitar repositorios. Por ejemplo, el siguiente comando
+
+enables the rhel-10-for-x86_64-baseos-debug-rpms repository:
+root@host:~# dnf config-manager --enable rhel-10-for-x86_64-baseos-debug-rpms
+
+Configuración de repositorios DNF Puede configurar repositorios de Red Hat y de terceros actualizando manualmente un archivo de repositorio o utilizando la línea de comandos. Configuración manual Para configurar manualmente un repositorio DNF, puede crear un archivo .repo en el directorio /etc/yum.repos.d/, o
+
+you can add a [repository] section to the /etc/dnf/dnf.conf file. Red Hat recommends using .repo files, and
+
+reservando el archivo dnf.conf para configuraciones de repositorio adicionales. El comando dnf busca ambas ubicaciones por
+
+default; however, the .repo files take precedence. A .repo file contains the URL of the repository, a name, and
+
+si se deben utilizar claves GPG para verificar las firmas del paquete. Si se requieren claves GPG, el archivo .repo también incluye la URL para apuntar a la clave GPG confiable.
+
+
+
+
+

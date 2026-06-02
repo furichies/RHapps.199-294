@@ -1,0 +1,111 @@
+# Trabajo de laboratorio: Acceso al laboratorio Medios extraíbles
+# Tipo: lab
+# Capítulo: Capítulo 8. Acceso a medios extraíbles
+
+8.7. Acceso al laboratorio Medios extraíbles 8.7. Lab Access a medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Resultados Montar un sistema de archivos. Genere un informe de uso del disco. Busque archivos en el sistema de archivos local. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade fs-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-review
+
+Como usuario raíz en la máquina del servidor, identifique el UUID para el dispositivo /dev/sdb1 y móntelo usando su UUID en el directorio /mnt/system-report. 1. Genere un informe de uso del disco para el directorio /usr/share. Guarde el resultado en el archivo /mnt/system-report/disk-usese.txt. 2. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf y almacene los resultados en el archivo /mnt/system-report/search1.txt. 3. Busque todos los archivos en el directorio /usr/share que tengan más de 5 MB pero menos de 10 MB. Guarde los resultados en el archivo /mnt/system-report/search2.txt. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+8.7. Lab Access Solución de medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Resultados Montar un sistema de archivos. Genere un informe de uso del disco. Busque archivos en el sistema de archivos local. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-review
+
+Instrucciones Como usuario raíz en la máquina del servidor, identifique el UUID para el dispositivo /dev/sdb1 y móntelo usando su UUID en el directorio /mnt/system-report. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Consulta el UUID del dispositivo /dev/sdb1.
+
+[root@serverb ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 48bd5...3337a El UUID puede variar en su entorno. 1.2. Verifique si existe el directorio /mnt/system-report.
+
+[root@serverb ~]# ls /mnt/system-report
+ls: cannot access '/mnt/system-report': No such file or directory
+
+El directorio no existe, por lo que debes crearlo. 1.3. Cree el directorio /mnt/system-report.
+
+[root@serverb ~]# mkdir /mnt/system-report
+
+1.4. Monte el dispositivo /dev/sdb1 en el directorio /mnt/system-report utilizando el UUID. 1.5.
+
+
+
+
+
+8.7. Acceso al laboratorio Evaluación de medios extraíbles Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade fs-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-review
+
+Reemplace el UUID del marcador de posición en el siguiente comando con el UUID de su entorno.
+
+[root@serverb ~]# mount UUID="48bd5...3337a" /mnt/system-report
+
+Verifique que el dispositivo /dev/sdb1 esté montado en el directorio /mnt/system-report.
+
+[root@serverb ~]# lsblk -fp /dev/sdb1
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb1 xfs 48bd5...3337a 4.8G 3% /mnt/system-report 1.6. Genere un informe de uso del disco para el directorio /usr/share. Guarde el resultado en el archivo /mnt/system-report/disk-usese.txt.
+
+[root@serverb ~]# du /usr/share > /mnt/system-report/disk-usage.txt
+
+2. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf y almacene los resultados en el archivo /mnt/system-report/search1.txt. 3. Actualice la base de datos de localización.
+
+[root@serverb ~]# updatedb
+
+3.1. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf. Guarde los resultados en el archivo /mnt/system-report/search1.txt.
+
+[root@serverb ~]# locate rsyslog.conf > /mnt/system-report/search1.txt
+
+3.2. Busque todos los archivos en el directorio /usr/share que tengan más de 5 MB pero menos de 10 MB. Guarde los resultados en el archivo /mnt/system-report/search2.txt.
+
+[root@serverb ~]# find /usr/share -size +5M -size -10M > \
+
+/mnt/system-report/search2.txt 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+8.8. Resumen 8.8. Resumen En esta lección, aprendió a administrar dispositivos de almacenamiento en bloque, acceder al contenido de un sistema de archivos en medios extraíbles y buscar archivos en el sistema de archivos. Los dispositivos de almacenamiento están representados por el tipo de archivo del dispositivo de bloque. Puede utilizar el comando df para identificar el espacio total en disco, el espacio en disco utilizado y el espacio libre en disco en todos los sistemas de archivos normales montados. También puede enumerar los detalles de los dispositivos de bloqueo, como el tamaño y el UUID. Como usuario privilegiado, puede montar y desmontar manualmente un sistema de archivos. Para desmontar con éxito un sistema de archivos, asegúrese de que todos los procesos que acceden al punto de montaje estén detenidos. Los dispositivos de almacenamiento extraíbles se montan en el directorio /run/media cuando se utiliza el entorno gráfico. Puede buscar archivos en el sistema de archivos mediante índices o búsquedas en tiempo real. El comando de localización utiliza índices para buscar archivos. Estos índices utilizan una base de datos que requiere actualizaciones frecuentes. El comando de búsqueda realiza búsquedas en tiempo real en los sistemas de archivos locales. Con el comando buscar, puede buscar según varios atributos de archivo, como tamaño, ubicación, propiedad y permisos.
+
+
+
+
+

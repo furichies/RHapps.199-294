@@ -1,0 +1,43 @@
+# Cuestionario: Nombres de archivos de coincidencia de cuestionarios con expansiones de Shell
+# Tipo: quiz
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.6. Nombres de archivos de coincidencia de cuestionarios con expansiones de Shell 2.6. Prueba Emparejar nombres de archivos con expansiones de Shell Elija las respuestas correctas a las siguientes preguntas: ¿Qué patrón coincide solo con nombres de archivos que terminan en b? 1. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con b? 2. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos donde el primer carácter no es b? 3. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide con todos los nombres de archivos que contienen una b? 4. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que contienen un número? 5. *#* a. *[[:dígito:]]* b. *[dígito]* c. [0-9] d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con una letra mayúscula? 6. ^?* a. ^* b. [superior]* c. [[:superior:]]* d. [[CAP]]* e.
+
+
+
+
+
+2.6. Prueba de coincidencia de nombres de archivos con expansiones de Shell ¿Qué patrón coincide solo con nombres de archivos con al menos tres caracteres? 7. ???* a. ??? b. \3*c. +* d. ...* e.
+
+
+
+
+
+2.6. Prueba Emparejar nombres de archivos con expansiones de Shell Solución ¿Qué patrón coincide solo con nombres de archivos que terminan en b? 1. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con b? 2. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos donde el primer carácter no es b? 3. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide con todos los nombres de archivos que contienen una b? 4. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que contienen un número? 5. *#* a. *[[:dígito:]]* b. *[dígito]* c. [0-9] d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con una letra mayúscula? 6. ^?* a. ^* b. [superior]* c. [[:superior:]]* d. [[CAP]]* e.
+
+
+
+
+
+2.6. Prueba de coincidencia de nombres de archivos con expansiones de Shell ¿Qué patrón coincide solo con nombres de archivos con al menos tres caracteres? 7. ???* a. ??? b. \3*c. +* d. ...* e.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos 2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Resultados Utilice comodines para localizar y manipular archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-review
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. 1. Cree un directorio llamado planes de proyecto en el directorio Documentos. El directorio de Documentos se coloca en el directorio de inicio del usuario estudiante. Cree dos archivos vacíos en el directorio de planes de proyecto llamados season1-project-plan.odf y season2-project-plan.odf. Sugerencia: si el directorio ~/Documentos no existe, utilice la opción -p del comando mkdir para crearlo. 2. Cree conjuntos de archivos de práctica vacíos para usar en esta práctica de laboratorio. Si no reconoce inmediatamente el acceso directo de expansión de shell previsto, utilice la solución para aprender y practicar. Utilice la función de finalización de tabulación del shell para localizar nombres de rutas de archivos. Cree 12 archivos con nombres tv-seasonX-episodeY.ogg en el directorio /home/student. Reemplace el marcador de posición X con el número de temporada y el marcador de posición Y con el episodio de esa temporada, para dos temporadas de seis episodios cada una. 3. Como autor de una exitosa serie de novelas de misterio, estás editando los capítulos de tu próximo bestseller para su publicación. Cree ocho archivos con nombres de capítulo misteriosoX.odf. Reemplace el marcador de posición X con los números del 1 al 8. 4. Utilice un solo comando para crear los directorios ~/Videos/season1 y ~/Videos/season2 para organizar los episodios de TV. Mueva los episodios de TV apropiados a los subdirectorios de temporada. Utilice sólo dos comandos y especifique destinos con sintaxis relativa. 5. Cree una jerarquía de directorios de dos niveles con un solo comando para organizar los capítulos del libro de misterio. Cree el subdirectorio my-bestseller en el directorio Documentos y cree el subdirectorio de capítulos en el nuevo directorio my-bestseller. Cree tres subdirectorios más directamente en el directorio my-bestseller con un solo comando. Nombra estos subdirectorios como editor, cambios y vacaciones. No es necesario utilizar el
+
+mkdir -p command to create parents because the my-bestseller parent directory exists.
+
+6. Cambie al directorio de capítulos. Utilice el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos de libros al directorio de capítulos, que ahora es su directorio actual. Utilice la sintaxis más simple para especificar el directorio de destino. 7.
+
+
+
+
+

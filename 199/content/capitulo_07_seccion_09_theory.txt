@@ -1,0 +1,151 @@
+# 4.9. Administrar contraseñas de usuario
+# Tipo: theory
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.9. Gestión de contraseñas de usuarios 4.9. Administración de contraseñas de usuarios Objetivos Establecer una política de administración de contraseñas para los usuarios y bloquear y desbloquear manualmente las cuentas de usuario. Contraseñas ocultas y política de contraseñas Originalmente, las contraseñas cifradas se almacenaban en el archivo /etc/passwd, legible en todo el mundo. Estas contraseñas se consideraron adecuadas hasta que los ataques de diccionario a contraseñas cifradas se volvieron comunes. Las contraseñas cifradas criptográficamente se movieron al archivo /etc/shadow, que solo el usuario root puede leer. Al igual que el archivo /etc/passwd, cada usuario tiene una entrada en el archivo /etc/shadow. Una entrada de ejemplo de /etc/shadow
+
+file has nine colon-separated fields:
+root@host:~# cat /etc/shadow
+
+...salida omitida...
+
+user03:$y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC:20222:0:99999:7:2:20282::
+
+Cada campo de la entrada está separado por dos puntos:
+
+user03 : Name of the user account.
+
+$y$j…​.ziHC: La contraseña criptográficamente hash del usuario. 20222: Los días desde la época en la que se cambió la contraseña por última vez, donde la época es 1970-01-01 en la zona horaria UTC. 0: Los días mínimos desde el último cambio de contraseña antes de que el usuario pueda cambiarla nuevamente. 99999: El máximo de días sin cambio de contraseña antes de que caduque. Un campo vacío significa que la contraseña nunca caduca. 7: La cantidad de días de anticipación para advertir al usuario que su contraseña caducará. 2: La cantidad de días sin actividad, comenzando con el día en que expiró la contraseña, antes de que la cuenta se bloquee automáticamente. 20282: el día en que la cuenta vence en días desde la época. Un campo vacío significa que la cuenta nunca caduca. El último campo suele estar vacío y reservado para uso futuro. Formato de una contraseña con hash criptográfico El campo de contraseña con hash criptográfico almacena tres piezas clave de información: el algoritmo de hash en uso, el salt y el hash criptográfico. Salt agrega datos aleatorios a la contraseña para crear un hash único para fortalecer la contraseña criptográficamente hash. Cada dato está delimitado por el signo de dólar ($). $y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC
+
+y : The hashing algorithm in use for this password. A y indicates a yescrypt hash; a 6 indicates a SHA-512 hash;
+
+y un 5 indica SHA-256. El formato del resto de la contraseña depende del algoritmo.
+
+j9T : Parameters that tune the behavior of how yescrypt hashes. These options are standardized by the tools
+
+que establecen contraseñas para garantizar un ajuste seguro. Es posible que otros algoritmos no tengan este campo.
+
+qybndwEWzHhr0uTGAwO4Q0 : The salt in use to cryptographically hash the password; it is originally chosen at
+
+aleatorio.
+
+
+
+
+
+4.9. Gestión de contraseñas de usuario OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC: el hash criptográfico de la contraseña del usuario. Este segmento es el resultado de combinar la contraseña salt y de texto sin formato, y luego usar el algoritmo hash criptográfico para generar el hash de la contraseña. La razón principal para combinar un salt con la contraseña es defenderse contra ataques que utilizan listas precalculadas de hashes de contraseñas. Agregar sales amplía la cantidad de posibles hashes que deben verificarse para cada palabra que podría ser una posible contraseña, lo que hace que sea mucho más difícil usar una lista precalculada debido a su tamaño. Si un atacante obtiene una copia de un archivo /etc/shadow que usa sales, entonces necesita adivinar las contraseñas con fuerza bruta, lo que requiere más tiempo y esfuerzo. Nota El algoritmo de hash predeterminado en RHEL 10 es yescrypt, una función de derivación de clave basada en contraseña (KDF) y un esquema de hash de contraseña basado en primitivas criptográficas aprobadas por NIST, desarrollado por Solar Designer. Este algoritmo hash predeterminado es un cambio con respecto a RHEL 9, que utilizaba el algoritmo hash SHA-512 de Ulrich Drepper de forma predeterminada. RHEL 10 todavía reconoce los hash de contraseña SHA-512 ($6$) que pueden estar en el archivo /etc/shadow, pero las contraseñas nuevas y actualizadas se crean usando yescrypt, que Red Hat considera más seguro. Para obtener más información sobre los algoritmos de hash de contraseñas de usuarios locales en RHEL, consulte la página del manual de crypt(5) y el artículo Acerca de los algoritmos de hash de contraseñas de usuarios locales en RHEL. Verificación de contraseña Cuando un usuario intenta iniciar sesión, el sistema busca la entrada del usuario en el archivo /etc/shadow y combina el salt del usuario con la contraseña escrita en texto sin formato. Luego, el sistema codifica criptográficamente la combinación de la contraseña salt y de texto sin formato con el algoritmo de hash especificado. Si el resultado coincide con el hash criptográfico, entonces el usuario escribió la contraseña correcta. Si el resultado no coincide con el hash criptográfico, entonces el usuario escribió la contraseña incorrecta y el intento de inicio de sesión falla. Este método permite que el sistema determine si el usuario escribió la contraseña correcta sin almacenarla en un formato utilizable para iniciar sesión. Configuración de la caducidad de la contraseña El siguiente diagrama muestra los parámetros de caducidad de la contraseña relevantes, que se pueden ajustar usando el comando chage para implementar una política de caducidad de la contraseña. Observe que el nombre del comando es chage, que significa "cambiar edad". No confunda el comando con la palabra "cambiar".
+
+
+
+
+
+4.9. Administración de contraseñas de usuarios Figura 7. Parámetros de caducidad de contraseñas El siguiente ejemplo demuestra el uso del comando chage para cambiar la política de contraseñas del usuario sysadmin05. El comando define una edad mínima (-m) de 0 días, una edad máxima (-M) de 90 días, un período de advertencia (-W) de 7 días y un período de inactividad (-I) de 14 días.
+
+root@host:~# chage -m 0 -M 90 -W 7 -I 14 sysadmin05
+
+Supongamos que administra las políticas de contraseñas de usuario en un servidor Red Hat. El usuario cloudadmin10 es nuevo en el sistema y desea establecer una política de caducidad de contraseña personalizada. Desea establecer el vencimiento de la cuenta en 30 días a partir de
+
+today, so you use the following commands:
+root@host:~# date +%F 
+
+2025-05-14
+
+root@host:~# date -d "+30 days" +%F 
+
+2025-06-13
+
+root@host:~# chage -E $(date -d "+30 days" +%F) cloudadmin10 
+root@host:~# chage -l cloudadmin10 | grep "Account expires" 
+
+La cuenta vence: 13 de junio de 2025 Utilice el comando de fecha para obtener la fecha actual. Utilice el comando de fecha para obtener la fecha dentro de 30 días. Utilice la opción chage del comando -E para cambiar la fecha de vencimiento del usuario cloudadmin10. Utilice la opción chage del comando -l para mostrar la política de caducidad de contraseña para el usuario cloudadmin10. Nota El comando de fecha puede calcular una fecha futura. La opción -u informa la hora en UTC.
+
+user@host:~$ date -d "+45 days" -u
+
+Sábado 28 de junio 03:46:10 UTC 2025 Después de unos días, el archivo de registro /var/log/secure muestra un comportamiento inesperado por parte del usuario cloudadmin10. El usuario intentó utilizar el comando sudo para interactuar con archivos que pertenecen a otros usuarios. Sospechas que el usuario pudo haber dejado abierta una sesión ssh mientras trabajaba en otra máquina. Quiere que el usuario cloudadmin10 cambie el
+
+password on the next login, so you use the following command:
+root@host:~# chage -d 0 cloudadmin10
+
+La próxima vez que el usuario cloudadmin10 inicie sesión, se le solicitará que cambie la contraseña.
+
+
+
+
+
+4.9. Administrar contraseñas de usuario Ajustar la caducidad de contraseñas para nuevos usuarios Para cambiar la configuración de caducidad de contraseña predeterminada en todo el sistema, puede modificar el archivo /etc/login.defs. este archivo
+
+contains several key parameters:
+
+PASS_MAX_DAYS Establece el número máximo de días que una contraseña es válida antes de que un usuario deba cambiarla. PASS_MIN_DAYS Especifica el número mínimo de días que deben pasar antes de que se pueda cambiar una contraseña. PASS_WARN_AGE Determina con cuántos días de antelación un usuario recibe una advertencia sobre la caducidad de su contraseña. Para cuentas de usuario nuevas, el comando useradd también extrae valores predeterminados del archivo /etc/default/useradd. Aquí es donde puede establecer el período de inactividad predeterminado y la fecha de vencimiento de la cuenta si desea que estas configuraciones se apliquen automáticamente a todos los usuarios nuevos creados con el comando useradd.
+
+[root@host ~]# cat /etc/default/useradd
+
+...salida omitida... INACTIVE=21 EXPIRE=2025-12-31 ...salida omitida... Cualquier cambio realizado en esta configuración predeterminada solo afecta a los nuevos usuarios creados después de guardar los cambios. Los usuarios existentes continúan regidos por las políticas de caducidad de contraseñas que estaban vigentes en el momento en que se crearon sus cuentas. Para ajustar la configuración de caducidad de contraseña para usuarios individuales, debe usar el comando chage. Restricción del acceso de usuarios Puede restringir el acceso de un usuario a un sistema Linux utilizando el comando usermod. Por ejemplo, el mod de usuario
+
+command -L option locks a user account by invalidating the user's password:
+root@host:~# usermod -L sysadmin03
+user01@host:~$ su - sysadmin03
+
+Contraseña: sombrero rojo
+
+su: Authentication failure
+
+Una limitación crucial de usar solo la opción -L es que no afecta la autenticación basada en claves SSH. Si se configura una clave SSH válida para el usuario, el usuario aún puede iniciar sesión de forma remota sin ingresar una contraseña. Esta limitación plantea un riesgo potencial para la seguridad. Un enfoque más completo es hacer caducar la cuenta, lo que impide todos los inicios de sesión, incluidos los inicios de sesión con claves SSH. El
+
+usermod command -e option sets an account's expiration date. The expiration date can be set by using an integer to
+
+especifique el número de días desde el 1 de enero de 1970 o utilice el formato AAAA-MM-DD. Puede bloquear la cuenta y establecer una fecha de vencimiento usando un único comando de usuario con las opciones apropiadas. En el siguiente ejemplo, el comando usermod bloquea y caduca la cuenta de usuario cloudadmin10 el 1 de junio de 2025.
+
+root@host:~# usermod -L -e 2025-06-01 cloudadmin10
+
+Este método es muy recomendable para desactivar las cuentas de ex empleados.
+
+
+
+
+
+4.9. Administrar contraseñas de usuario Para restaurar el acceso de un usuario, puede usar la opción -U para desbloquear su contraseña. Para eliminar la fecha de vencimiento, use la opción -e con un valor nulo. El siguiente ejemplo desbloquea la contraseña y elimina la fecha de vencimiento del usuario cloudadmin10:
+
+root@host:~# usermod -U -e '' cloudadmin10
+
+El shell nologin El shell nologin actúa como un shell de reemplazo para las cuentas de usuario que no están destinadas a iniciar sesión interactivamente en el sistema. Una buena práctica de seguridad es desactivar una cuenta para que no pueda iniciar sesión en el sistema cuando la cuenta no lo requiera. Por ejemplo, un servidor de correo puede requerir una cuenta para almacenar el correo y una contraseña para que el usuario se autentique con un cliente de correo para recuperar el correo. Ese usuario no necesita iniciar sesión directamente en el sistema. Una solución común a esta situación es configurar el shell de inicio de sesión del usuario en /sbin/nologin. Si el usuario intenta iniciar sesión en el sistema directamente, el shell nologin cierra la conexión.
+
+root@host:~# usermod -s /sbin/nologin newapp
+root@host:~# su - newapp
+
+Último inicio de sesión: miércoles 14 de mayo a las 03:49:38 UTC de 2025 en pts/0 Esta cuenta no está disponible actualmente. Importante El shell nologin impide el uso interactivo del sistema, pero no impide todo acceso. Los usuarios pueden autenticarse y cargar o recuperar archivos a través de aplicaciones como aplicaciones web, programas de transferencia de archivos o lectores de correo si usan la contraseña del usuario para la autenticación y no requieren un shell. Referencias a las páginas man chage(1), usermod(8), passwd(1), passwd(5), shadow(5), crypt(3), crypt(5), login.defs(5) y nologin(8) Acerca de los algoritmos de hash de contraseñas de usuarios locales en RHEL
+
+
+
+
+
+4.10. Ejercicio guiado Administrar contraseñas de usuarios 4.10. Ejercicio guiado Administrar contraseñas de usuarios Establezca una política de administración de contraseñas para los usuarios y bloquee y desbloquee manualmente las cuentas de usuario. Resultados Forzar un cambio de contraseña cuando el usuario inicia sesión en el sistema por primera vez. Forzar un cambio de contraseña cada 90 días. Configure una cuenta de usuario y contraseñas para que caduquen 180 días a partir del día actual. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-password
+
+Instrucciones En la máquina del servidor, bloquee al usuario operador1 e intente cambiar a ese usuario. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1.1. Como usuario estudiante, utilice los derechos administrativos para bloquear y caducar la cuenta del operador1. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo usermod -L -e 1 operator1
+
+[sudo] contraseña para estudiante: estudiante 1.2. Intente iniciar sesión como usuario operador1. Utilice redhat como contraseña. Este comando debería fallar porque el usuario operador1 está bloqueado.
+
+[student@servera ~]$ su - operator1
+
+Contraseña: sombrero rojo
+
+su: Authentication failure
+
+1.3. Desbloquee la cuenta del operador1 y elimine la fecha de vencimiento.
+
+[student@servera ~]$ sudo usermod -U -e '' operator1
+
+1.4. Intente iniciar sesión nuevamente como usuario operador1. Utilice redhat como contraseña. Esta vez, el comando debería tener éxito. 1.5.
+
+
+
+
+

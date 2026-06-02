@@ -1,0 +1,98 @@
+# 12.3. Administrar archivos temporales
+# Tipo: theory
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.3. Gestión de archivos temporales 12.3. Gestión de archivos temporales Objetivos Configurar software que utilice una unidad de temporizador para programar tareas para borrar archivos temporales en el sistema o para garantizar que existan ciertos archivos o directorios. La herramienta Systemd-tempfiles La mayoría de las aplicaciones y servicios críticos utilizan archivos y directorios temporales. Algunas aplicaciones y usuarios usan el directorio /tmp para almacenar datos de trabajo transitorios, mientras que otras aplicaciones usan ubicaciones específicas de tareas, como directorios volátiles específicos de demonios y usuarios bajo el directorio /run, que existen solo en la memoria. Cuando el sistema se reinicia o se corta la energía, los sistemas de archivos basados ​​en memoria se limpian automáticamente. Normalmente, los demonios y scripts funcionan correctamente sólo cuando existen los archivos y directorios temporales esperados. Además, es necesario eliminar archivos temporales en el almacenamiento persistente para evitar problemas de espacio en disco o datos de trabajo obsoletos. Red Hat Enterprise Linux incluye la herramienta systemd-tmpfiles, que proporciona un método estructurado y configurable para administrar directorios y archivos temporales. Al iniciar el sistema, una de las primeras unidades de servicio systemd que se inicia es el servicio systemd-tmpfiles-setup. Este servicio ejecuta el comando systemd-tmpfiles, que lee las instrucciones de los archivos de configuración /usr/lib/tmpfiles.d/*.conf, /run/tmpfiles.d/*.conf y /etc/tmpfiles.d/*.conf. Estos archivos de configuración enumeran archivos y directorios que el servicio systemd-tmpfiles-setup debe crear, eliminar o proteger con permisos. Limpiar archivos temporales con un temporizador Systemd Para evitar que los sistemas de larga ejecución llenen sus discos con datos obsoletos, una unidad de temporizador systemd llamada systemd-tmpfiles-clean.timer activa a intervalos regulares la unidad systemd-tmpfiles-clean.service, que ejecuta el comando systemd-tmpfiles --clean. La configuración de una unidad de temporizador systemd tiene una sección [Temporizador] para indicar cómo iniciar el servicio con el mismo nombre que el temporizador. Utilice el siguiente comando systemctl para ver el contenido de la unidad systemd-tmpfiles-clean.timer
+
+configuration file:
+
+
+
+
+
+12.3. Administrar archivos temporales
+
+user@host:~$ systemctl cat systemd-tmpfiles-clean.timer
+# /usr/lib/systemd/system/systemd-tmpfiles-clean.timer
+#  SPDX-License-Identifier: LGPL-2.1-or-later
+
+#
+
+#  This file is part of systemd.
+
+...salida omitida... [Unidad] Descripción=Limpieza diaria de directorios temporales Documentación=man:tmpfiles.d(5) man:systemd-tmpfiles(8) ConditionPathExists=!/etc/initrd-release [Temporizador] OnBootSec=15min OnUnitActiveSec=1d En la configuración anterior, el parámetro OnBootSec=15min indica que systemd-tmpfiles-
+
+clean.service unit gets triggered 15 minutes after the system boots up. The OnUnitActiveSec=1d parameter
+
+indica que cualquier activación adicional de la unidad systemd-tmpfiles-clean.service ocurre 24 horas después de que la unidad de servicio se activó por última vez. Cambie los parámetros en el archivo de configuración de la unidad systemd-tmpfiles-clean.timer para cumplir con sus requisitos. Por ejemplo, un valor de 30 minutos para el parámetro OnUnitActiveSec activa la unidad systemd-tmpfiles-clean.service 30 minutos después de que se activó por última vez. Como resultado, la unidad systemd-tmpfiles-clean.service se activa cada 30 minutos después de que se reconocen los cambios. Después de cambiar el archivo de configuración de la unidad del temporizador, use el comando systemctl daemon-reload para asegurarse de que el demonio systemd cargue la nueva configuración.
+
+root@host:~# systemctl daemon-reload
+
+Puede ver el estado de la unidad del temporizador, incluso si está cargado en la memoria o activo, usando systemctl
+
+status command:
+root@host:~# systemctl status systemd-tmpfiles-clean.timer
+
+● systemd-tmpfiles-clean.timer: limpieza diaria de directorios temporales
+
+     Loaded: loaded (/usr/lib/.../systemd-tmpfiles-clean.timer; static)
+     Active: active (waiting) since Fri 2025-05-30 13:59:31 UTC; 19min ago
+
+Invocación: 497008f1a6594041812a660b64f3c550
+
+    Trigger: Sat 2025-05-31 14:14:31 UTC; 23h left
+   Triggers: ● systemd-tmpfiles-clean.service
+       Docs: man:tmpfiles.d(5)
+             man:systemd-tmpfiles(8)
+
+30 de mayo 13:59:31 host systemd[1]: iniciado systemd-tmpfiles-clean... Limpiar archivos temporales manualmente El comando systemd-tmpfiles --clean analiza los mismos archivos de configuración que systemd-tmpfiles --
+
+create command; instead of creating files and directories, it purges all files that were not accessed, changed, or
+
+modificado más recientemente que la antigüedad máxima definida en el archivo de configuración. Para obtener información detallada sobre el formato de los archivos de configuración para el servicio systemd-tmpfiles, consulte la página del comando man tmpfiles.d(5). La sintaxis consta de las siguientes columnas: Tipo, Ruta, Modo, UID, GID, Edad y Argumento. El tipo se refiere a la acción que debe realizar el servicio systemd-tmpfiles; por ejemplo, la opción d para crear un directorio si no existe, o
+
+
+
+
+
+12.3. Administrar archivos temporales la opción Z para restaurar recursivamente contextos SELinux, permisos de archivos y propiedad. El siguiente ejemplo purga una configuración en el directorio /run/systemd/seats: d /run/systemd/seats 0755 root root: crea el directorio /run/systemd/seats si no existe. Si el directorio existe, no realiza ninguna acción. Establece el usuario raíz y el grupo raíz como propietarios. Establece los permisos del archivo en 0755 (rwxr-xr-x). No establece una edad ni ningún argumento adicional. El servicio systemd-tmpfiles no borra este directorio automáticamente. El siguiente ejemplo elimina archivos del directorio /home/student a los que no se accedió, no se modificó ni se modificó.
+
+for more than one day:
+
+D /home/student 0700 estudiante estudiante 1d Crea el directorio /home/student si no existe. Si el directorio existe, elimina todo su contenido. Establece el usuario estudiante y el grupo de estudiantes como propietarios. Establece los permisos del archivo en 0700 (rwx------). Establece la edad en un día. No establece ningún argumento adicional. Cuando el sistema ejecuta el comando systemd-tmpfiles --clean, todos los archivos a los que no accedió, cambió o modificó durante más de un día se eliminan del directorio /home/student. El siguiente ejemplo crea un enlace simbólico al directorio /etc/fstab: L /run/fstablink - raíz raíz - /etc/fstab Crea el enlace simbólico /run/fstablink para apuntar al directorio /etc/fstab. Establece el usuario raíz y el grupo raíz como propietarios. Nunca purga automáticamente esta línea. No establece los permisos ni la edad. Establece el argumento en /etc/fstab para indicar el origen del enlace. Precedencia de archivos de configuración Los archivos de configuración del servicio systemd-tmpfiles-clean pueden existir en tres lugares: /etc/tmpfiles.d/*.conf /run/tmpfiles.d/*.conf /usr/lib/tmpfiles.d/*.conf Utilice los archivos en el directorio /etc/tmpfiles.d/ para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor. Los archivos en el directorio /run/tmpfiles.d/ son archivos volátiles, que los demonios normalmente usan para administrar sus propios archivos temporales de tiempo de ejecución. Los paquetes RPM relevantes proporcionan los archivos en /usr/lib/tmpfiles.d/
+
+directory; therefore do not edit these files.
+
+
+
+
+
+12.3. Administrar archivos temporales Si un archivo en el directorio /run/tmpfiles.d/ tiene el mismo nombre de archivo que un archivo en el directorio /usr/lib/tmpfiles.d/, entonces el servicio usa el archivo en el directorio /run/tmpfiles.d/. Si un archivo en el directorio /etc/tmpfiles.d/ tiene el mismo nombre de archivo que un archivo en los directorios /run/tmpfiles.d/ o /usr/lib/tmpfiles.d/, entonces el servicio usa el archivo en el directorio /etc/tmpfiles.d/. Dadas estas reglas de precedencia, puede anular la configuración proporcionada por el proveedor copiando el archivo relevante al directorio /etc/tmpfiles.d/ y editándolo. Al utilizar estas ubicaciones de configuración correctamente, puede administrar las configuraciones configuradas por el administrador desde un sistema de administración de configuración central, y las actualizaciones de paquetes no sobrescriben sus configuraciones configuradas. Nota Al probar configuraciones nuevas o modificadas, aplique solo los comandos de un único archivo de configuración a la vez. Especifique el nombre del archivo de configuración único en la línea de comando systemd-tmpfiles. Referencias a las páginas man systemd-tmpfiles(8), tmpfiles.d(5), stat(1), stat(2) y systemd.timer(5)
+
+
+
+
+
+12.4. Ejercicio guiado Gestionar archivos temporales 12.4. Ejercicio guiado Administrar archivos temporales Utilice una unidad de temporizador para programar una tarea que borre archivos temporales en el sistema. Resultados Configure systemd-tmpfiles para eliminar archivos temporales no utilizados del directorio /tmp. Configure systemd-tmpfiles para borrar periódicamente archivos de otro directorio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-tempfiles
+
+Instrucciones Inicie sesión en el sistema servera como usuario estudiante y cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio systemd-tmpfiles para limpiar el directorio /tmp de cualquier archivo no utilizado de los últimos cinco días. Asegúrese de que una actualización del paquete no sobrescriba los archivos de configuración. 2. Copie el archivo /usr/lib/tmpfiles.d/tmp.conf al directorio /etc/tmpfiles.d.
+
+[root@servera ~]# cp /usr/lib/tmpfiles.d/tmp.conf \
+
+/etc/tmpfiles.d/tmp.conf 2.1. Reemplace la antigüedad existente de los archivos temporales en la línea de configuración relevante con la nueva antigüedad de 5 días (5d). Asegúrese de que todas las demás líneas se eliminen del archivo y que solo esté presente la siguiente línea: En la configuración, el tipo q es el mismo que el tipo d. Al utilizar el tipo q o d, el servicio systemd-tmpfiles crea el directorio /tmp si no existe. Los permisos octales del directorio deben establecerse en 1777. Tanto el usuario propietario como el grupo del directorio /tmp deben configurarse como usuario raíz. El directorio /tmp no debe contener ningún archivo temporal no utilizado de los últimos cinco días. q /tmp 1777 raíz raíz 5d 2.2. Utilice el comando systemd-tmpfiles --clean para verificar la configuración del archivo /etc/tmpfiles.d/tmp.conf. Si el código de salida es 0, entonces los ajustes de configuración son correctos. 2.3.
+
+
+
+
+

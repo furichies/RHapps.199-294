@@ -1,0 +1,371 @@
+# Trabajo de laboratorio: Creación de playbooks
+# Tipo: lab
+# Capítulo: Capítulo 10. Revisión exhaustiva
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Creación de playbooks
+Cree tres playbooks. El primer playbook, dev_deploy.yml, instala e inicia el servidor
+web. El segundo playbook, get_web_content.yml, garantiza que el servidor web esté
+ofreciendo contenido. El tercer playbook, site.yml, ejecuta los otros dos playbooks.
+Resultados
+• Crear y ejecutar playbooks para realizar tareas en hosts gestionados.
+• Usar plantillas, variables y manejadores Jinja2 en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr2
+Especificaciones
+• Cree los playbooks especificados por esta actividad en el directorio del proyecto /home/
+student/review-cr2.
+• Cree un playbook denominado dev_deploy.yml con un play que se ejecute en el grupo de
+hosts webservers (que contiene los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com). Habilitar el aumento de privilegios para el play. Agregue las
+siguientes tareas al play.
+– Instale el paquete httpd.
+– Inicie el servicio httpd y habilítelo para que se inicie durante el arranque.
+– Implemente la plantilla templates/vhost.conf.j2 en /etc/httpd/conf.d/
+vhost.conf en los hosts gestionados. Esta tarea debe notificar al controlador Restart
+httpd.
+– Copie el archivo files/index.html en el directorio /var/www/vhosts/hostname de los
+hosts gestionados. Asegúrese de que se cree el directorio de destino si aún no existe.
+– Configure el firewall para permitir el servicio httpd.
+– Agregue un manejador Restart httpd al play que reinicia el servicio httpd.
+• Cree un playbook denominado get_web_content.yml con un play denominado Test web
+content que se ejecute en el host gestionado workstation. Este playbook prueba si el
+playbook dev_deploy.yml se ejecutó correctamente y garantiza que el servidor web esté
+RH294-RHEL9.0-es-3-20240620
+513
+
+
+capítulo 10 |  Revisión exhaustiva
+ofreciendo contenido. Habilitar el aumento de privilegios para el play. Estructure el play de la
+siguiente manera:
+– Cree una tarea block y rescue denominado Retrieve web content and write to
+error log on failure.
+– Dentro de block, cree una tarea denominada Retrieve web content que
+use el módulo ansible.builtin.uri para devolver el contenido de http://
+servera.lab.example.com. Registre los resultados en la variable denominada content.
+– Dentro de la cláusula rescue, cree una tarea denominada Write to error file que
+escriba el valor de la variable content en el archivo /home/student/review-cr2/
+error.log si falla block. La tarea debe crear el archivo error.log si todavía no existe.
+• Cree un nuevo playbook site.yml que importe los plays de los playbooks dev_deploy.yml y
+get_web_content.yml.
+• Una vez que haya completado el resto de las especificaciones, ejecute el playbook site.yml.
+Asegúrese de que los tres playbooks se ejecuten correctamente.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr2
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr2
+514
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Solución
+Creación de playbooks
+Cree tres playbooks. El primer playbook, dev_deploy.yml, instala e inicia el servidor
+web. El segundo playbook, get_web_content.yml, garantiza que el servidor web esté
+ofreciendo contenido. El tercer playbook, site.yml, ejecuta los otros dos playbooks.
+Resultados
+• Crear y ejecutar playbooks para realizar tareas en hosts gestionados.
+• Usar plantillas, variables y manejadores Jinja2 en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr2
+1.
+Cree un playbook denominado dev_deploy.yml que contenga un play que se ejecute en
+el grupo de hosts webservers. Habilitar el aumento de privilegios para el play. Agregue una
+tarea que instale el paquete httpd.
+1.1.
+Cambie al directorio /home/student/review-cr2.
+[student@workstation ~]$ cd ~/review-cr2
+[student@workstation review-cr2]$
+1.2.
+Cree un playbook denominado dev_deploy.yml que contenga un play que se
+ejecute en el grupo de hosts webservers. Habilitar el aumento de privilegios para el
+play.
+---
+- name: Install and configure web servers
+  hosts: webservers
+  become: true
+  tasks:
+1.3.
+Agregue una tarea que instale el paquete httpd.
+RH294-RHEL9.0-es-3-20240620
+515
+
+
+capítulo 10 |  Revisión exhaustiva
+    - name: Install httpd package
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+2.
+Agregue una tarea al playbook dev_deploy.yml que inicie el servicio httpd y lo habilite en
+el arranque.
+    - name: Start httpd service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+3.
+Agregue una tarea al playbook dev_deploy.yml que implemente la plantilla templates/
+vhost.conf.j2 en /etc/httpd/conf.d/vhost.conf en los hosts gestionados. Esta
+tarea debe notificar al controlador Restart httpd.
+    - name: Deploy configuration template
+      ansible.builtin.template:
+        src: templates/vhost.conf.j2
+        dest: /etc/httpd/conf.d/vhost.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart httpd
+4.
+Agregue una tarea al playbook dev_deploy.yml que copie el archivo files/index.html
+en el directorio /var/www/vhosts/{{ ansible_facts['hostname'] }} en los hosts
+gestionados.
+Asegúrese de que se cree el directorio de destino si aún no existe.
+    - name: Copy index.html
+      ansible.builtin.copy:
+        src: files/
+        dest: "/var/www/vhosts/{{ ansible_facts['hostname'] }}/"
+        owner: root
+        group: root
+        mode: '0644'
+5.
+Agregue una tarea a la playbook dev_deploy.yml que configura el firewall para permitir el
+servicio httpd.
+    - name: Ensure web server port is open
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: http
+6.
+Agregue un manejador Restart httpd al playbook dev_deploy.yml que reinicia el
+servicio httpd.
+516
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+El playbook completo incluye el siguiente contenido:
+---
+- name: Install and configure web servers
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Install httpd package
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+    - name: Start httpd service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+    - name: Deploy configuration template
+      ansible.builtin.template:
+        src: templates/vhost.conf.j2
+        dest: /etc/httpd/conf.d/vhost.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart httpd
+    - name: Copy index.html
+      ansible.builtin.copy:
+        src: files/
+        dest: "/var/www/vhosts/{{ ansible_facts['hostname'] }}/"
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Ensure web server port is open
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: http
+  handlers:
+    - name: Restart httpd
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+RH294-RHEL9.0-es-3-20240620
+517
+
+
+capítulo 10 |  Revisión exhaustiva
+7.
+Cree un playbook denominado get_web_content.yml. Agregue un play denominado
+Test web content que se ejecute en el host gestionado workstation. Habilitar el
+aumento de privilegios para el play.
+---
+- name: Test web content
+  hosts: workstation
+  become: true
+  tasks:
+8.
+Agregue una tarea denominada Retrieve web content and write to error log
+on failure al play en el playbook get_web_content.yml. Haga que esa tarea sea
+block que contenga una sola tarea denominada Retrieve web content. La tarea
+Retrieve web content debe usar el módulo ansible.builtin.uri para devolver
+contenido de la URL http://servera.lab.example.com. Registre el contenido
+recuperado en una variable denominada content.
+---
+- name: Test web content
+  hosts: workstation
+  become: true
+  tasks:
+    - name: Retrieve web content and write to error log on failure
+      block:
+        - name: Retrieve web content
+          ansible.builtin.uri:
+            url: http://servera.lab.example.com
+            return_content: true
+          register: content
+9.
+En el playbook get_web_content.yml, agregue una cláusula rescue a la tarea block.
+Agregue una tarea a la cláusula rescue, denominada Write to error file, que escribe
+la variable content en el archivo /home/student/review-cr2/error.log cuando falla
+la tarea Retrieve web content. Cree el archivo error.log si todavía no existe.
+El playbook get_web_content.yml ahora incluye el siguiente contenido:
+---
+- name: Test web content
+  hosts: workstation
+  become: true
+  tasks:
+    - name: Retrieve web content and write to error log on failure
+      block:
+        - name: Retrieve web content
+          ansible.builtin.uri:
+            url: http://servera.lab.example.com
+            return_content: true
+          register: content
+      rescue:
+        - name: Write to error file
+518
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+          ansible.builtin.lineinfile:
+            path: /home/student/review-cr2/error.log
+            line: "{{ content }}"
+            create: true
+10.
+Cree un nuevo playbook site.yml que importe los plays de los playbooks
+dev_deploy.yml y get_web_content.yml.
+---
+- name: Deploy web servers
+  ansible.builtin.import_playbook: dev_deploy.yml
+- name: Retrieve web content
+  ansible.builtin.import_playbook: get_web_content.yml
+11.
+Ejecute el playbook site.yml. Es posible que vea algunos informes de tareas como
+changed si aún no ha ejecutado los playbooks individuales para las pruebas. Una segunda
+ejecución del playbook debería realizarse sin más cambios.
+[student@workstation review-cr2]$ ansible-navigator run \
+> -m stdout site.yml
+PLAY ***************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Install httpd package] ***************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Start httpd service] *****************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Deploy configuration template] *******************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Copy index.html] *********************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Ensure web server port is open] ******************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+RUNNING HANDLER [Restart httpd] ************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY [Test web content] ********************************************************
+RH294-RHEL9.0-es-3-20240620
+519
+
+
+capítulo 10 |  Revisión exhaustiva
+TASK [Gathering Facts] *********************************************************
+ok: [workstation]
+TASK [Retrieve web content] ****************************************************
+ok: [workstation]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr2
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr2
+520
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Administración de hosts de Linux y uso
+de roles del sistema
+En esta revisión, en hosts gestionados que ejecutan Red Hat Enterprise Linux, escribe
+playbooks que usan dos roles del sistema para configurar un nuevo almacenamiento con un
+volumen lógico y configurar interfaces de red y usa módulos para configurar un trabajo Cron
+y un usuario con privilegios Sudo.
+Resultados
+• Usar el rol redhat.rhel_system_roles.storage para crear, formatear y montar de
+manera persistente un volumen LVM en un host gestionado.
+• Crear un usuario con acceso sudo.
+• Configurar los ajustes de red en los hosts gestionados y recopilar datos de Ansible
+relacionados con la red.
+• Programar un trabajo Cron.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr3
+Especificaciones
+• Use el directorio del proyecto /home/student/review-cr3 para realizar esta actividad.
+• Instale la Ansible Content Collection redhat.rhel_system_roles en el subdirectorio
+collections de su directorio de proyecto .
+• Escriba un playbook denominado storage.yml que use el rol del sistema
+redhat.rhel_system_roles.storage para configurar volúmenes lógicos para los hosts
+gestionados en el grupo webservers especificado por el archivo de inventario en el directorio
+de su proyecto. El playbook debe configurar los volúmenes lógicos de la siguiente manera:
+– Cree un grupo de volúmenes denominado vg_web en el dispositivo de almacenamiento /
+dev/vdb.
+– Cree un volumen lógico denominado lv_content, de 128 MB, del grupo de volúmenes
+vg_web, formatéelo con un sistema de archivos XFS y móntelo en el directorio /var/www/
+html/content.
+RH294-RHEL9.0-es-3-20240620
+521
+
+

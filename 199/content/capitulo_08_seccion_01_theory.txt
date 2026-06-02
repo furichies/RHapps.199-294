@@ -1,0 +1,68 @@
+# 5.1. Interpretación de permisos de archivos de Linux
+# Tipo: theory
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.1. Interpretación de permisos de archivos de Linux 5.1. Interpretación de los permisos de archivos de Linux Objetivos Enumerar los permisos del sistema de archivos en archivos y directorios, e interpretar cómo esos permisos controlan el acceso de los usuarios y de los grupos. Permisos del sistema de archivos de Linux Los permisos de archivos controlan el acceso a los archivos. Los permisos de archivos de Linux son flexibles y pueden manejar la mayoría de los casos de uso. Un archivo es propiedad de un usuario, que suele ser el creador del archivo. El archivo también pertenece a un único grupo, que suele ser el grupo principal del usuario que creó el archivo. El grupo propietario también se puede cambiar. Los archivos tienen tres categorías de usuarios a las que se aplican los permisos: el usuario propietario (permisos de usuario), el grupo propietario (permisos de grupo) y todos los demás usuarios del sistema que no son el usuario ni un miembro del grupo propietario (otros permisos). Puede establecer diferentes permisos para cada categoría de usuario, pero los permisos más específicos tienen prioridad. Los permisos de usuario anulan los permisos de grupo, que anulan otros permisos. Se aplican tres tipos de permisos a cada categoría de usuario: lectura, escritura y ejecución. La siguiente tabla explica cómo estos permisos afectan el acceso a archivos y directorios. Tabla 4. Efectos de los permisos en archivos y directorios r (lectura) Se puede leer el contenido del archivo. Se puede enumerar el contenido del directorio (los nombres de los archivos). w (escribir) El contenido del archivo se puede cambiar. Cualquier archivo en el directorio se puede crear o eliminar. x (ejecutar) Los archivos se pueden ejecutar como comandos. El directorio puede convertirse en el directorio de trabajo actual. Puede ejecutar el comando cd para cambiarlo, pero también requiere permiso de lectura para enumerar los archivos allí. Normalmente, los usuarios tienen permisos de lectura y ejecución en directorios de solo lectura para poder enumerar el directorio y tener acceso de solo lectura a todo su contenido. Si un usuario solo tiene acceso de lectura en un directorio, puede enumerar los nombres de los archivos que contiene. Sin embargo, el usuario no puede acceder a otra información, como permisos o marcas de tiempo. Si un usuario solo tiene acceso de ejecución en un directorio, entonces no puede enumerar los nombres de los archivos en el directorio. Si conocen el nombre de un archivo para el que tienen permiso de lectura, pueden acceder al contenido de ese archivo desde fuera del directorio especificando explícitamente el nombre del archivo relativo. Cualquier persona que posea o tenga permisos de escritura y ejecución en un directorio puede eliminar archivos del mismo, independientemente de la propiedad o los permisos del archivo en sí. Puede anular este comportamiento utilizando el permiso de bit adhesivo. Permiso Efecto en archivos Efecto en directorios
+
+
+
+
+
+5.1. Interpretación de los permisos de archivos de Linux Nota Los permisos de archivos de Linux funcionan de manera diferente a los permisos del sistema de archivos NTFS de Microsoft. En Linux, los permisos se aplican sólo al archivo o directorio en el que están configurados. Los subdirectorios dentro de un directorio no heredan automáticamente los permisos del directorio principal. Sin embargo, los permisos del directorio pueden bloquear el acceso al contenido del directorio, si se configuran de manera restrictiva. El permiso de lectura en un directorio de Linux es similar al contenido de la carpeta Listar en Windows. El permiso de escritura
+
+on a Linux directory is similar to Modify  in Windows; it implies the ability to delete files and subdirectories. In
+
+Linux, con permisos de escritura y el permiso de bit adhesivo establecido en un directorio, solo el usuario o propietario del grupo puede eliminar archivos, lo cual es similar al comportamiento de escritura de Windows. El usuario root de Linux tiene el equivalente al permiso Control total de Windows en todos los archivos. Sin embargo, la política de SELinux puede utilizar contextos de seguridad de procesos y archivos para restringir el acceso incluso al usuario raíz. SELinux se analiza en el curso Red Hat System Administration II (RH134). La membresía en un grupo permite la colaboración entre usuarios. Por ejemplo, imagine que su sistema tiene dos usuarios: Alice y Bob. El usuario alice es miembro de los grupos alice y web, y el usuario bob es miembro de los grupos bob, wheel y web. Cuando Alice y Bob trabajan juntos, los archivos deben estar asociados con el grupo web y los permisos del grupo deben permitir que ambos usuarios accedan a los archivos. Visualización de permisos y propiedad de archivos y directorios La opción -l del comando ls muestra información detallada sobre los permisos y la propiedad:
+
+user@host:~$ ls -l test
+
+-rw-rw-r--. 1 estudiante estudiante 0 8 de marzo 17:36 prueba Utilice la opción -d del comando ls para mostrar información detallada sobre un directorio en sí, y no sobre su contenido.
+
+user@host:~$ ls -ld /home
+drwxr-xr-x. 5 root root 4096 Feb 31 22:00 /home
+
+El primer carácter de la lista larga es el tipo de archivo: - es un archivo normal. d es un directorio. l es un enlace simbólico. c es un archivo de dispositivo de caracteres. b es un archivo de dispositivo de bloque. p es un archivo de canalización con nombre. s es un archivo de socket local. Los siguientes nueve caracteres representan los permisos del archivo. Estos personajes se interpretan como tres conjuntos de tres.
+
+characters:
+
+El primer conjunto son los permisos que se aplican al propietario del archivo. El segundo conjunto es para el propietario del grupo del archivo. El último conjunto se aplica a todos los demás usuarios (mundiales). Si un conjunto es una cadena rwx, entonces ese conjunto tiene los tres permisos: lectura, escritura y ejecución. Si una letra se reemplaza por un guión (-), entonces ese conjunto no tiene ese permiso.
+
+
+
+
+
+5.1. Interpretación de los permisos de archivos de Linux Después de la segunda columna (el recuento de enlaces), el primer nombre especifica el usuario propietario y el segundo nombre es el propietario del grupo del archivo. En el primer ejemplo, los permisos para el usuario estudiante son el primer conjunto de tres caracteres: rw-. El usuario estudiante tiene permisos de lectura y escritura en el archivo de prueba, pero no permiso de ejecución. El segundo conjunto de tres personajes son los
+
+permissions for the student group: rw-. The student group has read and write permissions on the test file, but not
+
+permiso de ejecución. El tercer conjunto de tres caracteres son los permisos para todos los demás usuarios: r: otros usuarios solo tienen permiso de lectura en el archivo de prueba. Se aplica el conjunto de permisos más específico. Entonces, si el usuario estudiante tiene permisos diferentes a los del grupo de estudiantes, y el usuario estudiante también es miembro de ese grupo, entonces solo se aplican los permisos del propietario del usuario. Por lo tanto, puede establecer un conjunto de permisos más restrictivo para un usuario que el que proporciona su membresía en el grupo, cuando podría no ser práctico eliminar al usuario del grupo. Escenarios de permisos Los siguientes ejemplos ilustran cómo interactúan los permisos de archivos. Para estos ejemplos, su sistema tiene cuatro usuarios con la
+
+following group memberships:
+
+operador1 operador1, consultor1 base de datos1 base de datos1, consultor1 base de datos2 base de datos2, operador2 contratista1 contratista1, operador2 Estos usuarios trabajan con archivos en el directorio dir. Una lista larga de los archivos en ese directorio es la siguiente:
+
+database@host:dir $ ls -la
+
+total 24
+
+drwxrwxr-x.  2 database1 consultant1   4096 Mar  4 10:23 .
+drwxr-xr-x. 10 root      root          4096 Mar  1 17:34 ..
+
+-rw-rw-r--.  1 operador1 operador1 1024 4 de marzo 11:02 app1.log -rw-r--rw-.  1 operador1 consultor1 3144 4 de marzo 11:02 app2.log -rw-rw-r--.  1 base de datos1 consultor1 10234 4 de marzo 10:14 db1.conf -rw-r-----.  1 base de datos1 consultor1 2048 4 de marzo 10:18 db2.conf La opción -a del comando ls muestra los permisos de los archivos ocultos, incluidos los archivos especiales para representar el directorio y su padre. En este ejemplo, el . El directorio especial refleja los permisos del directorio en sí, y el directorio especial .. refleja los permisos de su directorio principal. Para el archivo db1.conf, el usuario propietario del archivo (base de datos1) tiene permisos de lectura y escritura, pero no permiso de ejecución. El grupo propietario del archivo (consultor1) tiene permisos de lectura y escritura pero no de ejecución. Todos los demás usuarios tienen permiso de lectura pero no de escritura ni de ejecución. La siguiente tabla explora algunos efectos de este conjunto de permisos para estos usuarios: Membresías de grupos de usuarios
+
+
+
+
+
+5.1. Interpretación de los permisos de archivos de Linux El usuario operador1 puede cambiar el contenido del archivo db1.conf. El usuario operador1 es miembro del grupo consultor1 y ese grupo tiene permisos de lectura y escritura en el archivo db1.conf. El usuario de la base de datos1 puede ver y modificar el contenido del archivo db2.conf. El usuario de la base de datos1 posee el archivo db2.conf y tiene acceso de lectura y escritura. El usuario operador1 puede ver pero no modificar el contenido del archivo db2.conf. El usuario operador1 es miembro del grupo consultor1 y ese grupo sólo tiene acceso de lectura al archivo db2.conf. Los usuarios de la base de datos2 y el contratista1 no tienen ningún acceso al contenido del archivo db2.conf. Los demás permisos se aplican a los usuarios de la base de datos2 y del contratista1, y esos permisos no incluyen el permiso de lectura o escritura. El usuario operator1 es el único usuario que puede cambiar el contenido del archivo app1.log. El usuario operador1 y los miembros del grupo operador1 tienen permiso de escritura en el archivo, mientras que otros usuarios no. El único miembro del grupo operador1 es el usuario operador1. El usuario de la base de datos2 puede cambiar el contenido del archivo app2.log. El usuario de la base de datos2 no es el propietario del archivo app2.log y no está en el grupo consultor1, por lo que se aplican los demás permisos. Los otros permisos otorgan permiso de escritura en el archivo. El usuario de la base de datos1 puede ver el contenido del archivo app2.log, pero no puede modificarlo. El usuario de la base de datos1 es miembro del grupo consultor1 y ese grupo solo tiene permisos de lectura en el archivo app2.log. Aunque los demás permisos incluyen permiso de escritura, los permisos de grupo tienen prioridad. El usuario de la base de datos1 puede eliminar los archivos app1.log y app2.log. El usuario de la base de datos1 tiene permisos de escritura en el directorio dir, que el archivo . Se muestra un directorio especial y, por lo tanto, puede eliminar cualquier archivo en ese directorio. Esta operación es posible incluso si el usuario de la base de datos1 no tiene permiso de escritura directamente en los archivos. Referencias info coreutils (GNU Coreutils) Sección 13: Cambiar los atributos del archivo página man ls(1) Efecto Motivo
+
+
+
+
+
+5.2. Prueba de interpretación de permisos de archivos de Linux 5.2. Prueba de interpretación de permisos de archivos de Linux Revise la siguiente información y úsela para responder las preguntas del cuestionario. El sistema tiene cuatro usuarios que están asignados a los siguientes grupos: El usuario consultor1 es miembro de los grupos consultor1 y base de datos1. El usuario operador1 es miembro de los grupos operador1 y base de datos1. El usuario contratista1 es miembro de los grupos contratista1 y contratista3. El usuario operador2 es miembro de los grupos operador2 y contratista3. El . El directorio especial contiene cuatro archivos con los siguientes permisos: drwxrwxr-x.   operador1 base de datos1. -rw-rw-r--.   consultor1 consultor1 app1.log -rw-r--rw-.   consultor1 base de datos1 aplicación2.log -rw-rw-r--.   operador1 base de datos1 db1.conf -rw-r-----.   operador1 base de datos1 db2.conf Elija las respuestas correctas a las siguientes preguntas: ¿Qué archivo normal posee el usuario operador1 y todos los usuarios pueden leer? 1. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo puede modificar el usuario contratista1? 2. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo no puede leer el usuario operador2? 3. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo posee el grupo consultor1? 4. app1.log a. aplicación2.log b. db1.conf c. db2.conf d.
+
+
+
+
+

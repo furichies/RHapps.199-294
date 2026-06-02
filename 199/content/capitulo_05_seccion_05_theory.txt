@@ -1,0 +1,163 @@
+# 2.5. Coincidencia de nombres de archivos con expansiones de Shell
+# Tipo: theory
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell 2.5. Coincidencia de nombres de archivos con expansiones de Shell Objetivos Ejecutar eficientemente comandos que afectan a muchos archivos mediante el uso de funciones de coincidencia de patrones del Shell Bash. Expansiones de la línea de comandos Cuando escribe un comando en el símbolo del shell Bash, el shell procesa esa línea de comandos a través de múltiples expansiones antes de ejecutarla. Puede utilizar estas expansiones de shell para realizar tareas complejas que de otro modo serían difíciles o imposibles. El shell Bash realiza las siguientes expansiones: Expansión de nombre de ruta, que ayuda a seleccionar uno o más archivos mediante coincidencia de patrones. Expansión de llaves, que puede generar múltiples cadenas de caracteres. Expansión de tilde, que se expande a una ruta al directorio de inicio de un usuario. Expansión de variable, que reemplaza el texto con el valor almacenado en una variable de shell. Sustitución de comandos, que reemplaza el texto con la salida de un comando. Expansión de nombres de rutas y coincidencia de patrones La expansión de nombres de rutas, históricamente llamada globalización, es una de las características más útiles de Bash. La expansión del nombre de ruta utiliza comodines, que son metacaracteres que se expanden para coincidir con los nombres de archivo y ruta que está buscando. Como resultado, los comandos pueden actuar sobre un conjunto específico de archivos durante una única ejecución. Esta característica ayuda a los administradores del sistema a administrar muchos archivos. La expansión del nombre de ruta expande un patrón de caracteres especiales que representan comodines o clases de caracteres en una lista de nombres de archivos que coinciden con el patrón. Antes de que el shell ejecute su comando, reemplaza el patrón con la lista de nombres de archivos que coinciden. Si el patrón no coincide con nada, entonces el shell intenta utilizar el patrón como argumento literal para el comando que ejecuta. La siguiente tabla enumera metacaracteres y clases de patrones comunes que se utilizan para la coincidencia de patrones. Tabla 2. Tabla de metacaracteres y coincidencias * ¿Alguna cadena de cero o más caracteres? Cualquier carácter [abc…​] Cualquier carácter en la clase encerrada (entre corchetes) [!abc…​] Cualquier carácter que no esté en la clase encerrada [^abc…​] Cualquier carácter que no esté en la clase encerrada Coincidencias de patrones
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell [[:alpha:]] Cualquier carácter alfabético [[:lower:]] Cualquier carácter en minúscula [[:upper:]] Cualquier carácter en mayúscula [[:alnum:]] Cualquier carácter o dígito alfabético [[:punct:]] Cualquier carácter imprimible que no sea un espacio o alfanumérico [[:digit:]] Cualquier dígito del 0 al 9 [[:space:]] Cualquier carácter de espacio en blanco, que puede incluir tabulaciones, nuevas líneas, retornos de carro, cambios de página o espacios. Para el siguiente ejemplo, imagine que ejecuta los siguientes comandos para crear algunos archivos de muestra:
+
+user@host:~$ mkdir glob; cd glob
+user@host:~/glob$ touch alfa bravo charlie delta echo able baker cast dog easy
+user@host:~/glob$ ls
+
+capaz alfa panadero bravo elenco charlie delta perro eco fácil
+
+user@host:~/glob$
+
+En el siguiente ejemplo, los dos primeros comandos utilizan coincidencias de patrones simples con el asterisco (*) para hacer coincidir todos los nombres de archivos que comienzan con a y todos los nombres de archivos que contienen una a, respectivamente. El tercer comando utiliza el asterisco y los corchetes para hacer coincidir todos los nombres de archivos que comienzan con aoc.
+
+user@host:~/glob$ ls a*
+
+alfa capaz
+
+user@host:~/glob$ ls *a*
+
+capaz alfa panadero bravo elenco charlie delta fácil
+
+user@host:~/glob$ ls [ac]*
+
+able alfa cast charlie El siguiente ejemplo utiliza signos de interrogación (?) para hacer coincidir los nombres de los archivos. Los dos comandos solo coinciden con nombres de archivos que tienen cuatro y cinco caracteres, respectivamente.
+
+user@host:~/glob$ ls ????
+
+capaz de emitir eco fácil
+
+user@host:~/glob$ ls ?????
+
+panadero bravo delta Expansión de llave La expansión de llave genera cadenas discrecionales de caracteres. Las llaves contienen una lista de cadenas separadas por comas o una secuencia de expresión. El resultado incluye el texto que precede o sigue a la definición de llave. Las expansiones de llaves pueden estar anidadas, una dentro de otra. También puede utilizar la sintaxis de doble punto (..), que se expande a una secuencia. Coincidencias de patrones
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell Por ejemplo, la sintaxis de doble punto {m..p} dentro de llaves se expande a m n o p.
+
+user@host:~/glob$ echo {Sunday,Monday,Tuesday,Wednesday}.log
+
+Domingo.log Lunes.log Martes.log Miércoles.log
+
+user@host:~/glob$ echo file{1..3}.txt
+
+archivo1.txt archivo2.txt archivo3.txt
+
+user@host:~/glob$ echo file{a..c}.txt
+
+archivoa.txt archivob.txt archivoc.txt
+
+user@host:~/glob$ echo file{a,b}{1,2}.txt
+
+archivoa1.txt archivoa2.txt archivob1.txt archivob2.txt
+
+user@host:~/glob$ echo file{a{1,2},b,c}.txt
+
+filea1.txt filea2.txt fileb.txt filec.txt Un uso práctico de la expansión de llaves es crear múltiples archivos o directorios.
+
+user@host:~/glob$ mkdir ../RHEL{8,9,10}
+user@host:~/glob$ ls ../RHEL*
+
+../RHEL10: ../RHEL8: ../RHEL9: Expansión de tilde En el shell Bash, el carácter de tilde (~) es un acceso directo al directorio de inicio del usuario actual. También puede utilizar una tilde (~) seguida de un nombre de usuario para resolver el directorio de inicio del usuario proporcionado. En el siguiente ejemplo, la tilde es un acceso directo al directorio de inicio del usuario actual y al directorio de inicio de un usuario diferente (devops).
+
+user@host:~/scripts$ echo ~
+
+/casa/usuario
+
+user@host:~/scripts$ echo ~devops
+
+/home/devops Este acceso directo es especialmente útil para hacer referencia a archivos dentro de su directorio de inicio desde otros directorios. Para hacerlo, use el carácter de tilde (~), agregue una barra diagonal (/) y agregue la ruta del archivo o directorio relativa a su directorio de inicio. En el siguiente ejemplo, hace referencia al archivo /home/user/scripts/run-app.sh del archivo /var/log
+
+directory by using the shortcut:
+user@host:/var/log$ ls ~/scripts/run-app.sh
+
+/home/user/scripts/run-app.sh El shell Bash ejecuta la sustitución del directorio de inicio en función de algunos factores. Si la tilde va seguida de una cadena de caracteres distintos de una barra diagonal (/), entonces el shell interpreta la cadena hasta esa barra como un nombre de usuario. Si la subcadena coincide con un nombre de usuario real, entonces el shell reemplaza la cadena con la ruta absoluta al directorio de inicio de ese usuario. Si la subcadena no coincide con un nombre de usuario, entonces el shell usa una tilde real seguida de la cadena de caracteres. En el siguiente ejemplo, el usuario root utiliza el acceso directo para enumerar el archivo scripts/run-app.sh en el directorio de inicio del usuario desde el directorio /var/log. Luego, el usuario root intenta listar el mismo archivo, pero para el usuario dev1 inexistente. En el segundo comando, el shell interpreta la tilde (~) como un carácter normal porque el usuario dev1 no existe.
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell
+
+root@host:/var/log# ls ~user/scripts/run-app.sh
+
+/home/user/scripts/run-app.sh
+
+root@host:/var/log# ls ~dev1/scripts/run-app.sh
+ls: cannot access '~dev1/scripts/run-app.sh': No such file or directory
+
+Expansión de variables Una variable actúa como un contenedor con nombre que almacena un valor en la memoria. Las variables simplifican el acceso y la modificación de los datos almacenados, ya sea desde la línea de comando o dentro de un script de shell. Puede asignar datos como valor a una variable con la siguiente sintaxis.
+
+user@host:~$ VARIABLENAME=value
+
+Puede utilizar la expansión de variables para convertir el nombre de la variable a su valor en la línea de comando. Si una cadena comienza con un signo de dólar ($), entonces el shell intenta usar el resto de esa cadena como nombre de variable y lo reemplaza con el valor de la variable.
+
+user@host:~$ USERNAME=operator
+user@host:~$ echo $USERNAME
+
+operador Para evitar errores debido a otras expansiones del shell, puede poner el nombre de la variable entre llaves, por ejemplo ${VARIABLENAME}.
+
+user@host:~$ USERNAME=operator
+user@host:~$ echo ${USERNAME}
+
+operador Los nombres de las variables solo pueden contener letras (mayúsculas y minúsculas), números y guiones bajos. Los nombres de las variables distinguen entre mayúsculas y minúsculas y no pueden comenzar con un número. Sustitución de comandos La sustitución de comandos permite que la salida de un comando reemplace el comando en sí en la línea de comando. La sustitución de comandos ocurre cuando se incluye un comando entre paréntesis y lo antecede con un signo de dólar ($). El formulario $(comando) puede anidar múltiples expansiones de comando una dentro de otra.
+
+user@host:~/glob$ echo Today is $(date +%A).
+
+Hoy es miércoles.
+
+user@host:~/glob$ echo The time is $(date +%M) minutes past $(date +%l%p).
+
+Son 26 minutos después de las 11 a.m. Nota Una forma anterior de sustitución de comandos utiliza comillas invertidas: `comando`. Aunque el shell Bash todavía acepta este formato, trate de evitarlo porque podría confundir visualmente las comillas invertidas con comillas simples y las comillas invertidas no se pueden anidar. Proteger argumentos de la expansión Muchos caracteres tienen un significado especial en el shell Bash. Para evitar expansiones de shell en partes de su línea de comando, puede citar y escapar caracteres y cadenas. La barra invertida (\) es un carácter de escape en el shell Bash. Protege al siguiente personaje de la expansión.
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell
+
+user@host:~/glob$ echo The value of $HOME is your home directory.
+
+El valor de /home/user es su directorio de inicio.
+
+user@host:~/glob$ echo The value of \$HOME is your home directory.
+
+El valor de $HOME es su directorio de inicio. En el ejemplo anterior, con el signo de dólar protegido de la expansión, Bash lo trata como un carácter normal y no expande la variable $HOME. Para proteger cadenas de caracteres más largas, puede utilizar comillas simples (') o comillas dobles (") para encerrar cadenas. Tienen efectos ligeramente diferentes. Las comillas simples detienen todas las expansiones del shell. Las comillas dobles detienen la mayor parte de las expansiones del shell. Las comillas dobles impiden que los caracteres especiales distintos del signo de dólar ($), la barra invertida (\), la comillas invertida (`) y el signo de exclamación (!) funcionen dentro del texto citado. Las comillas dobles bloquean la expansión del nombre de ruta, pero aún permiten la sustitución de comandos y la expansión de variables.
+
+user@host:~/glob$ myhost=$(hostname -s); echo $myhost
+
+anfitrión
+
+user@host:~/glob$ echo "***** hostname is ${myhost} *****"
+
+***** el nombre de host es host ***** Utilice comillas simples para interpretar literalmente todo el texto entre comillas.
+
+user@host:~/glob$ echo "Will variable $myhost evaluate to $(hostname -s)?"
+
+¿El host variable se evaluará como host?
+
+user@host:~/glob$ echo 'Will variable $myhost evaluate to $(hostname -s)?'
+
+¿La variable $myhost se evaluará como $(hostname -s)? Importante Asegúrese de no confundir las comillas simples ( ' ) y la comilla grave de sustitución de comandos ( ` ), tanto en la pantalla como en el teclado. El uso de un carácter cuando se pretende utilizar el otro conduce a un comportamiento inesperado del shell. Referencias a las páginas man bash(1), cd(1), glob(7), isalpha(3), ls(1), path_solving(7) y pwd(1)
+
+
+
+
+
+2.6. Nombres de archivos de coincidencia de cuestionarios con expansiones de Shell 2.6. Prueba Emparejar nombres de archivos con expansiones de Shell Elija las respuestas correctas a las siguientes preguntas: ¿Qué patrón coincide solo con nombres de archivos que terminan en b? 1. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con b? 2. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos donde el primer carácter no es b? 3. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide con todos los nombres de archivos que contienen una b? 4. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que contienen un número? 5. *#* a. *[[:dígito:]]* b. *[dígito]* c. [0-9] d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con una letra mayúscula? 6. ^?* a. ^* b. [superior]* c. [[:superior:]]* d. [[CAP]]* e.
+
+
+
+
+

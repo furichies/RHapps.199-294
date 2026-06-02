@@ -1,0 +1,360 @@
+# Trabajo de laboratorio: Creación de roles
+# Tipo: lab
+# Capítulo: Capítulo 10. Revisión exhaustiva
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Creación de roles
+Crear un rol de Ansible a partir de un playbook de Ansible existente en workstation
+y, luego, crear un playbook para aplicar el rol a serverb.lab.example.com y
+serverc.lab.example.com.
+Resultados
+• Cree un rol a partir de un playbook existente.
+• Cree un playbook para aplicar el rol a los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr4
+Especificaciones
+• El directorio review-cr4 contiene su proyecto Ansible para esta actividad.
+• Convierta el playbook ansible-httpd.yml en el directorio del proyecto en un nuevo rol de
+Ansible llamado ansible-httpd. El nuevo rol debe crearse en el directorio /home/student/
+review-cr4/roles/ansible-httpd.
+• Copie las variables, las tareas, las plantillas, los archivos y los manejadores que se usaron en o
+por el playbook a los archivos o directorios correspondientes del nuevo rol. Copie las variables
+de playbook al archivo roles/ansible-httpd/defaults/main.yml.
+• Actualice el archivo meta/main.yml en el rol con el siguiente contenido:
+Variable
+Valor
+autor
+Capacitación de Red Hat
+descripción
+Ejemplo de rol para RH294
+Empresa
+Red Hat
+licencia
+BSD
+• Edite el archivo roles/ansible-httpd/README.md para que proporcione la siguiente
+información sobre el rol:
+536
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+ansible-httpd
+=========
+Example ansible-httpd role from "Red Hat Enterprise Linux Automation with
+ Ansible" (RH294)
+Role Variables
+--------------
+* `web_package`: the RPM package
+* `web_service`: the systemd service
+* `web_config_file`: the path to the main configuration file
+* `web_root`: the path to an index.html file
+* `web_fw_service`: the name of a firewalld service
+Dependencies
+------------
+None.
+Example Playbook
+----------------
+    - hosts: servers
+      roles:
+        - ansible-httpd
+License
+-------
+BSD
+Author Information
+------------------
+Red Hat (training@redhat.com)
+• Elimine todos los directorios y archivos no usados dentro del rol.
+• En el directorio del proyecto, escriba un playbook site.yml que ejecute el nuevo rol
+ansible-httpd en los hosts gestionados en el grupo de inventario webdev.
+• Ejecute el playbook site.yml.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr4
+RH294-RHEL9.0-es-3-20240620
+537
+
+
+capítulo 10 |  Revisión exhaustiva
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr4
+538
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Solución
+Creación de roles
+Crear un rol de Ansible a partir de un playbook de Ansible existente en workstation
+y, luego, crear un playbook para aplicar el rol a serverb.lab.example.com y
+serverc.lab.example.com.
+Resultados
+• Cree un rol a partir de un playbook existente.
+• Cree un playbook para aplicar el rol a los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr4
+1.
+Use el playbook ansible-httpd.yml para crear un nuevo rol de Ansible llamado
+ansible-httpd.
+1.1.
+Cambie al directorio /home/student/review-cr4.
+[student@workstation ~]$ cd ~/review-cr4
+[student@workstation review-cr4]$
+1.2.
+Cree el subdirectorio roles.
+[student@workstation review-cr4]$ mkdir -v roles
+mkdir: created directory 'roles'
+1.3.
+Con el comando ansible-galaxy, cree la estructura del directorio para el nuevo rol
+ansible-httpd en el subdirectorio roles.
+[student@workstation review-cr4]$ cd roles
+[student@workstation roles]$ ansible-galaxy role init ansible-httpd
+- Role ansible-httpd was created successfully
+[student@workstation roles]$ cd ..
+[student@workstation review-cr4]$
+1.4.
+Use el comando tree para verificar la estructura del directorio creada para el nuevo
+rol.
+RH294-RHEL9.0-es-3-20240620
+539
+
+
+capítulo 10 |  Revisión exhaustiva
+[student@workstation review-cr4]$ tree roles
+roles
+└── ansible-httpd
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    │   └── main.yml
+    ├── meta
+    │   └── main.yml
+    ├── README.md
+    ├── tasks
+    │   └── main.yml
+    ├── templates
+    ├── tests
+    │   ├── inventory
+    │   └── test.yml
+    └── vars
+        └── main.yml
+9 directories, 8 files
+2.
+Copie las variables, las tareas, las plantillas, los archivos y los manejadores en los archivos
+correspondientes dentro del nuevo rol.
+2.1.
+Copie las variables del archivo ansible-httpd.yml al archivo roles/ansible-
+httpd/defaults/main.yml. El archivo roles/ansible-httpd/defaults/
+main.yml debe incluir el siguiente contenido:
+---
+# defaults file for ansible-httpd
+web_package: httpd
+web_service: httpd
+web_config_file: /etc/httpd/conf/httpd.conf
+web_root: /var/www/html/index.html
+web_fw_service: http
+nota
+Las variables de inventario pueden anular las variables definidas en el archivo
+defaults/main.yml de un rol, pero las variables de inventario no pueden anular
+las variables definidas en el archivo vars/main.yml de un rol.
+2.2.
+Copie la plantilla del archivo de configuración httpd de templates/httpd.conf.j2
+al directorio roles/ansible-httpd/templates/.
+[student@workstation review-cr4]$ cp \
+> -v templates/httpd.conf.j2 roles/ansible-httpd/templates/
+'templates/httpd.conf.j2' -> 'roles/ansible-httpd/templates/httpd.conf.j2'
+540
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+2.3.
+Copie las tareas del archivo ansible-httpd.yml al archivo roles/ansible-
+httpd/tasks/main.yml. El archivo roles/ansible-httpd/tasks/main.yml
+debe incluir el siguiente contenido:
+---
+# tasks file for ansible-httpd
+- name: Packages are installed
+  ansible.builtin.dnf:
+    name: "{{ web_package }}"
+    state: present
+- name: Ensure service is started
+  ansible.builtin.service:
+    name: "{{ web_service }}"
+    state: started
+    enabled: true
+- name: Deploy configuration file
+  ansible.builtin.template:
+    src: templates/httpd.conf.j2
+    dest: "{{ web_config_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+    setype: httpd_config_t
+  notify: Restart httpd
+- name: Deploy index.html file
+  ansible.builtin.copy:
+    src: files/index.html
+    dest: "{{ web_root }}"
+    owner: root
+    group: root
+    mode: '0644'
+- name: Web port is open
+  ansible.posix.firewalld:
+    service: "{{ web_fw_service }}"
+    permanent: true
+    state: enabled
+    immediate: true
+2.4.
+Copie el archivo files/index.html en el directorio roles/ansible-httpd/
+files/.
+[student@workstation review-cr4]$ cp \
+> -v files/index.html roles/ansible-httpd/files/
+'files/index.html' -> 'roles/ansible-httpd/files/index.html'
+2.5.
+Copie los manejadores del archivo ansible-httpd.yml al archivo roles/ansible-
+httpd/handlers/main.yml. El archivo roles/ansible-httpd/handlers/
+main.yml debe incluir el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+541
+
+
+capítulo 10 |  Revisión exhaustiva
+---
+# handlers file for ansible-httpd
+- name: Restart httpd
+  ansible.builtin.service:
+    name: "{{ web_service }}"
+    state: restarted
+3.
+Actualice el archivo roles/ansible-httpd/meta/main.yml en el rol de acuerdo con las
+especificaciones.
+3.1.
+Cambie el valor de la entrada author a Red Hat Training.
+  author: Red Hat Training
+3.2.
+Cambie el valor de la entrada description a example role for RH294.
+  description: example role for RH294
+3.3.
+Cambie el valor de la entrada company a Red Hat.
+  company: Red Hat
+3.4.
+Cambie el valor de la entrada license a BSD.
+  license: BSD
+4.
+Edite el archivo roles/ansible-httpd/README.md de modo que proporcione
+información pertinente relacionada con el rol. El archivo debe contar con el siguiente
+contenido:
+ansible-httpd
+=========
+Example ansible-httpd role from "Red Hat Enterprise Linux Automation with
+ Ansible" (RH294)
+Role Variables
+--------------
+* `web_package`: the RPM package
+* `web_service`: the systemd service
+* `web_config_file`: the path to the main configuration file
+* `web_root`: the path to an index.html file
+* `web_fw_service`: the name of a firewalld service
+Dependencies
+------------
+None.
+Example Playbook
+----------------
+542
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+    - hosts: servers
+      roles:
+        - ansible-httpd
+License
+-------
+BSD
+Author Information
+------------------
+Red Hat (training@redhat.com)
+5.
+Elimine los directorios que no use del nuevo rol.
+5.1.
+Elimine el directorio roles/ansible-httpd/vars/.
+[student@workstation review-cr4]$ rm -rfv roles/ansible-httpd/vars/
+removed 'roles/ansible-httpd/vars/main.yml'
+removed directory 'roles/ansible-httpd/vars/'
+5.2.
+Elimine el directorio roles/ansible-httpd/tests/.
+[student@workstation review-cr4]$ rm -rfv roles/ansible-httpd/tests/
+removed 'roles/ansible-httpd/tests/inventory'
+removed 'roles/ansible-httpd/tests/test.yml'
+removed directory 'roles/ansible-httpd/tests/'
+6.
+En el directorio del proyecto, escriba un playbook site.yml que ejecute el nuevo rol
+ansible-httpd en los hosts gestionados en el grupo de inventario webdev. El playbook
+site.yml debe contener contenido similar al siguiente ejemplo:
+---
+- name: Apply the ansible-httpd role
+  hosts: webdev
+  roles:
+    - ansible-httpd
+7.
+Ejecute el playbook site.yml.
+[student@workstation review-cr4]$ ansible-navigator run -m stdout site.yml
+PLAY [Apply the ansible-httpd role] ********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+ok: [serverc.lab.example.com]
+TASK [ansible-httpd : Packages are installed] **********************************
+changed: [serverb.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+543
+
+
+capítulo 10 |  Revisión exhaustiva
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Ensure service is started] *******************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Deploy configuration file] *******************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Deploy index.html file] **********************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Web port is open] ****************************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+RUNNING HANDLER [ansible-httpd : Restart httpd] ********************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0  ...
+serverc.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0  ...
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr4
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr4
+544
+RH294-RHEL9.0-es-3-20240620
+
+

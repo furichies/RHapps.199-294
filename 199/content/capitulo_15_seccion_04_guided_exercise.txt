@@ -1,0 +1,102 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar archivos temporales
+# Tipo: guided_exercise
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.4. Ejercicio guiado Gestionar archivos temporales 12.4. Ejercicio guiado Administrar archivos temporales Utilice una unidad de temporizador para programar una tarea que borre archivos temporales en el sistema. Resultados Configure systemd-tmpfiles para eliminar archivos temporales no utilizados del directorio /tmp. Configure systemd-tmpfiles para borrar periódicamente archivos de otro directorio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-tempfiles
+
+Instrucciones Inicie sesión en el sistema servera como usuario estudiante y cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio systemd-tmpfiles para limpiar el directorio /tmp de cualquier archivo no utilizado de los últimos cinco días. Asegúrese de que una actualización del paquete no sobrescriba los archivos de configuración. 2. Copie el archivo /usr/lib/tmpfiles.d/tmp.conf al directorio /etc/tmpfiles.d.
+
+[root@servera ~]# cp /usr/lib/tmpfiles.d/tmp.conf \
+
+/etc/tmpfiles.d/tmp.conf 2.1. Reemplace la antigüedad existente de los archivos temporales en la línea de configuración relevante con la nueva antigüedad de 5 días (5d). Asegúrese de que todas las demás líneas se eliminen del archivo y que solo esté presente la siguiente línea: En la configuración, el tipo q es el mismo que el tipo d. Al utilizar el tipo q o d, el servicio systemd-tmpfiles crea el directorio /tmp si no existe. Los permisos octales del directorio deben establecerse en 1777. Tanto el usuario propietario como el grupo del directorio /tmp deben configurarse como usuario raíz. El directorio /tmp no debe contener ningún archivo temporal no utilizado de los últimos cinco días. q /tmp 1777 raíz raíz 5d 2.2. Utilice el comando systemd-tmpfiles --clean para verificar la configuración del archivo /etc/tmpfiles.d/tmp.conf. Si el código de salida es 0, entonces los ajustes de configuración son correctos. 2.3.
+
+
+
+
+
+12.4. Ejercicio guiado Administrar archivos temporales
+
+[root@servera ~]# systemd-tmpfiles --clean /etc/tmpfiles.d/tmp.conf
+[root@servera ~]# echo $?
+
+0 Agregue un nuevo archivo de configuración /etc/tmpfiles.d/momentary.conf que garantice que el directorio /run/momentary exista y que la propiedad esté configurada para el usuario raíz y el grupo raíz. Los permisos octales para el directorio deben ser 0700. La configuración debe eliminar de este directorio todos los archivos que no se hayan utilizado en los últimos 30 segundos. 3. Cree el archivo /etc/tmpfiles.d/momentary.conf con el siguiente contenido. d /run/momentary 0700 raíz raíz 30s 3.1. Verifique la configuración del archivo /etc/tmpfiles.d/momentary.conf. El comando crea el directorio /run/momentary si no existe. Si el comando no devuelve ningún error, entonces los ajustes de configuración son correctos.
+
+[root@servera ~]# systemd-tmpfiles --create /etc/tmpfiles.d/momentary.conf
+[root@servera ~]# echo $?
+
+0 3.2. Verifique que el comando systemd-tmpfiles cree el directorio /run/momentary con los permisos, el propietario y el propietario del grupo adecuados. El permiso octal para el directorio /run/momentary se establece en 0700 y la propiedad del usuario y del grupo se establece en root.
+
+[root@servera ~]# ls -ld /run/momentary
+drwx------. 2 root root 40 Apr  4 06:35 /run/momentary
+
+3.3. Verifique que el comando systemd-tmpfiles --clean elimine cualquier archivo del directorio /run/momentary que no se haya utilizado en los últimos 30 segundos, según la configuración de systemd-tmpfiles para el directorio. 4. Cree un archivo /run/momentary/test vacío.
+
+[root@servera ~]# touch /run/momentary/test
+
+4.1. Configure su indicador de shell para que no regrese durante 30 segundos.
+
+[root@servera ~]# sleep 30
+
+4.2. Después de que regrese el indicador de shell, limpie todos los archivos obsoletos en el directorio /run/momentary, según la regla a la que se hace referencia en el archivo de configuración /etc/tmpfiles.d/momentary.conf. El comando elimina el archivo /run/momentary/test porque no se utiliza durante 30 segundos. Este comportamiento se basa en la regla a la que se hace referencia en el archivo de configuración /etc/tmpfiles.d/momentary.conf.
+
+[root@servera ~]# systemd-tmpfiles --clean /etc/tmpfiles.d/momentary.conf
+
+4.3. Verifique que el archivo /run/momentary/test no exista. 4.4.
+
+
+
+
+
+12.4. Ejercicio guiado Administrar archivos temporales Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish systasks-tempfiles
+[root@servera ~]# ls -l /run/momentary/test
+ls: cannot access '/run/momentary/test': No such file or directory
+
+Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+12.5. Programación de tareas recurrentes del sistema con Cron 12.5. Programación de tareas recurrentes del sistema con objetivos de Cron Programe los comandos para que se ejecuten de forma recurrente utilizando el archivo crontab del sistema y los directorios de Cron. Trabajos recurrentes del sistema Los administradores del sistema a menudo necesitan ejecutar trabajos recurrentes. Es mejor ejecutar estos trabajos desde cuentas del sistema en lugar de cuentas de usuario. Programe estos trabajos con archivos crontab de todo el sistema en lugar de con el comando crontab. Las entradas de trabajo en los archivos crontab de todo el sistema son similares a las entradas crontab de los usuarios. Los archivos crontab de todo el sistema tienen un campo adicional antes del campo de comando para especificar el usuario que ejecuta el comando. El archivo /etc/crontab tiene un diagrama de sintaxis en los comentarios. SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root
+
+# For details see man 4 crontabs
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue...
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+
+El archivo /etc/crontab y otros archivos en el directorio /etc/cron.d definen los trabajos recurrentes del sistema. Cree siempre archivos crontab personalizados en el directorio /etc/cron.d para programar trabajos recurrentes del sistema. Coloque el archivo crontab personalizado en el directorio /etc/cron.d para evitar que una actualización del paquete sobrescriba el archivo /etc/crontab. Los paquetes que requieren trabajos recurrentes del sistema colocan sus archivos crontab en el directorio /etc/cron.d con las entradas del trabajo. Los administradores también utilizan esta ubicación para agrupar trabajos relacionados en un solo archivo. El sistema crontab también incluye repositorios de scripts que se ejecutan cada hora, día, semana o mes. Estos repositorios se colocan en los directorios /etc/cron.hourly, /etc/cron.daily, /etc/cron.weekly o /etc/cron.monthly. Estos directorios contienen scripts de shell ejecutables, no archivos crontab. Nota Utilice el comando chmod +x script_name para convertir un script en ejecutable. Un script debe ser ejecutable para ejecutarse. Archivos Crontab del sistema predeterminados Cada script en el directorio /etc/cron.hourly es un trabajo que se ejecuta a través del archivo crontab del sistema secundario /etc/cron.d/0hourly. Este archivo crontab indica al demonio crond que ejecute el comando run-parts en el directorio /etc/cron.hourly, como usuario root, un minuto después de cada hora. El comando run-parts ejecuta todos los archivos ejecutables que encuentra dentro del directorio.
+
+
+
+
+

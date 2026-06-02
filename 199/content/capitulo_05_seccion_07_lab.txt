@@ -1,0 +1,276 @@
+# Trabajo de laboratorio: Práctica de laboratorio Administrar archivos desde la línea de comandos
+# Tipo: lab
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos 2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Resultados Utilice comodines para localizar y manipular archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-review
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. 1. Cree un directorio llamado planes de proyecto en el directorio Documentos. El directorio de Documentos se coloca en el directorio de inicio del usuario estudiante. Cree dos archivos vacíos en el directorio de planes de proyecto llamados season1-project-plan.odf y season2-project-plan.odf. Sugerencia: si el directorio ~/Documentos no existe, utilice la opción -p del comando mkdir para crearlo. 2. Cree conjuntos de archivos de práctica vacíos para usar en esta práctica de laboratorio. Si no reconoce inmediatamente el acceso directo de expansión de shell previsto, utilice la solución para aprender y practicar. Utilice la función de finalización de tabulación del shell para localizar nombres de rutas de archivos. Cree 12 archivos con nombres tv-seasonX-episodeY.ogg en el directorio /home/student. Reemplace el marcador de posición X con el número de temporada y el marcador de posición Y con el episodio de esa temporada, para dos temporadas de seis episodios cada una. 3. Como autor de una exitosa serie de novelas de misterio, estás editando los capítulos de tu próximo bestseller para su publicación. Cree ocho archivos con nombres de capítulo misteriosoX.odf. Reemplace el marcador de posición X con los números del 1 al 8. 4. Utilice un solo comando para crear los directorios ~/Videos/season1 y ~/Videos/season2 para organizar los episodios de TV. Mueva los episodios de TV apropiados a los subdirectorios de temporada. Utilice sólo dos comandos y especifique destinos con sintaxis relativa. 5. Cree una jerarquía de directorios de dos niveles con un solo comando para organizar los capítulos del libro de misterio. Cree el subdirectorio my-bestseller en el directorio Documentos y cree el subdirectorio de capítulos en el nuevo directorio my-bestseller. Cree tres subdirectorios más directamente en el directorio my-bestseller con un solo comando. Nombra estos subdirectorios como editor, cambios y vacaciones. No es necesario utilizar el
+
+mkdir -p command to create parents because the my-bestseller parent directory exists.
+
+6. Cambie al directorio de capítulos. Utilice el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos de libros al directorio de capítulos, que ahora es su directorio actual. Utilice la sintaxis más simple para especificar el directorio de destino. 7.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos Quiere enviar los dos primeros capítulos al editor para su revisión. Mueva solo esos dos capítulos al directorio del editor para evitar modificarlos durante la revisión. A partir del subdirectorio de capítulos, utilice la expansión de llaves con un rango para especificar los nombres de los archivos de capítulos que se van a mover y una ruta relativa para el directorio de destino. Mientras está de vacaciones, tiene la intención de escribir los capítulos 7 y 8. Utilice un solo comando para mover los archivos del directorio de capítulos al directorio de vacaciones. Especifique los nombres de los archivos de capítulos utilizando la expansión de llaves con una lista de cadenas y sin utilizar caracteres comodín. Cambie su directorio de trabajo a ~/Videos/season2 y luego copie el primer episodio de la temporada en el directorio de vacaciones. Utilice un único comando cd para cambiar de su directorio de trabajo al directorio ~/Documentos/mi-bestseller/vacaciones. Enumere sus archivos. Utilice el argumento del directorio de trabajo anterior para volver al directorio season2. Este argumento tiene éxito si el último cambio de directorio con el comando cd utilizó solo un comando en lugar de varios comandos cd. Desde el directorio de la temporada 2, copie el archivo del episodio 2 al directorio de vacaciones. Utilice el acceso directo nuevamente para regresar al directorio de vacaciones. 8. Los autores de los capítulos 5 y 6 quieren experimentar con posibles cambios. Copie ambos archivos del directorio ~/Documents/my-bestseller/chapters al directorio ~/Documents/my-bestseller/changes para evitar que estos cambios modifiquen los archivos originales. Vaya al directorio ~/Documentos/mi-bestseller. Utilice la coincidencia de patrones de corchetes para especificar qué números de capítulo deben coincidir en el argumento del nombre de archivo del comando cp. 9. Cambie su directorio actual al directorio de cambios y use el comando fecha +%F con sustitución de comando para copiar el archivo misterio-chapter5.odf a un nuevo archivo que incluya la fecha completa. Utilice el formato de nombre misterio-capítulo5-AAAA-MM-DD.odf. Al utilizar la sustitución de comandos con el comando date +%s, haga otra copia del archivo misterio-capítulo5.odf y agregue la marca de tiempo actual (como el número de segundos desde la época, 1970-01-01 00:00 UTC) para garantizar un nombre de archivo único. 10. Después de una revisión más detallada, decides que no necesitas los cambios en la trama. Elimine el directorio de cambios. Si es necesario, vaya al directorio de cambios y elimine todos los archivos del directorio. No puede eliminar un directorio cuando es el directorio de trabajo actual. Cambie al directorio principal del directorio de cambios. Intente eliminar el directorio vacío utilizando el comando rm sin la opción recursiva -r. Este intento debería fracasar. Finalmente, use el comando rmdir para eliminar el directorio vacío, lo cual se realiza correctamente. Cuando terminen las vacaciones, ya no necesitará el directorio de vacaciones. Elimínelo usando el comando rm con la opción recursiva. Cuando termine, regrese al directorio de inicio del usuario estudiante. 11. Cree un vínculo físico al archivo ~/Documents/project-plans/season2-project-plan.odf y asigne al vínculo el nombre ~/Documents/links/season2-project-plan.odf.link. Sugerencia: si el directorio ~/Documentos/links no existe, utilice el comando mkdir para crearlo. 12. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 13.
+
+
+
+
+
+2.7. Lab Administrar archivos desde la línea de comandos Evaluación Como usuario estudiante en la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade files-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-review
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la solución de línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Resultados Utilice comodines para localizar y manipular archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-review
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@serverb
+
+...resultado omitido... 1. Cree un directorio llamado project-plans en el directorio Documentos. El directorio de Documentos se coloca en el directorio de inicio del usuario estudiante. Cree dos archivos vacíos en el directorio de planes de proyecto llamados season1-project-plan.odf y season2-project-plan.odf. Sugerencia: si el directorio ~/Documentos no existe, utilice la opción -p del comando mkdir para crearlo.
+
+[student@serverb ~]$ mkdir -p ~/Documents/project-plans
+[student@serverb ~]$ touch ~/Documents/project-plans/season{1,2}-project-plan.odf
+[student@serverb ~]$ ls -lR Documents/
+
+Documentos/: total 0
+
+drwxr-xr-x. 2 student student 70 Jun  3 09:03 project-plans
+
+Documentos/planes de proyecto: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:02 season1-project-plan.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:02 season2-project-plan.odf 2. Cree conjuntos de archivos de práctica vacíos para usar en esta práctica de laboratorio. Si no reconoce inmediatamente el acceso directo de expansión de shell previsto, utilice la solución para aprender y practicar. Utilice la función de finalización de tabulación del shell para localizar nombres de rutas de archivos. Cree 12 archivos con nombres tv-seasonX-episodeY.ogg en el directorio /home/student. Reemplace el marcador de posición X con el número de temporada y el marcador de posición Y con el episodio de esa temporada, para dos temporadas de seis episodios cada una. 3.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb ~]$ touch tv-season{1..2}-episode{1..6}.ogg
+[student@serverb ~]$ ls tv*
+
+tv-temporada1-episodio1.ogg tv-temporada1-episodio5.ogg tv-temporada2-episodio3.ogg tv-temporada1-episodio2.ogg tv-temporada1-episodio6.ogg tv-temporada2-episodio4.ogg tv-temporada1-episodio3.ogg tv-temporada2-episodio1.ogg tv-temporada2-episodio5.ogg tv-season1-episode4.ogg tv-season2-episode2.ogg tv-season2-episode6.ogg Como autor de una exitosa serie de novelas de misterio, estás editando los capítulos de tu próximo bestseller para su publicación. Cree ocho archivos con nombres de capítulo misteriosoX.odf. Reemplace el marcador de posición X con los números del 1 al 8.
+
+[student@serverb ~]$ touch mystery-chapter{1..8}.odf
+[student@serverb ~]$ ls mys*
+
+misterio-chapter1.odf misterio-chapter4.odf misterio-chapter7.odf misterio-chapter2.odf misterio-chapter5.odf misterio-chapter8.odf misterio-chapter3.odf misterio-chapter6.odf 4. Utilice un solo comando para crear los directorios ~/Videos/season1 y ~/Videos/season2 para organizar los episodios de TV. Mueva los episodios de TV apropiados a los subdirectorios de temporada. Utilice sólo dos comandos y especifique destinos con sintaxis relativa. 5. Cree dos subdirectorios denominados temporada1 y temporada2 en el directorio Videos usando un solo comando.
+
+[student@serverb ~]$ mkdir -p Videos/season{1..2}
+[student@serverb ~]$ ls Videos
+
+temporada1 temporada2 5.1. Mueva los episodios de TV apropiados a los subdirectorios de temporada usando solo dos comandos.
+
+[student@serverb ~]$ mv tv-season1* Videos/season1
+[student@serverb ~]$ mv tv-season2* Videos/season2
+[student@serverb ~]$ ls -R Videos
+
+Videos: temporada1 temporada2 Videos/temporada1: tv-temporada1-episodio1.ogg tv-temporada1-episodio3.ogg tv-temporada1-episodio5.ogg tv-temporada1-episodio2.ogg tv-temporada1-episodio4.ogg tv-temporada1-episodio6.ogg Videos/temporada2: tv-temporada2-episodio1.ogg tv-temporada2-episodio3.ogg tv-temporada2-episodio5.ogg tv-temporada2-episodio2.ogg tv-temporada2-episodio4.ogg tv-temporada2-episodio6.ogg 5.2. Cree una jerarquía de directorios de dos niveles con un solo comando para organizar los capítulos del libro de misterio. Cree el subdirectorio my-bestseller en el directorio Documentos y cree el subdirectorio de capítulos en el nuevo directorio my-bestseller. Cree tres subdirectorios más directamente en el directorio my-bestseller con un solo comando. Nombra estos subdirectorios como editor, cambios y vacaciones. No es necesario utilizar el
+
+mkdir -p command to create parents because the my-bestseller parent directory exists.
+
+6. Cree el directorio my-bestseller en el directorio Documentos. Cree el directorio de capítulos en el directorio my-bestseller. 6.1.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb ~]$ mkdir -p Documents/my-bestseller/chapters
+[student@serverb ~]$ ls -R Documents
+
+Documentos: mis-bestseller planes-de-proyectos Documentos/mi-bestseller: capítulos Documentos/mi-bestseller/capítulos: Documentos/planes-de-proyectos: temporada1-plan-proyecto.odf temporada2-plan-proyecto.odf Cree tres directorios llamados editor, cambios y vacaciones, en el directorio mi-bestseller usando un solo comando.
+
+[student@serverb ~]$ mkdir Documents/my-bestseller/{editor,changes,vacation}
+[student@serverb ~]$ ls -R Documents
+
+Documentos: mi-bestseller planes-proyecto Documentos/mi-bestseller: cambios editor de capítulos vacaciones Documentos/mi-bestseller/cambios: Documentos/mi-bestseller/capítulos: Documentos/mi-bestseller/editor: Documentos/mi-bestseller/vacaciones: Documentos/planes-de-proyecto: temporada1-plan-proyecto.odf temporada2-plan-proyecto.odf 6.2. Cambie al directorio de capítulos. Utilice el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos de libros al directorio de capítulos, que ahora es su directorio actual. Utilice la sintaxis más simple para especificar el directorio de destino. Quiere enviar los dos primeros capítulos al editor para su revisión. Mueva solo esos dos capítulos al directorio del editor para evitar modificarlos durante la revisión. A partir del subdirectorio de capítulos, utilice la expansión de llaves con un rango para especificar los nombres de los archivos de capítulos que se van a mover y una ruta relativa para el directorio de destino. Mientras está de vacaciones, tiene la intención de escribir los capítulos 7 y 8. Utilice un solo comando para mover los archivos del directorio de capítulos al directorio de vacaciones. Especifique los nombres de los archivos de capítulos utilizando la expansión de llaves con una lista de cadenas y sin utilizar caracteres comodín. 7. Cambie al directorio de capítulos y use el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos del libro al directorio de capítulos.
+
+[student@serverb ~]$ cd Documents/my-bestseller/chapters
+[student@serverb chapters]$ mv ~/mystery-chapter* .
+[student@serverb chapters]$ ls
+
+misterio-capítulo1.odf misterio-capítulo4.odf misterio-capítulo7.odf misterio-capítulo2.odf misterio-capítulo5.odf misterio-capítulo8.odf misterio-capítulo3.odf misterio-capítulo6.odf 7.1. Mueva los dos primeros capítulos al directorio del editor. Utilice la expansión de llaves con un rango para especificar los nombres de los archivos de capítulos que se van a mover y una ruta relativa para el directorio de destino. 7.2.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb chapters]$ mv mystery-chapter{1..2}.odf ../editor
+[student@serverb chapters]$ ls
+
+misterio-capítulo3.odf misterio-capítulo5.odf misterio-capítulo7.odf misterio-capítulo4.odf misterio-capítulo6.odf misterio-capítulo8.odf
+
+[student@serverb chapters]$ ls ../editor
+
+misterio-chapter1.odf misterio-chapter2.odf Utilice un solo comando para mover los capítulos 7 y 8 del directorio de capítulos al directorio de vacaciones. Especifique los nombres de los archivos de capítulos utilizando la expansión de llaves con una lista de cadenas y sin utilizar caracteres comodín.
+
+[student@serverb chapters]$ mv mystery-chapter{7,8}.odf ../vacation
+[student@serverb chapters]$ ls
+
+misterio-capítulo3.odf misterio-capítulo5.odf misterio-capítulo4.odf misterio-capítulo6.odf
+
+[student@serverb chapters]$ ls ../vacation
+
+misterio-capítulo7.odf misterio-capítulo8.odf 7.3. Cambie su directorio de trabajo a ~/Videos/season2 y luego copie el primer episodio de la temporada en el directorio de vacaciones. Utilice un único comando cd para cambiar de su directorio de trabajo al directorio ~/Documentos/mi-bestseller/vacaciones. Enumere sus archivos. Utilice el argumento del directorio de trabajo anterior para volver al directorio season2. Este argumento tiene éxito si el último cambio de directorio con el comando cd utilizó solo un comando en lugar de varios comandos cd. Desde el directorio de la temporada 2, copie el archivo del episodio 2 al directorio de vacaciones. Utilice el acceso directo nuevamente para regresar al directorio de vacaciones. 8. Cambie su directorio de trabajo a ~/Videos/season2 y luego copie el primer episodio de la temporada en el directorio de vacaciones.
+
+[student@serverb chapters]$ cd ~/Videos/season2
+[student@serverb season2]$ cp *episode1.ogg ~/Documents/my-bestseller/vacation
+
+8.1. Utilice un único comando cd para cambiar de su directorio de trabajo al directorio ~/Documentos/mi-bestseller/vacaciones, enumere sus archivos y utilice el argumento - para volver al directorio anterior. Copie el archivo del episodio 2 en el directorio de vacaciones. Utilice el comando cd con el argumento - para regresar al directorio de vacaciones.
+
+[student@serverb season2]$ cd ~/Documents/my-bestseller/vacation
+[student@serverb vacation]$ ls
+
+misterio-capítulo7.odf misterio-capítulo8.odf tv-temporada2-episodio1.ogg
+
+[student@serverb vacation]$ cd -
+
+/inicio/estudiante/Videos/temporada2
+
+[student@serverb season2]$ cp *episode2.ogg ~/Documents/my-bestseller/vacation
+[student@serverb season2]$ cd -
+
+/inicio/estudiante/Documentos/mi-bestseller/vacaciones
+
+[student@serverb vacation]$ ls
+
+misterio-capítulo7.odf tv-temporada2-episodio1.ogg misterio-chapter8.odf tv-temporada2-episodio2.ogg 8.2. Los autores de los capítulos 5 y 6 quieren experimentar con posibles cambios. Copie ambos archivos del directorio ~/Documents/my-bestseller/chapters al directorio ~/Documents/my-bestseller/changes para evitar que estos cambios modifiquen los archivos originales. Vaya al directorio ~/Documentos/mi-bestseller. Utilice la coincidencia de patrones de corchetes para especificar qué números de capítulo deben coincidir en el argumento del nombre de archivo del comando cp. 9.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb vacation]$ cd ~/Documents/my-bestseller
+[student@serverb my-bestseller]$ cp chapters/mystery-chapter[56].odf changes
+[student@serverb my-bestseller]$ ls chapters
+
+misterio-capítulo3.odf misterio-capítulo5.odf misterio-capítulo4.odf misterio-capítulo6.odf
+
+[student@serverb my-bestseller]$ ls changes
+
+misterio-chapter5.odf misterio-chapter6.odf Cambie su directorio actual al directorio de cambios y use el comando fecha +%F con sustitución de comando para copiar el archivo misterio-chapter5.odf a un nuevo archivo que incluya la fecha completa. Utilice el formato de nombre misterio-capítulo5-AAAA-MM-DD.odf. Al utilizar la sustitución de comandos con el comando date +%s, haga otra copia del archivo misterio-capítulo5.odf y agregue la marca de tiempo actual (como el número de segundos desde la época, 1970-01-01 00:00 UTC) para garantizar un nombre de archivo único.
+
+[student@serverb my-bestseller]$ cd changes
+[student@serverb changes]$ cp mystery-chapter5.odf \
+
+misterio-capítulo5-$(fecha +%F).odf
+
+[student@serverb changes]$ cp mystery-chapter5.odf \
+
+misterio-capítulo5-$(fecha +%s).odf
+
+[student@serverb changes]$ ls
+
+misterio-chapter5-1748944514.odf misterio-chapter5.odf misterio-chapter5-2025-06-03.odf misterio-chapter6.odf 10. Después de una revisión adicional, decide que no necesita los cambios en la trama. Elimine el directorio de cambios. Si es necesario, vaya al directorio de cambios y elimine todos los archivos del directorio. No puede eliminar un directorio cuando es el directorio de trabajo actual. Cambie al directorio principal del directorio de cambios. Intente eliminar el directorio vacío utilizando el comando rm sin la opción recursiva -r. Este intento debería fracasar. Finalmente, use el comando rmdir para eliminar el directorio vacío, lo cual se realiza correctamente. Cuando terminen las vacaciones, ya no necesitará el directorio de vacaciones. Elimínelo usando el comando rm con la opción recursiva. Cuando termine, regrese al directorio de inicio del usuario estudiante. 11. Elimine el directorio de cambios. Cambie al directorio principal del directorio de cambios e intente eliminar el directorio vacío utilizando el comando rm sin la opción recursiva -r, lo que debería fallar. Utilice el comando rmdir para eliminar el directorio vacío.
+
+[student@serverb changes]$ rm mystery*
+[student@serverb changes]$ cd ..
+[student@serverb my-bestseller]$ rm changes
+rm: cannot remove 'changes': Is a directory
+[student@serverb my-bestseller]$ rmdir changes
+[student@serverb my-bestseller]$ ls
+
+Editor de capítulos vacaciones 11.1. Elimine el directorio de vacaciones usando el comando rm con la opción -r. Regrese al directorio de inicio del usuario estudiante. 11.2.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la evaluación de la línea de comandos
+
+[student@serverb my-bestseller]$ rm -r vacation
+[student@serverb my-bestseller]$ ls
+
+editor de capítulos
+
+[student@serverb my-bestseller]$ cd
+
+[student@serverb ~]$ Cree un enlace físico al archivo ~/Documents/project-plans/season2-project-plan.odf y asigne al enlace el nombre ~/Documents/links/season2-project-plan.odf.link. Sugerencia: si el directorio ~/Documentos/links no existe, utilice el comando mkdir para crearlo. 12. Cree el enlace físico ~/Documents/links/season2-project-plan.odf.link que apunta al archivo ~/Documents/project-plans/season2-project-plan.odf.
+
+[student@serverb ~]$ mkdir ~/Documents/links
+[student@serverb ~]$ ln ~/Documents/project-plans/season2-project-plan.odf \
+
+~/Documentos/enlaces/season2-project-plan.odf.link
+
+[student@serverb ~]$ ls -lR ~/Documents/
+/home/student/Documents/:
+
+total 0
+
+drwxr-xr-x. 2 student student 43 Jun  3 10:01 links
+drwxr-xr-x. 4 student student 36 Jun  3 09:58 my-bestseller
+drwxr-xr-x. 2 student student 70 Jun  3 09:03 project-plans
+/home/student/Documents/links:
+
+total 0 -rw-r--r--. 2 estudiante estudiante 0 3 de junio 09:02 season2-project-plan.odf.link
+
+/home/student/Documents/my-bestseller:
+
+total 0
+
+drwxr-xr-x. 2 student student 118 Jun  3 09:20 chapters
+drwxr-xr-x. 2 student student  62 Jun  3 09:19 editor
+/home/student/Documents/my-bestseller/chapters:
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter3.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter4.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter5.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter6.odf
+
+/home/student/Documents/my-bestseller/editor:
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter1.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter2.odf
+
+/home/student/Documents/project-plans:
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:02 season1-project-plan.odf -rw-r--r--. 2 estudiante estudiante 0 3 de junio 09:02 season2-project-plan.odf Observe que el recuento de enlaces es 2 para los archivos season2-project-plan.odf.link y season2-project-plan.odf. 12.1. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+13.
+
+
+
+
+
+2.7. Lab Administrar archivos desde la línea de comandos Como usuario estudiante en la estación de trabajo, use el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade files-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-review
+
+
+
+
+
+2.8. Resumen 2.8. Resumen En esta lección, aprendió a administrar y organizar archivos dentro de la jerarquía del sistema de archivos mediante la línea de comandos. Para señalar varios nombres de archivos a los mismos datos, puede crear enlaces físicos y enlaces simbólicos. Aprendió a hacer referencia a archivos utilizando sus rutas absolutas, que comienzan con una barra diagonal (/), y a hacer referencia a archivos utilizando sus rutas relativas, que no comienzan con una barra diagonal. Puede utilizar comandos en combinación con los caracteres especiales punto (.), doble punto (..) y tilde (~) para hacer referencia a la ruta relativa de un archivo en el sistema de archivos. También aprendió que el shell Bash proporciona funciones de coincidencia, expansión y sustitución de patrones para ayudarlo a ejecutar comandos de manera eficiente.
+
+
+
+
+

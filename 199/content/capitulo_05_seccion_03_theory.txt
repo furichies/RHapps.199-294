@@ -1,0 +1,122 @@
+# 2.3. Crear vínculos entre archivos
+# Tipo: theory
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.3. Crear enlaces entre archivos 2.3. Crear vínculos entre archivos Objetivos Crear y comparar el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Administrar vínculos entre archivos Puede crear varios nombres de archivos que apunten al mismo archivo. Estos nombres de archivos se denominan enlaces. Puede crear dos tipos de vínculos: un vínculo físico o un vínculo simbólico (a veces llamado vínculo blando). Cada tipo de enlace es útil para diferentes casos de uso. Enlaces físicos a archivos Cada archivo comienza con un único enlace físico, desde su nombre inicial hasta los datos del sistema de archivos. Cuando crea un vínculo físico a un archivo, crea otro nombre que apunta a esos mismos datos. El nuevo enlace físico actúa exactamente como el nombre del archivo original. Una vez creado el vínculo, no podrá notar la diferencia entre el nuevo vínculo físico y el nombre original del archivo. Puede determinar si un archivo tiene varios enlaces físicos utilizando el comando ls -l. Un elemento en el resultado de este comando es el recuento de enlaces de cada archivo, que es el número de enlaces físicos que tiene el archivo. En el siguiente ejemplo, el recuento de enlaces del archivo newfile.txt es 1. Tiene exactamente una ruta absoluta, que es la ubicación /home/user/newfile.txt.
+
+user@host:~$ pwd
+
+/casa/usuario
+
+user@host:~$ ls -l newfile.txt
+
+-rw-r--r--. 1 usuario usuario 0 30 de mayo 19:19 newfile.txt Puede usar el comando ln para crear un enlace físico (otro nombre de archivo) que apunte a un archivo existente. el comando
+
+needs at least two arguments: a path to the existing file, and the path to the hard link that you want to create.
+
+El siguiente ejemplo crea un vínculo físico llamado newfile-hlink2.txt en el directorio /tmp para el archivo newfile.txt existente.
+
+user@host:~$ ln newfile.txt /tmp/newfile-hlink2.txt
+user@host:~$ ls -l newfile.txt /tmp/newfile-hlink2.txt
+
+-rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 /tmp/newfile-hlink2.txt -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 newfile.txt Para determinar si dos archivos están vinculados de forma física, utilice la opción -i del comando ls para enumerar el número de inodo de cada archivo. Si los archivos están en el mismo sistema de archivos y sus números de inodo son los mismos, entonces los archivos son enlaces físicos que apuntan al mismo contenido del archivo de datos. En el siguiente ejemplo, puede verificar que los archivos newfile.txt y /tmp/newfile-hlink2.txt comparten el número de inodo 8924107 en la primera columna del comando ls -il.
+
+
+
+
+
+2.3. Crear vínculos entre archivos
+
+user@host:~$ ls -il newfile.txt /tmp/newfile-hlink2.txt
+
+8924107 -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 /tmp/newfile-hlink2.txt 8924107 -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 newfile.txt Importante Los enlaces físicos que hacen referencia al mismo archivo comparten la estructura de inodos con el recuento de enlaces, permisos de acceso, propiedad de usuarios y grupos, marcas de tiempo y contenido del archivo. Cuando se cambia esa información para un enlace físico, los otros enlaces físicos del mismo archivo también muestran la nueva información. Este comportamiento se debe a que cada enlace físico apunta a los mismos datos en el dispositivo de almacenamiento. Incluso si se elimina el archivo original, aún puede acceder al contenido del archivo siempre que exista al menos otro enlace físico. Los datos se eliminan del almacenamiento solo cuando se elimina el último enlace físico, lo que hace que ningún enlace físico haga referencia al contenido del archivo.
+
+user@host:~$ rm -f newfile.txt
+user@host:~$ ls -l /tmp/newfile-hlink2.txt
+
+-rw-rw-r--. 1 usuario usuario 12 30 de marzo 19:19 /tmp/newfile-hlink2.txt
+
+user@host:~$ cat /tmp/newfile-hlink2.txt
+
+Hola mundo Limitaciones de los enlaces físicos Los enlaces físicos tienen algunas limitaciones. En primer lugar, puede utilizar enlaces físicos sólo con archivos normales. No puede utilizar el comando ln para crear un vínculo físico a un directorio o archivo especial. En segundo lugar, puede utilizar enlaces físicos sólo si ambos archivos están en el mismo sistema de archivos. La jerarquía del sistema de archivos puede incluir múltiples dispositivos de almacenamiento. Dependiendo de la configuración de su sistema, cuando cambia a un nuevo directorio, ese directorio y su contenido pueden almacenarse en un sistema de archivos diferente. Para ver los sistemas de archivos activos en una máquina Linux, use el comando df. Este comando muestra una lista de los sistemas de archivos actualmente montados y sus puntos de montaje correspondientes. La columna Montado en identifica el directorio donde está adjunto cada sistema de archivos.
+
+user@host:~$ df
+
+Sistema de archivos 1K bloques Usado Disponible Uso% Montado en /dev/sda3 20699116 6570308 14128808 32% / devtmpfs 4096 0 4096 0% /dev tmpfs 2899412 84 2899328 1% /dev/shm tmpfs 1159768 17764 1142004 2% /ejecutar tmpfs 1024 0 1024 0% /run/credentials/systemd-journald.service /dev/sda2 204580 8580 196000 5% /boot/efi /dev/sr0 536 536 0 100% /run/media/meta-data tmpfs 579880 2548 577332 1% /run/user/1000 tmpfs 1024 0 1024 0% /run/credentials/serial-getty@ttyS0.service Según el resultado del comando anterior, puede crear el vínculo físico /home/user/mylink que apunte al /var/tmp/myfile porque ambos son subdirectorios del directorio raíz (/) y pertenecen al mismo sistema de archivos. Sin embargo, no puede crear un vínculo físico en el directorio /home/user para apuntar al archivo /boot/efi/EFI/redhat/grub.cfg porque los archivos del directorio /boot/efi residen en un sistema de archivos separado.
+
+
+
+
+
+2.3. Creación de enlaces entre archivos Enlaces simbólicos a archivos La opción -s del comando ln crea un enlace simbólico, que también se denomina enlace suave. Un enlace simbólico no es un archivo normal. Es un tipo especial de archivo que apunta a un archivo o directorio existente. Los enlaces simbólicos tienen algunas ventajas sobre los enlaces físicos: los enlaces simbólicos pueden vincular dos archivos en diferentes sistemas de archivos. Los enlaces simbólicos pueden apuntar a un directorio o un archivo especial, además de un archivo normal. En el siguiente ejemplo, el comando ln -s crea un enlace simbólico para el archivo /home/user/newfile-link2.txt. El nombre del enlace simbólico es /tmp/newfile-symlink.txt.
+
+user@host:~$ ln -s /home/user/newfile-link2.txt /tmp/newfile-symlink.txt
+user@host:~$ ls -l newfile-link2.txt /tmp/newfile-symlink.txt
+
+-rw-rw-r--. 1 usuario usuario 12 30 mayo 19:19 newfile-link2.txt
+
+lrwxrwxrwx. 1 user user 11 May 30 20:59 /tmp/newfile-symlink.txt -> /home/user/newfile-link2.txt
+user@host:~$ cat /tmp/newfile-symlink.txt
+
+Hola mundo simbólico En el ejemplo anterior, el primer carácter de la lista larga del archivo /tmp/newfile-symlink.txt es l (la letra "l") en lugar de un guión (-). Este carácter indica que el archivo es un enlace simbólico y no un archivo normal. Cuando se elimina el archivo normal original, el enlace simbólico todavía apunta al archivo pero el destino desaparece. Un enlace simbólico que apunta a un archivo faltante se denomina enlace simbólico colgante.
+
+user@host:~$ rm -f newfile-link2.txt
+user@host:~$ ls -l /tmp/newfile-symlink.txt
+lrwxrwxrwx. 1 user user 11 May 30 20:59 /tmp/newfile-symlink.txt -> /home/user/newfile-link2.txt
+user@host:~$ cat /tmp/newfile-symlink.txt
+cat: /tmp/newfile-symlink.txt: No such file or directory
+
+Importante Un efecto secundario del enlace simbólico colgante en el ejemplo anterior es que si crea un archivo con el mismo nombre que el archivo eliminado (/home/user/newfile-link2.txt), el enlace simbólico ya no está "colgante" y apunta al nuevo archivo. Los enlaces físicos no funcionan de esta manera. Si elimina un vínculo físico y luego usa otras herramientas (en lugar del comando ln) para crear un archivo con el mismo nombre, entonces el nuevo archivo no está vinculado al archivo eliminado. Considere la siguiente forma de comparar enlaces físicos y enlaces simbólicos para comprender cómo
+
+they work:
+
+Un enlace físico señala un nombre a los datos en un dispositivo de almacenamiento. Un enlace simbólico apunta un nombre a otro nombre, que apunta a datos en un dispositivo de almacenamiento. Un enlace simbólico puede apuntar a un directorio. El enlace simbólico actúa entonces como el directorio. Si utiliza el comando cd para cambiar al enlace simbólico, entonces el directorio de trabajo actual se convierte en el directorio vinculado. Algunas herramientas pueden rastrear que siguió un enlace simbólico. Por ejemplo, de forma predeterminada, el comando cd actualiza su directorio de trabajo actual utilizando el nombre del enlace simbólico en lugar del nombre del directorio real. Si desea actualizar el directorio de trabajo actual utilizando el nombre del directorio real, puede utilizar la opción -P. El siguiente ejemplo crea un enlace simbólico llamado /home/user/configfiles que apunta al directorio /etc.
+
+
+
+
+
+2.3. Crear vínculos entre archivos
+
+user@host:~$ ln -s /etc /home/user/configfiles
+user@host:~$ cd /home/user/configfiles
+user@host:~/configfiles$ pwd
+
+/home/usuario/archivos de configuración
+
+user@host:~/configfiles$ cd -P /home/user/configfiles
+user@host:/etc$ pwd
+
+/etc Referencias info ln (Hacer vínculos entre archivos) páginas man ln(1) y df(1)
+
+
+
+
+
+2.4. Ejercicio guiado Crear vínculos entre archivos 2.4. Ejercicio guiado Crear vínculos entre archivos Cree y compare el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Resultados Crear vínculos físicos y vínculos simbólicos entre archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-make
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Cree el enlace físico /home/student/links/file.hardlink para el archivo /home/student/files/target.file. Verifique el recuento de enlaces para el archivo original y el nuevo archivo vinculado. 2. Vea el recuento de enlaces y el número de índice (inodo) para el archivo /home/student/files/target.file. El número de inodo del archivo puede variar en su entorno.
+
+[student@servera ~]$ ls -li files/target.file
+
+8838187 -rw-r--r--. 1 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file El recuento de enlaces de files/target.file es 1 porque el archivo no tiene enlaces adicionales. 2.1. Cree el enlace físico /home/student/links/file.hardlink. Vincúlelo al archivo /home/student/files/target.file.
+
+[student@servera ~]$ ln files/target.file links/file.hardlink
+
+2.2. Verifique el recuento de enlaces y el número de inodo para el archivo original y el nuevo enlace físico. El recuento de enlaces debe ser 2 y el número de inodo debe ser el mismo para ambos archivos.
+
+[student@servera ~]$ ls -li files/target.file links/file.hardlink
+
+8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file 8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 enlaces/archivo.hardlink El archivo y el enlace tienen el mismo número de inodo porque apuntan a los mismos datos. 2.3. Cree el enlace simbólico /home/student/tempdir que apunte al directorio /tmp en la máquina del servidor. Verifique el enlace simbólico recién creado. 3.
+
+
+
+
+

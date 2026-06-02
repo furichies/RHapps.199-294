@@ -1,0 +1,424 @@
+# Trabajo de laboratorio: Solución de problemas de Ansible
+# Tipo: lab
+# Capítulo: Capítulo 8. Solución de problemas de Ansible
+
+capítulo 8 |  Solución de problemas de Ansible
+Trabajo de laboratorio
+Solución de problemas de Ansible
+Solucionar los problemas que surjan cuando intente ejecutar un playbook que se le
+proporcionó.
+Resultados
+• Solucionar problemas de playbooks.
+• Solucionar problemas de hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-review
+Este comando garantiza que Ansible esté instalado en la máquina workstation. También
+crea el directorio /home/student/troubleshoot-review/ y lo completa con los
+archivos ansible.cfg, inventory, index.html, secure-web.yml y vhosts.conf.
+Instrucciones
+En el directorio /home/student/troubleshoot-review, hay un playbook denominado
+secure-web.yml. Este playbook contiene un play que se supone que configura Apache
+HTTPD con TLS/SSL para los hosts en el grupo webservers. Se supone que el nodo
+serverb.lab.example.com es el único host en el grupo webservers en este momento.
+Ansible puede conectarse a ese host mediante la cuenta remota devops y las claves SSH que ya
+se han configurado. Ese usuario también puede convertirse en root en el host gestionado sin una
+contraseña sudo.
+Desafortunadamente, existen varios problemas que debe corregir antes de poder ejecutar
+correctamente el playbook.
+1.
+Desde el directorio /home/student/troubleshoot-review, valide la sintaxis del
+playbook secure-web.yml. Corrija el problema que se informa.
+2.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Todavía tiene un problema.
+Corrija el problema que se informa.
+3.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Se detecta otro problema.
+Corrija el problema que se informa.
+4.
+Valide la sintaxis del playbook secure-web.yml por cuarta vez. No debería mostrar errores
+de sintaxis.
+394
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+5.
+Ejecute el playbook secure-web.yml. Ansible no puede conectarse al host
+serverb.lab.example.com. Dos problemas impiden una conexión correcta. Corrija
+ambos problemas.
+Importante
+Si resuelve estos problemas sin buscar la solución, es posible que resuelva ambos
+problemas al mismo tiempo o en un orden diferente al que se muestra en la
+solución.
+6.
+Ejecute el playbook secure-web.yml nuevamente. La conexión con el host
+serverb.lab.example.com funciona ahora, pero hay un problema nuevo. Corrija el
+problema que se informa.
+7.
+Ejecute el playbook secure-web.yml una vez más. Se debe completar correctamente.
+Use un comando ad hoc para verificar que el servicio httpd esté funcionando en el host
+serverb.lab.example.com.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade troubleshoot-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish troubleshoot-review
+RH294-RHEL9.0-es-3-20240620
+395
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Solución
+Solución de problemas de Ansible
+Solucionar los problemas que surjan cuando intente ejecutar un playbook que se le
+proporcionó.
+Resultados
+• Solucionar problemas de playbooks.
+• Solucionar problemas de hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-review
+Este comando garantiza que Ansible esté instalado en la máquina workstation. También
+crea el directorio /home/student/troubleshoot-review/ y lo completa con los
+archivos ansible.cfg, inventory, index.html, secure-web.yml y vhosts.conf.
+Instrucciones
+En el directorio /home/student/troubleshoot-review, hay un playbook denominado
+secure-web.yml. Este playbook contiene un play que se supone que configura Apache
+HTTPD con TLS/SSL para los hosts en el grupo webservers. Se supone que el nodo
+serverb.lab.example.com es el único host en el grupo webservers en este momento.
+Ansible puede conectarse a ese host mediante la cuenta remota devops y las claves SSH que ya
+se han configurado. Ese usuario también puede convertirse en root en el host gestionado sin una
+contraseña sudo.
+Desafortunadamente, existen varios problemas que debe corregir antes de poder ejecutar
+correctamente el playbook.
+1.
+Desde el directorio /home/student/troubleshoot-review, valide la sintaxis del
+playbook secure-web.yml. Corrija el problema que se informa.
+1.1.
+Cambie al directorio /home/student/troubleshoot-review.
+[student@workstation ~]$ cd ~/troubleshoot-review/
+[student@workstation troubleshoot-review]$
+1.2.
+Valide la sintaxis del playbook secure-web.yml. Este playbook configura Apache
+HTTPD con TLS/SSL para los hosts del grupo webservers cuando todo es correcto.
+396
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  mapping values are not allowed in this context
+The error appears to be in '/home/student/troubleshoot-review/secure-web.yml':
+ line 7, column 30, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+  vars:
+    random_var: This is colon: test
+                             ^ here
+1.3.
+En el valor de una variable, los dos puntos deben protegerse entre comillas. Corrija el
+problema de sintaxis en la definición de la variable random_var agregando comillas
+dobles a la cadena This is colon: test. El cambio resultante debe aparecer de la
+siguiente manera:
+...output omitted...
+  vars:
+    random_var: "This is colon: test"
+...output omitted...
+2.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Todavía tiene un problema.
+Corrija el problema que se informa.
+2.1.
+Valide la sintaxis de secure-web.yml con ansible-navigator run -m stdout
+--syntax-check nuevamente.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  did not find expected '-' indicator
+The error appears to be in '/home/student/troubleshoot-review/secure-web.yml':
+ line 38, column 10, but may be elsewhere in the file depending on the exact
+ syntax problem.
+The offending line appears to be:
+RH294-RHEL9.0-es-3-20240620
+397
+
+
+capítulo 8 |  Solución de problemas de Ansible
+         - name: Start and enable web services
+         ^ here
+2.2.
+Corrija los problemas de sintaxis en la sangría. Quite el espacio adicional al comienzo
+de los elementos de la tarea Start and enable web services. El cambio resultante debe
+aparecer de la siguiente manera:
+...output omitted...
+          args:
+            creates: /etc/pki/tls/certs/serverb.lab.example.com.crt
+        - name: Start and enable web services
+          ansible.builtin.service:
+            name: httpd
+            state: started
+            enabled: true
+        - name: Deliver content
+          ansible.builtin.copy:
+            dest: /var/www/vhosts/serverb-secure
+            src: html/
+...output omitted...
+3.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Se detecta otro problema.
+Corrija el problema que se informa.
+3.1.
+Valide la sintaxis del playbook secure-web.yml.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  found unacceptable key (unhashable type: 'AnsibleMapping')
+The error appears to be in '/home/student/troubleshoot-review/secure-web.yml':
+ line 13, column 20, but may
+be elsewhere in the file depending on the exact syntax problem.
+The offending line appears to be:
+          ansible.builtin.dnf:
+            name: {{ item }}
+                   ^ here
+We could be wrong, but this one looks like it might be an issue with
+missing quotes. Always quote template expression brackets when they
+start a value. For instance:
+    with_items:
+      - {{ foo }}
+398
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Should be written as:
+    with_items:
+      - "{{ foo }}"
+3.2.
+Corrija la variable item en la tarea Install web server packages. Un valor debe
+estar protegido por comillas dobles si aparecen llaves al comienzo de un valor. Agregue
+comillas dobles a {{ item }}. El cambio resultante debe aparecer de la siguiente
+manera:
+...output omitted...
+        - name: Install web server packages
+          ansible.builtin.dnf:
+            name: "{{ item }}"
+            state: latest
+          notify:
+            - Restart services
+          loop:
+            - httpd
+            - mod_ssl
+...output omitted...
+4.
+Valide la sintaxis del playbook secure-web.yml por cuarta vez. No debería mostrar errores
+de sintaxis.
+4.1.
+Revise la sintaxis del playbook secure-web.yml. No debería mostrar errores de
+sintaxis.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+playbook: /home/student/troubleshoot-review/secure-web.yml
+5.
+Ejecute el playbook secure-web.yml. Ansible no puede conectarse al host
+serverb.lab.example.com. Dos problemas impiden una conexión correcta. Corrija
+ambos problemas.
+Importante
+Si resuelve estos problemas sin buscar la solución, es posible que resuelva ambos
+problemas al mismo tiempo o en un orden diferente al que se muestra en la
+solución.
+5.1.
+Ejecute el playbook secure-web.yml. Fallará con un error.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml
+PLAY [Create secure web service] ***********************************************
+TASK [Gathering Facts] *********************************************************
+RH294-RHEL9.0-es-3-20240620
+399
+
+
+capítulo 8 |  Solución de problemas de Ansible
+fatal: [serverb.lab.example.com]: UNREACHABLE! => {"changed": false, "msg":
+ "Failed to connect to the host via ssh: students@serverc.lab.example.com:
+ Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password).",
+ "unreachable": true}
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+Por alguna razón, cuando ansible-navigator intentó conectarse al
+host serverb.lab.example.com, en su lugar intentó conectarse al host
+serverc.lab.example.com como el usuario students.
+5.2.
+Ejecute el playbook secure-web.yml nuevamente, agregando el parámetro -vvv
+para aumentar el nivel de detalle de la salida de depuración.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml -vvv
+...output omitted...
+TASK [Gathering Facts] *********************************************************
+task path: /home/student/troubleshoot-review/secure-web.yml:3
+<serverc.lab.example.com> ESTABLISH SSH CONNECTION FOR USER: students
+<serverc.lab.example.com> SSH: EXEC ssh -C -o ControlMaster=auto -o
+ ControlPersist=60s -o StrictHostKeyChecking=no -o KbdInteractiveAuthentication=no
+ -o PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey
+ -o PasswordAuthentication=no -o 'User="students"' -o ConnectTimeout=10 -o
+ 'ControlPath="/home/runner/.ansible/cp/bc0c05136a"' serverc.lab.example.com '/
+bin/sh -c '"'"'echo ~students && sleep 0'"'"''
+<serverc.lab.example.com> (255, b'', b'students@serverc.lab.example.com:
+ Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password).\r\n')
+...output omitted...
+Puede identificar dos problemas a partir de la salida de depuración detallada.
+• El comando ansible-navigator está intentando conectarse con el usuario
+students, cuando debería usar el usuario devops.
+• El comando ansible-navigator está intentando conectarse al host
+serverc.lab.example.com en lugar del host serverb.lab.example.com.
+5.3.
+Inspeccione el archivo inventory. Establece una variable de host ansible_host
+que hace que las conexiones para el host gestionado serverb.lab.example.com se
+dirijan incorrectamente al host gestionado serverc.lab.example.com.
+Elimine la variable del host ansible_host para que el archivo tenga el siguiente
+contenido:
+[webservers]
+serverb.lab.example.com
+5.4.
+Edite el playbook secure-web.yml para asegurarse de que devops sea el
+remote_user para el play. Las primeras líneas del playbook deberían aparecer de la
+siguiente manera:
+400
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+---
+# start of secure web server playbook
+- name: Create secure web service
+  hosts: webservers
+  remote_user: devops
+...output omitted...
+6.
+Ejecute el playbook secure-web.yml nuevamente. La conexión con el host
+serverb.lab.example.com funciona ahora, pero hay un problema nuevo. Corrija el
+problema que se informa.
+6.1.
+Ejecute el playbook secure-web.yml, agregando el parámetro -vvv para aumentar
+el nivel de detalle de la salida de depuración.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml -vvv
+...output omitted...
+failed: [serverb.lab.example.com] (item=mod_ssl) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+...output omitted...
+    },
+    "item": "mod_ssl",
+    "msg": "This command has to be run under the root user.",
+    "results": []
+}
+...output omitted...
+El play no se ejecuta con aumento de privilegios.
+6.2.
+Edite el play para asegurarse de tener configurado become: true. El cambio
+resultante debe aparecer de la siguiente manera:
+---
+# start of secure web server playbook
+- name: Create secure web service
+  hosts: webservers
+  remote_user: devops
+  become: true
+...output omitted...
+7.
+Ejecute el playbook secure-web.yml una vez más. Se debe completar correctamente.
+Use un comando ad hoc para verificar que el servicio httpd esté funcionando en el host
+serverb.lab.example.com.
+7.1.
+Ejecute el playbook secure-web.yml.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml
+PLAY [Create secure web service] ***********************************************
+...output omitted...
+RH294-RHEL9.0-es-3-20240620
+401
+
+
+capítulo 8 |  Solución de problemas de Ansible
+TASK [Install web server packages] *********************************************
+ok: [serverb.lab.example.com] => (item=httpd)
+ok: [serverb.lab.example.com] => (item=mod_ssl)
+...output omitted...
+TASK [Httpd_conf_syntax variable] **********************************************
+ok: [serverb.lab.example.com] => {
+    "msg": "The httpd_conf_syntax variable value is {'changed': True, 'stdout':
+ '', 'stderr': 'Syntax OK', 'rc': 0, 'cmd': ['/sbin/httpd', '-t'], 'start':
+ '2022-07-14 17:39:51.096013', 'end': '2022-07-14 17:39:51.134925', 'delta':
+ '0:00:00.038912', 'msg': '', 'stdout_lines': [], 'stderr_lines': ['Syntax OK'],
+ 'failed': False, 'failed_when_result': False}"
+}
+...output omitted...
+RUNNING HANDLER [Restart services] *********************************************
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=11   changed=7    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.2.
+Use un comando ad hoc para determinar el estado del servicio httpd en los hosts
+gestionados en el grupo de hosts webservers. El servicio httpd ahora debería estar
+ejecutándose en el host serverb.lab.example.com.
+[student@workstation troubleshoot-review]$ ansible webservers -u devops -b \
+> -m command -a 'systemctl status httpd'
+serverb.lab.example.com | CHANGED | rc=0 >>
+● httpd.service - The Apache HTTP Server
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; vendor
+ preset: disabled)
+     Active: active (running) since Thu 2022-07-14 17:39:53 EDT; 3min 11s
+...output omitted...
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade troubleshoot-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish troubleshoot-review
+402
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Resumen
+• El comando ansible-navigator puede producir archivos de artefactos de playbooks que
+almacenan información sobre ejecuciones en formato JSON.
+• Use el comando ansible-navigator replay para revisar la ejecución del play.
+• El módulo ansible.builtin.debug puede proporcionar información adicional de depuración
+al tiempo que ejecuta un playbook (por ejemplo, el valor actual para una variable).
+• Puede especificar la opción -v del comando ansible-navigator run una o más veces para
+proporcionar varios niveles de detalle de salida adicional. Esto es útil para la depuración de las
+tareas de Ansible al ejecutar un playbook.
+• La opción --check habilita los módulos de Ansible que soportan el modo de verificación para
+que se muestren los cambios que se deben realizar, en lugar de aplicar estos cambios a los hosts
+gestionados.
+RH294-RHEL9.0-es-3-20240620
+403
+
+

@@ -1,0 +1,418 @@
+# Gestión de variables
+# Tipo: theory
+# Capítulo: Capítulo 3. Administración de variables y datos
+
+capítulo 3 |  Administración de variables y datos
+Gestión de variables
+Objetivos
+• Crear variables que afecten a hosts particulares o grupos de hosts, el play o el entorno global, y
+hacer referencia a ellas, y describir cómo funciona la prioridad de variables.
+Introducción a variables de Ansible
+Ansible soporta variables que se pueden usar para almacenar valores que, luego, se pueden
+volver a usar en todos los archivos de un proyecto Ansible. Esto puede simplificar la creación y el
+mantenimiento de un proyecto, así como reducir la cantidad de errores.
+Las variables brindan una forma conveniente de gestionar los valores dinámicos para un entorno
+dado en su proyecto Ansible. Los ejemplos de valores que pueden contener las variables incluyen:
+• Usuarios para crear
+• Paquetes para instalar
+• Servicios para reiniciar
+• Archivos para eliminar
+• Colección de archivos para recuperar de Internet
+Denominación de variables
+Los nombres de las variables deben iniciarse con una letra y solo pueden contener letras, números
+y guiones bajos.
+En la siguiente tabla, se muestra la diferencia entre nombres de variable no válidos y válidos.
+Ejemplos de nombres de variables Ansible no válidos y válidos
+Nombres de variables no válidos
+Nombres de variables válidos
+web server
+web_server
+remote.file
+remote_file
+1st file
+file_1
+file1
+remoteserver$1
+remote_server_1
+remote_server1
+Definición de variables
+Las variables se pueden definir en una variedad de lugares en un proyecto Ansible. Si una
+variable se establece con el mismo nombre en dos lugares, y esas configuraciones tienen valores
+diferentes, la precedencia determina qué valor se usa.
+84
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Puede establecer una variable que afecte a un grupo de hosts o solo a hosts individuales. Algunas
+variables son datos que Ansible puede establecer en función de la configuración de un sistema. Se
+pueden establecer otras variables dentro del playbook y afectar a un play en ese playbook o solo
+a una tarea en ese play. También puede establecer variables adicionales en la línea de comandos
+ansible-navigator run con la opción --extra-vars o -e y especificar esas variables, que
+anulan todos los demás valores para ese nombre de variable.
+La siguiente lista simplificada muestra formas de definir una variable, ordenada de menor a mayor
+precedencia:
+• Variables de grupo definidas en el inventario
+• Agrupar variables definidas en archivos en un subdirectorio group_vars en el mismo directorio
+que el inventario o el playbook
+• Variables de host definidas en el inventario
+• Variables de host definidas en archivos en un subdirectorio host_vars en el mismo directorio
+que el inventario o el playbook
+• Datos del host, descubiertos en tiempo de ejecución
+• Variables de play en el playbook (vars y vars_files).
+• Variables de tareas
+• Variables adicionales definidas en la línea de comandos
+Por ejemplo, una variable que está configurada para afectar al grupo de host all se reemplaza
+por una variable que tiene el mismo nombre y que está configurada para afectar a un solo host.
+Una práctica recomendada es elegir nombres de variables únicos a nivel mundial para que
+no tenga que considerar las reglas de precedencia. Sin embargo, a veces tal vez desee usar
+la precedencia para hacer que diferentes hosts o grupos de hosts obtengan configuraciones
+diferentes a las predeterminadas.
+Si el mismo nombre de variable se define en más de un nivel, el nivel con la mayor precedencia
+gana. Un alcance limitado, como una variable de host o una variable de tarea, tiene precedencia
+sobre un alcance más amplio, como una variable de grupo o una variable de play. Las variables
+definidas por el playbook reemplazan las variables definidas por el inventario. Las variables
+adicionales definidas en la línea de comandos con la opción --extra-vars o -e, tienen la mayor
+precedencia.
+Puede encontrar un análisis detallado y más preciso sobre la precedencia de variables en la
+documentación de Ansible en "Variable precedence: Where should I put a variable?" [https://
+docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variable-precedence-
+where-should-i-put-a-variable].
+Variables en playbooks
+Las variables desempeñan un rol importante en los playbooks de Ansible porque facilitan la
+administración de datos variables en un playbook.
+Definición de variables en playbooks
+Cuando se escriben plays, se pueden definir las propias variables y luego invocar esos
+valores en una tarea. Por ejemplo, una variable llamada web_package se puede definir
+con un valor de httpd. Por lo tanto, una tarea puede llamar a la variable usando el módulo
+ansible.builtin.dnf para instalar el paquete httpd.
+RH294-RHEL9.0-es-3-20240620
+85
+
+
+capítulo 3 |  Administración de variables y datos
+Usted puede definir variables de playbook de múltiples maneras. Uno de los métodos más
+comunes es colocar una variable en un bloque vars al comienzo de un play:
+- hosts: all
+  vars:
+    user: joe
+    home: /home/joe
+También es posible definir variables de playbooks en archivos externos. En este caso, en lugar de
+usar el bloque vars en el playbook, se puede usar la directiva vars_files, seguida de una lista
+de nombres para archivos de variables externas, relativos a la ubicación del playbook:
+- hosts: all
+  vars_files:
+    - vars/users.yml
+A continuación, las variables del playbook se definen en esos archivos en formato YAML:
+user: joe
+home: /home/joe
+Uso de variables en playbooks
+Una vez declaradas las variables, puede usar las variables en tareas. Se hace referencia a las
+variables colocando el nombre de la variable entre llaves dobles ({{ }}). Ansible sustituye la
+variable con su valor cuando se ejecuta la tarea.
+vars:
+  user: joe
+tasks:
+  # This line will read: Creates the user joe
+  - name: Creates the user {{ user }}
+    user:
+      # This line will create the user named Joe
+      name: "{{ user }}"
+86
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Importante
+Cuando se usa una variable como el primer elemento para iniciar un valor, las
+comillas son obligatorias. De esta manera, se evita que Ansible interprete que la
+referencia de la variable inicia un diccionario YAML. Si faltan las comillas, aparece el
+siguiente mensaje:
+ansible.builtin.dnf:
+     name: {{ service }}
+            ^ here
+We could be wrong, but this one looks like it might be an issue with
+missing quotes.  Always quote template expression brackets when they
+start a value. For instance:
+    with_items:
+      - {{ foo }}
+Should be written as:
+    with_items:
+      - "{{ foo }}"
+Variables de hosts y variables de grupos
+Las variables de inventario que se aplican directamente a los hosts se dividen en dos categorías
+amplias: variables de host, que se aplican a un host específico; y variables de grupo, que se aplican
+a todos los hosts en un grupo de hosts o en un grupo de grupos de hosts. Las variables de hosts
+preceden a las variables de grupos, pero las variables definidas por un playbook preceden a
+ambas.
+Una forma de definir las variables de hosts y las variables de grupos es hacerlo directamente en el
+archivo de inventario.
+nota
+Este es un enfoque anterior para definir las variables de hosts y grupos, pero es
+posible que lo vea en uso porque pone toda la información del inventario y la
+configuración de variables para hosts y grupos de hosts en un solo archivo.
+• Definición de la variable de host ansible_user para demo.example.com:
+[servers]
+demo.example.com  ansible_user=joe
+• Definición de la variable de grupo user para el grupo de hosts servers.
+RH294-RHEL9.0-es-3-20240620
+87
+
+
+capítulo 3 |  Administración de variables y datos
+[servers]
+demo1.example.com
+demo2.example.com
+[servers:vars]
+user=joe
+• Definición de la variable de grupo user para el grupo servers, que consta de dos grupos de
+hosts, cada uno con dos servidores.
+[servers1]
+demo1.example.com
+demo2.example.com
+[servers2]
+demo3.example.com
+demo4.example.com
+[servers:children]
+servers1
+servers2
+[servers:vars]
+user=joe
+Algunas desventajas de este enfoque son que dificulta más el trabajo con el archivo de inventario,
+mezcla la información acerca de hosts y variables en el mismo archivo, y usa una sintaxis obsoleta.
+Uso de directorios para completar variables de host y de grupo
+Puede definir variables para host y grupos de hosts al crear dos directorios, group_vars
+y host_vars, en el mismo directorio de trabajo como archivo de inventario o playbook.
+Estos directorios contienen archivos que definen variables de grupo y variables de host,
+respectivamente.
+Importante
+La práctica recomendada es definir las variables de inventario usando los directorios
+host_vars y group_vars, y no definirlas directamente en los archivos de
+inventario.
+Para definir variables de grupo para el grupo servers, debería crear un archivo YAML
+denominado group_vars/servers y, luego, el contenido de ese archivo establecería variables
+para valores usando la misma sintaxis que en un playbook:
+user: joe
+De la misma forma, para definir variables de hosts para un host específico, cree un archivo con un
+nombre que coincida con el host que se encuentra en el directorio host_vars para que contenga
+las variables de hosts.
+88
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Los siguientes ejemplos ilustran este enfoque más detalladamente. Considere una situación en la
+que deba gestionar dos centros de datos y los hosts del centro de datos se definen en el archivo
+de inventario ~/project/inventory:
+[datacenter1]
+demo1.example.com
+demo2.example.com
+[datacenter2]
+demo3.example.com
+demo4.example.com
+[datacenters:children]
+datacenter1
+datacenter2
+• Si se debe definir un valor general para todos los servidores en los dos centros de datos, se
+puede establecer una variable de grupo para el grupo de hosts datacenters:
+[admin@station project]$ cat ~/project/group_vars/datacenters
+package: httpd
+• Si debe definir valores diferentes para cada centro de datos, establezca una variable de grupo
+para cada grupo de hosts del centro de datos:
+[admin@station project]$ cat ~/project/group_vars/datacenter1
+package: httpd
+[admin@station project]$ cat ~/project/group_vars/datacenter2
+package: apache
+• Si debe definir valores diferentes para cada host gestionado en cada centro de datos, defina las
+variables en archivos de variables de host diferentes:
+[admin@station project]$ cat ~/project/host_vars/demo1.example.com
+package: httpd
+[admin@station project]$ cat ~/project/host_vars/demo2.example.com
+package: apache
+[admin@station project]$ cat ~/project/host_vars/demo3.example.com
+package: mariadb-server
+[admin@station project]$ cat ~/project/host_vars/demo4.example.com
+package: mysql-server
+La estructura de directorios para el proyecto de ejemplo, project, si contuviera todos los
+archivos de ejemplo anteriores, aparecería de la siguiente manera:
+project
+├── ansible.cfg
+├── group_vars
+│   ├── datacenters
+│   ├── datacenters1
+│   └── datacenters2
+├── host_vars
+RH294-RHEL9.0-es-3-20240620
+89
+
+
+capítulo 3 |  Administración de variables y datos
+│   ├── demo1.example.com
+│   ├── demo2.example.com
+│   ├── demo3.example.com
+│   └── demo4.example.com
+├── inventory
+└── playbook.yml
+nota
+Ansible busca los subdirectorios host_vars y group_vars relacionados tanto con
+el archivo de inventario como con el archivo de playbook.
+Si su inventario y su playbook están en el mismo directorio, esto es simple y
+Ansible busca esos subdirectorios en ese directorio. Si su inventario y su playbook
+están en directorios separados, Ansible buscará los subdirectorios host_vars
+y group_vars en ambos lugares. Los subdirectorios del playbook tienen mayor
+precedencia.
+Reemplazo de las variables de la línea de comandos
+Las variables de inventario son reemplazadas por variables establecidas en un playbook, pero
+ambos tipos de variables se pueden reemplazar mediante argumentos enviados al comando
+ansible-navigator run en la línea de comando. Las variables establecidas en la línea de
+comando se denominan variables adicionales.
+Las variables adicionales pueden ser útiles cuando debe reemplazar el valor definido para una
+variable para una ejecución única de un playbook. Por ejemplo:
+[user@demo ~]$ ansible-navigator run main.yml -e "package=apache"
+Uso de diccionarios como variables
+En lugar de asignar datos de configuración que se relacionen con el mismo elemento con múltiples
+variables, los administradores pueden usar diccionarios. Un diccionario es una estructura de datos
+que contiene pares de clave-valor, donde los valores también pueden ser diccionarios.
+Por ejemplo, considere el siguiente fragmento:
+user1_first_name: Bob
+user1_last_name: Jones
+user1_home_dir: /users/bjones
+user2_first_name: Anne
+user2_last_name: Cook
+user2_home_dir: /users/acook
+Este se puede reescribir como un diccionario denominado users:
+users:
+  bjones:
+    first_name: Bob
+    last_name: Jones
+    home_dir: /users/bjones
+90
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+  acook:
+    first_name: Anne
+    last_name: Cook
+    home_dir: /users/acook
+Luego puede usar las siguientes variables para acceder a los datos del usuario:
+# Returns 'Bob'
+users.bjones.first_name
+# Returns '/users/acook'
+users.acook.home_dir
+Debido a que la variable se define como un diccionario Python, hay disponible una sintaxis
+alternativa.
+# Returns 'Bob'
+users['bjones']['first_name']
+# Returns '/users/acook'
+users['acook']['home_dir']
+Importante
+La notación de punto puede causar problemas si los nombres clave son los mismos
+que los nombres de los métodos o atributos de Python, como discard, copy, add
+y así sucesivamente. Usar la notación de paréntesis puede ayudar a evitar conflictos
+y errores.
+Ambas sintaxis son válidas, pero para simplificar la solución de problemas, Red Hat
+recomienda usar una sintaxis de manera consistente en todos los archivos en
+cualquier proyecto de Ansible.
+Captura de salida de comando con variables
+registradas
+Puede usar la instrucción register para capturar la salida de un comando u otra información
+sobre la ejecución de un módulo. La salida se guarda en una variable que puede usarse
+posteriormente en el playbook con motivos de depuración u otros motivos, como aplicar una
+configuración particular basada en la salida de un comando.
+El siguiente play demuestra cómo capturar el resultado de un comando con motivos de
+depuración:
+---
+- name: Installs a package and prints the result
+  hosts: all
+  tasks:
+    - name: Install the package
+      ansible.builtin.dnf:
+        name: httpd
+        state: installed
+RH294-RHEL9.0-es-3-20240620
+91
+
+
+capítulo 3 |  Administración de variables y datos
+      register: install_result
+    - debug:
+        var: install_result
+Cuando se ejecuta el play, el módulo debug vuelca el valor de la variable registrada
+install_result en el terminal.
+[user@demo ~]$ ansible-navigator run playbook.yml -m stdout
+PLAY [Installs a package and prints the result] ****************************
+TASK [setup] ***************************************************************
+ok: [demo.example.com]
+TASK [Install the package] *************************************************
+ok: [demo.example.com]
+TASK [debug] ***************************************************************
+ok: [demo.example.com] => {
+    "install_result": {
+        "changed": false,
+        "msg": "",
+        "rc": 0,
+        "results": [
+            "httpd-2.4.51-7.el9_0.x86_64 providing httpd is already installed"
+        ]
+    }
+}
+PLAY RECAP *****************************************************************
+demo.example.com    : ok=3    changed=0    unreachable=0    failed=0    skipped=0 
+   rescued=0    ignored=0
+Referencias
+How to build your inventory — Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+Using Variables — Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html
+Variable precedence: Where should I put a variable?
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_variables.html#variable-precedence-where-should-i-put-a-variable
+YAML Syntax — Ansible Documentation
+https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+92
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de variables
+Definir y usar variables en un playbook.
+Resultados
+• Definir variables en un playbook.
+• Crear tareas que usen variables definidas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-variables
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-variables.
+[student@workstation ~]$ cd ~/data-variables
+[student@workstation data-variables]$
+ 2.
+Durante los siguientes pasos, usted creará un playbook que consta de un solo play que
+instale el servidor web Apache y abra los puertos para que se pueda acceder al servicio. El
+play también consulta al servidor web para garantizar que se esté ejecutando.
+Cree un playbook denominado playbook.yml. Cree un play denominado "Implementar
+e iniciar el servicio Apache HTTPD", apunte al grupo de hosts webserver como hosts
+gestionados y defina las siguientes variables en su sección vars:
+Variables
+Variable
+Descripción
+web_pkg
+Paquete de servidor web para instalar
+firewall_pkg
+Paquete de firewall para instalar
+web_service
+Servicio web para administrar
+firewall_service
+Servicio de firewall que se administrará
+rule
+El nombre del servicio para abrir
+RH294-RHEL9.0-es-3-20240620
+93
+
+

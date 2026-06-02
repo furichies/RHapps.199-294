@@ -1,0 +1,74 @@
+# 17.1. Administrar el cargador de arranque y la línea de comandos del kernel
+# Tipo: theory
+# Capítulo: Capítulo 17. Control y solución de problemas del proceso de arranque
+
+17.1. Administrar el cargador de arranque y la línea de comandos del kernel 17.1. Administrar el cargador de arranque y la línea de comandos del kernel Objetivos Describir cómo el cargador de arranque selecciona y carga el sistema operativo, reinstala el cargador de arranque y modifica la configuración del cargador de arranque y los argumentos de la línea de comandos del kernel. El cargador de arranque Los sistemas informáticos modernos son combinaciones complejas de hardware y software. Pasar de un estado indefinido y apagado a un sistema en ejecución con un mensaje de inicio de sesión requiere que muchas piezas de hardware y software funcionen juntas. Cuando se enciende una computadora, carga un sistema de arranque de firmware desde un chip ROM en la placa base. En las máquinas x86 modernas, este sistema de arranque de firmware suele ser una interfaz de firmware extensible unificada (UEFI) o un sistema básico de entrada/salida (BIOS). La BIOS era más común en las máquinas fabricadas antes de 2020 y UEFI es el sistema más común presente en las placas base actuales. El trabajo del sistema de arranque del firmware es cargar un cargador de arranque desde un disco y pasar el control del proceso de arranque al cargador de arranque. Los cargadores de arranque son programas diseñados para interactuar con el sistema de arranque del firmware, configurar el sistema para el arranque y luego iniciar el kernel para continuar con la inicialización del sistema. El cargador de arranque predeterminado para Red Hat Enterprise Linux 10 es el GRand Unified Bootloader versión 2 (GRUB2). GRUB2 con UEFI En un sistema UEFI, el firmware de arranque lee la configuración de la RAM no volátil (NVRAM) para determinar qué disco y aplicación de interfaz de firmware extensible (EFI) cargar. El disco normalmente contiene una partición del sistema EFI, que generalmente está montada en el directorio /boot/efi. GRUB2 genera archivos que el sistema UEFI puede cargar. Una vez cargada la aplicación EFI del cargador de arranque GRUB2, el sistema pasa a la siguiente etapa de arranque. GRUB2 con BIOS En un sistema BIOS, el firmware de arranque lee un sector de arranque especialmente formateado en un disco para la imagen del cargador de arranque boot.img. Esta imagen del cargador de arranque carga la imagen core.img desde el espacio MBR sin particiones antes de la primera partición. La imagen core.img carga módulos adicionales que pueden inicializar sistemas de archivos y el sistema pasa a la siguiente etapa de arranque. GRUB2 genera e instala estas imágenes en el espacio MBR del disco. Etapas de inicio adicionales Después de que GRUB2 haya inicializado y cargado completamente los discos, presenta un menú de inicio al usuario.
+
+
+
+
+
+17.1. Administrar el cargador de inicio y la línea de comandos del kernel Figura 23. Menú GRUB2 Desde este menú de inicio, puede seleccionar qué kernel preconfigurado iniciar, así como aplicar cualquier argumento del kernel para iniciar. El paquete del kernel de Linux normalmente genera estas entradas del menú de inicio cuando instala una nueva versión. Para modificar una entrada de inicio desde el menú de GRUB2, puede utilizar el editor integrado. Puede acceder al editor en GRUB2 presionando E.
+
+
+
+
+
+17.1. Administrar el cargador de arranque y la línea de comandos del kernel Figura 24. Editor de GRUB2 Los cambios realizados dentro del editor de GRUB2 se aplican sólo a esa instancia de arranque. Para que los cambios sean persistentes en futuras instancias de arranque, puede realizar esos cambios utilizando el comando grubby. Control de GRUB2 desde un sistema iniciado Puede modificar la configuración predeterminada de GRUB2 utilizando el comando grubby. Puede utilizar el comando grubby para realizar diversas tareas, como agregar o eliminar argumentos del kernel, cambiar la entrada predeterminada del menú de inicio y ver información sobre las entradas existentes del menú de inicio. Para ver información sobre una entrada existente, puede usar la opción --info del comando sucio.
+
+user@host:~$ grubby --info 1
+index=1 
+kernel="/boot/vmlinuz-6.12.0-55.12.1.el10_0.x86_64" 
+args="console=tty0 ... crashkernel=2G-64G:256M,64G-:512M $tuned_params" 
+root="UUID=15507695-22bb-4c65-94e6-a438e095983f" 
+initrd="/boot/initramfs-6.12.0-55.12.1.el10_0.x86_64.img $tuned_initrd" 
+title="Red Hat Enterprise Linux (6.12.0-55.12.1.el10_0.x86_64) 10.0 (Coughlan)" 
+id="b70d796f931842cb9776f658cd068435-6.12.0-55.12.1.el10_0.x86_64" 
+
+El valor del índice es el número de entrada para la lista del menú de inicio, comenzando en 0. El valor del kernel es la ruta al kernel de Linux que carga GRUB2. El valor args es una lista de argumentos del kernel que se pasan al kernel de Linux. El valor raíz es el dispositivo de bloque en el que existen el kernel y la imagen initramfs. El valor initrd es la ruta a la imagen inicial del sistema de archivos RAM, dentro de la cual arrancan las primeras etapas de Linux. El valor del título es el nombre que se muestra para la entrada de inicio en el menú de inicio de GRUB2. El valor de identificación es un identificador único para esta entrada de inicio.
+
+
+
+
+
+17.1. Administrar el cargador de arranque y la línea de comandos del kernel Para cambiar la entrada de arranque predeterminada, de modo que GRUB2 la elija automáticamente en el arranque, puede usar la opción del comando grubby --set-default-index.
+
+root@host:~# grubby --set-default-index 0
+
+The default is /boot/loader/entries/ffffffffffffffffffffffffffffffff-6.12.0-55.9.1.el10_0.x86_64.conf with index 0 and kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 Kernel Command-line Arguments You can pass various arguments to the Linux kernel to configurar el sistema en el arranque. En algunos casos, un argumento de línea de comandos es la única forma de cambiar una configuración, como definir cómo se comporta el kernel si falla. Los argumentos de línea de comandos del kernel disponibles y el comportamiento exacto dependen de la versión del kernel de Linux que haya instalado. Para agregar un argumento de línea de comando o realizar otros cambios relacionados con el kernel, puede usar el comando sucio: opción actualizar kernel. El siguiente ejemplo agrega el argumento de línea de comandos rhgb quiet para suprimir los mensajes de inicio del kernel mediante la opción --args:
+
+root@host:~# grubby --update-kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 \
+
+--args="rhgb quiet" Para eliminar el argumento de la línea de comandos, agregue el argumento rhgb quiet usando la opción --remove-args:
+
+root@host:~# grubby --update-kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 \
+
+--remove-args="rhgb quiet" Referencias a las páginas man grubby(8), kernel-command-line(7), bootparam(7) y dracut.cmdline(7) Para obtener más información, consulte el capítulo Configuración de los parámetros de la línea de comandos del kernel en la guía Administración, monitoreo y actualización del kernel en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/administración_monitoreo_y_actualización_del_kernel/index#configuración-de-los-parámetros-de-línea-de-comando-del-kernel
+
+
+
+
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel 17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel Modificar la configuración del cargador de arranque para controlar el proceso de arranque. Resultados Reinicie el sistema y examine el menú de GRUB2. Vea la configuración actual del cargador de arranque desde la línea de comando. Vuelva a configurar el cargador de arranque para seleccionar un kernel diferente como predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-grub
+
+Instrucciones Reinicie la máquina del servidor y luego inspeccione el menú de GRUB2. Seleccione la opción de inicio predeterminada. 1. Abra la consola de la máquina del servidor y luego reinicie la máquina enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. 1.1. Después de que se inicialice el cargador de arranque, presione Esc para detener el temporizador del cargador de arranque. La entrada seleccionada es el kernel predeterminado para iniciar la máquina. 1.2. Presione E para abrir el editor de los argumentos iniciales de la línea de comandos para la opción de inicio predeterminada. No realice ningún cambio en la configuración. 1.3. Presione Ctrl+X o use el teclado en pantalla para enviar F10 a la consola para iniciar el sistema con la configuración predeterminada. 1.4. Vea información sobre la configuración de arranque del kernel predeterminada. 2. Inicie sesión en la máquina del servidor como usuario root. Utilice redhat como contraseña.
+
+servera login: root
+
+Contraseña: redhat ...salida omitida... [root@servera ~]# 2.1. Obtenga el índice del kernel predeterminado usando el comando grubby:
+
+[root@servera ~]# grubby --default-index
+
+1 2.2. Ver la información del kernel en el índice 1: 2.3.
+
+
+
+
+

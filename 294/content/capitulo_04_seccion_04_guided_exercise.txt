@@ -1,0 +1,339 @@
+# Ejercicio Guiado: Implementación de manejadores
+# Tipo: guided_exercise
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Implementación de manejadores
+Implementar manejadores en playbooks.
+Resultados
+• Debe ser capaz de definir manejadores en playbooks y notificarlos para aplicar cambios de
+configuración.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-handlers
+Instrucciones
+ 1.
+En la máquina workstation, abra un nuevo terminal y cambie al directorio /home/
+student/control-handlers.
+[student@workstation ~]$ cd ~/control-handlers
+[student@workstation control-handlers]$
+ 2.
+Edite el archivo del playbook configure_webapp.yml. Este playbook instala y configura
+un servidor de aplicaciones web. Cuando cambia la configuración del servidor de
+aplicaciones web, el playbook desencadena un reinicio del servicio correspondiente.
+2.1.
+Revise el playbook configure_webapp.yml. Comienza con la inicialización de
+algunas variables:
+---
+- name: Web application server is deployed
+  hosts: webapp
+  vars:
+    packages: 
+      - nginx
+      - php-fpm
+      - firewalld
+    web_service: nginx 
+    app_service: php-fpm 
+    firewall_service: firewalld 
+    firewall_service_rules: 
+      - http
+    web_config_src: files/nginx.conf.standard 
+RH294-RHEL9.0-es-3-20240620
+161
+
+
+capítulo 4 |  Implementación del control de tareas
+    web_config_dst: /etc/nginx/nginx.conf 
+    app_config_src: files/php-fpm.conf.standard 
+    app_config_dst: /etc/php-fpm.conf 
+  tasks:
+packages especifica el nombre de los paquetes que se instalarán para los
+servicios de la aplicación web.
+web_service especifica el nombre del servicio del servidor web.
+app_service especifica el nombre del servicio del servidor de aplicaciones.
+firewall_service especifica el nombre del servicio de firewall.
+firewall_service_rules especifica una lista de servicios para permitir a
+través del firewall.
+web_config_src especifica la ubicación del archivo de configuración del
+servidor web para instalar.
+web_config_dst especifica la ubicación del archivo de configuración del
+servidor web instalado en los hosts gestionados.
+app_config_src especifica la ubicación del archivo de configuración del
+servidor de aplicaciones para instalar.
+web_config_dst especifica la ubicación del archivo de configuración del
+servidor de aplicaciones instalado en los hosts gestionados.
+2.2.
+En el archivo configure_webapp.yml, defina una tarea que usa el módulo
+ansible.builtin.dnf para instalar los paquetes de base de datos requeridos,
+según lo define la variable packages.
+La tarea debe decir lo siguiente:
+  tasks:
+    - name: "{{ packages }} packages are installed"
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+2.3.
+Agregue una tarea para iniciar y habilitar los servicios requeridos. Use un bucle para
+realizar la acción para los tres servicios definidos:
+    - name: Make sure services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - "{{ web_service }}"
+        - "{{ app_service }}"
+        - "{{ firewall_service }}"
+162
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+2.4.
+Agregue una tarea que recorra los ítems en la variable firewall_service_rules.
+Permita que cada servicio pase por el firewall:
+nota
+Aunque la variable firewall_service_rules solo contiene un elemento en este
+punto, puede agregar elementos a la variable (como agregar el servicio https) sin
+cambiar la tarea.
+    - name: Allow services through the firewall
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        state: enabled
+        immediate: true
+        permanent: true
+      loop: "{{ firewall_service_rules }}"
+2.5.
+Agregue una tarea para descargar nginx.conf.standard en /etc/nginx/
+nginx.conf en el host gestionado, mediante el módulo ansible.builtin.copy.
+Agregue una condición que notifique al manejador restart web service
+para reiniciar el servicio de servidor web después de un cambio de archivo de
+configuración. La tarea debe decir lo siguiente:
+    - name: The {{ web_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ web_config_src }}"
+        dest: "{{ web_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart web service
+2.6.
+Agregue una tarea para descargar php-fpm.conf.standard en /etc/php-
+fpm.conf en el host gestionado, mediante el módulo ansible.builtin.copy.
+Agregue una condición que notifique al manejador restart app service para
+reiniciar el servicio de servidor de aplicaciones después de un cambio de archivo de
+configuración. La tarea debe decir lo siguiente:
+    - name: The {{ app_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ app_config_src }}"
+        dest: "{{ app_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart app service
+2.7.
+Agregue la palabra clave handlers para definir el inicio de las tareas del manejador.
+Defina el primer manejador, restart web service, que reinicia el servicio nginx.
+En el manejador, se debe leer lo siguiente:
+RH294-RHEL9.0-es-3-20240620
+163
+
+
+capítulo 4 |  Implementación del control de tareas
+  handlers:
+    - name: restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+2.8.
+Defina el segundo manejador, restart app service, que reinicia el servicio php-
+fpm. En el manejador, se debe leer lo siguiente:
+    - name: restart app service
+      ansible.builtin.service:
+        name: "{{ app_service }}"
+        state: restarted
+El playbook completo debe incluir el siguiente contenido:
+---
+- name: Web application server is deployed
+  hosts: webapp
+  vars:
+    packages:
+      - nginx
+      - php-fpm
+      - firewalld
+    web_service: nginx
+    app_service: php-fpm
+    firewall_service: firewalld
+    firewall_service_rules:
+      - http
+    web_config_src: files/nginx.conf.standard
+    web_config_dst: /etc/nginx/nginx.conf
+    app_config_src: files/php-fpm.conf.standard
+    app_config_dst: /etc/php-fpm.conf
+  tasks:
+    - name: "{{ packages }} packages are installed"
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+    - name: Make sure services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - "{{ web_service }}"
+        - "{{ app_service }}"
+        - "{{ firewall_service }}"
+    - name: Allow services through the firewall
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+164
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+        state: enabled
+        immediate: true
+        permanent: true
+      loop: "{{ firewall_service_rules }}"
+    - name: The {{ web_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ web_config_src }}"
+        dest: "{{ web_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart web service
+    - name: The {{ app_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ app_config_src }}"
+        dest: "{{ app_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart app service
+  handlers:
+    - name: restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+    - name: restart app service
+      ansible.builtin.service:
+        name: "{{ app_service }}"
+        state: restarted
+ 3.
+Antes de ejecutar el playbook, ejecute ansible-navigator con la opción --syntax-
+check para verificar que su sintaxis sea correcta. Corrija los errores informados antes de
+pasar al siguiente paso. Debe ver una salida similar a la siguiente:
+[student@workstation control-handlers]$ ansible-navigator run \
+> -m stdout configure_webapp.yml --syntax-check
+playbook: /home/student/control-handlers/configure_webapp.yml
+ 4.
+Ejecute el playbook configure_webapp.yml. En la salida, se muestra que los
+manejadores se están ejecutando.
+[student@workstation control-handlers]$ ansible-navigator run \
+> -m stdout configure_webapp.yml
+PLAY [Web application server is deployed] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [['nginx', 'php-fpm', 'firewalld'] packages are installed] ****************
+changed: [servera.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+165
+
+
+capítulo 4 |  Implementación del control de tareas
+TASK [Make sure services are running] ******************************************
+changed: [servera.lab.example.com] => (item=nginx)
+changed: [servera.lab.example.com] => (item=php-fpm)
+ok: [servera.lab.example.com] => (item=firewalld)
+TASK [Allow services through the firewall] *************************************
+changed: [servera.lab.example.com] => (item=http)
+TASK [The /etc/nginx/nginx.conf file has been deployed] ************************
+changed: [servera.lab.example.com]
+TASK [The /etc/php-fpm.conf file has been deployed] ****************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [restart web service] ******************************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [restart app service] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=7    unreachable=0    failed=0  ...
+ 5.
+Ejecute el playbook nuevamente.
+[student@workstation control-handlers]$ ansible-navigator run \
+> -m stdout configure_webapp.yml
+PLAY [Web application server is deployed] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [['nginx', 'php-fpm', 'firewalld'] packages are installed] ****************
+ok: [servera.lab.example.com]
+TASK [Make sure services are running] ******************************************
+ok: [servera.lab.example.com] => (item=nginx)
+ok: [servera.lab.example.com] => (item=php-fpm)
+ok: [servera.lab.example.com] => (item=firewalld)
+TASK [Allow services through the firewall] *************************************
+ok: [servera.lab.example.com] => (item=http)
+TASK [The /etc/nginx/nginx.conf file has been deployed] ************************
+ok: [servera.lab.example.com]
+TASK [The /etc/php-fpm.conf file has been deployed] ****************************
+166
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=0    unreachable=0    failed=0  ...
+En esta oportunidad, se omiten los manejadores. Si el archivo de configuración remota /
+etc/nginx/nginx.conf se cambia en el futuro, ejecutar el playbook desencadenará el
+manejador restart web service, pero no el manejador restart app service.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-handlers
+RH294-RHEL9.0-es-3-20240620
+167
+
+
+capítulo 4 |  Implementación del control de tareas
+Manejo de fallas de tareas
+Objetivos
+• Controlar lo que sucede cuando falla una tarea y qué condiciones hacen que falle una tarea.
+Gestión de errores de tareas en plays
+Ansible evalúa los códigos de retorno de cada tarea para determinar si una tarea se realizó
+satisfactoriamente o con errores. Generalmente, cuando una tarea falla, Ansible omite
+inmediatamente todas las tareas posteriores.
+No obstante, algunas veces puede desear continuar la ejecución del play, aunque una tarea falle.
+Por ejemplo, puede esperar que una tarea específica falle y tal vez desee recuperarla ejecutando
+otra tarea de forma condicional. Pueden usarse varias características de Ansible para gestionar los
+errores de tareas.
+Fallas de tareas ignoradas
+De forma predeterminada, si una tarea falla, se cancela el play. Sin embargo, el comportamiento
+puede anularse si se ignoran las tareas fallidas. Puede usar la palabra clave ignore_errors en
+una tarea para lograr esto.
+En el siguiente fragmento, se muestra cómo usar ignore_errors en una tarea para continuar la
+ejecución de un playbook en el host, aun si la tarea falla. Por ejemplo, si el paquete notapkg no
+existe, el módulo ansible.builtin.dnf falla, pero si se tiene ignore_errors establecido
+como true, la ejecución continuará.
+- name: Latest version of notapkg is installed
+  ansible.builtin.dnf:
+    name: notapkg
+    state: latest
+  ignore_errors: true
+Forzado de la ejecución de manejadores después de la falla de
+una tarea
+En general, cuando falla una tarea y se cancela el play en ese host, no se ejecutan los manejadores
+informados por las tareas anteriores en el play. Si establece la palabra clave force_handlers:
+true en el play, se llama a los manejadores notificados incluso si se canceló el play porque falló
+una tarea posterior.
+Importante
+Si ha establecido ignore_errors: true en una tarea o para el play de la tarea,
+si esa tarea falla, se ignora la falla. En ese caso, el play continúa ejecutándose y los
+manejadores aún se ejecutan, incluso si ha establecido force_handlers: false,
+a menos que algún otro error haga que el play falle.
+168
+RH294-RHEL9.0-es-3-20240620
+
+

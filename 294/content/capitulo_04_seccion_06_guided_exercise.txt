@@ -1,0 +1,406 @@
+# Ejercicio Guiado: Manejo de fallas de tareas
+# Tipo: guided_exercise
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Manejo de fallas de tareas
+Explorar diferentes formas de manejar la falla de una tarea en un playbook de Ansible.
+Resultados
+• Ignorar los comandos fallidos durante la ejecución de playbooks.
+• Forzar la ejecución de los manejadores.
+• Reemplazar lo que constituye una falla en las tareas.
+• Reemplazar el estado changed para las tareas.
+• Implementar block, rescue y always en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-errors
+Instrucciones
+ 1.
+En la máquina workstation, cambie al directorio /home/student/control-errors.
+[student@workstation ~]$ cd ~/control-errors
+[student@workstation control-errors]$
+ 2.
+El comando lab creó un archivo de configuración Ansible, así como un archivo de
+inventario, que contiene el servidor servera.lab.example.com en el grupo
+databases. Revise el archivo antes de continuar.
+[student@workstation control-errors]$ cat inventory
+[databases]
+servera.lab.example.com
+ 3.
+Cree un playbook denominado playbook.yml que contiene un play con dos tareas.
+Escriba la primera tarea con un error deliberado para que falle.
+3.1.
+Abra el playbook en un editor de texto. Defina tres variables: web_package con un
+valor de http, db_package con un valor de mariadb-server y db_service con
+un valor de mariadb. Estas variables se usarán para instalar los paquetes requeridos
+e iniciar el servidor.
+RH294-RHEL9.0-es-3-20240620
+173
+
+
+capítulo 4 |  Implementación del control de tareas
+El valor http es un error intencional en el nombre del paquete. El (intencionalmente
+incorrecto) debe contar con el siguiente contenido:
+---
+- name: Task Failure Exercise
+  hosts: databases
+  vars:
+    web_package: http
+    db_package: mariadb-server
+    db_service: mariadb
+3.2.
+Defina dos tareas que usen el módulo ansible.builtin.dnf y las dos variables,
+web_package y db_package. Las tareas deben instalar los paquetes requeridos y
+leerse de la siguiente manera:
+  tasks:
+    - name: Install {{ web_package }} package
+      ansible.builtin.dnf:
+        name: "{{ web_package }}"
+        state: present
+    - name: Install {{ db_package }} package
+      ansible.builtin.dnf:
+        name: "{{ db_package }}"
+        state: present
+ 4.
+Ejecute el playbook y observe la salida del play.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install http package] ****************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "failures":
+ ["No package http available."], "msg": "Failed to install some of the specified
+ packages", "rc": 1, "results": []}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+La tarea falló porque no hay un paquete existente denominado http. Debido a que falló la
+primera tarea, no se ejecutó la segunda tarea.
+ 5.
+Actualice la primera tarea para ignorar cualquier error añadiendo la palabra clave
+ignore_errors. Las tareas deben contar con el siguiente contenido:
+174
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+  tasks:
+    - name: Install {{ web_package }} package
+      ansible.builtin.dnf:
+        name: "{{ web_package }}"
+        state: present
+      ignore_errors: true
+    - name: Install {{ db_package }} package
+      ansible.builtin.dnf:
+        name: "{{ db_package }}"
+        state: present
+ 6.
+Ejecute el playbook nuevamente y observe la salida del play.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install http package] ****************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "failures":
+ ["No package http available."], "msg": "Failed to install some of the specified
+ packages", "rc": 1, "results": []}
+...ignoring
+TASK [Install mariadb-server package] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=1
+Aunque falló la primera tarea, Ansible ejecutó la segunda.
+ 7.
+En este paso, configurará una palabra clave block para que pueda experimentar con su
+funcionamiento.
+7.1.
+Actualice el playbook anidando la primera tarea en una cláusula block. Elimine la
+línea que establece ignore_errors: true. El bloque debe incluir el siguiente
+contenido:
+    - name: Attempt to set up a webserver
+      block:
+        - name: Install {{ web_package }} package
+          ansible.builtin.dnf:
+            name: "{{ web_package }}"
+            state: present
+RH294-RHEL9.0-es-3-20240620
+175
+
+
+capítulo 4 |  Implementación del control de tareas
+7.2.
+Anide la tarea que instala el paquete mariadb-server en una cláusula rescue. Si
+la tarea enumerada en la cláusula block falla, esta tarea se ejecuta. La cláusula del
+bloque debe incluir el siguiente contenido:
+      rescue:
+        - name: Install {{ db_package }} package
+          ansible.builtin.dnf:
+            name: "{{ db_package }}"
+            state: present
+7.3.
+Por último, agregue una cláusula always que iniciará el servidor de base de datos
+una vez realizada la instalación usando el módulo ansible.builtin.service. La
+cláusula always debe incluir el siguiente contenido:
+      always:
+        - name: Start {{ db_service }} service
+          ansible.builtin.service:
+            name: "{{ db_service }}"
+            state: started
+7.4.
+La tarea completa debe contar con el siguiente contenido:
+  tasks:
+    - name: Attempt to set up a webserver
+      block:
+        - name: Install {{ web_package }} package
+          ansible.builtin.dnf:
+            name: "{{ web_package }}"
+            state: present
+      rescue:
+        - name: Install {{ db_package }} package
+          ansible.builtin.dnf:
+            name: "{{ db_package }}"
+            state: present
+      always:
+        - name: Start {{ db_service }} service
+          ansible.builtin.service:
+            name: "{{ db_service }}"
+            state: started
+ 8.
+Ejecute el playbook otra vez y observe la salida.
+8.1.
+Ejecute el playbook. Fallará la tarea en el bloque que garantiza que esté instalado
+web_package, lo que causará la ejecución de la tarea del bloque rescue. A
+continuación, se ejecuta la tarea en el bloque always.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+176
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+TASK [Install http package] ****************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "failures":
+ ["No package http available."], "msg": "Failed to install some of the specified
+ packages", "rc": 1, "results": []}
+TASK [Install mariadb-server package] ******************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=1    ignored=0
+8.2.
+Edite el playbook y corrija el valor de la variable web_package para que diga httpd.
+Esto hará que la tarea en el bloque se ejecute de manera correcta la próxima vez que
+ejecute el playbook.
+  vars:
+    web_package: httpd
+    db_package: mariadb-server
+    db_service: mariadb
+8.3.
+Ejecute el playbook nuevamente. Esta vez, la tarea en el bloque no fallará. Esto hace
+que se ignore la tarea en la sección rescue. La tarea de la sección always aún se
+ejecuta.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install httpd package] ***************************************************
+changed: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 9.
+Este paso explora el modo en que se controla la condición que hace que la tarea se informe
+como "changed" (modificado) para un host gestionado.
+9.1.
+Edite el playbook para agregar dos tareas al inicio del play, antes de la cláusula
+block. La primera tarea usa el módulo ansible.builtin.command para ejecutar
+el comando date y registra el resultado en la variable command_result. La segunda
+tarea usa el módulo ansible.builtin.debug para imprimir la salida estándar del
+comando de la primera tarea.
+RH294-RHEL9.0-es-3-20240620
+177
+
+
+capítulo 4 |  Implementación del control de tareas
+  tasks:
+    - name: Check local time
+      ansible.builtin.command: date
+      register: command_result
+    - name: Print local time
+      ansible.builtin.debug:
+        var: command_result.stdout
+9.2.
+Ejecute el playbook. Debería ver que la primera tarea, que ejecuta el módulo
+ansible.builtin.command, informe changed, aun si no modificó el sistema
+remoto; solo recopiló información acerca de la hora. Esto se debe a que el módulo
+ansible.builtin.command no puede diferenciar entre un comando que recopila
+datos y un comando que modifica el estado.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Check local time] ********************************************************
+changed: [servera.lab.example.com]
+TASK [Print local time] ********************************************************
+ok: [servera.lab.example.com] => {
+    "command_result.stdout": "Tue Jul  5 03:04:51 PM EDT 2022"
+}
+TASK [Install httpd package] ***************************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Si ejecuta el playbook nuevamente, la tarea Check local time informa changed
+nuevamente.
+9.3.
+Esa tarea ansible.builtin.command no debería informar changed cada vez que
+se ejecuta, ya que no modifica el host gestionado. Dado que sabe que la tarea nunca
+modifica un host gestionado, agregue la línea changed_when: false a la tarea
+para eliminar la modificación.
+  tasks:
+    - name: Check local time
+      ansible.builtin.command: date
+      register: command_result
+      changed_when: false
+178
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+    - name: Print local time
+      ansible.builtin.debug:
+        var: command_result.stdout
+9.4.
+Ejecute el playbook nuevamente para observar que la tarea ahora informe ok, pero la
+tarea aún se está ejecutando y está guardando la hora en la variable.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Check local time] ********************************************************
+ok: [servera.lab.example.com]
+TASK [Print local time] ********************************************************
+ok: [servera.lab.example.com] => {
+    "command_result.stdout": "Tue Jul  5 03:06:43 PM EDT 2022"
+}
+TASK [Install httpd package] ***************************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 10. Como ejercicio final, edite el playbook para explorar el modo en que la palabra clave
+failed_when interactúa con las tareas.
+10.1.
+Edite la tarea Install {{ web_package }} package de modo que informe que
+falló cuando web_package tenga el valor httpd. Dado que este es el caso, la tarea
+informará una falla cuando ejecute el play.
+Preste atención a su sangría para asegurarse de que la palabra clave se establezca
+correctamente en la tarea.
+      block:
+        - name: Install {{ web_package }} package
+          ansible.builtin.dnf:
+            name: "{{ web_package }}"
+            state: present
+          failed_when: web_package == "httpd"
+10.2. Ejecute el playbook.
+RH294-RHEL9.0-es-3-20240620
+179
+
+
+capítulo 4 |  Implementación del control de tareas
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Check local time] ********************************************************
+ok: [servera.lab.example.com]
+TASK [Print local time] ********************************************************
+ok: [servera.lab.example.com] => {
+    "command_result.stdout": "Tue Jul  5 03:08:41 PM EDT 2022"
+}
+TASK [Install httpd package] ***************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false,
+ "failed_when_result": true, "msg": "Nothing to do", "rc": 0, "results": []}
+TASK [Install mariadb-server package] ******************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=1    ignored=0
+Observe la salida con atención. La palabra clave failed_when modifica el estado
+que informa la tarea después de su ejecución; no modifica el comportamiento de la
+tarea en sí.
+Sin embargo, la falla informada puede modificar el comportamiento del resto del play.
+Dado que esta tarea se encontraba en un bloque e informó una falla, se ejecutó la
+tarea Install mariadb-server package en la sección rescue del bloque.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-errors
+180
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Trabajo de laboratorio
+Implementación del control de tareas
+Instalar el servidor web Apache y protegerlo con el uso de mod_ssl. Usará las condiciones,
+los manejadores y el manejo de fallas de tareas en su playbook para implementar el entorno.
+Resultados
+• Definir condicionales en playbooks de Ansible
+• Establecer bucles que realizan iteración de elementos
+• Definir manejadores en playbooks
+• Manejar errores de tareas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-review
+Instrucciones
+1.
+En la máquina workstation, cambie al directorio /home/student/control-review.
+2.
+El directorio del proyecto contiene un play parcialmente completado en el playbook
+playbook.yml. En el comentario #Fail fast message, agregue una tarea que use el
+módulo ansible.builtin.fail. Proporcione un nombre adecuado para la tarea.
+Esta tarea solo debe ejecutarse cuando el sistema remoto no cumple con los siguientes
+requisitos mínimos:
+• Tiene al menos la cantidad de RAM especificada por la variable min_ram_mb. La variable
+min_ram_mb se define en el archivo vars.yml y tiene un valor de 256.
+• Ejecuta Red Hat Enterprise Linux.
+3.
+En el comentario #Install all packages, agregue una tarea denominada Ensure
+required packages are present para instalar la última versión de los paquetes que
+faltan. Los paquetes requeridos son especificados por la variable packages, que se define
+en el archivo vars.yml.
+4.
+Debajo del comentario #Enable and start services, agregue una tarea para iniciar
+los servicios. Deben iniciarse y habilitarse todos los servicios especificados por la variable
+services, que se define en el archivo vars.yml. Proporcione un nombre adecuado para la
+tarea.
+5.
+Debajo del comentario #Block of config tasks, agregue un bloque de tareas al play.
+Este bloque contiene dos tareas:
+RH294-RHEL9.0-es-3-20240620
+181
+
+

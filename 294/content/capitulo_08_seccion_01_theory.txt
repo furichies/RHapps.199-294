@@ -1,0 +1,393 @@
+# Solución de problemas de playbooks
+# Tipo: theory
+# Capítulo: Capítulo 8. Solución de problemas de Ansible
+
+capítulo 8 |  Solución de problemas de Ansible
+Solución de problemas de playbooks
+Objetivos
+• Solucionar problemas genéricos con un nuevo playbook y repararlos.
+Playbooks de depuración
+La salida proporcionada por el comando ansible-navigator run es un buen punto de partida
+para solucionar problemas con sus plays y los hosts en los que se ejecutan.
+Considere la siguiente salida de la ejecución de un playbook:
+PLAY [Service Deployment] ***************************************************
+...output omitted...
+TASK: [Install a service] ***************************************************
+ok: [demoservera] => {
+    "msg": "demoservera"
+}
+ok: [demoserverb] => {
+    "msg": "demoserverb"
+}
+PLAY RECAP *********************************************************************
+demoservera    : ok=2    changed=0    unreachable=0    failed=0    skipped=0   
+ rescued=0    ignored=0
+demoserverb    : ok=2    changed=0    unreachable=0    failed=0    skipped=0   
+ rescued=0    ignored=0
+La salida anterior muestra el encabezado PLAY con el nombre del play que se ejecuta, seguido
+de uno o más encabezados TASK para las tareas en ese play. Cada uno de los encabezados TASK
+representa la tarea asociada en el play y se ejecuta en todos los hosts gestionados especificados
+por el parámetro hosts del play.
+A medida que cada host gestionado ejecuta cada una de las tareas, se muestra el nombre del
+host gestionado debajo del encabezado TASK, junto con el resultado de la tarea en ese host. Los
+resultados de la tarea pueden ser ok, fatal, changed o skipping.
+En la parte inferior de la salida de cada play, la sección PLAY RECAP muestra la cantidad de tareas
+ejecutadas para cada host gestionado, por resultado de la tarea.
+Puede aumentar el detalle de la salida de ansible-navigator run agregando una o más
+opciones -v. El comando ansible-navigator run -v aporta información de depuración
+adicional, con hasta cuatro niveles totales.
+Configuración de detalle
+Opción
+Descripción
+-v
+Aparecen los datos de la salida.
+362
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Opción
+Descripción
+-vv
+Aparecen tanto los datos de entrada como los de salida.
+-vvv
+Incluye información acerca de las conexiones a los hosts
+gestionados.
+-vvvv
+Incluye información adicional, como los scripts que se ejecutan en
+cada host remoto, y el usuario que ejecuta cada script.
+Examinar valores de variables con el módulo de
+depuración
+Puede usar el módulo ansible.builtin.debug para proporcionar una visión de lo que está
+sucediendo en el play. Puede crear una tarea que use este módulo para mostrar el valor de una
+variable determinada en un punto específico del play. Esto puede ayudarlo a depurar tareas que
+usan variables para comunicarse entre sí (por ejemplo, usando la salida de una tarea como dato
+para la siguiente).
+Los siguientes ejemplos usan las configuraciones msg y var dentro de las tareas
+ansible.builtin.debug. Este primer ejemplo muestra el valor en el tiempo de ejecución
+del dato ansible_facts['memfree_mb'] como parte de un mensaje impreso en la salida de
+ansible-navigator run.
+- name: Display free memory
+  ansible.builtin.debug:
+    msg: "Free memory for this system is {{ ansible_facts['memfree_mb'] }}"
+El segundo ejemplo muestra el valor de la variable output.
+- name: Display the "output" variable
+  ansible.builtin.debug:
+    var: output
+    verbosity: 2
+El parámetro verbosity controla cuándo se ejecuta el módulo ansible.builtin.debug.
+El valor se correlaciona con el número de opciones -v que se especifican cuando se ejecuta el
+playbook. Por ejemplo, si se especifica -vv y verbosity se establece en 2 para una tarea, esa
+tarea se incluye en la salida de depuración. El valor predeterminado para el parámetro verbosity
+es 0.
+Revisión de playbooks en busca de errores
+Varios problemas pueden ocurrir durante la ejecución de un playbook, muchos de ellos
+relacionados con la sintaxis del playbook o cualquiera de las plantillas que usa, o debido a
+problemas de conectividad con los hosts gestionados (por ejemplo, un error en el nombre del host
+gestionado en el archivo de inventario).
+Hay varias herramientas disponibles que puede usar para revisar su playbook en busca de errores
+de sintaxis y otros problemas antes de ejecutarlo.
+RH294-RHEL9.0-es-3-20240620
+363
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Comprobación de la sintaxis del playbook para ver si hay
+problemas
+El comando ansible-navigator run acepta la opción --syntax-check, que prueba su
+playbook en busca de errores de sintaxis en lugar de ejecutarlo.
+Es una buena práctica validar la sintaxis en su playbook antes de usarlo o si tiene problemas con él.
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+Comprobación de una tarea dada en un playbook
+Puede usar el comando ansible-navigator run con la opción --step para recorrer un
+playbook una tarea a la vez.
+El comando ansible-navigator run --step solicita de forma interactiva la confirmación de
+que desea que se ejecute cada tarea. Presione Y para confirmar que desea que se ejecute la tarea,
+N para omitir la tarea o C para continuar ejecutando las tareas restantes.
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --step --pae false
+PLAY [Managing errors playbook] **********************************************
+Perform task: TASK: Gathering Facts (N)o/(y)es/(c)ontinue:
+Importante
+Debido a que Ansible le solicita una entrada cuando usa la opción --step, debe
+deshabilitar los artefactos del playbook y usar el modo de salida estándar.
+También puede comenzar a ejecutar un playbook desde una tarea específica mediante la opción
+--start-at-task. Proporcione el nombre de una tarea como un argumento para el comando
+ansible-navigator run --start-at-task.
+Por ejemplo, supongamos que su playbook contiene una tarea denominada Ensure
+{{ web_service }} is started. Use el siguiente comando para ejecutar el playbook a partir
+de esa tarea:
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --start-at-task "Ensure {{ web_service }} is started"
+nota
+Puede usar el comando ansible-navigator run --list-tasks para
+enumerar los nombres de las tareas en su playbook.
+364
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Comprobación de playbooks en busca de problemas y
+seguimiento de las buenas prácticas
+Una de las mejores formas de facilitar la depuración de los playbooks es seguir las buenas
+prácticas al escribirlos en primer lugar. Estas son algunas de las prácticas recomendadas para el
+desarrollo de playbooks:
+• Use una descripción concisa del propósito del play o tarea para nombrar los plays y las tareas.
+El nombre del play o la tarea se muestra cuando se ejecuta el playbook. Esto también ayuda
+a documentar lo que se supone que debe lograr cada play o tarea, y posiblemente por qué se
+necesita.
+• Use comentarios para agregar documentación en línea adicional acerca de tareas.
+• Haga un uso eficaz del espacio en blanco vertical. En general, organice los atributos de las
+tareas verticalmente para que sean más fáciles de leer.
+• Una sangría horizontal consistente es fundamental. Use espacios, no tabulaciones, para evitar
+errores de sangría. Configure su editor de texto para insertar espacios cuando presione la tecla
+Tab para hacer esto más fácil.
+• Intente mantener el playbook lo más simple posible. Solo use las características que necesita.
+Algunos profesionales de Ansible en Red Hat han trabajado en un conjunto no oficial de prácticas
+recomendadas para crear contenido de automatización de Ansible, basándose en sus propias
+experiencias en el campo. Aunque no cuenta con el respaldo oficial de Red Hat en este momento,
+puede ser un buen comienzo para desarrollar sus propias buenas prácticas. Consulte  Buenas
+prácticas para Ansible  [https://redhat-cop.github.io/automation-good-practices/].
+Para ayudarlo a seguir buenas prácticas como estas, Red Hat Ansible Automation Platform 2
+proporciona una herramienta, ansible-lint, que usa un conjunto de reglas predefinidas para
+buscar posibles problemas con su playbook. No todos los problemas que informa rompen su
+playbook, pero un problema informado puede indicar la presencia de un error más grave.
+Importante
+El comando ansible-lint es una vista previa de la tecnología en Red Hat Ansible
+Automation Platform 2.2. Red Hat aún no es totalmente compatible con esta
+herramienta; para obtener más información detallada, consulte el artículo de la
+base de conocimiento "What does a 'Technology Preview' feature mean?" [https://
+access.redhat.com/solutions/21101].
+Por ejemplo, supongamos que tiene el siguiente playbook site.yml:
+- name: Configure servers with Ansible tools
+  hosts: all
+  tasks:
+    - name: Make sure tools are installed
+      package:
+        name:
+          - ansible-doc
+          - ansible-navigator
+Ejecute el comando ansible-lint site.yml para validarlo. Es posible que obtenga la
+siguiente salida como resultado:
+RH294-RHEL9.0-es-3-20240620
+365
+
+
+capítulo 8 |  Solución de problemas de Ansible
+WARNING  Overriding detected file kind 'yaml' with 'playbook' for given positional
+ argument: site.yml
+WARNING  Listing 4 violation(s) that are fatal
+yaml: trailing spaces (trailing-spaces) 
+site.yml:2
+fqcn-builtins: Use FQCN for builtin actions. 
+site.yml:5 Task/Handler: Make sure tools are installed
+yaml: trailing spaces (trailing-spaces) 
+site.yml:7
+yaml: too many blank lines (1 > 0) (empty-lines) 
+site.yml:10
+You can skip specific rules or tags by adding them to your configuration file:
+# .config/ansible-lint.yml
+warn_list:  # or 'skip_list' to silence them completely
+  - fqcn-builtins  # Use FQCN for builtin actions.
+  - yaml  # Violations reported by yamllint.
+Finished with 4 failure(s), 0 warning(s) on 1 files.
+Esta ejecución de ansible-lint encontró cuatro problemas de estilo:
+La línea 2 del playbook (hosts: all) aparentemente tiene un espacio en blanco al final,
+detectado por la regla yaml. No es un problema con el playbook directamente, pero muchos
+desarrolladores prefieren no tener espacios en blanco al final de los archivos almacenados
+en el control de versiones para evitar diferencias innecesarias a medida que se editan los
+archivos.
+La línea 5 del playbook (package:) no usa un FQCN para el nombre del módulo en esa
+tarea. En su lugar, debería ser ansible.builtin.package:. Esto fue detectado por la
+regla fqcn-builtins.
+La línea 7 del playbook aparentemente también tiene un espacio en blanco al final.
+El playbook finaliza con una o más líneas en blanco, detectadas por la regla yaml.
+La herramienta ansible-lint usa un archivo de configuración local, que es el archivo
+.ansible-lint o .config/ansible-lint.yml en el directorio actual. Puede editar este
+archivo de configuración para convertir las fallas de las reglas en advertencias (agregándolas como
+una lista a la directiva warn_list) u omitir las comprobaciones por completo (agregándolas
+como una lista a la directiva skip_list).
+Si tiene un error de sintaxis en el playbook, ansible-lint lo informa al igual que ansible-
+navigator run --syntax-check.
+Después de corregir estos problemas de estilo, el informe ansible-lint site.yml es el
+siguiente:
+WARNING  Overriding detected file kind 'yaml' with 'playbook' for given positional
+ argument: site.yml
+366
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Este es un mensaje de advertencia que puede ignorar, y la falta de otra salida indica que
+ansible-lint no detectó ningún otro problema de estilo.
+Para obtener más información sobre ansible-lint, consulte https://docs.ansible.com/lint.html
+y el comando ansible-lint --help.
+Importante
+El comando ansible-lint evalúa su playbook según el software de su estación
+de trabajo. No usa el contenedor del entorno de ejecución de automatización que
+usa ansible-navigator.
+El comando ansible-navigator tiene una opción experimental lint que
+ejecuta ansible-lint en su entorno de ejecución de automatización, pero la
+herramienta ansible-lint debe instalarse dentro de la imagen de contenedor
+del entorno de ejecución de automatización para que la opción funcione. Este no
+es el caso actualmente con el entorno de ejecución predeterminado. Necesita un
+entorno de ejecución personalizado para ejecutar ansible-navigator lint en
+este momento.
+Además, la versión de ansible-lint proporcionada con Red Hat Ansible
+Automation Platform 2.2 supone que sus playbooks usan Ansible Core 2.13, que es
+la versión que usa actualmente el entorno de ejecución predeterminado. No admite
+los playbooks anteriores de Ansible 2.9.
+Revisión de artefactos de playbook y archivos de
+registro
+Red Hat Ansible Automation Platform puede registrar la salida de las ejecuciones del playbook que
+realiza desde la línea de comandos de varias maneras diferentes.
+• ansible-navigator puede producir artefactos de playbooks que almacenan información
+sobre ejecuciones de playbooks en formato JSON.
+• Puede registrar información sobre las ejecuciones del playbook en un archivo de texto en una
+ubicación del sistema en la que puede escribir.
+Artefactos de playbook del navegador de contenido de
+automatización
+El comando ansible-navigator produce archivos de artefactos de playbook de forma
+predeterminada cada vez que lo usa para ejecutar un playbook. Estos archivos registran
+información sobre la ejecución del playbook y se pueden usar para revisar los resultados de
+la ejecución cuando se completa, para solucionar problemas o conservarse para fines de
+cumplimiento.
+Cada archivo de artefacto del playbook se nombra según el nombre del playbook que ejecutó,
+seguido de la palabra artifact, y luego la marca de tiempo de cuando se ejecutó la playbook,
+que termina con la extensión de archivo .json.
+Por ejemplo, si ejecuta el comando ansible-navigator run site.yml a las 20:00 UTC el 22
+de julio de 2022, el nombre de archivo resultante del archivo de artefactos podría ser:
+site-artifact-2022-07-22T20:00:04.019343+00:00.json
+RH294-RHEL9.0-es-3-20240620
+367
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Puede revisar el contenido de estos archivos con el comando ansible-navigator replay.
+Si incluye la opción -m stdout, la salida de la ejecución del playbook se imprime en su terminal
+como si acabara de ejecutarse. Sin embargo, si omite esa opción, puede examinar los resultados
+de la ejecución de forma interactiva.
+Por ejemplo, ejecuta el siguiente playbook, site.yml, y falla, pero no sabe por qué. Ejecuta
+ansible-navigator run site.yml --syntax-check y el comando ansible-lint, pero
+ninguno de los comandos informa ningún problema.
+- name: Configure servers with Ansible tools
+  hosts: all
+  tasks:
+    - name: Make sure tools are installed
+      ansible.builtin.package:
+        name:
+          - ansible-doc
+          - ansible-navigator
+Para solucionar más problemas, ejecute ansible-navigator replay en modo interactivo en
+el archivo de artefactos resultante, que abre la siguiente salida en su terminal:
+Figura 8.1: Pantalla de reproducción inicial
+Si ingresa :0 para ver el play, se imprime la siguiente salida:
+368
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Figura 8.2: Reproducir resultados por máquina y tarea
+Parece que la tarea Make sure tools are installed falló en los hosts
+server-1.example.com y server-2.example.com. Al ingresar :2, puede ver el error del
+host server-2.example.com:
+Figura 8.3: Resultados de la tarea para una máquina específica
+La tarea está intentando usar el módulo ansible.builtin.package para instalar el paquete
+ansible-doc y ese paquete no está disponible en los repositorios de paquetes RPM usados
+por el host server-2.example.com, por lo que la tarea falló. (Es posible que descubra que
+el comando ansible-doc ahora se proporciona como parte del paquete RPM ansible-
+navigator con el comando ansible-navigator doc y, al cambiar la tarea, se corrige el
+problema).
+Otra cosa útil que debe saber es que puede ver los resultados de una tarea Gathering Facts
+correcta y la salida de depuración incluye los valores de todos los datos que se recopilaron:
+RH294-RHEL9.0-es-3-20240620
+369
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Figura 8.4: Resultados de la tarea para una recopilación correcta de datos
+Esto puede ayudarlo a depurar problemas relacionados con datos de Ansible sin agregar una tarea
+al play que usa el módulo ansible.builtin.debug para imprimir valores de datos.
+Importante
+Es posible que no desee guardar los artefactos del playbook por varias razones.
+• Le preocupa que la información confidencial se guarde en el archivo de registro.
+• Necesita proporcionar una entrada interactiva, como una contraseña, a
+ansible-navigator por alguna razón.
+• No desea que los archivos llenen el directorio del proyecto.
+Puede evitar que se generen los archivos creando un archivo ansible-
+navigator.yml en el directorio del proyecto que deshabilita los artefactos del
+playbook:
+ansible-navigator:
+  playbook-artifact:
+    enable: false
+Registro de salida en un archivo de texto
+Ansible aporta una infraestructura de registro incorporada, la cual se puede configurar mediante
+el parámetro log_path en la sección default del archivo de configuración ansible.cfg o a
+través de la variable de entorno $ANSIBLE_LOG_PATH. La variable de entorno tiene prioridad
+sobre el archivo de configuración si ambos están configurados. Si se configura una ruta de
+registro, Ansible almacena la salida de los comandos ansible-navigator como texto en el
+archivo especificado. Este mecanismo también funciona con herramientas anteriores como
+ansible-playbook.
+Si configura Ansible para escribir archivos de registro en el directorio /var/log, Red Hat
+recomienda que configure logrotate para gestionarlos.
+370
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Referencias
+Configuración de Ansible: documentación de Ansible
+https://docs.ansible.com/ansible/latest/installation_guide/intro_configuration.html
+Módulo ansible.builtin.debug: imprima las declaraciones durante la ejecución:
+documentación de Ansible
+https://docs.ansible.com/ansible/latest/modules/debug_module.html
+Consejos y trucos: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html
+Buenas prácticas para Ansible
+https://redhat-cop.github.io/automation-good-practices/
+Documentación de Ansible Lint
+https://docs.ansible.com/lint.html
+RH294-RHEL9.0-es-3-20240620
+371
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Ejercicio Guiado
+Solución de problemas de playbooks
+Solucionar los problemas de un playbook que le fue dado y que no funciona correctamente.
+Resultados
+• Debe ser capaz de solucionar problemas y resolver problemas en los playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-playbook
+Instrucciones
+ 1.
+Cambie al directorio /home/student/troubleshoot-playbook/.
+[student@workstation ~]$ cd ~/troubleshoot-playbook/
+[student@workstation troubleshoot-playbook]$
+ 2.
+Cree un archivo denominado ansible.cfg en el directorio actual. Configure el parámetro
+log_path para escribir registros Ansible en el archivo /home/student/troubleshoot-
+playbook/ansible.log. Configure el parámetro inventory para usar el archivo /
+home/student/troubleshoot-playbook/inventory implementado por el script de
+laboratorio.
+El archivo ansible.cfg completo debe incluir el siguiente contenido:
+[defaults]
+log_path = /home/student/troubleshoot-playbook/ansible.log
+inventory = /home/student/troubleshoot-playbook/inventory
+ 3.
+Ejecute el playbook samba.yml. Fallará con un error.
+Este playbook configuraría un servidor Samba si todo estuviera correcto. Sin embargo,
+la ejecución falla porque la definición de la variable random_var no está entre comillas
+dobles. (Si los dos puntos forman parte de un valor, el valor debe estar protegido por
+comillas simples o dobles). Lea el mensaje de error para ver cómo ansible-navigator
+run informa del problema. Observe que a la variable random_var se le asigna un valor que
+contiene dos puntos y no está protegida por comillas dobles.
+372
+RH294-RHEL9.0-es-3-20240620
+
+

@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 19. Gestión de la seguridad de la red
+
+19.6. Resumen 19.6. Resumen En esta lección, aprendió a proteger las conexiones de red a los servicios mediante el uso del firewall del sistema y a aplicar la política específica de SELinux para proteger los puertos de servicio mediante el etiquetado de puertos. El servicio firewalld es un administrador de firewall dinámico que funciona como interfaz para el marco netfilter del kernel de Linux. El servicio firewalld gestiona las reglas de tráfico de la red para el filtrado de paquetes, la traducción de direcciones de red y la traducción de puertos. El servicio firewalld clasifica el tráfico de red en zonas. El servicio firewalld se gestiona mediante la herramienta de línea de comandos firewall-cmd o mediante la interfaz gráfica de la consola web. SELinux controla el acceso a la red etiquetando los puertos de red e incluyendo reglas en la política específica de un servicio. Si un servicio intenta escuchar en un puerto no estándar y el puerto no está etiquetado con el tipo de SELinux correcto, entonces SELinux podría bloquear el intento. El comando semanage port gestiona la política de SELinux con respecto al etiquetado de puertos.
+
+
+
+
+
+Capítulo 20. Acceso al almacenamiento conectado a la red Objetivo Acceder al almacenamiento conectado a la red que proporciona el protocolo Network File System (NFS), ya sea manualmente o mediante el montador automático. Secciones Montaje de sistemas de archivos NFS (y ejercicio guiado) Montaje automático de dispositivos de almacenamiento (y ejercicio guiado) Acceso al laboratorio Almacenamiento conectado a la red
+
+
+
+
+

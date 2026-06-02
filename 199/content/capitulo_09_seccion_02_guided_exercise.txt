@@ -1,0 +1,127 @@
+# Ejercicio Guiado: Ejercicio guiado: Investigación de un paquete de software RPM
+# Tipo: guided_exercise
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.2. Ejercicio guiado Investigación de un paquete de software RPM 6.2. Ejercicio guiado Investigación de un paquete de software RPM Recopile información sobre un paquete de terceros, extraiga archivos del paquete para inspeccionarlos y luego instálelo en un servidor. Resultados Instalar un paquete que no sea de los repositorios de software. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-rpm
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En la máquina del servidor, inspeccione el paquete RPM en el directorio de inicio del usuario estudiante. Enumere los archivos del paquete y revise el script que ejecuta el sistema cuando instala o desinstala el paquete. 2. Enumere el contenido del directorio de inicio del usuario estudiante.
+
+[student@servera ~]$ ls
+
+rhcsa-script-1.0.0-1.noarch.rpm 2.1. Vea información para el paquete rhcsa-script-1.0.0-1.noarch.rpm. 2.2.
+
+
+
+
+
+6.2. Ejercicio guiado: Investigación de un paquete de software RPM
+
+[student@servera ~]$ rpm -q -p rhcsa-script-1.0.0-1.noarch.rpm -i
+
+Nombre: rhcsa-script Versión: 1.0.0 Versión: 1 Arquitectura: noarch Fecha de instalación: (no instalado) Grupo: Tamaño del sistema: 593 Licencia: GPL Firma: (ninguna) RPM de origen: rhcsa-script-1.0.0-1.src.rpm Fecha de compilación: miércoles 23 de marzo de 2022 08:24:21 a. m. EDT Host de compilación: localhost Empaquetador: Bernardo Gargallo URL: http://example.com Resumen: Guión de práctica de RHCSA Descripción: Un guión de práctica de RHCSA. El paquete cambia el motd. El paquete rhcsa-script modifica el mensaje del día (MOTD) del sistema. El sistema muestra el MOTD a los usuarios al iniciar sesión. Enumere los archivos del paquete rhcsa-script-1.0.0-1.noarch.rpm.
+
+[student@servera ~]$ rpm -q -p rhcsa-script-1.0.0-1.noarch.rpm -l
+
+/opt/rhcsa-script/mymotd El paquete rhcsa-script incluye el archivo mymotd, que contiene el mensaje que actualiza el MOTD. 2.3. Vea el script que se ejecuta al instalar o desinstalar el paquete rhcsa-script-1.0.0-1.noarch.rpm. El script incluye secciones de código que se ejecutan cuando se instala o desinstala el paquete.
+
+[student@servera ~]$ rpm -q -p rhcsa-script-1.0.0-1.noarch.rpm --scripts
+preinstall scriptlet (using /bin/sh):
+if [ "$1" == "2" ]; then
+   if [ -e /etc/motd.orig ]; then
+     mv -f /etc/motd.orig /etc/motd
+   fi
+
+fi
+
+postinstall scriptlet (using /bin/sh):
+
+...salida omitida...
+
+postuninstall scriptlet (using /bin/sh):
+
+...salida omitida... 2.4. Extraiga el contenido del paquete rhcsa-script-1.0.0-1.noarch.rpm al directorio /home/student. 3. Utilice los comandos rpm2cpio y cpio -tv para enumerar los archivos en el paquete rhcsa-script-1.0.0-1.noarch.rpm.
+
+[student@servera ~]$ rpm2cpio rhcsa-script-1.0.0-1.noarch.rpm | cpio -tv
+
+-rw-r--r-- 1 raíz raíz 593 23 de marzo 08:24 ./opt/rhcsa-script/mymotd 2 bloques 3.1. Extraiga todos los archivos del paquete rhcsa-script-1.0.0-1.noarch.rpm al directorio /﻿home/student. Utilice los comandos rpm2cpio y cpio -idv para extraer los archivos y crear los directorios principales cuando sea necesario en modo detallado. 3.2.
+
+
+
+
+
+6.2. Ejercicio guiado: Investigación de un paquete de software RPM
+
+[student@servera ~]$ rpm2cpio rhcsa-script-1.0.0-1.noarch.rpm | cpio -idv
+
+./opt/rhcsa-script/mymotd 2 bloques Enumere los archivos en el directorio /home/student/opt para verificar que los archivos extraídos sean los mismos que los archivos dentro del paquete.
+
+[student@servera ~]$ ls -lR opt
+opt:
+
+total 0
+
+drwxr-xr-x. 2 student student 20 Jun 18 19:29 rhcsa-script
+opt/rhcsa-script:
+
+total 4 -rw-r--r--. 1 estudiante estudiante 593 18 de junio 19:29 mymotd 3.3. Instale el paquete rhcsa-script-1.0.0-1.noarch.rpm utilizando privilegios de superusuario. Utilice estudiante como contraseña para autenticarse cuando utilice Sudo. 4. Utilice el comando sudo rpm -ivh para instalar el paquete RPM rhcsa-script-1.0.0-1.noarch.rpm.
+
+[student@servera ~]$ sudo rpm -ivh rhcsa-script-1.0.0-1.noarch.rpm
+
+[sudo] contraseña para estudiante: estudiante Verificando... ######################################## [100%] Preparando... ##################################[100%] Actualizando/instalando...
+
+   1:rhcsa-script-1.0.0-1             ################################# [100%]
+
+[estudiante@servera ~]$ 4.1. Verifique que el paquete esté instalado correctamente.
+
+[student@servera ~]$ rpm -q rhcsa-script
+
+rhcsa-script-1.0.0-1.noarch 4.2. Salga de la máquina del servidor e inicie sesión nuevamente para ver el nuevo mensaje del día.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$ ssh student@servera
+
+______ _ _ _ _ _____ _ _ | ___ \ | | | | | |     | |   |_ _|       (_) (_) | |_/ /___ __| | | |_| | __ _| |_ | |_ __ __ _ _ _ __ _ _ __ __ _ |    // _ \/ _` | |  _ |/ _` | __|   | | '__/ _` | | '_\| | '_ \ / _` | | |\ \ __/ (_| | | | | (_| | |_ | | | | (_| | | | | | | | | | (_| | \_| \_\___|\__,_| \_| |_/\__,_|\__| \_/_| \__,_|_|_| |_|_|_| |_|\__, |
+
+                                                                    __/ |
+                                                                   |___/
+
+Active la consola web con: systemctl enable --now cockpit.socket Registre este sistema con Red Hat Insights: insights-client --register Cree una cuenta o vea todos sus sistemas en https://red.ht/insights-dashboard Último inicio de sesión: miércoles 11 de junio a las 15:53:21 2025 desde 172.25.250.9 [student@servera ~]$ 5. Regrese al sistema de la estación de trabajo como estudiante usuario. 6.
+
+
+
+
+
+6.2. Ejercicio guiado Investigación de un paquete de software RPM Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-rpm
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF 6.3. Instalación y actualización de paquetes con DNF Objetivos Buscar, instalar y actualizar paquetes de software con DNF. Administrar paquetes de software con DNF A partir de Red Hat Enterprise Linux 9, DNF (Dandified YUM) reemplaza a YUM como administrador de paquetes. Los comandos DNF son funcionalmente iguales que los comandos YUM. Por compatibilidad, los comandos YUM todavía existen como enlaces simbólicos.
+
+to DNF:
+user@host:~$ ls -l /usr/bin/yum*
+
+lrwxrwxrwx. 1 raíz raíz 5 7 de febrero de 2025 /usr/bin/yum -> dnf-3 lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-builddep -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-config-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-groups-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yumdownloader -> ../libexec/dnf-utils Red Hat recomienda usar el comando dnf. Es posible que parte de la documentación aún haga referencia al comando yum, pero los archivos son el mismo comando vinculado. El comando rpm de bajo nivel se puede utilizar para instalar paquetes, pero no está diseñado para funcionar con repositorios de paquetes ni para resolver dependencias de múltiples fuentes automáticamente. DNF mejora la instalación y las actualizaciones de software basado en RPM. Con el comando dnf, puede instalar, actualizar, eliminar y obtener información sobre paquetes de software y sus dependencias. Puede obtener un historial de transacciones y trabajar con múltiples repositorios de software de Red Hat y de terceros. Los repositorios de BaseOS y Application Stream Red Hat Enterprise Linux 10 distribuye contenido a través de dos repositorios de software principales: BaseOS y Application Stream (AppStream). Tanto BaseOS como AppStream son partes necesarias de un sistema Red Hat Enterprise Linux 10. El repositorio de BaseOS proporciona el contenido principal del sistema operativo para Red Hat Enterprise Linux como paquetes RPM. Los componentes de BaseOS tienen el mismo ciclo de vida que el contenido de versiones anteriores de Red Hat Enterprise Linux. Application Stream contiene partes necesarias del sistema, así como una amplia gama de aplicaciones que anteriormente estaban disponibles como parte de Red Hat Software Collections y otros productos y programas. Cada flujo de aplicaciones tiene un ciclo de vida que es el mismo que Red Hat Enterprise Linux 10 o más corto. Las versiones anteriores de Red Hat Enterprise Linux distribuyen algunos flujos de paquetes para aplicaciones populares como módulos, como los sistemas de gestión de bases de datos. En RHEL 10, Red Hat ya no proporciona módulos DNF en el repositorio de AppStream. Búsqueda de software con DNF El comando de ayuda dnf muestra información de uso. El comando dnf list muestra los paquetes instalados y disponibles. El siguiente ejemplo utiliza un carácter comodín para enumerar los paquetes instalados y disponibles que comienzan con la palabra clave http.
+
+
+
+
+

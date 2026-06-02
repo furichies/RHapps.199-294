@@ -1,0 +1,333 @@
+# Ejercicio Guiado: Administración de archivos de configuración de Ansible
+# Tipo: guided_exercise
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Administración de archivos de
+configuración de Ansible
+Editar archivos de configuración de Ansible para personalizar su entorno de Ansible.
+Resultados
+• Usted deberá ser capaz de crear archivos de configuración para configurar su entorno de
+Ansible con parámetros personalizados persistentes.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-manage
+Instrucciones
+ 1.
+Cambie al directorio /home/student/playbook-manage.
+[student@workstation ~]$ cd ~/playbook-manage
+[student@workstation playbook-manage]$
+ 2.
+Configure el navegador de contenido de automatización.
+2.1.
+Cree el archivo /home/student/playbook-manage/ansible-navigator.yml.
+Configure el navegador de contenido de automatización para usar la imagen
+del entorno de ejecución utility.lab.example.com/ee-supported-
+rhel8:latest y solo extraiga la imagen si falta. También configure el navegador de
+contenido de automatización para deshabilitar los artefactos de playbooks. El archivo
+debe contar con el siguiente contenido:
+---
+ansible-navigator:
+  execution-environment:
+    image: utility.lab.example.com/ee-supported-rhel8:latest
+    pull:
+      policy: missing
+  playbook-artifact:
+    enable: false
+2.2.
+Ejecute el comando ansible-navigator images para enumerar las imágenes del
+entorno de ejecución disponibles.
+RH294-RHEL9.0-es-3-20240620
+39
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-manage]$ ansible-navigator images
+----------------------------------------------------------------------------------
+Execution environment image and pull policy overview
+----------------------------------------------------------------------------------
+Execution environment image name:     utility.lab.example.com/ee-supported-
+rhel8:latest
+Execution environment image tag:      latest
+Execution environment pull arguments: None
+Execution environment pull policy:    missing
+Execution environment pull needed:    True
+----------------------------------------------------------------------------------
+Updating the execution environment
+...output omitted...
+Running the command: podman pull utility.lab.example.com/ee-supported-rhel8:latest
+Trying to pull utility.lab.example.com/ee-supported-rhel8:latest...
+...output omitted...
+2.3.
+Después de que el navegador de contenido de automatización extraiga la imagen del
+entorno de ejecución, debería verla en la lista:
+  Image                 Tag     Execution environment    Created      Size
+0│ee-supported-rhel8    latest  True                     3 weeks ago  1.34 GB
+^b/PgUp page up ^f/PgDn page down ↑↓ scroll esc back [0-9] goto :help help
+Presione Esc para salir de la lista de imágenes.
+ 3.
+En su directorio /home/student/playbook-manage, comience la edición de un nuevo
+archivo denominado ansible.cfg.
+Cree una sección [defaults] en ese archivo. En esa sección, agregue una línea que
+use la directiva inventory para especificar el archivo ./inventory como el inventario
+predeterminado.
+[defaults]
+inventory = ./inventory
+Guarde su trabajo y salga del editor de texto.
+ 4.
+En el directorio /home/student/playbook-manage, comience la edición del nuevo
+archivo de inventario estático, inventory.
+El inventario estático debe contener cuatro grupos de hosts:
+• [myself] debe contener el host workstation.lab.example.com.
+• [intranetweb] debe contener el host servera.lab.example.com.
+• [internetweb] debe contener el host serverb.lab.example.com.
+• [web] debe contener los grupos de hosts intranetweb y internetweb.
+4.1.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts myself:
+40
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[myself]
+workstation.lab.example.com
+4.2.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts intranetweb:
+[intranetweb]
+servera.lab.example.com
+4.3.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts internetweb:
+[internetweb]
+serverb.lab.example.com
+4.4.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts web:
+[web:children]
+intranetweb
+internetweb
+4.5.
+El archivo inventory final debe contar con el siguiente contenido:
+[myself]
+workstation.lab.example.com
+[intranetweb]
+servera.lab.example.com
+[internetweb]
+serverb.lab.example.com
+[web:children]
+intranetweb
+internetweb
+Guarde su trabajo y salga del editor de texto.
+ 5.
+Use el comando ansible-navigator para ejecutar los playbooks proporcionados y
+probar la configuración de los grupos de hosts de su archivo de inventario.
+El comando ansible-navigator run ejecuta un playbook de Ansible, formateado
+como un archivo YAML, que contiene instrucciones de automatización para ejecutarse en
+hosts gestionados. Los siguientes comandos ansible-navigator usan los archivos de
+configuración que editó en los pasos anteriores.
+Cada uno de los siguientes playbooks ejecuta el módulo ansible.builtin.ping en
+un host o grupo de hosts para determinar si están listos para ser usados como hosts
+gestionados por Ansible. Estas pruebas también validan si su archivo inventory es
+correcto.
+RH294-RHEL9.0-es-3-20240620
+41
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+5.1.
+Ejecute el playbook /home/student/playbook-manage/ping-myself.yml
+para verificar que la máquina workstation.lab.example.com esté en el grupo
+de inventario myself.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-myself.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping myself] ***********************************************************
+ok: [workstation.lab.example.com]
+PLAY RECAP *******************************************************************
+workstation.lab.example.com : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.2.
+Ejecute el playbook /home/student/playbook-manage/ping-
+intranetweb.yml para verificar que la máquina servera.lab.example.com
+esté en el grupo de inventario intranetweb.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-intranetweb.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping intranetweb] ******************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.3.
+Ejecute el playbook /home/student/playbook-manage/ping-
+internetweb.yml para verificar que la máquina serverb.lab.example.com
+esté en el grupo de inventario internetweb.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-internetweb.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping internetweb] ******************************************************
+ok: [serverb.lab.example.com]
+PLAY RECAP *******************************************************************
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.4.
+Ejecute el playbook /home/student/playbook-manage/ping-
+web.yml para verificar que las máquinas servera.lab.example.com y
+serverb.lab.example.com estén en el grupo de inventario web.
+42
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-web.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping web] **************************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.5.
+Ejecute el playbook /home/student/playbook-manage/ping-all.yml
+para verificar que las máquinas workstation.lab.example.com,
+servera.lab.example.com y serverb.lab.example.com estén en el grupo de
+inventario.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-all.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping all] **************************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+ok: [workstation.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation.lab.example.com : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Abra el archivo /home/student/playbook-manage/ansible.cfg en un editor de
+texto. Asegúrese de que los playbooks se conecten con el usuario student de forma
+predeterminada. Agregue una sección [privilege_escalation] para configurar
+Ansible para usar automáticamente el comando sudo a fin de cambiar de student a root
+cuando se ejecuten tareas en los hosts gestionados. Ansible también debería configurarse
+para solicitarle la contraseña que usa student para el comando sudo.
+6.1.
+Especifique que los playbooks deben conectarse con el usuario student de
+manera predeterminada agregando la siguiente directiva remote_user a la sección
+[defaults].
+remote_user = student
+RH294-RHEL9.0-es-3-20240620
+43
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+6.2.
+Agregue la siguiente entrada para crear la sección [privilege_escalation] en el
+archivo de configuración /home/student/playbook-manage/ansible.cfg:
+[privilege_escalation]
+6.3.
+Establezca la directiva become en true para habilitar el aumento de privilegios.
+become = true
+6.4.
+Establezca la directiva become_method en sudo para configurar el aumento de
+privilegios para usar el comando sudo.
+become_method = sudo
+6.5.
+Establezca la directiva become_user en root para configurar el usuario con
+aumento de privilegios.
+become_user = root
+6.6.
+Establezca la directiva become_ask_pass en true para habilitar la solicitud de
+contraseña para el aumento de privilegios.
+become_ask_pass = true
+6.7.
+El archivo ansible.cfg completo debe contar con el siguiente contenido:
+[defaults]
+inventory = ./inventory
+remote_user = student
+[privilege_escalation]
+become = true
+become_method = sudo
+become_user = root
+become_ask_pass = true
+Guarde su trabajo y salga del editor de texto.
+ 7.
+Use el comando ansible-navigator para ejecutar el playbook /home/student/
+playbook-manage/ping-intranetweb.yml nuevamente para verificar que ahora se le
+solicite la contraseña de sudo.
+Cuando se le pida ingresar la contraseña sudo, escriba student.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-intranetweb.yml
+BECOME password: student
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping intranetweb] ******************************************************
+ok: [servera.lab.example.com]
+44
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-manage
+RH294-RHEL9.0-es-3-20240620
+45
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Escritura y ejecución de playbooks
+Objetivos
+• Escribir un playbook de Ansible básico y ejecutarlo con el navegador de contenido de
+automatización.
+Playbooks de Ansible
+El poder de Ansible es que puede usar playbooks para ejecutar varias tareas complejas respecto
+de un conjunto de hosts de destino de una manera fácilmente repetible.
+Una tarea es la aplicación de un módulo para realizar una unidad específica de trabajo. Un play
+es una secuencia de tareas que se aplicarán, en orden, a uno o más hosts seleccionados de su
+inventario. Un playbook es un archivo de texto que contiene una lista de uno o más plays para
+ejecutar en un orden específico.
+Los plays le permiten modificar un conjunto complejo y extenso de tareas administrativas
+manuales en una rutina fácilmente repetible con resultados predecibles y satisfactorios. En
+un playbook, puede guardar la secuencia de tareas en un play de una forma inmediatamente
+ejecutable y legible por el ojo humano. Las tareas en sí, debido a la manera en la que se escriben,
+documentan los pasos necesarios para implementar su aplicación o infraestructura.
+Formato de un playbook de Ansible
+El siguiente ejemplo contiene un play con una sola tarea.
+---
+- name: Configure important user consistently
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Newbie exists with UID 4000
+      ansible.builtin.user:
+        name: newbie
+        uid: 4000
+        state: present
+Un playbook es un archivo de texto escrito en formato YAML y se guarda generalmente con la
+extensión .yml. El playbook usa sangría con caracteres de espacio para indicar la estructura de
+sus datos. YAML no establece requisitos estrictos sobre cuántos espacios se usan para la sangría,
+pero se aplican dos reglas básicas.
+• Los elementos de datos en el mismo nivel en la jerarquía (como ítems en la misma lista) deben
+tener la misma sangría.
+• Los ítems que son elementos secundarios de otro ítem deben tener más sangría que sus
+elementos principales.
+También puede agregar líneas en blanco para la capacidad de lectura.
+46
+RH294-RHEL9.0-es-3-20240620
+
+

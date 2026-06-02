@@ -1,0 +1,158 @@
+# Ejercicio Guiado: Ejercicio guiado Habilitar un repositorio de software DNF
+# Tipo: guided_exercise
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF 6.6. Ejercicio guiado Habilitar un repositorio de software DNF Configure un servidor para obtener paquetes de un repositorio DNF remoto y luego actualice o instale un paquete desde ese repositorio. Resultados Configurar un sistema para obtener actualizaciones de software desde un servidor del aula y actualizar el sistema para utilizar los paquetes más recientes. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-repo
+
+Instrucciones En este ejercicio guiado, configurará dos repositorios de software en el servidor una máquina. Primero instalas un paquete.
+
+from the custom repository at http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Software
+
+Los mantenedores luego le notifican sobre una actualización disponible para este paquete en el repositorio de erratas. Procedes a instalar
+
+the package from the errata repository: http://repo.example.com/rhel10.0/x86_64/rhcsa-
+
+práctica/erratas. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure la máquina del servidor para usar el repositorio personalizado en
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Disable GPG checking for this
+
+repositorio. 2. Utilice el comando dnf config-manager para agregar el repositorio de paquetes personalizados.
+
+[root@servera ~]# dnf config-manager \
+
+--add-repo "http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht" Añadiendo repositorio desde: http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht 2.1. Examine el archivo del repositorio de software para el repositorio personalizado en el directorio /etc/yum.repos.d. 2.2.
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF
+
+[root@servera ~]# cat \
+
+/etc/yum.repos.d/repo.example.com_rhel10.0_x86_64_rhcsa-practice_rht.repo [repo.example.com_rhel10.0_x86_64_rhcsa-practice_rht]
+
+name=created by dnf config-manager from http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht
+enabled=1
+
+Edite el archivo del repositorio personalizado y agregue el parámetro gpgcheck=0 para deshabilitar la verificación de la clave GPG para el repositorio. Simplifique los atributos de nombre e ID del repositorio. El archivo del repositorio debe coincidir con lo siguiente
+
+content:
+
+[derecha]
+
+name=Custom RHT repo
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht
+enabled=1
+gpgcheck=0
+
+Guarde y cierre el archivo cuando haya terminado. 2.3. Enumere el nuevo repositorio en el sistema.
+
+[root@servera ~]# dnf repolist rht
+
+ID del repositorio Nombre del repositorio Estado rht Repositorio RHT personalizado habilitado 2.4. Instale el paquete rht-system. 3. Enumere el paquete rht-system para asegurarse de que esté disponible.
+
+[root@servera ~]# dnf list rht-system
+
+Última verificación de vencimiento de metadatos: hace 0:00:03 el martes 7 de octubre a las 22:34:34 de 2025. Paquetes disponibles rht-system.noarch 1.0.0-1 rht 3.1. Instale el paquete rht-system.
+
+[root@servera ~]# dnf install rht-system
+
+Última verificación de vencimiento de metadatos: hace 0:01:06 el martes 7 de octubre a las 22:34:34 de 2025. Dependencias resueltas. ======================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ====================================================================================== Instalación: rht-system noarch 1.0.0-1 rht 3.7 k Resumen de transacciones ============================================================================================= Instalar 1 paquete Tamaño total de descarga: 3,7 k Tamaño instalado: 259 ¿Está bien? [s/N]: y Descargando paquetes: ...salida omitido... Instalado:
+
+  rht-system-1.0.0-1.noarch
+
+¡Completo! 3.2. Verifique que el paquete rht-system esté instalado y anote el número de versión del paquete. 3.3.
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF
+
+[root@servera ~]# dnf list rht-system
+
+Última verificación de vencimiento de metadatos: hace 0:03:46 el martes 7 de octubre a las 22:34:34 de 2025. Paquetes instalados rht-system.noarch 1.0.0-1 @rht Cree el archivo /etc/yum.repos.d/errata.repo desde cero para configurar el repositorio de erratas. 4. Utilice un editor de texto para crear el archivo de repositorio /etc/yum.repos.d/errata.repo con lo siguiente
+
+content:
+
+[erratas]
+
+name=Custom Errata
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata
+enabled=1
+gpgcheck=0
+
+Guarde y cierre el archivo cuando haya terminado. 4.1. Enumere todos los repositorios del sistema para verificar que el nuevo repositorio de erratas esté disponible.
+
+[root@servera ~]# dnf repolist all
+
+ID de repositorio Nombre de repositorio Estado de erratas Erratas personalizadas habilitadas rhel-10.0-for-x86_64-appstream-rpms Red Hat Enterprise Linux 10.0 AppStr habilitado rhel-10.0-for-x86_64-baseos-rpms Red Hat Enterprise Linux 10.0 BaseOS habilitado rht Repositorio RHT personalizado habilitado 4.2. Actualice todos los paquetes de software en la máquina del servidor.
+
+[root@servera ~]# dnf upgrade
+
+...salida omitida... Dependencias resueltas. ========================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ======================================================================================== Actualización: rht-system noarch 1.0.0-2 erratas 7.5 k Resumen de transacciones ================================================================================================== Paquete de actualización 1 Tamaño total de descarga: 7,5 k ¿Está bien? [y/N]: y ...salida omitida... ¡Completo! 4.3. Verifique que el paquete rht-system esté actualizado y anote el número de versión del paquete.
+
+[root@servera ~]# dnf list rht-system
+
+...salida omitida... Paquetes instalados rht-system.noarch 1.0.0-2 @errata 4.4. Deshabilite persistentemente los dos repositorios personalizados sin eliminar sus archivos de configuración. Verifica que ese sistema ya no los utilice. 5.
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF Finalizar En la máquina de la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-repo
+[root@servera ~]# dnf config-manager --disable rht,errata
+[root@servera ~]# dnf repolist all
+
+ID del repositorio Nombre del repositorio Erratas del estado Erratas personalizadas deshabilitadas rhel-10.0-for-x86_64-appstream-rpms Red Hat Enterprise Linux 10.0 AppStream (dvd) habilitado rhel-10.0-for-x86_64-baseos-rpms Red Hat Enterprise Linux 10.0 BaseOS (dvd) habilitado rht Repositorio RHT personalizado deshabilitado Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM 6.7. Laboratorio de instalación y actualización de software con RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Resultados Administrar repositorios de software. Instalar y actualizar paquetes desde repositorios. Instale un paquete RPM. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade software-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. En la máquina del servidor, configure un repositorio de software personalizado para instalar paquetes específicos. Asigne un nombre a las erratas del repositorio y cree el archivo de repositorio errata.repo. Configure el archivo errata.repo para usar el
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata repository. Do not verify GPG
+
+firmas. 1. En la máquina del servidor, instale el paquete rht-system. 2. Por razones de seguridad, debe eliminar por completo todo el software relacionado con la impresión de la máquina del servidor. La desinstalación de estos paquetes elimina la funcionalidad de impresión. 3. El script de inicio de laboratorio descarga el paquete rhcsa-script-1.0.0-1.noarch.rpm en el directorio /root de la máquina del servidor. Confirme que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor e instálelo utilizando privilegios de root. Verifique que el paquete esté instalado. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+

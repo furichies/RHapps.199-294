@@ -1,0 +1,147 @@
+# Ejercicio Guiado: Actividad del proceso del monitor de ejercicio guiado
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.8. Actividad del proceso de seguimiento del ejercicio guiado 9.8. Ejercicio guiado Monitorear la actividad del proceso Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Resultados Gestionar procesos en tiempo real. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-monitor
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado monitor en el nuevo directorio para generar una carga de CPU artificial. Haga que el archivo de secuencia de comandos del monitor sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree el archivo de secuencia de comandos del monitor en el directorio /home/student/bin con el siguiente contenido. #!/bin/bash mientras sea verdadero
+
+  var=1
+  while (( var < 60000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+done El script del monitor se ejecuta hasta que finaliza el proceso. El script genera una carga artificial de CPU al realizar sesenta mil cálculos de suma. Después de generar la carga de la CPU, duerme durante un segundo, restablece la variable y repite. 2.2. Cambie el permiso del archivo del monitor para que sea ejecutable. 2.3.
+
+
+
+
+
+9.8. Actividad del proceso del monitor de ejercicio guiado
+
+[student@servera ~]$ chmod a+x /home/student/bin/monitor
+
+En el shell del terminal derecho, ejecute el comando superior. Cambie el tamaño de la ventana para ver el contenido del comando. Mantenga la utilidad superior en ejecución para verificar el uso de la CPU y los promedios de carga en pasos posteriores.
+
+[student@servera ~]$ top
+top - 06:28:29 up  5:16,  3 users,  load average: 0.63, 0.47, 0.25
+
+Tareas: 137 en total, 1 en ejecución, 136 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 0,2 us, 0,0 sy, 0,0 ni, 99,8 id, 0,0 wa, 0,0 hi, 0,0 si, 0,0 st MiB Mem: 1961,2 en total, 1469,7 libres, 406,2 usadas, 241,5 buff/caché MiB Swap: 0,0 en total, 0,0 gratis, 0,0 usado.   1555.0 disponible Mem PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16811 estudiante 20 0 232736 5624 3448 R 0.3 0.3 0:00.02 arriba
+
+   1 root      20   0   48740  40544  10352 S   0.0   2.0   0:07.37 systemd
+   2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+
+...salida omitida... 3. En el shell del terminal izquierdo, verifique la cantidad de CPU lógicas en esta máquina virtual.
+
+[student@servera ~]$ lscpu
+
+Arquitectura: x86_64 Modo(s) de operación de CPU: 32 bits, 64 bits Tamaños de dirección: 46 bits físicos, 48 ​​bits virtuales Orden de bytes: CPU(s) Little Endian: 2 ...salida omitida... 4. En el shell del terminal izquierdo, ejecute una única instancia del archivo de secuencia de comandos del monitor en segundo plano. Tenga en cuenta el ID del proceso (PID) para este proceso. El PID de su sistema puede variar.
+
+[student@servera ~]$ monitor &
+
+[1] 16968 5. En el shell del terminal derecho, supervise el comando superior. 6. Utilice las pulsaciones simples de teclas T y M para alternar las líneas de encabezado de CPU y memoria. El encabezado del comando superior muestra una barra gráfica que muestra el uso de CPU y memoria. Supervise estas barras gráficas durante esta actividad.
+
+top - 06:28:56 up  5:16,  3 users,  load average: 0.38, 0.43, 0.24
+
+Tareas: 139 en total, 1 en ejecución, 138 en suspensión, 0 detenidas, 0 zombies %Cpu(s): 8.8/1.2 10[||||||                                             ] Memoria MiB: 23.4/1705.2 [||||||||||||||                                      ] Intercambio de MiB: 0,0/0,0 [ ] 6.1. Vea el porcentaje de CPU para el proceso, que se espera que oscile entre el 15% y el 25%. ...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16968 estudiante 20 0 228796 3136 2880 S 19.9 0.2 0:05.33 monitor ...salida omitida... 6.2. Monitorear el promedio de carga de la máquina del servidor. El primer valor de la lista de promedio de carga, la carga de un minuto, es actualmente menor que 1. El valor observado podría verse afectado por la contención de recursos de otra máquina virtual o del host virtual. 6.3.
+
+
+
+
+
+9.8. Actividad del proceso del monitor de ejercicio guiado
+
+top - 06:29:26 up  5:17,  3 users,  load average: 0.29, 0.40, 0.24
+
+En el shell del terminal izquierdo, ejecute una segunda instancia del archivo de secuencia de comandos del monitor en segundo plano. Tenga en cuenta el PID para este proceso. El PID de su sistema puede variar.
+
+[student@servera ~]$ monitor &
+
+[2] 17157 7. En el shell del terminal derecho, supervise la utilidad superior para el segundo proceso de monitorización. 8. Vea el porcentaje de CPU del proceso, que también se espera que oscile entre el 15% y el 25%.
+
+top - 06:30:05 up  5:18,  3 users,  load average: 0.27, 0.38, 0.24
+
+Tareas: 141 en total, 1 en ejecución, 140 en suspensión, 0 detenidas, 0 zombis %Cpu(s): 13,5/1,7 15[|||||||||                                          ] Memoria MiB: 23.7/1705.2 [|||||||||||||||                                     ] MiB Swap: 0.0/0.0 [ ] ...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16968 estudiante 20 0 228796 3136 2880 S 20.0 0.2 0:21.50 monitor 17157 estudiante 20 0 228796 3168 2912 S 19.7 0.2 0:04.38 monitor ...salida omitida... 8.1. Nuevamente, vea el promedio de carga de un minuto, que sigue siendo inferior a 1. Espere al menos un minuto para que el cálculo se ajuste a la nueva carga de trabajo.
+
+top - 06:30:35 up  5:18,  3 users,  load average: 0.29, 0.38, 0.24
+
+8.2. En el shell del terminal izquierdo, ejecute una tercera instancia del archivo de secuencia de comandos del monitor en segundo plano. Tenga en cuenta el PID para este proceso. El PID de su sistema puede variar.
+
+[student@servera ~]$ monitor &
+
+[3] 17444 9. En el shell del terminal derecho, supervise la utilidad superior para el tercer proceso de monitorización. Vea el porcentaje de CPU para el proceso, que nuevamente se espera que oscile entre el 15% y el 25%. ...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 17444 estudiante 20 0 228796 3112 2856 S 21.6 0.2 0:04.89 monitor 16968 estudiante 20 0 228796 3136 2880 S 20.6 0.2 0:42.47 monitor 17157 estudiante 20 0 228796 3168 2912 R 15.6 0.2 0:25.25 monitor ...salida omitida... 10. Para aumentar el promedio de carga por encima de 1, debe iniciar más procesos de monitorización. La configuración del aula tiene dos CPU, por lo que ejecutar sólo tres procesos no es suficiente para estresarlo. En el shell del terminal izquierdo, inicie tres procesos de monitorización más en segundo plano. 11.
+
+
+
+
+
+9.8. Actividad del proceso del monitor de ejercicio guiado
+
+[student@servera ~]$ monitor &
+
+[4] 17726
+
+[student@servera ~]$ monitor &
+
+[5] 17736
+
+[student@servera ~]$ monitor &
+
+[6] 17745 En el shell del terminal derecho, vea nuevamente el promedio de carga de un minuto, que ahora se espera que esté por encima de 1. Espere al menos un minuto para que el cálculo se ajuste a la nueva carga de trabajo. Nota El promedio de carga de un minuto puede variar según su sistema. Por ejemplo, su promedio de carga puede estar por encima o por debajo de 1. Esta variación depende de factores como la asignación de CPU, la sobrecarga de virtualización y el tiempo. Siempre que cada proceso de monitoreo muestre el uso de la CPU y el promedio de carga aumente cuando se inician más procesos, entonces su entorno de laboratorio funcionará correctamente.
+
+top - 06:33:11 up  5:21,  3 users,  load average: 1.22, 0.62, 0.35
+
+Tareas: 147 en total, 3 en ejecución, 144 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 44.7/5.2 50[||||||||||||||||||||||||||||||                      ] Memoria MiB: 23.4/1705.2 [||||||||||||||                                      ] MiB Swap: 0.0/0.0 [ ] ...salida omitida... 12. Cuando haya terminado de observar los valores promedio de carga, finalice cada uno de los procesos del monitor desde el comando superior. 13. En el terminal derecho, presione K para observar el mensaje debajo de los encabezados y encima de las columnas. ...salida omitida... PID para señalar/eliminar [pid predeterminado = 16968] 13.1. Se selecciona el proceso de monitor en la parte superior de la lista. Presione Enter para finalizar el proceso. ...salida omitida... Enviar señal pid 16968 [15/sigterm] 13.2. Presione Enter nuevamente para confirmar la señal SIGTERM 15. Verifique que el proceso seleccionado ya no esté presente en el comando superior. Si el PID existe, repita estos pasos para finalizar los procesos y sustituya la señal SIGKILL 9 cuando se le solicite. ...salida omitida... 17157 estudiante 20 0 228796 3176 2920 R 90.9 0.2 0:40.85 monitor 17444 estudiante 20 0 228796 3140 2884 R 63.6 0.2 0:35.17 monitor 17726 estudiante 20 0 228796 3248 2992 S 0.0 0.2 0:20.48 monitor 17736 estudiante 20 0 228796 3192 2936 S 0.0 0.2 0:21.74 monitor 17745 estudiante 20 0 228796 3136 2880 S 0.0 0.2 0:20.31 monitor ...salida omitida... 13.3. Repita el paso anterior para cada proceso de monitorización restante. Verifique que no quede ningún proceso de supervisión en el comando superior. 14. En el shell del terminal derecho, presione Q para salir del comando superior. Cierre el terminal derecho. 15. Regrese a la máquina de la estación de trabajo como usuario estudiante. 16.
+
+
+
+
+
+9.8. Ejercicio guiado Actividad del proceso del monitor Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish processes-monitor
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+9.9. Monitor de laboratorio y gestión de procesos de Linux 9.9. Laboratorio de supervisión y gestión de procesos de Linux Interprete y supervise las métricas del sistema e investigue las implicaciones de esas mediciones para mejorar el rendimiento de su sistema. Resultados Gestionar procesos con top como herramienta de gestión de procesos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-review
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada ventana de terminal, inicie sesión en la máquina del servidor como usuario estudiante. Cree el script task101.sh en el directorio /home/student/bin. El script task101.sh genera una carga artificial de la CPU al realizar operaciones aritméticas sin cesar. #!/bin/bash
+
+touch ~/bin/.$(basename $0)
+
+si bien es cierto
+
+  var=1
+  while (( var < 50000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+hecho 1. En la terminal derecha, supervise todos los procesos que se están ejecutando en la máquina del servidor. 2. En el shell del terminal izquierdo, verifique la cantidad de CPU lógicas en la máquina virtual. Ejecute el script task101.sh en segundo plano. 3. En el shell del terminal derecho, observe los procesos en ejecución. Encuentre el ID de proceso (PID) del proceso task101.sh y la cantidad de CPU que consume el proceso. Examinar el consumo de carga del sistema, subprocesos y memoria. Asegúrese de encontrar los recursos del sistema a los que afecta el proceso task101.sh. 4. Copie el script task101.sh en un nuevo archivo task102.sh y aumente la carga artificial de la CPU a 100000 en el nuevo script. Inicie el proceso task102.sh en segundo plano. 5. En el shell del terminal derecho, verifique que el proceso task102.sh se esté ejecutando y utilice la mayor cantidad de recursos de CPU. Examine el promedio de carga de la máquina del servidor. 6.
+
+
+
+
+

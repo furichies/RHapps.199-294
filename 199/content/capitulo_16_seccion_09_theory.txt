@@ -1,0 +1,143 @@
+# 13.9. Mantener el tiempo sincronizado
+# Tipo: theory
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.9. Mantener la hora sincronizada 13.9. Mantenimiento de objetivos de tiempo sincronizados Mantenga una sincronización horaria precisa mediante el protocolo de tiempo de red (NTP) y configure la zona horaria del sistema para garantizar marcas de tiempo correctas para los eventos registrados. Administrar relojes locales y zonas horarias La sincronización horaria del sistema es fundamental para el análisis de archivos de registro en múltiples sistemas. Para funcionar correctamente, algunos servicios también pueden requerir una sincronización horaria correcta. Las máquinas utilizan NTP para proporcionar y obtener información horaria correcta a través de Internet. Una máquina puede obtener información horaria precisa de servicios NTP públicos, como NTP Pool Project. Otra opción es configurar un sistema para que se sincronice directamente con un reloj de hardware de alta calidad, de modo que pueda proporcionar información horaria precisa a los clientes locales. El comando timedatectl muestra una descripción general de la configuración actual del sistema relacionada con la hora, incluida la hora actual, la zona horaria y la configuración de sincronización NTP del sistema.
+
+user@host:~$ timedatectl
+               Local time: Wed 2022-03-16 05:53:05 EDT
+           Universal time: Wed 2022-03-16 09:53:05 UTC
+                 RTC time: Wed 2022-03-16 09:53:05
+                Time zone: America/New_York (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Configuración de la zona horaria del sistema Puede enumerar una base de datos de zonas horarias con la opción list-timezones del comando timedatectl:
+
+user@host:~$ timedatectl list-timezones
+
+África/Abidjan África/Accra África/Addis_Ababa África/Argel África/Asmara África/Bamako... salida omitida... La Autoridad de Números Asignados de Internet (IANA) proporciona una base de datos pública de zonas horarias, y el comando timedatectl basa los nombres de las zonas horarias en esa base de datos. La IANA nombra las zonas horarias según el continente u océano y, normalmente, la ciudad más grande dentro de la región de la zona horaria. Por ejemplo, la mayor parte de la zona horaria montañosa de EE. UU. es América/Denver. Algunas localidades dentro de la zona horaria tienen diferentes reglas de horario de verano. Por ejemplo, en Estados Unidos, gran parte del estado
+
+of Arizona is in the US Mountain time zone; however it does not observe daylight saving time. Therefore, much of the
+
+El estado de Arizona utiliza la zona horaria América/Phoenix, que representa correctamente la diferencia horaria. Utilice el comando tzselect para identificar el nombre de zona horaria correcto. Este comando plantea interactivamente al usuario preguntas sobre la ubicación del sistema y genera el nombre de la zona horaria correcta. No cambia la configuración de zona horaria del sistema.
+
+
+
+
+
+13.9. Mantenimiento de la hora sincronizada El usuario root puede cambiar la configuración del sistema para actualizar la zona horaria actual con la opción set-timezone del comando timedatectl. Por ejemplo, el siguiente comando timedatectl actualiza la zona horaria actual a América/Phoenix.
+
+root@host:~# timedatectl set-timezone America/Phoenix
+root@host:~# timedatectl
+               Local time: Wed 2025-04-02 03:05:55 MST
+           Universal time: Wed 2025-04-02 10:05:55 UTC
+                 RTC time: Wed 2025-04-02 10:05:55
+                Time zone: America/Phoenix (MST, -0700)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Nota Puede configurar la zona horaria de un servidor en Hora universal coordinada (UTC). El comando tzselect no incluye el nombre de la zona horaria UTC. Utilice la opción set-timezone del comando timedatectl para configurar la zona horaria actual del sistema en UTC. Configuración manual de la hora del sistema Utilice la opción set-time del comando timedatectl para cambiar la hora actual del sistema. Puede especificar la hora en
+
+the "YYYY-MM-DD hh:mm:ss" format, where you can omit either the date or the time.
+
+Por ejemplo, el siguiente comando timedatectl cambia la hora del sistema local a 09:00:00.
+
+root@host:~# timedatectl set-time 9:00:00
+root@host:~# timedatectl
+               Local time: Wed 2025-04-02 09:00:27 MST
+           Universal time: Wed 2025-04-02 16:00:27 UTC
+                 RTC time: Wed 2025-04-02 16:00:27
+                Time zone: America/Phoenix (MST, -0700)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Importante El ejemplo anterior puede fallar con el mensaje de error No se pudo establecer la hora: la sincronización automática de la hora está habilitada. En ese caso, primero desactive la sincronización automática de la hora antes de configurar manualmente la fecha u hora, lo cual se explica después de esta nota. La opción set-ntp del comando timedatectl habilita o deshabilita la sincronización NTP para cambios automáticos de hora. La opción set-ntp requiere un argumento verdadero o falso para activar o desactivar la sincronización NTP. Por ejemplo, el siguiente comando timedatectl desactiva la sincronización NTP.
+
+
+
+
+
+13.9. Mantener el tiempo sincronizado
+
+root@host:~# timedatectl set-ntp false
+
+Nota En Red Hat Enterprise Linux, la opción set-ntp del comando timedatectl ajusta si el servicio NTP chronyd está habilitado. Otras distribuciones de Linux pueden usar esta configuración para ajustar un servicio NTP diferente o un servicio de Protocolo simple de tiempo de red (SNTP). Habilitar o deshabilitar NTP con otras utilidades en RHEL, como en la aplicación gráfica de configuración de GNOME (que proporciona el comando gnome-control-center), también actualiza esta configuración. Configurar y monitorear el servicio Chronyd El servicio chronyd sincroniza el reloj en tiempo real (RTC) local impreciso con los servidores NTP configurados. Si no hay conectividad de red disponible, entonces el servicio chronyd calcula la deriva del reloj RTC y la registra en el archivo /var/lib/chrony/drift (que la configuración del archivo de deriva especifica en el archivo de configuración /etc/chrony.conf). Los servidores NTP también pueden ser clientes NTP. Un servidor NTP puede obtener su información horaria a partir de un hardware de reloj de referencia de alto rendimiento (que generalmente se basa en un reloj atómico o una señal de GPS), o desde un servidor NTP que podría tener acceso a dicho hardware. El estrato de la fuente horaria NTP indica su proximidad a una fuente horaria. El estrato determina el número de saltos que la máquina está alejada de un reloj de referencia de alto rendimiento. El reloj de referencia es una fuente de tiempo de "estrato 0". Un servidor NTP que está conectado directamente al reloj de referencia es una fuente de tiempo de "estrato 1". Una máquina que sincroniza la hora desde un servidor NTP de estrato 1 es una fuente de hora de "estrato 2", y así sucesivamente. Selección de fuentes de tiempo NTP Muchas organizaciones no ejecutan sus propios servidores NTP de estrato 1. Los relojes de referencia de alto rendimiento pueden ser costosos y muchas fuentes públicas de hora están disponibles en Internet. A menudo es más sencillo sincronizar la hora desde fuentes NTP públicas. Nota Esta sección no cubre cómo conectar directamente un servidor NTP a un hardware de reloj de referencia de alto rendimiento, solo a otros servidores NTP que puedan tener acceso a dicho reloj. Para obtener más información sobre la configuración del reloj de referencia de hardware, lea la documentación de la directiva refclock en la página del comando man chrony.conf(5). Si no está ejecutando un servidor Stratum 1, debe configurar su servidor NTP para obtener su hora de otra fuente de hora NTP. Aunque puede obtener la hora de una sola fuente, es mejor configurar tres o más fuentes si una de ellas no funciona correctamente y corregir mejor el retraso variable de la red. Las siguientes directivas clave agregan servidores de estrato superior a su archivo de configuración /etc/chrony.conf: La directiva del servidor agrega un único servidor NTP (puede usar esta directiva más de una vez). La directiva del grupo especifica un nombre DNS que se resuelve en varios servidores NTP y esa lista puede cambiar con el tiempo.
+
+
+
+
+
+13.9. Mantenimiento de la hora sincronizada De forma predeterminada, el servicio chronyd utiliza un grupo de servidores del Proyecto del grupo NTP para sincronizar la hora y no requiere configuración adicional. La línea iburst del grupo 2.rhel.pool.ntp.org en el archivo de configuración /etc/chrony.conf configura este servicio. Nota El nombre 2.rhel.pool.ntp.org se resuelve en las direcciones IPv4 o IPv6 de cuatro servidores NTP públicos. Estas direcciones se seleccionan al azar de un grupo más grande de servidores NTP públicos. Si sus máquinas se ejecutan en una red aislada de modo que no se puede acceder a los servidores del grupo, entonces debe configurar sus propios servidores NTP. La directiva del servidor en el archivo /etc/chrony.conf especifica un único servidor NTP. Puede definir varios servidores en el archivo de configuración de chronyd, uno por línea. El primer argumento de la línea del servidor es la dirección IP o el nombre DNS de un servidor NTP. Después de la dirección IP o el nombre del servidor, puede enumerar una serie de opciones para el servidor. Red Hat recomienda agregar la opción iburst a esta directiva, que configura chronyd para realizar de 4 a 8 mediciones rápidas para poder sincronizar el reloj más rápidamente. Para
+
+more information about the chronyd configuration file options, read the chrony.conf(5) man page.
+
+Como ejemplo, si la línea iburst del servidor ntp.example.com está en el archivo de configuración /etc/chrony.conf, el
+
+chronyd service uses the ntp.example.com server as an NTP time source.
+# Use public servers from the pool.ntp.org project.
+
+pool 2.rhel.pool.ntp.org servidor iburst ntp.example.com iburst ... salida omitida... Reinicie el servicio después de señalar el servicio chronyd a la nueva fuente de tiempo.
+
+root@host:~# systemctl restart chronyd
+
+Inspección del estado de sincronización NTP El comando chronyc actúa como cliente del servicio chronyd. Después de configurar la sincronización NTP, verifique que el sistema local esté utilizando sin problemas los nuevos servidores NTP para sincronizar el reloj del sistema, utilizando la opción de fuentes de comando chronyc. Para obtener resultados más detallados con explicaciones adicionales sobre el resultado, utilice la opción fuentes -v del comando chronyc.
+
+
+
+
+
+13.9. Mantener el tiempo sincronizado
+
+root@host:~# chronyc sources -v
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+
+| / 'x' = puede haber un error, '~' = demasiado variable, '?' = inutilizable. ||                                                 .- xxxx [ yyyy ] +/- zzzz ||      Registro de accesibilidad (octal) -.           |  xxxx = compensación ajustada, ||      Log2 (intervalo de sondeo) --.      |          |  yyyy = compensación medida, ||                                \ |          |  zzzz = error estimado. ||                                 |    |           \ Nombre de MS/dirección IP Estrato Encuesta Alcance LastRx Última muestra =============================================================================================================================================================================================================================================== -28us[ +361ns] +/- 14ms ^- 192.0.2.10 2 10 377 936 -2329us[-2329us] +/- 120ms ^+ 2001:0db8:5:1890:f888:3e> 2 10 377 1009 -777us[ -673us] +/- 27ms ^+ clock3.example.net 2 10 377 149 -1220us[-1220us] +/- 36ms ^- 2001:0db8:88:f031:3333:a> 2 10 377 767 -1300us[-1300us] +/- 118 ms El carácter de asterisco (*) en el campo Estado de la fuente (MS) indica que el servicio chronyd utiliza el servidor ntp.example.com como su mejor fuente de hora actual seleccionada para la sincronización. Las fuentes con el carácter más (+) en ese campo también contribuyen a la sincronización. Las fuentes con el carácter menos (-) en ese campo se pueden utilizar para la sincronización, pero actualmente no contribuyen a ella (probablemente haya mejores fuentes). Si hay una x o una tilde (~) en ese campo, entonces el servicio chronyd determinó que algo parece estar mal con la hora que proporcionó este servidor NTP remoto. Si hay un signo de interrogación (?) en ese campo, entonces el servidor no se puede utilizar actualmente. Se necesitan algunas consultas antes de que un nuevo servidor sea utilizable, por lo que la opción iburst es útil para iniciar rápidamente la sincronización horaria. Si un servidor permanece en ? estado durante mucho tiempo, entonces podría estar inactivo o inalcanzable. Nota Un valor en la columna Alcance inferior a 377 significa que menos de ocho de las ocho encuestas más recientes tuvieron éxito, lo que puede ayudar a diagnosticar los servidores en la zona ? estado. Consulte la sección de la página del manual de chronyc(1) sobre el subcomando fuentes para obtener más detalles. En la columna Nombre/Dirección IP, si una dirección IPv6 es larga, se trunca y el final de la dirección se marca con un carácter mayor que (>). Para mostrar la dirección completa, ejecute la opción chronyc comando -n fuentes, que desactiva la resolución de nombres DNS y muestra direcciones IP no truncadas. Este comando puede hacer que la salida del comando
+
+more difficult to read.
+
+Importante Debe especificar la opción -n entre los comandos chronyc y sources para que funcionen como se esperaba.
+
+
+
+
+
+13.9. Mantener referencias de tiempo sincronizadas
+
+timedatectl(1), tzselect(8), chronyd(8), chrony.conf(5), and chronyc(1) man pages
+
+¿Los servidores NTP rhel.pool.ntp.org son compatibles con Red Hat? Base de datos de zona horaria del proyecto NTP Pool
+
+
+
+
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado 13.10. Ejercicio guiado Mantener la hora sincronizada Configure el sistema para sincronizar la zona horaria mediante NTP. Resultados Cambiar la zona horaria en un servidor. Configure el servidor para sincronizar su hora con una fuente de hora NTP. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-maintain
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante 1. Para este ejercicio, imagine que la máquina del servidor se reubica en Haití y que necesita actualizar la zona horaria. 2. Seleccione la zona horaria adecuada para Haití. 2.1.
+
+
+
+
+

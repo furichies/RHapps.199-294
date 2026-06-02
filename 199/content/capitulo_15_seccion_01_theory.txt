@@ -1,0 +1,145 @@
+# 12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd
+# Tipo: theory
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd 12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd Objetivos Investigar, interpretar y gestionar tareas recurrentes del sistema que están programadas como unidades de temporizador systemd. Temporizador Systemd A partir de Red Hat Enterprise Linux 10, el demonio y administrador de servicios systemd reemplaza al demonio cron tradicional para la mayoría de las tareas del sistema de programación, a través de las unidades de temporizador systemd. Una unidad de temporizador systemd se define mediante un archivo de configuración de unidad con un nombre de archivo que termina en .timer. Las unidades temporizadoras activan una unidad de otro tipo, que suele ser un servicio. De forma predeterminada, el nombre de la unidad coincide con el nombre de la unidad del temporizador. Las unidades de temporizador permiten la activación basada en temporizador de otras unidades y describen cuándo ejecutar otra unidad. La unidad de temporizador systemd registra los eventos del temporizador en los diarios del sistema para facilitar la depuración. Nota Una discusión más completa sobre las unidades de temporizador systemd está fuera del alcance de esta sección. Para obtener más información, consulte la página del comando man systemd(1). Listar unidades de temporizador Para enumerar todas las unidades de temporizador que están cargadas en la memoria, utilice el comando systemctl list-units. Este comando enumera las unidades de temporizador que están activas, pendientes o fallidas. Puede utilizar la opción --all para incluir unidades de temporizador inactivas.
+
+root@host:~# systemctl list-units -t timer
+  UNIT                         LOAD   ACTIVE SUB     DESCRIPTION
+  dnf-makecache.timer          loaded active waiting dnf makecache --timer
+  fstrim.timer                 loaded active waiting Discard unused ...
+  fwupd-refresh.timer          loaded active waiting Refresh fwupd ...
+  logrotate.timer              loaded active waiting Daily rotation ...
+  plocate-updatedb.timer       loaded active waiting Update the plocate ...
+  raid-check.timer             loaded active waiting Weekly RAID setup ...
+  systemd-tmpfiles-clean.timer loaded active waiting Daily Cleanup ...
+
+...salida omitida... Los encabezados de las columnas son los siguientes: UNIDAD El nombre completo de la unidad. LOAD Indica si se cargó la definición de unidad. ACTIVO Indica si la unidad está activa en un nivel alto. SUB Muestra el estado detallado de la unidad, específico del tipo de unidad; Los valores posibles varían según el tipo de unidad. DESCRIPCIÓN Una breve descripción del propósito de la unidad.
+
+
+
+
+
+12.1. Gestión de trabajos repetidos mediante el uso de Systemd Unidades de temporizador Lista de archivos de unidades de temporizador Puede enumerar todos los archivos de unidades de temporizador instalados con el comando systemctl list-unit-files. En contraste con el
+
+systemctl list-units command, the systemctl list-unit-files command also includes unit templates.
+root@host:~# systemctl list-unit-files -t timer
+
+PREAJUSTE DEL ESTADO DEL ARCHIVO DE LA UNIDAD
+
+dnf-makecache.timer            enabled  enabled
+
+fstrim.timer habilitado habilitado fwupd-refresh.timer habilitado habilitado insights-client.timer deshabilitado deshabilitado logrotate.timer habilitado habilitado mdadm-last-resort@.timer estático - mdcheck_continue.timer deshabilitado deshabilitado mdcheck_start.timer deshabilitado deshabilitado mdmonitor-oneshot.timer deshabilitado deshabilitado plocate-updatedb.timer habilitado habilitado podman-auto-update.timer deshabilitado deshabilitado raid-check.timer habilitado habilitado rhc-canonical-facts.timer deshabilitado deshabilitado systemd-sysupdate-reboot.timer deshabilitado deshabilitado systemd-sysupdate.timer deshabilitado deshabilitado systemd-tmpfiles-clean.timer estático - 16 archivos de unidad enumerados. Los encabezados de las columnas son los siguientes: ARCHIVO DE UNIDAD El nombre completo del archivo de unidad. ESTADO Indica el estado de habilitación actual de la unidad. PRESET Indica si la unidad está habilitada por defecto. Iniciar y detener unidades de temporizador Systemd Utilice el comando systemctl start para iniciar una unidad de temporizador. Para iniciar la unidad del temporizador de rotación de registros llamada logrotate, use
+
+the following command:
+root@host:~# systemctl start logrotate.timer
+
+Utilice el comando systemctl stop para detener una unidad de temporizador. Para detener la unidad del temporizador de rotación de registros llamada logrotate, use
+
+the following command:
+root@host:~# systemctl stop logrotate.timer
+
+Habilitar y deshabilitar unidades de temporizador Systemd Utilice el comando systemctl enable para habilitar una unidad de temporizador systemd en el momento del inicio del sistema. Para habilitar el registro
+
+rotation timer unit named logrotate, use the following command:
+
+
+
+
+
+12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd
+
+root@host:~# systemctl enable logrotate.timer
+
+El comando systemctl enable por sí solo no inicia la unidad systemd. Para habilitar e iniciar la unidad systemd en
+
+one step, include the --now switch:
+root@host:~# systemctl enable --now logrotate.timer
+
+Utilice el comando systemctl enable para desactivar una unidad de temporizador en el momento del inicio del sistema. Para desactivar el temporizador de rotación de registros
+
+unit named logrotate, use the following command:
+root@host:~# systemctl disable logrotate.timer
+
+El comando systemctl enable por sí solo no detiene la unidad systemd. Para deshabilitar y detener la unidad systemd en
+
+one step, include the --now switch:
+root@host:~# systemctl disable --now logrotate.timer
+
+Estado de la unidad del temporizador Puede utilizar el comando systemctl status para mostrar el estado actual de una unidad del temporizador y su unidad de servicio correspondiente. Para mostrar el estado actual del temporizador logrotate y las unidades de servicio, utilice el siguiente comando:
+
+root@host:~# systemctl status logrotate.timer
+
+● logrotate.timer: rotación diaria de archivos de registro
+
+     Loaded: loaded (/usr/lib/.../logrotate.timer; enabled; preset: enabled)
+     Active: active (waiting) since Wed 2025-05-28 23:28:22 UTC; 54min ago
+
+Invocación: 3a95de54d4c04c539d43b3808c27e99a
+
+    Trigger: Fri 2025-05-30 00:48:43 UTC; 24h left
+   Triggers: ● logrotate.service
+       Docs: man:logrotate(8)
+             man:logrotate.conf(5)
+
+28 de mayo... estación de trabajo systemd[1]: Se inició logrotate.timer - Diario... Ejemplo de archivo de configuración de unidad de temporizador El paquete sysstat proporciona la unidad de temporizador systemd, que es el servicio sysstat-collect.timer, para recopilar estadísticas del sistema cada 10 minutos. El siguiente resultado muestra el contenido de /usr/lib/systemd/system/sysstat-collect.timer
+
+configuration file:
+
+...salida omitida... [Unidad] Descripción=Ejecute la herramienta de contabilidad de actividad del sistema cada 10 minutos [Temporizador] OnCalendar=*:00/10 [Instalación] WantedBy=sysstat.service Las secciones [Unidad] e [Instalación] contienen elementos de configuración que son comunes a todas las unidades systemd. El
+
+timer-specific options are defined in the [Timer] section.
+
+
+
+
+
+12.1. Gestión de trabajos repetidos mediante unidades de temporizador Systemd En este ejemplo, la opción OnCalendar=*:00/10 significa que esta unidad de temporizador activa la unidad de servicio sysstat-collect.service correspondiente cada 10 minutos. Puede especificar intervalos de tiempo más complejos. Por ejemplo, cuando la opción OnCalendar se establece en un valor de 2025-07- * 12:35,37,39:16, la unidad de temporizador activa la unidad de servicio correspondiente a las 12:35:16, 12:37:16 y 12:39:16, todos los días de julio de 2025. También puede especificar temporizadores relativos utilizando la opción OnUnitActiveSec. Por ejemplo, cuando la opción OnUnitActiveSec se establece en un valor de 15 minutos, la unidad del temporizador activa la unidad de servicio correspondiente para que se inicie 15 minutos después de la última vez que se activó la unidad de servicio. Para obtener más información sobre las opciones de la unidad del temporizador, consulte la página del comando man systemd.timer(5). Importante No modifique ningún archivo de configuración de la unidad en el directorio /usr/lib/systemd/system. La unidad systemd anula todos los cambios de configuración que se realizan en el directorio /usr/lib/systemd/system. Para modificar la configuración de una unidad systemd, copie su archivo de configuración de unidad desde el directorio /usr/lib/systemd/system al directorio /etc/systemd/system y luego modifique el archivo copiado para evitar que cualquier actualización del paquete del proveedor anule los cambios. Si existen dos archivos con el mismo nombre en los directorios /usr/lib/systemd/system y /etc/systemd/system, entonces la unidad de temporizador systemd analiza el archivo en el directorio /etc/systemd/system. Después de cambiar el archivo de configuración de la unidad del temporizador, use el comando systemctl daemon-reload para asegurarse de que la unidad del temporizador systemd cargue los cambios.
+
+root@host:~# systemctl daemon-reload
+
+Después de recargar la configuración del demonio systemd, use el comando systemctl para habilitar y activar inmediatamente la unidad del temporizador.
+
+root@host:~# systemctl enable --now UNITNAME.timer
+
+Referencias
+
+systemctl(1), systemd.directives(7), systemd.time(7), systemd.timer(5), systemd.syntax(7),
+
+y páginas man systemd.unit(5) Para obtener más información sobre los archivos de unidades systemd, consulte la guía Uso de archivos de unidades Systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_systemd_unit_files_to_customize_and_optimize_your_system/index Sitio del proyecto systemd ascendente: https://systemd.io/
+
+
+
+
+
+12.2. Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd 12.2. Ejercicio guiado Administre trabajos repetidos mediante el uso de unidades de temporizador Systemd Programe e inspeccione las tareas recurrentes del sistema que están programadas como unidades de temporizador systemd. Resultados Actualice la unidad del temporizador systemd que recopila datos de actividad del sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-timers
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale el paquete sysstat. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system. Examine el archivo de la unidad de temporizador sysstat-collect.timer. 2. Instale el paquete sysstat.
+
+[root@servera ~]# dnf install sysstat
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! 2.1. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system.
+
+[root@servera ~]# ls -1 /usr/lib/systemd/system/sysstat*
+
+/usr/lib/systemd/system/sysstat-collect.service /usr/lib/systemd/system/sysstat-collect.timer /usr/lib/systemd/system/sysstat-rotate.service /usr/lib/systemd/system/sysstat-rotate.timer /usr/lib/systemd/system/sysstat-summary.service /usr/lib/systemd/system/sysstat-summary.timer /usr/lib/systemd/system/sysstat.service 2.2. Examine el archivo de la unidad de temporizador sysstat-collect.timer en el directorio /usr/lib/systemd/system. La unidad de temporizador denominada sysstat-collect.timer activa la unidad de servicio correspondiente denominada sysstat-collect.service cada 10 minutos. 2.3.
+
+
+
+
+

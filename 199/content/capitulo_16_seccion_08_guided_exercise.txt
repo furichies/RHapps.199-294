@@ -1,0 +1,99 @@
+# Ejercicio Guiado: Ejercicio guiado Configurar un diario del sistema persistente
+# Tipo: guided_exercise
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.8. Ejercicio guiado Configurar un diario del sistema persistente 13.8. Ejercicio guiado Configurar un diario del sistema persistente Configure un diario del sistema para que los eventos del registro persistan después de un reinicio. Resultados Configure un diario del sistema para conservar los eventos de registro después de un reinicio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-preserve
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Confirme que el directorio /var/log/journal no existe. Debido a que el directorio /var/log/journal no existe, el servicio systemd-journald no conserva los eventos de registro después de reiniciar.
+
+[root@servera ~]# ls /var/log/journal
+ls: cannot access '/var/log/journal': No such file or directory
+
+2. Configure el servicio systemd-journald para conservar los diarios después de reiniciar. 3. Cree el directorio /var/log/journal.
+
+[root@servera ~]# mkdir /var/log/journal
+
+3.1. Vacíe el diario actual al almacenamiento.
+
+[root@servera ~]# journalctl --flush
+
+3.2. Verifique que el servicio systemd-journald conserve sus diarios para que persistan después de un reinicio. 4. Reinicie la máquina del servidor. La conexión SSH finaliza tan pronto como reinicia el servidor en una máquina. 4.1.
+
+
+
+
+
+13.8. Ejercicio guiado Configurar un cierre de diario del sistema persistente En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-preserve
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+Espere a que la máquina del servidor se reinicie y luego inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 4.2. Verifique que exista un subdirectorio con un nombre hexadecimal largo en el directorio /var/log/journal. Puede
+
+find the journal files in that directory. The subdirectory name on your system might be different.
+[student@servera ~]$ ls /var/log/journal
+
+63b272eae8d5443ca7aaa5593479b25f 4.3. Verifique el contenido del directorio hexadecimal.
+
+[student@servera ~]$ ls /var/log/journal/63b272eae8d5443ca7aaa5593479b25f
+
+sistema.diario usuario-1000.diario 4.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+13.9. Mantener la hora sincronizada 13.9. Mantenimiento de objetivos de tiempo sincronizados Mantenga una sincronización horaria precisa mediante el protocolo de tiempo de red (NTP) y configure la zona horaria del sistema para garantizar marcas de tiempo correctas para los eventos registrados. Administrar relojes locales y zonas horarias La sincronización horaria del sistema es fundamental para el análisis de archivos de registro en múltiples sistemas. Para funcionar correctamente, algunos servicios también pueden requerir una sincronización horaria correcta. Las máquinas utilizan NTP para proporcionar y obtener información horaria correcta a través de Internet. Una máquina puede obtener información horaria precisa de servicios NTP públicos, como NTP Pool Project. Otra opción es configurar un sistema para que se sincronice directamente con un reloj de hardware de alta calidad, de modo que pueda proporcionar información horaria precisa a los clientes locales. El comando timedatectl muestra una descripción general de la configuración actual del sistema relacionada con la hora, incluida la hora actual, la zona horaria y la configuración de sincronización NTP del sistema.
+
+user@host:~$ timedatectl
+               Local time: Wed 2022-03-16 05:53:05 EDT
+           Universal time: Wed 2022-03-16 09:53:05 UTC
+                 RTC time: Wed 2022-03-16 09:53:05
+                Time zone: America/New_York (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Configuración de la zona horaria del sistema Puede enumerar una base de datos de zonas horarias con la opción list-timezones del comando timedatectl:
+
+user@host:~$ timedatectl list-timezones
+
+África/Abidjan África/Accra África/Addis_Ababa África/Argel África/Asmara África/Bamako... salida omitida... La Autoridad de Números Asignados de Internet (IANA) proporciona una base de datos pública de zonas horarias, y el comando timedatectl basa los nombres de las zonas horarias en esa base de datos. La IANA nombra las zonas horarias según el continente u océano y, normalmente, la ciudad más grande dentro de la región de la zona horaria. Por ejemplo, la mayor parte de la zona horaria montañosa de EE. UU. es América/Denver. Algunas localidades dentro de la zona horaria tienen diferentes reglas de horario de verano. Por ejemplo, en Estados Unidos, gran parte del estado
+
+of Arizona is in the US Mountain time zone; however it does not observe daylight saving time. Therefore, much of the
+
+El estado de Arizona utiliza la zona horaria América/Phoenix, que representa correctamente la diferencia horaria. Utilice el comando tzselect para identificar el nombre de zona horaria correcto. Este comando plantea interactivamente al usuario preguntas sobre la ubicación del sistema y genera el nombre de la zona horaria correcta. No cambia la configuración de zona horaria del sistema.
+
+
+
+
+

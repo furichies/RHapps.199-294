@@ -1,0 +1,77 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 8. Solución de problemas de Ansible
+
+capítulo 8 |  Solución de problemas de Ansible
+Resumen
+• El comando ansible-navigator puede producir archivos de artefactos de playbooks que
+almacenan información sobre ejecuciones en formato JSON.
+• Use el comando ansible-navigator replay para revisar la ejecución del play.
+• El módulo ansible.builtin.debug puede proporcionar información adicional de depuración
+al tiempo que ejecuta un playbook (por ejemplo, el valor actual para una variable).
+• Puede especificar la opción -v del comando ansible-navigator run una o más veces para
+proporcionar varios niveles de detalle de salida adicional. Esto es útil para la depuración de las
+tareas de Ansible al ejecutar un playbook.
+• La opción --check habilita los módulos de Ansible que soportan el modo de verificación para
+que se muestren los cambios que se deben realizar, en lugar de aplicar estos cambios a los hosts
+gestionados.
+RH294-RHEL9.0-es-3-20240620
+403
+
+
+404
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9
+Automatización de tareas de
+administración de Linux
+Meta
+Automatizar las tareas de administración comunes
+del sistema Linux con Ansible.
+Objetivos
+•
+Suscribir sistemas, configurar canales de
+software y repositorios, habilitar flujos de
+módulos y gestionar paquetes RPM en hosts
+gestionados.
+•
+Administrar usuarios y grupos de Linux,
+configurar SSH y modificar la configuración de
+Sudo en hosts gestionados.
+•
+Administrar el inicio del servicio, programar
+procesos con at, cron y systemd, reiniciar los
+hosts gestionados con reboot y controlar el
+destino de inicio predeterminado en los hosts
+gestionados.
+•
+Particionar los dispositivos de almacenamiento,
+configurar LVM, formatear particiones o
+volúmenes lógicos, montar sistemas de
+archivos y agregar espacios de intercambio
+(swap).
+•
+Configurar los ajustes de red y la resolución de
+nombres en los hosts gestionados y recopilar
+datos de Ansible relacionados con la red.
+Secciones
+•
+Administración de software y suscripciones (y
+ejercicio guiado)
+•
+Administración de usuarios y autenticación (y
+ejercicio guiado)
+•
+Administración del proceso de arranque y
+procesos programados (y ejercicio guiado)
+•
+Administración del almacenamiento (y ejercicio
+guiado)
+•
+Administración de la configuración de red (y
+ejercicio guiado)
+RH294-RHEL9.0-es-3-20240620
+405
+
+

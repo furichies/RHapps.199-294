@@ -1,0 +1,144 @@
+# Trabajo de laboratorio: oratorio Administrar usuarios y grupos locales
+# Tipo: lab
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.11. Laboratorio Administrar usuarios y grupos locales 4.11. Práctica de laboratorio Administrar usuarios y grupos locales Utilice el acceso de superusuario para administrar usuarios y grupos locales y para administrar políticas de contraseñas locales. Resultados Establecer una política de caducidad de contraseña predeterminada para la contraseña del usuario local. Cree y utilice un grupo complementario para nuevos usuarios. Cree tres usuarios con el nuevo grupo suplementario. Establezca una contraseña inicial para los usuarios creados. Configure los miembros del grupo suplementario para usar el comando sudo para ejecutar cualquier comando como cualquier usuario. Establezca una política de caducidad de contraseña específica del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. 1. En la máquina del servidor, asegúrese de que los usuarios recién creados deban cambiar sus contraseñas cada 30 días. 2. Cree el grupo de consultores con un GID de 35000. 3. Configure los derechos administrativos para permitir que todos los miembros del grupo de consultores ejecuten cualquier comando como cualquier usuario. Evite utilizar la herramienta de línea de comandos visudo para editar el archivo /etc/sudoers. En su lugar, coloque el archivo de configuración en el directorio /etc/sudoers.d. 4. Cree los usuarios consultor1, consultor2 y consultor3 con el grupo de consultores como grupo complementario. 5. Configure las contraseñas de consultor1, consultor2 y consultor3 en redhat. 6. Configure las cuentas de consultor1, consultor2 y consultor3 para que caduquen a los 90 días a partir del día actual. 7. Cambie la política de contraseñas de la cuenta de consultor2 para requerir una nueva contraseña cada 15 días. 8. Además, obligue a los usuarios consultor1, consultor2 y consultor3 a cambiar sus contraseñas en el primer inicio de sesión. 9. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 10.
+
+
+
+
+
+4.11. Laboratorio Administrar usuarios y grupos locales
+
+student@workstation:~$ lab grade users-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-review
+
+
+
+
+
+4.11. Práctica de laboratorio: Solución para administrar usuarios y grupos locales Utilice el acceso de superusuario para administrar usuarios y grupos locales y para administrar políticas de contraseñas locales. Resultados Establecer una política de caducidad de contraseña predeterminada para la contraseña del usuario local. Cree y utilice un grupo complementario para nuevos usuarios. Cree tres usuarios con el nuevo grupo suplementario. Establezca una contraseña inicial para los usuarios creados. Configure los miembros del grupo suplementario para usar el comando sudo para ejecutar cualquier comando como cualquier usuario. Establezca una política de caducidad de contraseña específica del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-review
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1. En la máquina del servidor, asegúrese de que los usuarios recién creados deban cambiar sus contraseñas cada 30 días. 2. Establezca el parámetro PASS_MAX_DAYS en 30 en el archivo /etc/login.defs. Utilice derechos administrativos al abrir el archivo con el editor de texto. Puede utilizar el comando vim /etc/login.defs para este paso. 2.1.
+
+
+
+
+
+4.11. Práctica de laboratorio Administrar usuarios y grupos locales...resultado omitido...
+
+# Password aging controls:
+
+#
+
+#       PASS_MAX_DAYS   Maximum number of days a password may be
+#       used.
+#       PASS_MIN_DAYS   Minimum number of days allowed between
+#       password changes.
+#       PASS_MIN_LEN    Minimum acceptable password length.
+#       PASS_WARN_AGE   Number of days warning given before a
+#       password expires.
+
+# PASS_MAX_DAYS 30 PASS_MIN_DAYS 0 PASS_MIN_LEN 8 PASS_WARN_AGE 7 ... salida omitida... Cree el grupo de consultores con un GID de 35000.
+
+[root@serverb ~]# groupadd -g 35000 consultants
+
+3. Configure los derechos administrativos para permitir que todos los miembros del grupo de consultores ejecuten cualquier comando como cualquier usuario. Evite utilizar la herramienta de línea de comandos visudo para editar el archivo /etc/sudoers. En su lugar, coloque el archivo de configuración en el directorio /etc/sudoers.d. 4. Cree el archivo /etc/sudoers.d/consultants y agréguele el siguiente contenido. Puede utilizar el comando vim /etc/sudoers.d/consultants para este paso. %consultores TODOS=(TODOS) TODOS 4.1. Cree los usuarios consultor1, consultor2 y consultor3 con el grupo de consultores como grupo complementario.
+
+[root@serverb ~]# useradd -G consultants consultant1
+[root@serverb ~]# useradd -G consultants consultant2
+[root@serverb ~]# useradd -G consultants consultant3
+
+5. Configure las contraseñas de consultor1, consultor2 y consultor3 en redhat.
+
+[root@serverb ~]# passwd consultant1
+
+Cambio de contraseña para consultor de usuario1. Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+[root@serverb ~]# passwd consultant2
+
+Cambio de contraseña para consultor de usuario2. Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+[root@serverb ~]# passwd consultant3
+
+Cambio de contraseña para consultor de usuario3. Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+6. Configure las cuentas de consultor1, consultor2 y consultor3 para que caduquen a los 90 días a partir del día actual. 7.
+
+
+
+
+
+4.11. Lab Administrar evaluación de usuarios y grupos locales Como usuario estudiante en la máquina de la estación de trabajo, use el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade users-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-review
+
+Determine la fecha 90 días en el futuro. Esta fecha de regreso es un ejemplo; use el valor en su sistema para los siguientes pasos.
+
+[root@serverb ~]# date -d "+90 days" +%F
+
+2025-08-12 7.1. Configure las cuentas de consultor1, consultor2 y consultor3 para que caduquen en la fecha que se muestra en el paso anterior.
+
+[root@serverb ~]# chage -E 2025-08-12 consultant1
+[root@serverb ~]# chage -E 2025-08-12 consultant2
+[root@serverb ~]# chage -E 2025-08-12 consultant3
+
+7.2. Cambie la política de contraseñas de la cuenta de consultor2 para solicitar una nueva contraseña cada 15 días.
+
+[root@serverb ~]# chage -M 15 consultant2
+
+8. Además, obligue a los usuarios consultor1, consultor2 y consultor3 a cambiar sus contraseñas en el primer inicio de sesión. 9. Establezca el último día del cambio de contraseña en 0 para que los usuarios deban cambiar la contraseña cuando inicien sesión por primera vez en el sistema.
+
+[root@serverb ~]# chage -d 0 consultant1
+[root@serverb ~]# chage -d 0 consultant2
+[root@serverb ~]# chage -d 0 consultant3
+
+9.1. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 10. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+10.1.
+
+
+
+
+
+4.12. Resumen 4.12. Resumen En esta lección, aprendió sobre los diferentes tipos de cuentas de usuario de Linux y cómo administrarlas. En Linux, los tipos de cuentas de usuario son superusuario (el usuario raíz), usuarios del sistema y usuarios normales. Los usuarios y grupos se utilizan para proteger y restringir el acceso a archivos, procesos y otros recursos del sistema. Cada usuario tiene un grupo primario y puede pertenecer a uno o más grupos suplementarios. La información de usuarios y grupos está contenida en los archivos /etc/passwd, /etc/group y /etc/shadow. Para administrar cuentas de usuario desde la línea de comando, normalmente se utiliza la cuenta de superusuario del sistema. Puede ejecutar comandos como superusuario con los comandos su y sudo. El superusuario puede configurar una política de administración de contraseñas que requiera que un usuario cambie su contraseña periódicamente. El superusuario también puede bloquear el acceso a una cuenta de usuario en una fecha determinada y puede desactivar el programa shell de una cuenta de usuario para evitar inicios de sesión interactivos. Un usuario del sistema o un usuario normal puede realizar algunos cambios menores en su propia cuenta de usuario, como cambiar la contraseña.
+
+
+
+
+

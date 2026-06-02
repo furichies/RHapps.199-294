@@ -1,0 +1,20 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.8. Resumen 5.8. Resumen En esta lección, aprendió cómo Red Hat Enterprise Linux administra la propiedad y los permisos de los archivos. Todos los archivos pertenecen a un propietario y a un grupo. La configuración de permisos determina quién puede acceder a los archivos (usuario, grupo y otros),
+
+and what kind of access they have (read, write, and execute). The most specific permissions take precedence: user
+
+Los permisos tienen prioridad sobre los permisos de grupo, y los permisos de grupo anulan a los demás. Puede ver la propiedad y los permisos de los archivos utilizando el formato de lista larga del comando ls. Puede cambiar los permisos de los archivos utilizando notación simbólica u octal. Además, puede cambiar recursivamente los permisos entre directorios utilizando el comando chmod -R. Los permisos especiales suid, sgid y sticky proporcionan funciones adicionales relacionadas con el acceso a los archivos. También aprendió a ver y definir valores de umask. Los valores de umask predeterminados para Bash se definen en el archivo /etc/login.defs y pueden verse afectados por la configuración de los archivos /etc/profile y /etc/bashrc, los archivos en /etc/profile.d o los archivos de inicialización del shell de su cuenta. Red Hat Enterprise Linux 9 y versiones posteriores aplican sistemáticamente una máscara de usuario predeterminada de 0022 para todos los usuarios, tanto en el shell de inicio de sesión como en el de no inicio de sesión.
+
+
+
+
+
+Capítulo 6. Instalación y actualización de software con RPM Objetivo Descargar, instalar, actualizar y administrar paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Secciones Investigación de paquetes de software RPM (y ejercicio guiado) Instalación y actualización de paquetes con DNF (y ejercicio guiado) Habilitación de repositorios de software DNF (y ejercicio guiado) Laboratorio de instalación y actualización de software con RPM
+
+
+
+
+

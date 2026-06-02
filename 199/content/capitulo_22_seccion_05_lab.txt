@@ -1,0 +1,296 @@
+# Trabajo de laboratorio: oratorio Administrar la seguridad de la red
+# Tipo: lab
+# Capítulo: Capítulo 19. Gestión de la seguridad de la red
+
+19.5. Laboratorio Administrar la seguridad de la red 19.5. Práctica de laboratorio Administrar la seguridad de la red Controle las conexiones de red a los servicios mediante el firewall del sistema y los servicios que pueden vincularse a puertos particulares mediante SELinux. Resultados Configurar el firewall y SELinux para un servidor web. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start netsecurity-review
+
+Instrucciones Su empresa decidió ejecutar una nueva aplicación web. Esta aplicación escucha en los puertos 80/TCP y 1001/TCP. Todos los cambios que realice deben persistir durante el reinicio. Importante El entorno de Red Hat Online Learning necesita que el puerto 5900/TCP permanezca disponible para utilizar la interfaz gráfica. Este puerto también está presente en el servicio vnc-server. Si accidentalmente se bloquea y no puede acceder a la máquina del servidor, puede intentar recuperarse utilizando el comando ssh en su máquina del servidor desde su estación de trabajo. La configuración de sus máquinas ya incluye una zona personalizada llamada ROL que abre estos puertos. En la máquina de la estación de trabajo, intente acceder al servidor web en http://serverb.lab.example.com y al
+
+virtual host at http://serverb.lab.example.com:1001. The index files are provisioned for each host, but the
+
+Las pruebas actualmente fallan. 1. En la máquina del servidor, verifique los problemas que podrían estar impidiendo el acceso al servidor web. 2. Configure SELinux para permitir que el servicio httpd escuche en el puerto 1001/TCP. 3. Abra otra ventana de terminal desde la máquina de la estación de trabajo. Intente acceder al servidor web utilizando el
+
+http://serverb.lab.example.com and http://serverb.lab.example.com:1001 URLs.
+
+4. En la máquina del servidor, determine si se agregaron los puertos correctos en el servicio firewalld. 5. Agregue el puerto 1001/TCP a la configuración permanente para la zona de red pública. 6. Regrese a la máquina de la estación de trabajo como usuario estudiante. 7.
+
+
+
+
+
+19.5. Evaluación de seguridad de red de administración de laboratorio Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade netsecurity-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish netsecurity-review
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+En la máquina de la estación de trabajo, confirme que puede acceder al servidor web en el
+
+http://serverb.lab.example.com through the 80/TCP port and that it returns SERVER B. Verify that you
+can access the virtual host at http://serverb.lab.example.com:1001 through the 1001/TCP port and that it
+
+devuelve VHOST 1. 8.
+
+
+
+
+
+19.5. Lab Manage Network Security Solution Controle las conexiones de red a los servicios mediante el firewall del sistema y los servicios que pueden vincularse a puertos particulares mediante SELinux. Resultados Configurar el firewall y SELinux para un servidor web. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start netsecurity-review
+
+Instrucciones Su empresa decidió ejecutar una nueva aplicación web. Esta aplicación escucha en los puertos 80/TCP y 1001/TCP. Todos los cambios que realice deben persistir durante el reinicio. Importante El entorno de Red Hat Online Learning necesita que el puerto 5900/TCP permanezca disponible para utilizar la interfaz gráfica. Este puerto también está presente en el servicio vnc-server. Si accidentalmente se bloquea y no puede acceder a la máquina del servidor, puede intentar recuperarse utilizando el comando ssh en su máquina del servidor desde su estación de trabajo. La configuración de sus máquinas ya incluye una zona personalizada llamada ROL que abre estos puertos. En la máquina de la estación de trabajo, intente acceder al servidor web en http://serverb.lab.example.com y al
+
+virtual host at http://serverb.lab.example.com:1001. The index files are provisioned for each host, but the
+
+Las pruebas actualmente fallan. 1. Intente acceder al servidor web http://serverb.lab.example.com a través del puerto 80/TCP. El servidor web debería devolver el SERVIDOR B, pero no logra conectarse.
+
+student@workstation:~$ curl http://serverb.lab.example.com
+curl: (7) Failed to connect to serverb.lab.example.com port 80 after 3 ms: Could not connect to 
+
+servidor 1.1. Intente acceder al http://serverb.lab.example.com:1001 host virtual a través del puerto 1001/TCP. El host virtual debería devolver VHOST 1, pero tampoco logra conectarse.
+
+student@workstation:~$ curl http://serverb.lab.example.com:1001
+curl: (7) Failed to connect to serverb.lab.example.com port 1001 after 2 ms: Could not connect to 
+
+servidor 1.2. En la máquina del servidor, verifique los problemas que podrían estar impidiendo el acceso al servidor web. 2. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña. 2.1.
+
+
+
+
+
+19.5. Laboratorio Administrar la seguridad de la red
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# Compruebe si el servicio httpd está activo.
+
+[root@serverb ~]# systemctl is-active httpd
+
+inactivo 2.2. Intente iniciar y habilitar el servicio httpd. El servicio httpd no se inicia.
+
+[root@serverb ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. El trabajo para httpd.service falló porque el proceso de control finalizó con un código de error. Consulte "systemctl status httpd.service" y "journalctl -xeu httpd.service" para obtener más detalles. 2.3. Verifique el estado del servicio httpd. Presione Q para salir de la sesión.
+
+[root@serverb ~]# systemctl status httpd.service
+
+× httpd.service - El servidor HTTP Apache
+
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; preset: disabled)
+     Active: failed (Result: exit-code) since Mon 2025-07-14 12:54:15 UTC; 1min 35s ago
+
+Invocación: 8baa10be5ed844afa8c1254f710e5b62
+
+       Docs: man:httpd.service(8)
+    Process: 4202 ExecStart=/usr/sbin/httpd $OPTIONS -DFOREGROUND (code=exited, status=1/FAILURE)
+   Main PID: 4202 (code=exited, status=1/FAILURE)
+     Status: "Reading configuration..."
+   Mem peak: 3.6M
+        CPU: 53ms
+
+14 de julio 12:54:15 serverb systemd[1]: Iniciando httpd.service - El servidor HTTP Apache... 14 de julio 12:54:15 serverb (httpd)[4202]: httpd.service: variable de entorno referenciada pero no configurada
+
+evaluates to an empty string: OPTIONS
+
+14 de julio 12:54:15 serverb httpd[4202]: (13)Permiso denegado: AH00072: make_sock: no se pudo vincular a
+
+address [::]:1001
+
+14 de julio 12:54:15 serverb httpd[4202]: (13)Permiso denegado: AH00072: make_sock: no se pudo vincular a
+
+address 0.0.0.0:1001
+
+14 de julio 12:54:15 serverb httpd[4202]: no hay sockets de escucha disponibles, apagándose 14 de julio 12:54:15 serverb httpd[4202]: AH00015: No se pueden abrir registros 14 de julio 12:54:15 serverb systemd[1]: httpd.service: proceso principal cerrado, código = salido,
+
+status=1/FAILURE
+
+14 de julio 12:54:15 serverb systemd [1]: httpd.service: Error con el resultado 'código de salida'. 14 de julio 12:54:15 serverb systemd[1]: Error al iniciar httpd.service: el servidor HTTP Apache. 2.4. Compruebe si SELinux está bloqueando el enlace del servicio httpd al puerto 1001/TCP. 2.5.
+
+
+
+
+
+19.5. Laboratorio Administrar la seguridad de la red
+
+[root@serverb ~]# sealert -a /var/log/audit/audit.log
+
+100% hecho, se encontraron 1 alertas en /var/log/audit/audit.log
+
+--------------------------------------------------------------------------------
+
+SELinux impide que /usr/sbin/httpd acceda a name_bind en el puerto tcp_socket 1001. ***** El complemento bind_ports (confianza del 99,5) sugiere ************************ Si desea permitir que /usr/sbin/httpd se enlace al puerto de red 1001, entonces necesita modificar el tipo de puerto. Hacer
+
+# semanage port -a -t PORT_TYPE -p tcp 1001
+    where PORT_TYPE is one of the following: http_cache_port_t, http_port_t, 
+
+jboss_management_port_t, jboss_messaging_port_t, ntop_port_t, puppet_port_t. ...salida omitida... Configure SELinux para permitir que el servicio httpd escuche en el puerto 1001/TCP. 3. Utilice el comando semanage para encontrar el tipo de puerto correcto.
+
+[root@serverb ~]# semanage port -l | grep 'http'
+
+http_cache_port_t tcp 8080, 8118, 8123, 10001-10010 http_cache_port_t udp 3130 http_port_t tcp 80, 81, 443, 488, 8008, 8009, 8443, 9000 pegasus_http_port_t tcp 5988 pegasus_https_port_t tcp 5989 3.1. Vincule el puerto 1001/TCP a la etiqueta de contexto http_port_t.
+
+[root@serverb ~]# semanage port -a -t http_port_t -p tcp 1001
+
+3.2. Confirme que el puerto 1001/TCP esté vinculado a la etiqueta de contexto http_port_t.
+
+[root@serverb ~]# semanage port -l | grep '^http_port_t'
+
+http_port_t tcp 1001, 80, 81, 443, 488, 8008, 8009, 8443, 9000 3.3. Habilite e inicie el servicio httpd.
+
+[root@serverb ~]# systemctl enable --now httpd
+
+3.4. Verifique que el servicio httpd esté activo.
+
+[root@serverb ~]# systemctl is-active httpd
+
+activo 3.5. Verifique que el servicio httpd esté habilitado.
+
+[root@serverb ~]# systemctl is-enabled httpd
+
+habilitado 3.6. Abra otra ventana de terminal desde la máquina de la estación de trabajo. Intente acceder al servidor web utilizando el
+
+http://serverb.lab.example.com and http://serverb.lab.example.com:1001 URLs.
+
+4. Intente acceder al servidor web http://serverb.lab.example.com a través del puerto 80/TCP. El servidor web debería devolver SERVIDOR B. 4.1.
+
+
+
+
+
+19.5. Laboratorio Administrar la seguridad de la red
+
+student@workstation:~$ curl http://serverb.lab.example.com
+
+SERVIDOR B Intente acceder al host virtual http://serverb.lab.example.com:1001 a través del puerto 1001/TCP. El acceso al servidor web falla.
+
+student@workstation:~$ curl http://serverb.lab.example.com:1001
+curl: (7) Failed to connect to serverb.lab.example.com port 1001 after 2 ms: Could not connect to 
+
+servidor 4.2. En la máquina del servidor, determine si se agregaron los puertos correctos en el servicio firewalld. 5. Verifique que la zona del firewall predeterminada esté configurada como la zona pública.
+
+[root@serverb ~]# firewall-cmd --get-default-zone
+
+público 5.1. Si el paso anterior no devuelve public como zona predeterminada, corríjalo con el siguiente comando:
+
+[root@serverb ~]# firewall-cmd --set-default-zone public
+
+éxito 5.2. Determine los puertos abiertos que figuran en la zona de la red pública.
+
+[root@serverb ~]# firewall-cmd --zone=public --list-all
+
+público (predeterminado, activo)
+
+  target: default
+  ingress-priority: 0
+  egress-priority: 0
+  icmp-block-inversion: no
+  interfaces: ens3
+  sources:
+  services: cockpit dhcpv6-client http ssh
+  ports:
+  protocols:
+  forward: yes
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+
+5.3. Agregue el puerto 1001/TCP a la configuración permanente para la zona de red pública. 6. Agregue el puerto 1001/TCP a la zona de red pública.
+
+[root@serverb ~]# firewall-cmd --permanent --zone=public --add-port=1001/tcp
+
+éxito 6.1. Vuelva a cargar la configuración del firewall.
+
+[root@serverb ~]# firewall-cmd --reload
+
+éxito 6.2. Verifique que el puerto 1001/TCP esté agregado al servicio firewalld. 6.3.
+
+
+
+
+
+19.5. Evaluación de seguridad de red de administración de laboratorio Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade netsecurity-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish netsecurity-review
+[root@serverb ~]# firewall-cmd --zone=public --list-all
+
+público (predeterminado, activo)
+
+  target: default
+  ingress-priority: 0
+  egress-priority: 0
+  icmp-block-inversion: no
+  interfaces: ens3
+  sources:
+  services: cockpit dhcpv6-client http ssh
+  ports: 1001/tcp
+  protocols:
+  forward: yes
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+
+Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7. En la máquina de la estación de trabajo, confirme que puede acceder al servidor web en el
+
+http://serverb.lab.example.com through the 80/TCP port and that it returns SERVER B. Verify that you
+can access the virtual host at http://serverb.lab.example.com:1001 through the 1001/TCP port and that it
+
+devuelve VHOST 1. 8. Acceda al servidor web en http://serverb.lab.example.com a través del puerto 80/TCP.
+
+student@workstation:~$ curl http://serverb.lab.example.com
+
+SERVIDOR B 8.1. Acceda al host virtual en http://serverb.lab.example.com:1001 a través del puerto 1001/TCP.
+
+student@workstation:~$ curl http://serverb.lab.example.com:1001
+
+VHOST 1 8.2.
+
+
+
+
+
+19.6. Resumen 19.6. Resumen En esta lección, aprendió a proteger las conexiones de red a los servicios mediante el uso del firewall del sistema y a aplicar la política específica de SELinux para proteger los puertos de servicio mediante el etiquetado de puertos. El servicio firewalld es un administrador de firewall dinámico que funciona como interfaz para el marco netfilter del kernel de Linux. El servicio firewalld gestiona las reglas de tráfico de la red para el filtrado de paquetes, la traducción de direcciones de red y la traducción de puertos. El servicio firewalld clasifica el tráfico de red en zonas. El servicio firewalld se gestiona mediante la herramienta de línea de comandos firewall-cmd o mediante la interfaz gráfica de la consola web. SELinux controla el acceso a la red etiquetando los puertos de red e incluyendo reglas en la política específica de un servicio. Si un servicio intenta escuchar en un puerto no estándar y el puerto no está etiquetado con el tipo de SELinux correcto, entonces SELinux podría bloquear el intento. El comando semanage port gestiona la política de SELinux con respecto al etiquetado de puertos.
+
+
+
+
+

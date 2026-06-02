@@ -1,0 +1,20 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.12. Resumen 13.12. Resumen En esta lección, aprendió a utilizar varios servicios de registro para ayudar con el monitoreo, la auditoría y la resolución de problemas. Además, aprendió a sincronizar el reloj de un servidor para mantener una fecha y hora precisas y consistentes con otros sistemas. Esta sincronización es importante para registrar con precisión la línea de tiempo de los eventos registrados. Los servicios systemd-journald y rsyslog recopilan, procesan y almacenan mensajes de registro que el sistema y
+
+applications generate. Most log files are stored in the /var/log directory; the rsyslog service can also write log
+
+mensajes a otras ubicaciones, incluidas bases de datos, cuentas de usuario y servidores remotos. De forma predeterminada, los diarios de systemd se almacenan temporalmente y no persisten durante el reinicio, aunque si crea un directorio /var/log/journal y actualiza el servicio, se pueden almacenar de forma persistente. El sistema rota periódicamente el diario del sistema systemd-journald y los archivos de registro rsyslog para evitar que consuman todo el almacenamiento en sus sistemas de archivos. El servicio chronyd ayuda a sincronizar el reloj de un servidor con diferentes fuentes horarias. Puede ajustar la zona horaria del servidor según su ubicación o cualquier otra ubicación según corresponda.
+
+
+
+
+
+Capítulo 14. Gestión de la seguridad con SELinux Objetivo Proteger los sistemas y gestionar la seguridad mediante SELinux. Secciones Operar SELinux (y ejercicio guiado) Controlar los contextos de archivos de SELinux (y ejercicio guiado) Ajustar la política de SELinux ajustando valores booleanos (y ejercicio guiado) Investigar y resolver problemas de SELinux (y ejercicio guiado) Laboratorio Administrar la seguridad con SELinux
+
+
+
+
+

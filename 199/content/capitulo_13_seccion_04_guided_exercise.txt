@@ -1,0 +1,208 @@
+# Ejercicio Guiado: Servicios del sistema de control del ejercicio guiado
+# Tipo: guided_exercise
+# Capítulo: Capítulo 10. Control de servicios y demonios
+
+10.4. Servicios del Sistema de Control del Ejercicio Guiado 10.4. Ejercicio guiado Servicios del sistema de control Controle los demonios del sistema y los servicios de red con el comando systemctl. Resultados Utilice el comando systemctl para controlar los servicios systemd. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-control
+
+Instrucciones Reinicie y vuelva a cargar el servicio sshd en la máquina del servidor y observe los resultados. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Muestra el estado del servicio sshd. Tenga en cuenta el ID del proceso del demonio sshd.
+
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:48:13 UTC; 7h ago
+
+Invocación: 8dfdf690e8134f4b9e317b91fe84ebda
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 1403 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 6.5M (peak: 9.8M)
+
+...salida omitida... Presione Q para salir del comando. 1.2. Reinicie el servicio sshd y vea el estado. En este ejemplo, el ID de proceso del demonio cambia de 1403 a 23088. 1.3.
+
+
+
+
+
+10.4. Servicios del sistema de control del ejercicio guiado
+
+[root@servera ~]# systemctl restart sshd
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:22:57 UTC; 1s ago
+
+Invocación: 43b0376f99fb4224bdef70bc7a9100f2
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 23088 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 1M (peak: 1.2M)
+
+...salida omitida... Vuelva a cargar el servicio sshd y vea el estado. El ID de proceso del demonio no cambia.
+
+[root@servera ~]# systemctl reload sshd
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:22:57 UTC; 3min 13s ago
+
+Invocación: 43b0376f99fb4224bdef70bc7a9100f2
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+    Process: 23255 ExecReload=/bin/kill -HUP $MAINPID (code=exited, status=0/SUCCESS)
+   Main PID: 23088 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 1M (peak: 2.6M)
+
+...salida omitida... 1.4. Detenga el servicio chronyd. 2. Verifique que el servicio chronyd se esté ejecutando.
+
+[root@servera ~]# systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:06 UTC; 7h ago
+
+...salida omitida... 2.1. Detenga el servicio chronyd y vea el estado.
+
+[root@servera ~]# systemctl stop chronyd
+[root@servera ~]# systemctl status chronyd
+
+○ chronyd.service - cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; preset: enabled)
+     Active: inactive (dead) since Thu 2025-05-22 22:28:35 UTC; 1s ago
+
+...salida omitida... 22 de mayo 22:28:35 servera systemd[1]: Deteniendo chronyd.service - cliente/servidor NTP... 22 de mayo 22:28:35 servera systemd[1]: chronyd.service: Desactivado correctamente. 22 de mayo 22:28:35 servera systemd[1]: chronyd.service detenido - cliente/servidor NTP. 2.2. Determine si el servicio chronyd está habilitado para iniciarse en el inicio del sistema.
+
+[root@servera ~]# systemctl is-enabled chronyd
+
+habilitado 3. Reinicie la máquina del servidor y luego vea el estado del servicio chronyd. 4. Reinicie la máquina del servidor. 4.1.
+
+
+
+
+
+10.4. Servicios del sistema de control del ejercicio guiado
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+Inicie sesión como usuario estudiante en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 4.2. Revisar el estado del servicio chronyd.
+
+[root@servera ~]# systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:32:16 UTC; 1min 49s ago
+
+...salida omitida... 4.3. Deshabilite el servicio chronyd para que no se inicie durante el arranque y luego vea el estado del servicio.
+
+[root@servera ~]# systemctl disable chronyd
+
+Se eliminó '/etc/systemd/system/multi-user.target.wants/chronyd.service'.
+
+[root@servera ~]# systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; disabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:32:16 UTC; 3min 11s ago
+
+...salida omitida... 5. Reinicie la máquina del servidor y luego vea el estado del servicio chronyd. 6. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+La máquina puede tardar unos minutos en iniciarse. 6.1. Inicie sesión como usuario estudiante en la máquina del servidor y revise el estado del servicio chronyd.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ systemctl status chronyd
+
+○ chronyd.service - cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; disabled; preset: enabled)
+     Active: inactive (dead)
+       Docs: man:chronyd(8)
+             man:chrony.conf(5)
+
+6.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+10.4. Ejercicio guiado Servicios del sistema de control Finalizar En la máquina de la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-control
+
+
+
+
+
+10.5. Servicios de control de laboratorio y demonios 10.5. Servicios de control de laboratorio y demonios Controla y monitorea los servicios del sistema y demonios que inicia systemd. Resultados Habilitar, deshabilitar, iniciar y detener servicios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade services-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. En la máquina del servidor, inicie el servicio psacct. 1. Verificar el estado actual del servicio psacct. Si el servicio psacct está detenido, inícielo. 2. Configure el servicio psacct para que se inicie al iniciar el sistema. 3. Verifique el estado del servicio rsyslog. Si el servicio rsyslog se está ejecutando, deténgalo y verifique que ya no esté activo. 4. Configure el servicio rsyslog para que no se inicie durante el inicio del sistema. 5. Reinicie la máquina del servidor para que la configuración de inicio de los servicios surta efecto. Espere a que la máquina se inicie antes de evaluar esta actividad. La máquina puede tardar unos minutos en iniciarse. 6.
+
+
+
+
+

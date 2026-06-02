@@ -1,0 +1,91 @@
+# 9.1. Procesos y ciclo de vida del proceso
+# Tipo: theory
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.1. Procesos y Ciclo de Vida de los Procesos 9.1. Procesos y objetivos del ciclo de vida del proceso Identificar los procesos que se están ejecutando actualmente en un sistema, determinar sus estados de proceso actuales y recopilar información sobre el uso de los recursos del sistema. Definición de proceso Un proceso es una instancia en ejecución de un programa ejecutable iniciado. Desde el momento en que se crea un proceso,
+
+consists of the following items:
+
+Un espacio de direcciones de memoria asignada Propiedades de seguridad, incluidas credenciales de propiedad y privilegios Uno o más subprocesos de ejecución de código de programa Un estado de proceso El entorno de un proceso es una lista de información que incluye los siguientes elementos: Variables locales y globales Un contexto de programación actual Recursos del sistema asignados, como descriptores de archivos y puertos de red Un proceso principal existente duplica su propio espacio de direcciones, que se conoce como bifurcación de proceso, para crear una estructura de proceso secundario. A cada nuevo proceso se le asigna un ID de proceso único (PID) con fines de seguimiento y seguridad. El PID y el ID del proceso principal (PPID) son elementos del nuevo entorno de proceso. Cualquier proceso puede crear un proceso hijo. Todos los procesos son descendientes del primer proceso del sistema, systemd, en un sistema Red Hat. Figura 15. Ciclo de vida del proceso A través de la rutina fork, un proceso hijo hereda identidades de seguridad, descriptores de archivos anteriores y actuales, privilegios de puertos y recursos, variables de entorno y código de programa. Luego, un proceso hijo puede ejecutar su propio código de programa. Normalmente, un proceso principal duerme cuando se ejecuta el proceso secundario y establece una solicitud de espera para que se indique cuando se completa el proceso secundario. Una vez que el proceso hijo sale, cierra o descarta sus recursos y su entorno, y deja un recurso zombie, que es una entrada en la tabla de procesos. El proceso padre, al que se le indica que se active cuando el proceso hijo sale, limpia la tabla de procesos de la entrada del proceso hijo y libera el último recurso del proceso hijo. Luego, el proceso principal continúa con la ejecución de su propio código de programa.
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso Estados de proceso En un sistema operativo multitarea, cada CPU (o núcleo de CPU) puede trabajar en un proceso a la vez. A medida que se ejecuta un proceso, sus requisitos inmediatos de tiempo de CPU y asignación de recursos cambian. A los procesos se les asigna un estado, que cambia según lo dictan las circunstancias. El siguiente diagrama y tabla describen los estados del proceso de Linux en detalle. Figura 16. Estados de procesos de Linux Tabla 10. Estados de procesos de Linux ejecutando R TASK_RUNNING: El proceso se está ejecutando en una CPU o está esperando para ejecutarse. El proceso puede estar ejecutando rutinas de usuario o rutinas de kernel (llamadas al sistema), o estar en cola y listo cuando se encuentra en el estado En ejecución (o Ejecutable). Nombre Bandera Nombre y descripción del estado definido por el kernel
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso en suspensión S TASK_INTERRUPTIBLE: El proceso está esperando alguna condición: una solicitud de hardware, acceso a recursos del sistema o una señal. Cuando un evento o señal satisface la condición, el proceso vuelve a Ejecutar. D TASK_UNINTERRUPTIBLE: este proceso también está inactivo, pero a diferencia del estado S, no responde a señales. Este estado se utiliza sólo cuando la interrupción del proceso puede provocar un estado impredecible del dispositivo. K TASK_KILLABLE: Igual que el estado D ininterrumpible, pero modificado para permitir que una tarea en espera responda a la señal para finalizarla (salir por completo). Las empresas de servicios públicos a menudo muestran procesos que se pueden eliminar como estado D. I TASK_REPORT_IDLE: un subconjunto del estado D que se utiliza para subprocesos del kernel. El kernel no cuenta estos procesos al calcular el promedio de carga. Se establecen los indicadores TASK_UNINTERRUPTIBLE y TASK_NOLOAD. Este estado es similar a TASK_KILLABLE y acepta señales fatales. Detenido T TASK_STOPPED: El proceso se detiene (suspende), generalmente al ser señalado por un usuario u otro proceso. El proceso puede continuar (reanudarse) mediante otra señal para volver a ejecutarse. T TASK_TRACED: un proceso que se está depurando también se detiene temporalmente y comparte el indicador de estado T. Zombie Z EXIT_ZOMBIE: un proceso hijo envía señales a su padre cuando sale. Se liberan todos los recursos excepto la identidad del proceso (PID). X EXIT_DEAD: cuando el proceso principal limpia (cosecha) la estructura del proceso secundario restante, el proceso ahora se libera por completo. Este estado no se puede observar en las utilidades de listado de procesos. Interpretación de los estados de los procesos Comprender cómo se comunica el núcleo con los procesos y cómo los procesos se comunican entre sí puede ayudarle a solucionar problemas de un sistema. El sistema asigna un estado a cada nuevo proceso. La columna S del comando superior o la columna STAT del comando ps muestra el estado de cada proceso. En un sistema con una sola CPU, solo se puede ejecutar un proceso a la vez. Varios procesos pueden estar en estado R. Sin embargo, no todos los procesos se ejecutan consecutivamente; algunos de ellos se encuentran en estado de espera. Nombre Bandera Nombre y descripción del estado definido por el kernel
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso
+
+user@host:~$ top
+
+PID USUARIO PR NI VIRT RES SHR S %CPU %MEM TIME+ COMANDO
+
+  1 root  20   0   49516  41072  10164 S   0.0   0.7   0:02.30  systemd
+  2 root  20   0       0      0      0 S   0.0   0.0   0:00.00  kthreadd
+  3 root  20   0       0      0      0 S   0.0   0.0   0:00.00  pool_workqueue_release
+
+...salida omitida...
+
+user@host:~$ ps aux
+
+USUARIO PID %CPU %MEM VSZ RSS TTY STAT COMANDO DE HORA DE INICIO ...salida omitida...
+
+root         2  0.0  0.0      0     0 ?        S    11:57   0:00 [kthreadd]
+student   2496  0.0  0.0 231132  3872 pts/0    R+   16:45   0:00 ps aux
+
+...salida omitida... Utilice señales para suspender, detener, reanudar, terminar o interrumpir procesos. Los procesos pueden recibir señales del kernel, de otros procesos y de otros usuarios en el mismo sistema. Listado de procesos El comando ps enumera información detallada para los procesos actuales: Identificación de usuario (UID), que determina los privilegios del proceso Identificación única del proceso (PID) Cantidad de CPU utilizada y tiempo real transcurrido Cantidad de memoria asignada La ubicación de salida estándar del proceso, que se conoce como terminal de control El estado actual del proceso Importante La versión Linux del comando ps admite los siguientes formatos de opciones: Opciones UNIX (POSIX), que se pueden agrupar y deben estar precedidas por un guión (-). Opciones BSD, que se pueden agrupar y no deben usarse con un guión. Opciones largas de GNU, precedidas por dos guiones. Por ejemplo, el comando ps -aux no es lo mismo que el comando ps aux. El comando ps aux comúnmente utilizado muestra todos los procesos, incluidos los procesos sin una terminal de control. En los siguientes ejemplos, los subprocesos del kernel programados se muestran entre paréntesis en la parte superior de la lista.
+
+user@host:~$ ps aux
+
+USUARIO PID %CPU %MEM VSZ RSS TTY STAT COMANDO DE HORA DE INICIO
+
+root   1  0.1  0.2 171820 16140 ?   Ss   16:47  0:01 /usr/lib/systemd/systemd ...
+root   2  0.0  0.0      0     0 ?   S    16:47  0:00 [kthreadd]
+root   3  0.0  0.0      0     0 ?   I<   16:47  0:00 [rcu_gp]
+root   4  0.0  0.0      0     0 ?   I<   16:47  0:00 [rcu_par_gp]
+root   6  0.0  0.0      0     0 ?   I<   16:47  0:00 [kworker/0:0H-events_highpri]
+
+...salida omitida... La lista larga (el comando ps lax) proporciona más detalles y devuelve resultados más rápidamente al evitar búsquedas de nombres de usuarios.
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso
+
+user@host:~$ ps lax
+
+F UID PID PPID PRI NI VSZ RSS WCHAN STAT TTY TIME COMMAND 4 0 1 0 20 0 17820 1140 - Ss ?   0:01 /usr/lib/systemd/systemd ... 1 0 2 0 20 0 0 0 - S ?   0:00 [kthreadd] 1 0 3 2 0 -20 0 0 - I<?   0:00 [rcu_gp] 1 0 4 2 0 -20 0 0 - Yo <?   0:00 [rcu_par_gp] 1 0 6 2 0 -20 0 0 - Yo< ?   0:00 [kworker/0:0H-events_...] ...salida omitida... La sintaxis similar de UNIX utiliza las opciones -ef para mostrar todos los procesos.
+
+user@host:~$ ps -ef
+
+UID PID PPID C TIEMPO TTY TIEMPO CMD
+
+root  1    0     0 16:47 ?    00:00:01 /usr/lib/systemd/systemd ...
+root  2    0     0 16:47 ?    00:00:00 [kthreadd]
+root  3    2     0 16:47 ?    00:00:00 [rcu_gp]
+root  4    2     0 16:47 ?    00:00:00 [rcu_par_gp]
+root  6    2     0 16:47 ?    00:00:00 [kworker/0:0H-events_highpri]
+
+...salida omitida... La salida predeterminada del comando ps está ordenada por número de ID de proceso (PID). Inicialmente, puede parecer que la salida usa un orden cronológico, pero el kernel reutiliza los ID de proceso, por lo que el orden está menos estructurado de lo que parece. Utilice las opciones del comando ps -O o --sort para ordenar la salida. El orden de visualización coincide con el de la tabla de procesos del sistema, que reutiliza las filas de la tabla cuando los procesos mueren y se generan. De forma predeterminada, el comando ps sin opciones selecciona todos los procesos con el ID de usuario efectivo (EUID) del usuario actual y selecciona los procesos asociados con el terminal que ejecuta el comando. Los procesos zombies se enumeran con la etiqueta saliente o inactivo. Puede utilizar la opción --forest del comando ps para mostrar los procesos en formato de árbol para poder ver las relaciones entre los procesos principales y secundarios. Referencias a las páginas man de ps(1), top(1) y signal(7)
+
+
+
+
+
+9.2. Procesos de cuestionarios y ciclo de vida del proceso 9.2. Procesos del cuestionario y ciclo de vida del proceso Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando se utiliza principalmente para enumerar los procesos actualmente en ejecución? 1. agradable a. lsp b. matar c. PD d. renice e. ¿Qué estado representa un proceso detenido o suspendido? 2.D a. Rb. Sc. T d. Z e. ¿Qué estado representa un proceso que liberó todos sus recursos excepto su PID? 3.D a. Rb. Sc. T d. Z e. ¿Qué operación de Linux crea un nuevo proceso hijo al clonar el espacio de direcciones del padre? 4. ejecutivo a. tenedor b. zombi c. llamada al sistema d. cosechar e. ¿Qué estado representa un proceso que está inactivo hasta que se cumple alguna condición? 5.D a. Rb. Sc. T d. Z e.
+
+
+
+
+

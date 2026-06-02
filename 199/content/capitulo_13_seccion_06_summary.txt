@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 10. Control de servicios y demonios
+
+10.6. Resumen 10.6. Resumen En esta lección, aprendió que la utilidad systemd proporciona herramientas para activar recursos del sistema, demonios del servidor y otros procesos, tanto en el momento del arranque como en un sistema en ejecución. Por ejemplo, el comando systemctl habilita y deshabilita servicios y puede enumerar el estado de todos los demonios que se ejecutan en el sistema. Puede administrar cada demonio configurando su configuración de inicio automático o iniciando, deteniendo y reiniciando el demonio. La utilidad systemd también gestiona unidades de servicio, unidades de socket y unidades de ruta. Puede enmascarar una unidad de servicio para que no se ejecute, incluso para satisfacer dependencias.
+
+
+
+
+
+Capítulo 11. Gestión de la configuración de red Objetivo Configurar interfaces y ajustes de red en servidores Red Hat Enterprise Linux. Secciones Configuración de redes desde la línea de comandos (y ejercicio guiado) Edición de archivos de configuración de red (y ejercicio guiado) Configuración de nombres de host y resolución de nombres (y ejercicio guiado) Práctica de laboratorio Administrar la configuración de red
+
+
+
+
+

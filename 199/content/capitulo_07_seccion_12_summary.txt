@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.12. Resumen 4.12. Resumen En esta lección, aprendió sobre los diferentes tipos de cuentas de usuario de Linux y cómo administrarlas. En Linux, los tipos de cuentas de usuario son superusuario (el usuario raíz), usuarios del sistema y usuarios normales. Los usuarios y grupos se utilizan para proteger y restringir el acceso a archivos, procesos y otros recursos del sistema. Cada usuario tiene un grupo primario y puede pertenecer a uno o más grupos suplementarios. La información de usuarios y grupos está contenida en los archivos /etc/passwd, /etc/group y /etc/shadow. Para administrar cuentas de usuario desde la línea de comando, normalmente se utiliza la cuenta de superusuario del sistema. Puede ejecutar comandos como superusuario con los comandos su y sudo. El superusuario puede configurar una política de administración de contraseñas que requiera que un usuario cambie su contraseña periódicamente. El superusuario también puede bloquear el acceso a una cuenta de usuario en una fecha determinada y puede desactivar el programa shell de una cuenta de usuario para evitar inicios de sesión interactivos. Un usuario del sistema o un usuario normal puede realizar algunos cambios menores en su propia cuenta de usuario, como cambiar la contraseña.
+
+
+
+
+
+Capítulo 5. Control del acceso a archivos Objetivo Establecer permisos estándar sobre archivos e interpretar los efectos de seguridad de diferentes configuraciones de permisos. Secciones Interpretación de los permisos de archivos de Linux (y cuestionario) Administración de permisos de archivos desde la línea de comandos (y ejercicio guiado) Administración de permisos predeterminados y permisos especiales (y ejercicio guiado) Práctica de laboratorio Control de acceso a archivos
+
+
+
+
+

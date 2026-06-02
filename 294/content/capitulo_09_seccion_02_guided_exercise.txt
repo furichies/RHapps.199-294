@@ -1,0 +1,384 @@
+# Ejercicio Guiado: Administración de software y suscripciones
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración de software y
+suscripciones
+Configurar un nuevo repositorio Yum y, desde allí, instala paquetes en sus hosts gestionados.
+Resultados
+• Configurar un repositorio Yum con el módulo ansible.builtin.yum_repository.
+• Administrar las claves GPG de RPM con el módulo ansible.builtin.rpm_key.
+• Obtener información sobre los paquetes instalados en un host con el módulo
+ansible.builtin.package_facts.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-software
+Instrucciones
+Su organización requiere que el paquete RPM simple-agent esté instalado en todos los hosts.
+Este paquete lo proporciona un repositorio Yum interno que mantiene su organización para alojar
+paquetes de software desarrollados internamente.
+Debe escribir un playbook para asegurarse de que el paquete simple-agent esté instalado
+en todos los hosts gestionados. El playbook también debe garantizar que todos los hosts
+gestionados estén configurados para usar el repositorio Yum interno.
+El repositorio se encuentra en http://materials.example.com/yum/repository. Todos
+los paquetes RPM en el repositorio están firmados con un par de claves GPG. La clave pública de
+GPG para los paquetes del repositorio está disponible en http://materials.example.com/
+yum/repository/RPM-GPG-KEY-example.
+ 1.
+Cambie al directorio /home/student/system-software.
+[student@workstation ~]$ cd ~/system-software
+[student@workstation system-software]$
+ 2.
+Empiece a escribir el playbook repo_playbook.yml. Defina un solo play en el playbook
+que se dirige a todos los hosts. Agregue una cláusula vars al play que defina una sola
+variable, custom_pkg, con el valor simple-agent (el nombre del paquete RPM que debe
+instalarse en todas partes). Agregue una cláusula tasks vacía al play.
+RH294-RHEL9.0-es-3-20240620
+417
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+El playbook debería incluir el siguiente contenido:
+---
+- name: Repository Configuration
+  hosts: all
+  vars:
+    custom_pkg: simple-agent
+  tasks:
+ 3.
+Agregue dos tareas a la cláusula tasks del play en el archivo repo_playbook.yml.
+Use el módulo ansible.builtin.package_facts de la primera tarea para recolectar
+información sobre los paquetes instalados en los hosts gestionados. Esta tarea completa el
+dato ansible_facts.packages.
+Use el módulo ansible.builtin.debug en la segunda tarea para imprimir la versión
+instalada del paquete al que hace referencia la variable custom_pkg. Solo ejecute esta
+tarea si el paquete personalizado se encuentra en el dato ansible_facts.packages.
+Ejecute el playbook repo_playbook.yml.
+3.1.
+Agregue la primera tarea al play. Establezca el valor de la palabra clave manager en
+auto para el módulo ansible.builtin.package_facts.
+La primera tarea debe contar con el siguiente contenido:
+    - name: Gather Package Facts
+      ansible.builtin.package_facts:
+        manager: auto
+3.2.
+Agregue una segunda tarea al play que usa el módulo ansible.builtin.debug
+para mostrar el valor de la variable ansible_facts.packages[custom_pkg].
+Agregue una cláusula when a la tarea para verificar que el valor de la variable
+custom_pkg está contenido en la variable ansible_facts['packages'].
+La segunda tarea debe incluir el siguiente contenido:
+    - name: Show Package Facts for the custom package
+      ansible.builtin.debug:
+        var: ansible_facts['packages'][custom_pkg]
+      when: custom_pkg in ansible_facts['packages']
+3.3.
+Ejecute el playbook:
+[student@workstation system-software]$ ansible-navigator run \
+> -m stdout repo_playbook.yml
+PLAY [Repository Configuration] **********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Gather Package Facts] **************************************************
+ok: [servera.lab.example.com]
+TASK [Show Package Facts for the custom package] *****************************
+418
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+skipping: [servera.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+La tarea Show Package Facts for the custom package se omite porque el
+paquete simple-agent no está instalado en los hosts gestionados.
+ 4.
+Agregue una tercera tarea al play que use el módulo
+ansible.builtin.yum_repository para asegurar la configuración del repositorio yum
+interno en los hosts gestionados. Esta tarea tiene los siguientes requisitos:
+• La configuración del repositorio se almacena en el archivo /etc/yum.repos.d/
+example.repo
+• El ID del repositorio es example-internal
+• La URL base del repositorio es http://materials.example.com/yum/
+repository
+• El repositorio está configurado para verificar las firmas RPM GPG.
+• La descripción del repositorio es Example Inc. Internal YUM repo
+La tercera tarea debe contar con el siguiente contenido:
+    - name: Ensure Example Repo exists
+      ansible.builtin.yum_repository:
+        name: example-internal
+        description: Example Inc. Internal YUM repo
+        file: example
+        baseurl: http://materials.example.com/yum/repository/
+        gpgcheck: true
+ 5.
+Agregue una cuarta tarea al play que use el módulo ansible.builtin.rpm_key para
+asegurarse de que la clave pública del repositorio esté presente en los hosts gestionados.
+La clave pública del repositorio está disponible en http://materials.example.com/
+yum/repository/RPM-GPG-KEY-example.
+La cuarta tarea debe contar con el siguiente contenido:
+    - name: Ensure Repo RPM Key is Installed
+      ansible.builtin.rpm_key:
+        key: http://materials.example.com/yum/repository/RPM-GPG-KEY-example
+        state: present
+ 6.
+Agregue una quinta tarea al play para asegurarse de que el paquete al que hace referencia
+la variable custom_pkg esté instalado en los hosts gestionados.
+La quinta tarea debe contar con el siguiente contenido:
+    - name: Install Example package
+      ansible.builtin.dnf:
+        name: "{{ custom_pkg }}"
+        state: present
+RH294-RHEL9.0-es-3-20240620
+419
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+ 7.
+El dato ansible_facts['packages'] no se actualiza automáticamente cuando se
+instala un nuevo paquete en un host gestionado. Este paso demuestra que esto es cierto.
+Copie la segunda tarea y agréguela como la sexta tarea en el play. Ejecute el playbook y
+verifique que el dato ansible_facts['packages'] no contenga información sobre el
+paquete simple-agent instalado en los hosts gestionados.
+7.1.
+La sexta tarea contiene una copia de la segunda tarea:
+    - name: Show Package Facts for the custom package
+      ansible.builtin.debug:
+        var: ansible_facts['packages'][custom_pkg]
+      when: custom_pkg in ansible_facts['packages']
+El playbook repo_playbook.yml completo debería incluir el siguiente contenido:
+---
+- name: Repository Configuration
+  hosts: all
+  vars:
+    custom_pkg: simple-agent
+  tasks:
+    - name: Gather Package Facts
+      ansible.builtin.package_facts:
+        manager: auto
+    - name: Show Package Facts for the custom package
+      ansible.builtin.debug:
+        var: ansible_facts['packages'][custom_pkg]
+      when: custom_pkg in ansible_facts['packages']
+    - name: Ensure Example Repo exists
+      ansible.builtin.yum_repository:
+        name: example-internal
+        description: Example Inc. Internal YUM repo
+        file: example
+        baseurl: http://materials.example.com/yum/repository/
+        gpgcheck: true
+    - name: Ensure Repo RPM Key is Installed
+      ansible.builtin.rpm_key:
+        key: http://materials.example.com/yum/repository/RPM-GPG-KEY-example
+        state: present
+    - name: Install Example package
+      ansible.builtin.dnf:
+        name: "{{ custom_pkg }}"
+        state: present
+    - name: Show Package Facts for the custom package
+      ansible.builtin.debug:
+        var: ansible_facts['packages'][custom_pkg]
+      when: custom_pkg in ansible_facts['packages']
+7.2.
+Ejecute el playbook.
+420
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation system-software]$ ansible-navigator run \
+> -m stdout repo_playbook.yml
+PLAY [Repository Configuration] **********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Gather Package Facts] **************************************************
+ok: [servera.lab.example.com]
+TASK [Show Package Facts for the custom package] *****************************
+skipping: [servera.lab.example.com]
+TASK [Ensure Example Repo exists] ********************************************
+changed: [servera.lab.example.com]
+TASK [Ensure Repo RPM Key is Installed] **************************************
+changed: [servera.lab.example.com]
+TASK [Install Example package] ******************************************
+changed: [servera.lab.example.com]
+TASK [Show Package Facts for the custom package] *****************************
+skipping: [servera.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=5    changed=3    unreachable=0    failed=0   
+ skipped=2    rescued=0    ignored=0
+La tarea Gather Package Facts determina los datos contenidos en el dato
+ansible_facts['packages'].
+La tarea se omite porque el paquete simple-agent se instala después de la
+tarea Gather Package Facts.
+ 8.
+Actualice los datos del paquete en su play insertando una tarea inmediatamente después
+de la tarea Install Example package. Escriba la nueva tarea para que ejecute el
+módulo ansible.builtin.package_facts. Establezca el atributo manager del
+módulo en auto.
+El playbook completo debería incluir el siguiente contenido:
+---
+- name: Repository Configuration
+  hosts: all
+  vars:
+    custom_pkg: simple-agent
+  tasks:
+    - name: Gather Package Facts
+      ansible.builtin.package_facts:
+        manager: auto
+    - name: Show Package Facts for the custom package
+RH294-RHEL9.0-es-3-20240620
+421
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+      ansible.builtin.debug:
+        var: ansible_facts['packages'][custom_pkg]
+      when: custom_pkg in ansible_facts['packages']
+    - name: Ensure Example Repo exists
+      ansible.builtin.yum_repository:
+        name: example-internal
+        description: Example Inc. Internal YUM repo
+        file: example
+        baseurl: http://materials.example.com/yum/repository/
+        gpgcheck: true
+    - name: Ensure Repo RPM Key is Installed
+      ansible.builtin.rpm_key:
+        key: http://materials.example.com/yum/repository/RPM-GPG-KEY-example
+        state: present
+    - name: Install Example package
+      ansible.builtin.dnf:
+        name: "{{ custom_pkg }}"
+        state: present
+    - name: Gather Package Facts
+      ansible.builtin.package_facts:
+        manager: auto
+    - name: Show Package Facts for the custom package
+      ansible.builtin.debug:
+        var: ansible_facts['packages'][custom_pkg]
+      when: custom_pkg in ansible_facts['packages']
+ 9.
+Use un comando ad hoc Ansible para eliminar el paquete simple-agent
+instalado durante la ejecución previa del playbook. Ejecute el playbook con la tarea
+ansible.builtin.package_facts insertada y use la salida para verificar la instalación
+del paquete simple-agent.
+9.1.
+Para eliminar el paquete simple-agent de todos los hosts, use el comando
+ansible all con las opciones -m ansible.builtin.dnf y -a
+'name=simple-agent state=absent'.
+[student@workstation system-software]$ ansible all -m ansible.builtin.dnf \
+> -a 'name=simple-agent state=absent'
+servera.lab.example.com | CHANGED => {
+...output omitted...
+    "changed": true,
+    "msg": "",
+    "rc": 0,
+    "results": [
+        "Removed: simple-agent-1.0-1.el9.x86_64"
+    ]
+...output omitted...
+9.2.
+Ejecute el playbook repo_playbook.yml.
+422
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation system-software]$ ansible-navigator run \
+> -m stdout repo_playbook.yml
+PLAY [Repository Configuration] **********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Gather Package Facts] **************************************************
+ok: [servera.lab.example.com]
+TASK [Show Package Facts for the custom package] *****************************
+skipping: [servera.lab.example.com]
+...output omitted...
+TASK [Install Example package] ***********************************************
+changed: [servera.lab.example.com]
+TASK [Gather Package Facts] **************************************************
+ok: [servera.lab.example.com]
+TASK [Show Package Facts for the custom package] *****************************
+ok: [servera.lab.example.com] => {
+    "ansible_facts['packages'][custom_pkg]": [
+        {
+            "arch": "x86_64",
+            "epoch": null,
+            "name": "simple-agent",
+            "release": "1.el9",
+            "source": "rpm",
+            "version": "1.0"
+        }
+    ]
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=7    changed=1    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+No existe un dato de paquete para el paquete simple-agent porque el
+paquete no está instalado en los hosts gestionados.
+El paquete simple-agent se instala como resultado de esta tarea, como lo
+indica el estado changed.
+Esta tarea actualiza los datos del paquete con información sobre el paquete
+simple-agent.
+El dato de paquete simple-agent existe e indica que solo un paquete
+simple-agent está instalado. El paquete instalado es la versión 1.0.
+RH294-RHEL9.0-es-3-20240620
+423
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish system-software
+424
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Administración de usuarios y
+autenticación
+Objetivos
+• Gestionar usuarios y grupos de Linux, configurar SSH y modificar la configuración de Sudo en
+hosts gestionados.
+El módulo user (usuario)
+El módulo Ansible ansible.builtin.user le permite crear, configurar y eliminar cuentas
+de usuario en hosts gestionados. Puede quitar o agregar un usuario, configurar el directorio
+de inicio de un usuario, configurar el UID para las cuentas de usuario del sistema, gestionar las
+contraseñas y asignar un usuario a grupos complementarios. Para crear un usuario que pueda
+iniciar sesión en la máquina, debe proporcionar una contraseña con hash para el parámetro de
+contraseña. Consulte "How do I generate encrypted passwords for the user module?" [https://
+docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-
+passwords-for-the-user-module] para obtener información sobre cómo aplicar un hash a una
+contraseña.
+En el siguiente ejemplo se demuestra el módulo ansible.builtin.user:
+- name: Create devops_user if missing, make sure is member of correct groups
+  ansible.builtin.user:
+    name: devops_user 
+    shell: /bin/bash 
+    groups: sys_admins, developers 
+    append: true
+El parámetro name es la única opción requerida por el módulo ansible.builtin.user.
+Su valor es el nombre de la cuenta de servicio o la cuenta de usuario para crear, eliminar o
+modificar.
+El parámetro shell establece el shell del usuario.
+El parámetro groups, cuando se usa con el parámetro append, le dice a la máquina que
+agregue los grupos suplementarios sys_admins y developers a este usuario. Si no usa
+el parámetro append, los grupos proporcionados sobrescriben los grupos complementarios
+existentes de un usuario. Para configurar el grupo principal para un usuario, use la opción
+group.
+nota
+El módulo ansible.builtin.user también proporciona información en valores
+de retorno, como el directorio de inicio del usuario y una lista de grupos de los que
+el usuario es miembro. Estos valores de retorno pueden registrarse en una variable
+y usarse en tareas posteriores. Puede obtener más información disponible en la
+documentación para el módulo.
+RH294-RHEL9.0-es-3-20240620
+425
+
+

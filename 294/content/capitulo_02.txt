@@ -1,0 +1,2590 @@
+# Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2
+Implementación de un playbook
+de Ansible
+Meta
+Crear un inventario de hosts gestionados, escribir
+un playbook de Ansible simple y ejecutarlo para
+automatizar las tareas en esos hosts.
+Objetivos
+•
+Describir los conceptos de inventario de Ansible
+y administrar un archivo de inventario estático.
+•
+Describir dónde se encuentran los archivos de
+configuración de Ansible, cómo los selecciona
+Ansible y editarlos para aplicar los cambios a la
+configuración predeterminada.
+•
+Escribir un playbook de Ansible básico y
+ejecutarlo con el navegador de contenido de
+automatización.
+•
+Escribir un playbook que use múltiples
+plays con aumento de privilegios por play
+y aprovechar eficazmente el navegador de
+contenido de automatización para encontrar
+nuevos módulos en Ansible Content Collections
+disponibles a fin de implementar tareas para un
+play.
+Secciones
+•
+Compilación de un inventario de Ansible (y
+ejercicio guiado)
+•
+Administración de archivos de configuración de
+Ansible (y ejercicio guiado)
+•
+Escritura y ejecución de playbooks (y ejercicio
+guiado)
+•
+Implementación de varios plays (y ejercicio
+guiado)
+Trabajo de
+laboratorio
+•
+Implementación de un playbook de Ansible
+RH294-RHEL9.0-es-3-20240620
+21
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Compilación de un inventario de Ansible
+Objetivos
+• Describir los conceptos de inventario de Ansible y administrar un archivo de inventario estático.
+Definición de inventario
+Un inventario define un conjunto de hosts que gestiona Ansible. Estos hosts también pueden ser
+asignados a grupos, que pueden ser gestionados colectivamente. Los grupos pueden contener
+grupos secundarios, y los hosts pueden ser miembros de múltiples grupos. El inventario también
+puede establecer variables que se apliquen a los hosts y grupos que define.
+Existen dos formas de definir los inventarios de host. Use un archivo de texto para definir un
+inventario de host estático. Use un complemento de Ansible para generar un inventario de host
+dinámico según sea necesario, usando proveedores de información externos.
+Especificación de hosts gestionados con un inventario
+estático
+Un archivo de inventario estático es un archivo de texto que especifica los hosts gestionados a
+los que apunta Ansible. Puede escribir este archivo usando varios formatos diferentes, incluido un
+estilo INI o YAML. El formato estilo INI es muy común y se usa para la mayoría de los ejemplos en
+este curso.
+nota
+Ansible soporta múltiples formatos de inventario estático. Esta sección se centra en
+el más frecuente, el formato estilo INI.
+En su forma más simple, un archivo de inventario estático estilo INI es una lista de nombres de host
+o direcciones IP de hosts gestionados, cada uno en una línea única:
+web1.example.com
+web2.example.com
+db1.example.com
+db2.example.com
+192.0.2.42
+Sin embargo, normalmente organiza hosts gestionados en grupos de hosts. Los grupos de hosts le
+permiten ejecutar Ansible de manera más efectiva en comparación con un conjunto de sistemas.
+En este caso, cada sección comienza con un nombre de grupo de hosts encerrado entre corchetes
+([]). A continuación, siguen el nombre de host o una dirección IP para cada host gestionado en el
+grupo, cada uno en una línea única.
+En el siguiente ejemplo, el inventario del host define dos grupos de hosts: webservers y db-
+servers.
+22
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[webservers]
+web1.example.com
+web2.example.com
+192.0.2.42
+[db-servers]
+db1.example.com
+db2.example.com
+Los hosts pueden estar en múltiples grupos. De hecho, la práctica recomendada es organizar sus
+hosts en múltiples grupos, posiblemente organizados de diferentes maneras, según el rol del host,
+su ubicación física, ya sea en producción o no, y otras variables. Esto le permite aplicar fácilmente
+plays de Ansible a conjuntos específicos de hosts en función de sus características, propósito o
+ubicación.
+[webservers]
+web1.example.com
+web2.example.com
+192.0.2.42
+[db-servers]
+db1.example.com
+db2.example.com
+[east-datacenter]
+web1.example.com
+db1.example.com
+[west-datacenter]
+web2.example.com
+db2.example.com
+[production]
+web1.example.com
+web2.example.com
+db1.example.com
+db2.example.com
+[development]
+192.0.2.42
+Importante
+Existen siempre dos grupos de hosts:
+• El grupo de hosts all contiene todos los hosts detallados de manera explícita en
+el inventario.
+• El grupo de hosts ungrouped contiene todos los hosts detallados de manera
+explícita en el inventario que no son miembros de ningún otro grupo.
+RH294-RHEL9.0-es-3-20240620
+23
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Definición de grupos anidados
+Los inventarios de host de Ansible pueden incluir grupos de grupos de hosts. Esto se logra
+creando un nombre de grupo de host con el sufijo :children. En el siguiente ejemplo, se crea
+un nuevo grupo, denominado north-america, que incluye todos los hosts de los grupos usa y
+canada.
+[usa]
+washington1.example.com
+washington2.example.com
+[canada]
+ontario01.example.com
+ontario02.example.com
+[north-america:children]
+canada
+usa
+Un grupo puede tener hosts gestionados y grupos secundarios como miembros. Por ejemplo, en
+el inventario anterior, podría agregar una sección [north-america] que tenga su propia lista de
+hosts gestionados. Esta lista de hosts se fusionaría con los hosts adicionales que hereda el grupo
+north-america de sus grupos secundarios.
+Simplificación de las especificaciones de hosts con rangos
+Puede especificar rangos en los nombres de hosts o direcciones IP para simplificar inventarios de
+hosts de Ansible. Puede especificar rangos numéricos o alfabéticos. Los rangos tienen la siguiente
+sintaxis:
+[START:END]
+Los rangos hacen coincidir todos los valores desde START hasta END, inclusive. Considere los
+siguientes ejemplos:
+• 192.168.[4:7].[0:255] coincide con todas las direcciones IPv4 en la red 192.168.4.0/22 (de
+192.168.4.0 a 192.168.7.255).
+• server[01:20].example.com coincide con todos los hosts denominados
+server01.example.com a server20.example.com.
+• [a:c].dns.example.com coincide con los hosts denominados a.dns.example.com,
+b.dns.example.com y c.dns.example.com.
+• 2001:db8::[a:f] coincide con todas las direcciones IPv6 de 2001:db8::a a 2001:db8::f.
+Si se incluyen ceros a la izquierda en rangos numéricos, se usan en el patrón. El segundo ejemplo
+anterior no coincide con server1.example.com, pero sí con server07.example.com.
+Verificación del inventario
+Puede usar el comando ansible-navigator inventory para consultar un archivo de
+inventario. Puede hacer esto para verificar la presencia de un host o un grupo en el inventario.
+24
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+En los siguientes ejemplos, se supone que existe un archivo denominado inventory en el
+directorio actual y que el archivo usa rangos para simplificar las definiciones de los grupos [usa] y
+[canada]:
+[usa]
+washington[1:2].example.com
+[canada]
+ontario[01:02].example.com
+nota
+Estos comandos de ejemplo usan la opción -i inventory para especificar una
+ruta a un archivo de inventario y la opción -m stdout para enviar la salida a la
+ventana de terminal.
+La siguiente consulta coincide con un host en el inventario. Aunque esta salida muestra llaves
+vacías, si el archivo de inventario definió variables para el host, las llaves contendrían esas
+variables.
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --host washington1.example.com
+{}
+Debido a que el rango para el grupo usa no incluye ceros a la izquierda, la siguiente consulta no
+coincide con un host en el inventario:
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --host washington01.example.com
+...output omitted...
+ERROR! You must pass a single valid host to --host parameter
+El siguiente comando enumera todos los hosts en el inventario.
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --list
+{
+    "_meta": {
+        "hostvars": {}
+    },
+    "all": {
+        "children": [
+            "canada",
+            "ungrouped",
+            "usa"
+        ]
+    },
+    "canada": {
+        "hosts": [
+            "ontario01.example.com",
+            "ontario02.example.com"
+        ]
+RH294-RHEL9.0-es-3-20240620
+25
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    },
+    "usa": {
+        "hosts": [
+            "washington1.example.com",
+            "washington2.example.com"
+        ]
+    }
+}
+El siguiente comando enumera todos los hosts en un grupo.
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --graph canada
+@canada:
+  |--ontario01.example.com
+  |--ontario02.example.com
+Ejecute el comando ansible-navigator inventory para explorar de forma interactiva hosts
+y grupos de inventario:
+[user@controlnode ~]$ ansible-navigator inventory -i inventory
+  Title             Description
+0│Browse groups     Explore each inventory group and group members members
+1│Browse hosts      Explore the inventory with a list of all hosts
+Escriba :0 para seleccionar "Explorar grupos":
+nota
+En la interfaz de usuario interactiva, para seleccionar una entrada escriba el número
+de línea correspondiente a la entrada. El uso de dos puntos es opcional para las
+líneas cero a nueve, pero cualquier número de línea que sea mayor de 10 debe estar
+precedido por dos puntos.
+  Name                                Taxonomy                         Type
+0│canada                              all                              group
+1│ungrouped                           all                              group
+2│usa                                 all                              group
+Presione la tecla ESC para salir del menú Grupos. Escriba :1 para seleccionar "Explorar hosts"
+  Inventory hostname
+0│ontario01.example.com
+1│ontario02.example.com
+2│washington1.example.com
+3│washington2.example.com
+Presione la tecla ESC dos veces para salir de ansible-navigator inventory.
+26
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Importante
+Si el inventario contiene un host y un grupo de hosts con el mismo nombre, el
+comando ansible-navigator inventory imprime una advertencia.
+Asegúrese de que los grupos de hosts no usen los mismos nombres que los hosts en
+el inventario.
+Reemplazo de la ubicación del inventario
+El archivo /etc/ansible/hosts se considera el archivo de inventario estático predeterminado
+del sistema. Sin embargo, la práctica habitual es no usar ese archivo, sino especificar una
+ubicación diferente para los archivos de inventario.
+Los comandos ansible-navigator que usa para ejecutar playbooks pueden especificar la
+ubicación de un archivo de inventario en la línea de comandos con la opción --inventory
+PATHNAME o -i PATHNAME, donde PATHNAME es la ruta al archivo de inventario deseado.
+nota
+También puede definir una ubicación predeterminada diferente para el archivo de
+inventario en su archivo de configuración de Ansible.
+Inventarios dinámicos
+La información de inventario de Ansible también puede generarse de forma dinámica con la
+información provista por bases de datos externas. La comunidad de código abierto ha escrito
+varios complementos (plug-ins) de inventario dinámicos que están disponibles desde el proyecto
+upstream de Ansible. Si estos complementos (plug-ins) Ansible no satisfacen sus necesidades,
+también puede escribir sus propios.
+Por ejemplo, un programa de inventario dinámico podría contactarse con su servidor de Red Hat
+Satellite o su cuenta de Amazon EC2, y usar la información almacenada allí para construir un
+inventario de Ansible. Dado que el programa hace esto cuando ejecuta Ansible, puede completar
+el inventario con información actualizada provista por el servicio a medida que se agregan nuevos
+hosts y se eliminan hosts anteriores.
+Cómo usar un inventario dinámico está fuera del alcance de esta sección.
+Referencias
+How to build your inventory: Ansible Documentation
+http://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+RH294-RHEL9.0-es-3-20240620
+27
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Compilación de un inventario de Ansible
+Crear un nuevo inventario estático que contenga hosts y grupos.
+Resultados
+• Deberá ser capaz de crear inventarios estáticos predeterminados y personalizados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-inventory
+Instrucciones
+ 1.
+Cambie al directorio /home/student/playbook-inventory/.
+[student@workstation ~]$ cd playbook-inventory
+[student@workstation playbook-inventory]$
+ 2.
+Cree un archivo de inventario estático personalizado denominado inventory en el
+directorio de trabajo /home/student/playbook-inventory.
+En la siguiente tabla, se encuentra la información sobre sus cuatro hosts gestionados.
+Asigne cada host a varios grupos con fines de administración según el propósito del host, la
+ciudad donde se encuentra ubicado y el entorno de implementación al que pertenece.
+Además, los grupos para ciudades de Estados Unidos (Raleigh y Mountain View) deben
+configurarse como elementos secundarios del grupo us para que los hosts de Estados
+Unidos puedan ser gestionados como un grupo.
+Especificaciones de inventario del servidor
+Nombre de host
+Propósito
+Ubicación
+Entorno
+servera.lab.example.com
+Servidor web
+Raleigh
+Desarrollo
+serverb.lab.example.com
+Servidor web
+Raleigh
+Prueba
+serverc.lab.example.com
+Servidor web
+Mountain View
+Producción
+serverd.lab.example.com
+Servidor web
+Londres
+Producción
+28
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+2.1.
+Cree un archivo inventory en el directorio de trabajo /home/student/
+playbook-inventory. Con la tabla de especificaciones de inventario del servidor
+como guía, edite el archivo inventory para que incluya el siguiente contenido:
+[webservers]
+server[a:d].lab.example.com
+[raleigh]
+servera.lab.example.com
+serverb.lab.example.com
+[mountainview]
+serverc.lab.example.com
+[london]
+serverd.lab.example.com
+[development]
+servera.lab.example.com
+[testing]
+serverb.lab.example.com
+[production]
+serverc.lab.example.com
+serverd.lab.example.com
+[us:children]
+raleigh
+mountainview
+ 3.
+Use variaciones del comando ansible-navigator inventory para verificar los
+grupos y hosts gestionados en el archivo de inventario /home/student/playbook-
+inventory/inventory personalizado.
+Importante
+Su comando ansible-navigator inventory debe incluir la opción -i para
+especificar la ubicación de su archivo de inventario, como se muestra en los
+siguientes pasos.
+3.1.
+Enumere todos los hosts gestionados en el inventario mediante el comando
+ansible-navigator inventory -i inventory -m stdout --list.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --list
+{
+    "_meta": {
+        "hostvars": {}
+    },
+    "all": {
+        "children": [
+            "development",
+RH294-RHEL9.0-es-3-20240620
+29
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+            "london",
+            "production",
+            "testing",
+            "ungrouped",
+            "us",
+            "webservers"
+        ]
+    },
+    "development": {
+        "hosts": [
+            "servera.lab.example.com"
+        ]
+    },
+    "london": {
+        "hosts": [
+            "serverd.lab.example.com"
+        ]
+    },
+    "mountainview": {
+        "hosts": [
+            "serverc.lab.example.com"
+        ]
+    },
+    "production": {
+        "hosts": [
+            "serverc.lab.example.com",
+            "serverd.lab.example.com"
+        ]
+    },
+    "raleigh": {
+        "hosts": [
+            "servera.lab.example.com",
+            "serverb.lab.example.com"
+        ]
+    },
+    "testing": {
+        "hosts": [
+            "serverb.lab.example.com"
+        ]
+    },
+    "us": {
+        "children": [
+            "mountainview",
+            "raleigh"
+        ]
+    },
+    "webservers": {
+        "hosts": [
+            "servera.lab.example.com",
+            "serverb.lab.example.com",
+            "serverc.lab.example.com",
+30
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+            "serverd.lab.example.com"
+        ]
+    }
+}
+3.2.
+Represente gráficamente todos los hosts gestionados en el archivo de inventario,
+pero que no forman parte de un grupo con el comando ansible-navigator
+inventory -i inventory -m stdout --graph ungrouped. No existen hosts
+gestionados sin grupo en este archivo de inventario.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph ungrouped
+@ungrouped:
+3.3.
+Represente gráficamente todos los hosts gestionados en el grupo development con
+el comando ansible-navigator inventory -i inventory -m stdout --
+graph development.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph development
+@development:
+  |--servera.lab.example.com
+3.4.
+Represente gráficamente todos los hosts gestionados en el grupo testing con el
+comando ansible-navigator inventory -i inventory -m stdout --
+graph testing.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph testing
+@testing:
+  |--serverb.lab.example.com
+3.5.
+Represente gráficamente todos los hosts gestionados en el grupo production con
+el comando ansible-navigator inventory -i inventory -m stdout --
+graph production.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph production
+@production:
+  |--serverc.lab.example.com
+  |--serverd.lab.example.com
+3.6.
+Represente gráficamente todos los hosts gestionados en el grupo us con el comando
+ansible-navigator inventory -i inventory -m stdout --graph us.
+RH294-RHEL9.0-es-3-20240620
+31
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph us
+@us:
+  |--@mountainview:
+  |  |--serverc.lab.example.com
+  |--@raleigh:
+  |  |--servera.lab.example.com
+  |  |--serverb.lab.example.com
+3.7.
+Ejecute ansible-navigator inventory -i inventory en modo interactivo.
+Explore las entradas de grupos y hosts gestionados en el archivo de inventario.
+Escriba :0 para explorar grupos. Escriba :1 para explorar hosts. Escriba :q para salir
+de ansible-navigator.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory
+  Title              Description
+0│Browse groups      Explore each inventory group and group members members
+1│Browse hosts       Explore the inventory with a list of all hosts
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-inventory
+32
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Administración de archivos de
+configuración de Ansible
+Objetivos
+• Describir dónde se encuentran los archivos de configuración de Ansible, cómo los selecciona
+Ansible y editarlos para aplicar los cambios a la configuración predeterminada.
+Configuración de Ansible
+Puede crear y editar dos archivos en cada uno de los directorios de su proyecto Ansible que
+configuran el comportamiento de Ansible y el comando ansible-navigator. Un directorio de
+proyectos de Ansible es un directorio desde el cual ejecuta sus playbooks mediante el comando
+ansible-navigator.
+• ansible.cfg, que configura el comportamiento de varias herramientas de Ansible.
+• ansible-navigator.yml, que cambia las opciones predeterminadas para el comando
+ansible-navigator.
+Gestión de la configuración de Ansible
+Cree un archivo de configuración ansible.cfg en cada uno de sus directorios de proyectos de
+Ansible. El archivo de configuración de Ansible consiste en varias secciones; cada sección contiene
+parámetros definidos como pares de clave-valor. Los títulos de las secciones se incluyen entre
+paréntesis. Para la operación básica, use las siguientes dos secciones:
+• [defaults], que establece valores predeterminados para la operación de Ansible
+• [privilege_escalation], que configura el modo en que Ansible realiza el aumento de
+privilegios en hosts gestionados
+El siguiente es un archivo ansible.cfg de muestra:
+[defaults]
+inventory = ./inventory 
+remote_user = user 
+ask_pass = false 
+[privilege_escalation]
+become = true 
+become_method = sudo 
+become_user = root 
+become_ask_pass = false 
+El parámetro inventory especifica la ruta a un archivo de inventario estático o a un
+directorio que contenga múltiples archivos de inventario estático y scripts de inventario
+dinámico.
+El parámetro remote_user especifica el nombre de usuario que Ansible usa para
+conectarse a los hosts gestionados. En un entorno de ejecución de automatización
+RH294-RHEL9.0-es-3-20240620
+33
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+basado en contenedores ejecutado por ansible-navigator, esto es root de forma
+predeterminada.
+El parámetro ask_pass especifica si se debe solicitar o no una contraseña SSH. Establece
+false de forma predeterminada. Establezca este parámetro en true para la autenticación
+SSH basada en contraseña, o en false para la autenticación de clave pública SSH. Si usa el
+comando ansible-navigator, establecer este parámetro en true requiere deshabilitar
+los artefactos del playbook y usar el modo de salida estándar.
+El parámetro become especifica si se debe cambiar automáticamente el usuario en el host
+gestionado (por lo general, a root) después de la conexión. Establece false de forma
+predeterminada. Si bien puede establecer este parámetro en true para habilitar el aumento
+de privilegios para todos los plays, puede decidir habilitar el aumento de privilegios solo en
+los plays, bloques o tareas que requieren privilegios elevados.
+El parámetro become_method especifica cómo cambiar de usuario. El valor predeterminado
+es sudo, aunque hay otros métodos disponibles, como su.
+El parámetro become_user especifica a qué usuario cambiar en el host gestionado.
+Establece root de forma predeterminada.
+El parámetro become_ask_pass especifica si se debe solicitar o no una contraseña para
+el parámetro become_method. Establece false de forma predeterminada. Si usa el
+comando ansible-navigator, establecer este parámetro en true requiere deshabilitar
+los artefactos del playbook y usar el modo de salida estándar.
+Importante
+El comando ansible-playbook también puede usar un archivo .ansible.cfg
+en su directorio de inicio o el archivo /etc/ansible/ansible.cfg, pero el
+comando ansible-navigator no usa estos archivos locales en su sistema.
+Escalación de privilegios
+Algunas tareas, como la instalación de software, solo pueden completarse si el usuario tiene
+privilegios elevados. Si sus playbooks se conectan a su host gestionado como un usuario regular,
+debe habilitar el aumento de privilegios para que esas tareas se realicen correctamente.
+En Red Hat Enterprise Linux 8 y 9, la configuración predeterminada del archivo /etc/sudoers
+garantiza que todos los usuarios en el grupo wheel tengan la capacidad de usar sudo para
+convertirse en root después de ingresar su contraseña.
+Si su archivo de configuración de Ansible usa el parámetro become_method = sudo, puede
+usar el archivo /etc/sudoers como ejemplo para otorgar acceso sudo a usuarios o grupos
+adicionales. Cree un archivo en el directorio /etc/sudoers.d y asegúrese de que el archivo sea
+propiedad de root.
+Las siguientes líneas de un archivo /etc/sudoers muestran que se requiere y no se requiere una
+contraseña:
+## Allows people in group wheel to run all commands
+%wheel  ALL=(ALL)       ALL
+## Same thing without a password
+# %wheel        ALL=(ALL)       NOPASSWD: ALL
+34
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Si sus usuarios y grupos deben ingresar una contraseña para los comandos sudo, establezca el
+parámetro become_ask_pass en true en la sección [privilege_escalation] de su archivo
+de configuración de Ansible.
+Examine las implicaciones de seguridad del enfoque que elija para el aumento de privilegios. Las
+distintas organizaciones e implementaciones pueden tener distintas ventajas y desventajas para
+considerar.
+Ajustes de conexión
+De forma predeterminada, Ansible se conecta a los hosts gestionados mediante el protocolo SSH.
+Para ajustar este comportamiento y otras configuraciones de conexión, actualice los parámetros
+en la sección [defaults] del archivo de configuración de Ansible.
+Establezca el parámetro remote_user para conectarse a sus hosts gestionados con un usuario
+específico. Si el parámetro remote_user no está definido, Ansible intenta conectarse con el
+usuario root cuando usa el comando ansible-navigator.
+Si tiene claves SSH privadas configuradas que le permiten autenticarse con el usuario remoto
+en los hosts gestionados, Ansible inicia sesión de forma automática. Establezca el parámetro
+ask_pass si prefiere usar la autenticación basada en contraseña con el comando ansible-
+navigator.
+Puede configurar la autenticación SSH basada en claves; para ello, genere un par de claves SSH y,
+luego, copie la clave pública en sus hosts gestionados:
+• Si aún no tiene un par de claves SSH, ejecute el comando ssk-keygen para generar un par de
+claves SSH:
+[user@controlnode ~]$ ssh-keygen
+...output omitted...
+• Use el comando ssh-copy-id para copiar su clave pública en un host gestionado. Por ejemplo,
+si su archivo ansible.cfg usa el parámetro remote_user = devops y usted desea copiar
+su clave pública en el host host.example.com, ejecute el siguiente comando:
+[user@controlnode ~]$ ssh-copy-id devops@host.example.com
+...output omitted...
+En lugar de copiar manualmente su clave pública en cada host, puede copiar su clave pública
+en todos sus hosts gestionados mediante la creación y ejecución de un playbook similar a la
+siguiente:
+---
+- name: Deploy public key to all hosts
+  hosts: all
+  tasks:
+    - name: Copy public SSH key
+      ansible.posix.authorized_key:
+        user: devops
+        key: "{{ lookup('ansible.builtin.file', '~/.ssh/id_rsa.pub') }}"
+        state: present
+RH294-RHEL9.0-es-3-20240620
+35
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Dado que el host gestionado aún no tendría configurada la autenticación basada en claves SSH,
+tendría que ejecutar el playbook con las opciones --ask-pass, --pae false y -m stdout
+para que el comando ansible-navigator run solicite autenticarse como usuario remoto.
+Importante
+El comando ansible-navigator run puede colgarse o no ejecutarse si el
+comando debe solicitarle información, como una contraseña, y no deshabilitó los
+artefactos del playbook (--pae false) y no usó el modo de salida estándar (-m
+stdout).
+Determinación de los ajustes de configuración actuales
+El comando ansible-navigator config muestra la configuración actual de Ansible. El
+comando muestra el valor real que usa Ansible para cada parámetro y de qué fuente recupera ese
+valor, archivo de configuración o variable de entorno.
+La siguiente salida es del comando ansible-navigator config que se ejecuta desde un
+directorio /home/student/project/ que contiene un archivo ansible.cfg:
+   Name                        Default Source                            Current
+...output omitted...
+44│Default ask pass            True    default                           False
+45│Default ask vault pass      True    default                           False
+46│Default become              False   /home/student/project/ansible.cfg True
+47│Default become ask pass     False   /home/student/project/ansible.cfg True
+ ...output omitted...
+50│Default become method       False   /home/student/project/ansible.cfg sudo
+51│Default become user         False   /home/student/project/ansible.cfg root
+ ...output omitted...
+En el ejemplo anterior, cada línea describe un parámetro de configuración de Ansible.
+• El valor True en la columna Default para los parámetros Default ask pass y Default
+ask vault pass significa que los parámetros están usando sus valores predeterminados.
+El valor actual para ambos parámetros es False y los valores se muestran en la columna
+Current.
+• Los parámetros Default become y Default become ask pass se han configurado
+manualmente en True en el archivo de configuración /home/student/project/
+ansible.cfg. La columna Default es False para estos dos parámetros. La columna
+Source proporciona la ruta al archivo de configuración que define estos parámetros, y la
+columna Current muestra que el valor para estos dos parámetros es True.
+• El parámetro Default become method tiene el valor actual de sudo y el parámetro Default
+become user tiene el valor actual de root.
+Para salir del modo interactivo del comando ansible-navigator config, presione Esc o
+escriba :q y presione Enter.
+36
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Gestión de la configuración para el navegador de
+contenido de automatización
+Puede crear un archivo de configuración (o archivo de ajustes) para ansible-navigator para
+anular los valores predeterminados de sus ajustes de configuración. El archivo de configuración
+puede estar en formato JSON (.json) o YAML (.yml o .yaml). Esta discusión se centra en el
+formato YAML.
+El navegador de contenido de automatización busca un archivo de configuración en el siguiente
+orden y usa el primer archivo que encuentra:
+• Si se establece la variable de entorno ANSIBLE_NAVIGATOR_CONFIG, use el archivo de
+configuración en la ubicación que especifica.
+• Un archivo ansible-navigator.yml en su directorio de proyecto actual de Ansible.
+• Un archivo .ansible-navigator.yml en su directorio de inicio (observe que el nombre del
+archivo contiene un punto al comienzo del nombre).
+Al igual que el archivo de configuración de Ansible, cada proyecto puede tener su propio archivo
+de configuración del navegador de contenido de automatización.
+El siguiente archivo ansible-navigator.yml configura algunos ajustes comunes:
+---
+ansible-navigator:
+  execution-environment: 
+    image: utility.lab.example.com/ee-supported-rhel8:latest 
+    pull:
+      policy: missing 
+  playbook-artifact: 
+    enable: false 
+  mode: stdout 
+La sección execution-environment configura los ajustes para el entorno de ejecución de
+automatización que usa el comando ansible-navigator.
+La clave image define el nombre de la imagen del contenedor que se usará para el entorno
+de ejecución de automatización.
+La clave policy anidada debajo de la sección pull indica que solo se extraiga la imagen del
+contenedor si aún no existe en la máquina local.
+La sección playbook-artifact configura los ajustes para los archivos JSON que Ansible
+genera cada vez que ejecuta un playbook. Cada archivo JSON generado registra información
+sobre la ejecución de un playbook específico. Puede usar estos archivos para revisar los
+resultados de la ejecución de un playbook o para solucionar problemas del playbook.
+La clave enable anidada debajo de la sección playbook-artifact deshabilita la
+generación de artefactos de playbook cuando se usa el comando ansible-navigator
+run. Los artefactos del playbook se deben deshabilitar cuando se le solicite una contraseña
+al ejecutar un playbook. Puede anular temporalmente esta configuración desde la línea de
+comandos con la opción --pae.
+La clave mode define el modo de salida para el comando ansible-navigator. El valor para
+esta clave debe establecerse en interactive (predeterminado) o stdout. Puede anular
+temporalmente esta configuración desde la línea de comandos con la opción -m.
+RH294-RHEL9.0-es-3-20240620
+37
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+nota
+Las configuraciones más complejas para el navegador de contenido de
+automatización se tratan en el curso Developing Advanced Automation with Red Hat
+Ansible Automation Platform (DO374). Consulte https://ansible.readthedocs.io/
+projects/navigator/settings/ para obtener más documentación sobre la
+configuración que puede usar en este archivo.
+Comentarios de archivos de configuración
+Tanto el archivo ansible.cfg como ansible-navigator.yml soportan el signo de número
+(#) al comienzo de una línea como carácter de comentario. El numeral al inicio de una línea
+comenta toda la línea.
+Además, el archivo ansible.cfg soporta el punto y coma (;) como carácter de comentario. El
+punto y coma comenta todo hacia la derecha en la línea.
+Referencias
+Páginas del manual: ssh-keygen(1) y ssh-copy-id(1)
+Configuración de Ansible: documentación Ansible
+https://docs.ansible.com/ansible/latest/installation_guide/intro_configuration.html
+Configuración de ansible-navigator: Documentación de Ansible Navigator
+https://ansible.readthedocs.io/projects/navigator/settings/
+38
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Administración de archivos de
+configuración de Ansible
+Editar archivos de configuración de Ansible para personalizar su entorno de Ansible.
+Resultados
+• Usted deberá ser capaz de crear archivos de configuración para configurar su entorno de
+Ansible con parámetros personalizados persistentes.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-manage
+Instrucciones
+ 1.
+Cambie al directorio /home/student/playbook-manage.
+[student@workstation ~]$ cd ~/playbook-manage
+[student@workstation playbook-manage]$
+ 2.
+Configure el navegador de contenido de automatización.
+2.1.
+Cree el archivo /home/student/playbook-manage/ansible-navigator.yml.
+Configure el navegador de contenido de automatización para usar la imagen
+del entorno de ejecución utility.lab.example.com/ee-supported-
+rhel8:latest y solo extraiga la imagen si falta. También configure el navegador de
+contenido de automatización para deshabilitar los artefactos de playbooks. El archivo
+debe contar con el siguiente contenido:
+---
+ansible-navigator:
+  execution-environment:
+    image: utility.lab.example.com/ee-supported-rhel8:latest
+    pull:
+      policy: missing
+  playbook-artifact:
+    enable: false
+2.2.
+Ejecute el comando ansible-navigator images para enumerar las imágenes del
+entorno de ejecución disponibles.
+RH294-RHEL9.0-es-3-20240620
+39
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-manage]$ ansible-navigator images
+----------------------------------------------------------------------------------
+Execution environment image and pull policy overview
+----------------------------------------------------------------------------------
+Execution environment image name:     utility.lab.example.com/ee-supported-
+rhel8:latest
+Execution environment image tag:      latest
+Execution environment pull arguments: None
+Execution environment pull policy:    missing
+Execution environment pull needed:    True
+----------------------------------------------------------------------------------
+Updating the execution environment
+...output omitted...
+Running the command: podman pull utility.lab.example.com/ee-supported-rhel8:latest
+Trying to pull utility.lab.example.com/ee-supported-rhel8:latest...
+...output omitted...
+2.3.
+Después de que el navegador de contenido de automatización extraiga la imagen del
+entorno de ejecución, debería verla en la lista:
+  Image                 Tag     Execution environment    Created      Size
+0│ee-supported-rhel8    latest  True                     3 weeks ago  1.34 GB
+^b/PgUp page up ^f/PgDn page down ↑↓ scroll esc back [0-9] goto :help help
+Presione Esc para salir de la lista de imágenes.
+ 3.
+En su directorio /home/student/playbook-manage, comience la edición de un nuevo
+archivo denominado ansible.cfg.
+Cree una sección [defaults] en ese archivo. En esa sección, agregue una línea que
+use la directiva inventory para especificar el archivo ./inventory como el inventario
+predeterminado.
+[defaults]
+inventory = ./inventory
+Guarde su trabajo y salga del editor de texto.
+ 4.
+En el directorio /home/student/playbook-manage, comience la edición del nuevo
+archivo de inventario estático, inventory.
+El inventario estático debe contener cuatro grupos de hosts:
+• [myself] debe contener el host workstation.lab.example.com.
+• [intranetweb] debe contener el host servera.lab.example.com.
+• [internetweb] debe contener el host serverb.lab.example.com.
+• [web] debe contener los grupos de hosts intranetweb y internetweb.
+4.1.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts myself:
+40
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[myself]
+workstation.lab.example.com
+4.2.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts intranetweb:
+[intranetweb]
+servera.lab.example.com
+4.3.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts internetweb:
+[internetweb]
+serverb.lab.example.com
+4.4.
+En /home/student/playbook-manage/inventory, agregue las siguientes líneas
+para crear el grupo de hosts web:
+[web:children]
+intranetweb
+internetweb
+4.5.
+El archivo inventory final debe contar con el siguiente contenido:
+[myself]
+workstation.lab.example.com
+[intranetweb]
+servera.lab.example.com
+[internetweb]
+serverb.lab.example.com
+[web:children]
+intranetweb
+internetweb
+Guarde su trabajo y salga del editor de texto.
+ 5.
+Use el comando ansible-navigator para ejecutar los playbooks proporcionados y
+probar la configuración de los grupos de hosts de su archivo de inventario.
+El comando ansible-navigator run ejecuta un playbook de Ansible, formateado
+como un archivo YAML, que contiene instrucciones de automatización para ejecutarse en
+hosts gestionados. Los siguientes comandos ansible-navigator usan los archivos de
+configuración que editó en los pasos anteriores.
+Cada uno de los siguientes playbooks ejecuta el módulo ansible.builtin.ping en
+un host o grupo de hosts para determinar si están listos para ser usados como hosts
+gestionados por Ansible. Estas pruebas también validan si su archivo inventory es
+correcto.
+RH294-RHEL9.0-es-3-20240620
+41
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+5.1.
+Ejecute el playbook /home/student/playbook-manage/ping-myself.yml
+para verificar que la máquina workstation.lab.example.com esté en el grupo
+de inventario myself.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-myself.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping myself] ***********************************************************
+ok: [workstation.lab.example.com]
+PLAY RECAP *******************************************************************
+workstation.lab.example.com : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.2.
+Ejecute el playbook /home/student/playbook-manage/ping-
+intranetweb.yml para verificar que la máquina servera.lab.example.com
+esté en el grupo de inventario intranetweb.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-intranetweb.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping intranetweb] ******************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.3.
+Ejecute el playbook /home/student/playbook-manage/ping-
+internetweb.yml para verificar que la máquina serverb.lab.example.com
+esté en el grupo de inventario internetweb.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-internetweb.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping internetweb] ******************************************************
+ok: [serverb.lab.example.com]
+PLAY RECAP *******************************************************************
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.4.
+Ejecute el playbook /home/student/playbook-manage/ping-
+web.yml para verificar que las máquinas servera.lab.example.com y
+serverb.lab.example.com estén en el grupo de inventario web.
+42
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-web.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping web] **************************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.5.
+Ejecute el playbook /home/student/playbook-manage/ping-all.yml
+para verificar que las máquinas workstation.lab.example.com,
+servera.lab.example.com y serverb.lab.example.com estén en el grupo de
+inventario.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-all.yml
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping all] **************************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+ok: [workstation.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation.lab.example.com : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Abra el archivo /home/student/playbook-manage/ansible.cfg en un editor de
+texto. Asegúrese de que los playbooks se conecten con el usuario student de forma
+predeterminada. Agregue una sección [privilege_escalation] para configurar
+Ansible para usar automáticamente el comando sudo a fin de cambiar de student a root
+cuando se ejecuten tareas en los hosts gestionados. Ansible también debería configurarse
+para solicitarle la contraseña que usa student para el comando sudo.
+6.1.
+Especifique que los playbooks deben conectarse con el usuario student de
+manera predeterminada agregando la siguiente directiva remote_user a la sección
+[defaults].
+remote_user = student
+RH294-RHEL9.0-es-3-20240620
+43
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+6.2.
+Agregue la siguiente entrada para crear la sección [privilege_escalation] en el
+archivo de configuración /home/student/playbook-manage/ansible.cfg:
+[privilege_escalation]
+6.3.
+Establezca la directiva become en true para habilitar el aumento de privilegios.
+become = true
+6.4.
+Establezca la directiva become_method en sudo para configurar el aumento de
+privilegios para usar el comando sudo.
+become_method = sudo
+6.5.
+Establezca la directiva become_user en root para configurar el usuario con
+aumento de privilegios.
+become_user = root
+6.6.
+Establezca la directiva become_ask_pass en true para habilitar la solicitud de
+contraseña para el aumento de privilegios.
+become_ask_pass = true
+6.7.
+El archivo ansible.cfg completo debe contar con el siguiente contenido:
+[defaults]
+inventory = ./inventory
+remote_user = student
+[privilege_escalation]
+become = true
+become_method = sudo
+become_user = root
+become_ask_pass = true
+Guarde su trabajo y salga del editor de texto.
+ 7.
+Use el comando ansible-navigator para ejecutar el playbook /home/student/
+playbook-manage/ping-intranetweb.yml nuevamente para verificar que ahora se le
+solicite la contraseña de sudo.
+Cuando se le pida ingresar la contraseña sudo, escriba student.
+[student@workstation playbook-manage]$ ansible-navigator run \
+> -m stdout ping-intranetweb.yml
+BECOME password: student
+PLAY [Validate inventory hosts] **********************************************
+TASK [Ping intranetweb] ******************************************************
+ok: [servera.lab.example.com]
+44
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-manage
+RH294-RHEL9.0-es-3-20240620
+45
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Escritura y ejecución de playbooks
+Objetivos
+• Escribir un playbook de Ansible básico y ejecutarlo con el navegador de contenido de
+automatización.
+Playbooks de Ansible
+El poder de Ansible es que puede usar playbooks para ejecutar varias tareas complejas respecto
+de un conjunto de hosts de destino de una manera fácilmente repetible.
+Una tarea es la aplicación de un módulo para realizar una unidad específica de trabajo. Un play
+es una secuencia de tareas que se aplicarán, en orden, a uno o más hosts seleccionados de su
+inventario. Un playbook es un archivo de texto que contiene una lista de uno o más plays para
+ejecutar en un orden específico.
+Los plays le permiten modificar un conjunto complejo y extenso de tareas administrativas
+manuales en una rutina fácilmente repetible con resultados predecibles y satisfactorios. En
+un playbook, puede guardar la secuencia de tareas en un play de una forma inmediatamente
+ejecutable y legible por el ojo humano. Las tareas en sí, debido a la manera en la que se escriben,
+documentan los pasos necesarios para implementar su aplicación o infraestructura.
+Formato de un playbook de Ansible
+El siguiente ejemplo contiene un play con una sola tarea.
+---
+- name: Configure important user consistently
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Newbie exists with UID 4000
+      ansible.builtin.user:
+        name: newbie
+        uid: 4000
+        state: present
+Un playbook es un archivo de texto escrito en formato YAML y se guarda generalmente con la
+extensión .yml. El playbook usa sangría con caracteres de espacio para indicar la estructura de
+sus datos. YAML no establece requisitos estrictos sobre cuántos espacios se usan para la sangría,
+pero se aplican dos reglas básicas.
+• Los elementos de datos en el mismo nivel en la jerarquía (como ítems en la misma lista) deben
+tener la misma sangría.
+• Los ítems que son elementos secundarios de otro ítem deben tener más sangría que sus
+elementos principales.
+También puede agregar líneas en blanco para la capacidad de lectura.
+46
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Importante
+Solo puede usar caracteres de espacio para la sangría; no use caracteres de
+tabulación.
+Si usa el editor de texto vi, puede aplicar algunos parámetros que pueden facilitar
+la edición de sus playbooks. Por ejemplo, puede agregar la siguiente línea a su
+archivo $HOME/.vimrc y, cuando vi detecta que usted está editando un archivo
+YAML, realiza una sangría de dos espacios cuando presiona la tecla Tab y realiza
+una sangría automática de las líneas posteriores.
+autocmd FileType yaml setlocal ai ts=2 sw=2 et
+El playbook comienza con una línea que consiste en tres guiones (---) para marcar el inicio
+de documento. También puede finalizar con tres puntos (...) como para indicar el fin del
+documento, si bien en la práctica por lo general se omite.
+Entre estos marcadores, el playbook se define como una lista de plays. Un ítem en una lista YAML
+comienza con un solo guion seguido de un espacio. Por ejemplo, una lista YAML puede verse de la
+siguiente manera:
+- apple
+- orange
+- grape
+En el ejemplo del playbook anterior, la línea después de --- comienza con un guion e inicia el
+primer (y único) play en la lista de plays.
+Cada play en sí es una recopilación de pares de clave-valor. Las claves en el mismo play deben
+tener la misma sangría. En el siguiente ejemplo se muestra un fragmento de código YAML con
+tres claves. Las primeras dos claves tienen valores simples. La tercera tiene una lista de tres ítems
+como valor.
+  name: just an example
+  hosts: webservers
+  tasks:
+    - first
+    - second
+    - third
+El play de ejemplo inicial tiene tres claves: name, hosts y tasks. Todas estas claves tienen la
+misma sangría.
+La primera línea del play de ejemplo comienza con un guion y un espacio (que indican que el
+play es el primer ítem de una lista); luego, sigue la primera clave, name. La clave name asocia una
+cadena arbitraria con el play como una etiqueta que identifica el propósito del play. La clave name
+es opcional, pero se recomienda, ya que ayuda a documentar su playbook. Esto es especialmente
+útil cuando un playbook contiene múltiples plays.
+- name: Configure important user consistently
+RH294-RHEL9.0-es-3-20240620
+47
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+La segunda clave en el play es una clave hosts, que especifica los hosts respecto de los cuales se
+deben ejecutar las tareas del play. La clave hosts toma un patrón de host como valor, como los
+nombres de los hosts gestionados o grupos en el inventario.
+  hosts: servera.lab.example.com
+Finalmente, la última clave en el play es tasks, cuyo valor especifica una lista de tareas
+para ejecutar para este play. Este ejemplo tiene una sola tarea que ejecuta el módulo
+ansible.builtin.user con argumentos específicos (para garantizar que el usuario newbie
+exista y tenga una UID de 4000).
+  tasks:
+    - name: newbie exists with UID 4000
+      ansible.builtin.user:
+        name: newbie
+        uid: 4000
+        state: present
+La clave tasks es la parte del play que detalla realmente, en orden, las tareas que se ejecutarán
+en los hosts gestionados. Cada tarea en la lista es en sí una recopilación de pares de clave-valor.
+En este ejemplo, la única tarea en el play tiene dos claves:
+• name es una etiqueta opcional que documenta el propósito de la tarea. Es una buena idea
+asignarles nombres a todas sus tareas para poder documentar el propósito de cada paso del
+proceso de automatización.
+• ansible.builtin.user es el módulo que se ejecutará para esta tarea. Sus argumentos
+se pasan como una recopilación de pares de clave-valor, que son elementos secundarios del
+módulo (name, uid y state).
+A continuación, se incluye otro ejemplo de una clave tasks con varias tareas, que usan el módulo
+ansible.builtin.service para garantizar que un servicio deba iniciarse en el arranque:
+  tasks:
+    - name: Web server is enabled
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+    - name: NTP server is enabled
+      ansible.builtin.service:
+        name: chronyd
+        enabled: true
+    - name: Postfix is enabled
+      ansible.builtin.service:
+        name: postfix
+        enabled: true
+48
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Importante
+El orden en el que se muestran los plays y tareas en un playbook es importante, ya
+que Ansible los ejecuta en el mismo orden.
+Búsqueda de módulos para tareas
+Los módulos son las herramientas que los plays usan para realizar tareas. Se han escrito cientos
+de módulos que hacen cosas diferentes. En general, puede buscar un módulo probado, con
+un propósito especial, que realice lo que necesita como parte del entorno de ejecución de
+automatización predeterminado.
+Ansible Core 2.11 y versiones posteriores empaquetan los módulos que usa para las tareas en
+conjuntos denominados Ansible Content Collections. Cada colección de contenido de Ansible
+contiene una selección de contenido relacionado de Ansible, incluidos módulos y documentación.
+El paquete ansible-core proporciona una única colección de Ansible Content Collection
+denominada ansible.builtin. Estos módulos están siempre disponibles para usted. Visite
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ para obtener una lista de los
+módulos incluidos en la colección ansible.builtin.
+Además, el entorno de ejecución de automatización predeterminado usado por ansible-
+navigator en Red Hat Ansible Automation Platform 2.2, ee-supported-rhel8, incluye varias
+otras Ansible Content Collections.
+Puede explorar estas colecciones ejecutando el comando ansible-navigator collections.
+En la interfaz de usuario interactiva, puede escribir dos puntos (:) seguidos del número de línea
+de una colección para obtener más información sobre ella, incluida la lista de módulos y otro
+contenido de Ansible que proporciona. Puede hacer lo mismo con el número de línea de un
+módulo para obtener documentación sobre ese módulo. Presione Esc para volver a la lista
+anterior.
+nota
+También puede descargar Ansible Content Collections adicionales desde varios
+lugares, que incluyen:
+• El centro de automatización que se ofrece a través de Red Hat Hybrid Cloud
+Console en https://console.redhat.com/ansible/automation-hub
+• Un centro de automatización privado gestionado por su organización
+• El sitio web de Ansible Galaxy de la comunidad en https://galaxy.ansible.com
+Estos se pueden instalar en el directorio collections de su proyecto Ansible.
+Red Hat no brinda soporte formal para Ansible Content Collections de la
+comunidad, solo para Ansible Content Collections certificadas por Red Hat.
+Los módulos se nombran con nombres de colección completamente calificados (FQCN). Esto
+permite que se use el mismo nombre para diferentes módulos en dos Ansible Content Collections
+sin generar conflictos. Por ejemplo, el módulo copy proporcionado por Ansible Content Collection
+ansible.builtin tiene ansible.builtin.copy como su FQCN.
+RH294-RHEL9.0-es-3-20240620
+49
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Importante
+En versiones anteriores de Ansible, los módulos tenían que incluirse con Ansible y
+se nombraban solo con su nombre corto, por ejemplo, el módulo copy. Ansible aún
+puede intentar resolver nombres cortos si sus playbooks los usan. Sin embargo, para
+evitar errores, es una buena práctica usar FQCN en nuevos playbooks.
+La mayoría de los módulos son idempotentes, lo que significa que pueden ejecutarse de forma
+segura varias veces, y si el sistema ya tiene el estado correcto, no hacen nada. Por ejemplo, si
+ejecuta el play del ejemplo anterior por segunda vez, no debería informar cambios.
+Ejecución de playbooks
+El comando ansible-navigator run se usa para ejecutar playbooks. El comando se ejecuta
+en el nodo de control y el nombre del playbook que debe ejecutarse se pasa como un argumento.
+La ejecución del comando ansible-navigator run con la opción -m stdout imprime
+la salida de la ejecución del playbook en la salida estándar. Si no se proporciona la opción -m
+stdout, ansible-navigator se ejecuta en modo interactivo. El modo interactivo se trata en el
+curso DO374: Desarrollo de automatización avanzada con Red Hat Ansible Automation Platform.
+[user@controlnode ~]$ ansible-navigator run \
+> -m stdout site.yml
+Cuando ejecuta el playbook, se genera la salida para mostrar el play y las tareas que se están
+ejecutando. En la salida, también se reportan los resultados de cada tarea ejecutada.
+En el siguiente ejemplo se muestra el contenido de un playbook simple y, luego, el resultado de su
+ejecución.
+[user@controlnode playdemo]$ cat webserver.yml
+---
+- name: Play to set up web server
+  hosts: servera.lab.example.com
+  tasks:
+  - name: Latest httpd version installed
+    ansible.builtin.dnf:
+      name: httpd
+      state: latest
+...output omitted...
+[user@controlnode playdemo]$ ansible-navigator run \
+> -m stdout webserver.yml
+PLAY [Play to set up web server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Latest httpd version installed] ******************************************
+changed: [servera.lab.example.com]
+50
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0  
+ skipped=0    rescued=0    ignored=0
+El valor de la clave name establecido para cada uno de sus plays y tareas se visualiza cuando
+se ejecuta el playbook. (La tarea Gathering Facts es una tarea especial que el módulo
+ansible.builtin.setup en general ejecuta de forma automática al inicio de un play. Esto
+se analizará más adelante en el curso). En el caso de los playbooks con varios plays y tareas,
+establecer los atributos name facilita el monitoreo del progreso de la ejecución de un playbook.
+También debería ver que la tarea Latest httpd version installed es changed para
+servera.lab.example.com. Esto significa que la tarea modificó algo en ese host para
+garantizar que se cumpla su especificación. En este caso, significa que el paquete httpd
+probablemente no se instaló o no era la versión más reciente.
+En general, las tareas en los playbooks de Ansible son idempotentes y es seguro ejecutar un
+playbook varias veces. Si los hosts gestionados de destino ya tienen el estado correcto, no se
+deberían realizar cambios. Por ejemplo, supongamos que el playbook del ejemplo anterior se
+ejecuta nuevamente:
+[user@controlnode playdemo]$ ansible-navigator run \
+> -m stdout webserver.yml
+PLAY [Play to set up web server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Latest httpd version installed] ******************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0  
+ skipped=0    rescued=0    ignored=0
+Esta vez, todas las tareas pasaron con el estado ok y no se informaron cambios.
+nota
+Ansible comunitario proporciona una herramienta anterior llamada ansible-
+playbook que toma muchas de las mismas opciones que ansible-navigator
+run -m stdout y que usa su nodo de control como entorno de ejecución.
+No puede usar entornos de ejecución de automatización y solo es compatible con
+Red Hat en Red Hat Enterprise Linux 9 para casos de uso limitados.
+Aumento de detalles de la salida
+La salida por defecto proporcionada por el comando ansible-navigator run no proporciona
+información detallada sobre la ejecución de la tarea. La opción -v aporta información adicional,
+con hasta cuatro niveles.
+RH294-RHEL9.0-es-3-20240620
+51
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Configuración de detalles de la salida de la ejecución del playbook
+Opción
+Descripción
+-v
+Muestra los resultados de la tarea.
+-vv
+Muestra tanto los resultados de la tarea como la configuración de
+la tarea.
+-vvv
+Muestra información adicional acerca de las conexiones a los hosts
+gestionados.
+-vvvv
+Agrega opciones de detalle adicionales a los complementos
+(plug-ins) de conexión, incluidos los usuarios que se usan en los
+hosts gestionados para ejecutar scripts, y los scripts que fueron
+ejecutados.
+Verificación de la sintaxis
+Antes de ejecutar un playbook, es recomendable validar su sintaxis. Puede usar el comando
+ansible-navigator run --syntax-check para validar la sintaxis de un playbook. En el
+siguiente ejemplo se muestra la validación correcta de la sintaxis de un playbook.
+[user@controlnode playdemo]$ ansible-navigator run \
+> -m stdout webserver.yml --syntax-check
+playbook: /home/user/playdemo/webserver.yml
+Cuando falla la validación de la sintaxis, se reporta un error de sintaxis. La salida también incluye la
+ubicación aproximada del problema de sintaxis en el playbook. En el siguiente ejemplo se muestra
+la validación de sintaxis fallida de un playbook en donde falta el separador de espacio después del
+atributo name para el play.
+[user@controlnode playdemo]$ ansible-navigator run \
+> -m stdout webserver.yml --syntax-check
+ERROR! Syntax Error while loading YAML.
+  mapping values are not allowed in this context
+The error appears to have been in ...output omitted... line 3, column 8, but may
+be elsewhere in the file depending on the exact syntax problem.
+The offending line appears to be:
+- name:Play to set up web server
+  hosts: servera.lab.example.com
+       ^ here
+Ejecución de un simulacro
+Puede usar la opción --check para ejecutar un playbook en modo de verificación, que realiza un
+"simulacro" del playbook. Esto hace que Ansible reporte los cambios que habrían ocurrido si se
+hubiese ejecutado el playbook, aunque no realiza ningún cambio real a los hosts gestionados.
+52
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+En el siguiente ejemplo se muestra el simulacro de un playbook que contiene una única tarea para
+garantizar que la última versión del paquete httpd esté instalada en un host gestionado. En este
+caso, el simulacro informa que la tarea realizaría un cambio en el host gestionado.
+[user@controlnode playdemo]$ ansible-navigator run \
+> -m stdout webserver.yml --check
+PLAY [Play to set up web server] ***********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Latest httpd version installed] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Referencias
+Introducción a los playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
+Trabajo con playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks.html
+Validación de tareas: modo check y modo diff; documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_checkmode.html
+RH294-RHEL9.0-es-3-20240620
+53
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Escritura y ejecución de playbooks
+Escribir y ejecutar un playbook de Ansible.
+Resultados
+• Usted deberá ser capaz de escribir un playbook con una sintaxis YAML básica y una
+estructura de playbook de Ansible, y ejecutarlo correctamente con el comando ansible-
+navigator run.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-basic
+Instrucciones
+El directorio del proyecto Ansible /home/student/playbook-basic se ha creado en la
+máquina workstation para este ejercicio. Este directorio ya tiene un archivo de configuración
+ansible.cfg. También tiene un archivo de inventario denominado inventory que
+define un grupo web, que incluye los hosts gestionados serverc.lab.example.com y
+serverd.lab.example.com como miembros.
+En este ejercicio, crea un playbook denominado site.yml en el directorio del proyecto. Este
+playbook contiene un play, que se destina a miembros del grupo de hosts web. El playbook usa
+tareas para garantizar que se cumplan las siguientes condiciones en los hosts gestionados:
+• El paquete httpd está presente, con el módulo ansible.builtin.dnf.
+• El archivo files/index.html local se copia en /var/www/html/index.html en cada host
+gestionado, con el módulo ansible.builtin.copy.
+• El servicio httpd se inicia y se habilita con el módulo ansible.builtin.service.
+Puede usar el comando ansible-navigator doc para poder entender las palabras clave
+necesarias para cada uno de los módulos.
+Después de que se escriba el playbook, valide su sintaxis y, luego, use el comando ansible-
+navigator run para ejecutar el playbook a fin de implementar la configuración.
+ 1.
+Cambie al directorio /home/student/playbook-basic.
+[student@workstation ~]$ cd ~/playbook-basic
+[student@workstation playbook-basic]$
+54
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+ 2.
+Cree un nuevo playbook denominado /home/student/playbook-basic/site.yml.
+Comience a escribir un play que destine los hosts en el grupo de hosts web.
+2.1.
+Cree y abra ~/playbook-basic/site.yml. La primera línea del archivo deberían
+ser tres guiones para indicar el inicio del playbook.
+---
+2.2.
+La siguiente línea inicia el play. Debe iniciar con un guion y un espacio antes de la
+primera palabra clave en el play. Asígnele al play el nombre de una cadena arbitraria
+que documente el propósito del play, con la palabra clave name.
+---
+- name: Install and start Apache HTTPD
+2.3.
+Agregue un par palabra clave-valor hosts para especificar que el play se ejecute
+en hosts en el grupo de hosts web del inventario. Asegúrese de que la palabra clave
+hosts tenga una sangría de dos espacios para que se alinee con la palabra clave
+name en la línea anterior.
+El archivo site.yml completo debe contar con el siguiente contenido:
+---
+- name: Install and start Apache HTTPD
+  hosts: web
+ 3.
+Continúe editando el archivo /home/student/playbook-basic/site.yml y
+agregue una palabra clave tasks y las tres tareas para su play que se especificaron en las
+instrucciones.
+3.1.
+Agregue una palabra clave tasks con una sangría de dos espacios (alineada con la
+palabra clave hosts) para iniciar la lista de tareas. El archivo ahora debe contar con el
+siguiente contenido:
+---
+- name: Install and start Apache HTTPD
+  hosts: web
+  tasks:
+3.2.
+Agregue la primera tarea. Aplique una sangría de cuatro espacios e inicie la tarea con
+un guion y un espacio; luego, asigne un nombre a la tarea, como Ensure httpd
+package is present. Use el módulo ansible.builtin.dnf para esta tarea.
+Agregue una sangría de dos espacios más a las palabras clave del módulo; configure
+el nombre del paquete en httpd y el estado del paquete en present. La tarea debe
+contar con el siguiente contenido:
+    - name: Ensure httpd package is present
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+3.3.
+Agregue la segunda tarea. Haga coincidir el formato de la tarea anterior y asígnele
+un nombre a la tarea, como Correct index.html is present. Use el módulo
+RH294-RHEL9.0-es-3-20240620
+55
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+ansible.builtin.copy. Configure las palabras clave del módulo para establecer
+la clave src en files/index.html y la clave dest en /var/www/html/
+index.html. La tarea debe contar con el siguiente contenido:
+    - name: Correct index.html is present
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+3.4.
+Agregue una tercera tarea para iniciar y habilitar el servicio httpd. Haga coincidir
+el formato de las dos tareas anteriores y asígnele un nombre a la nueva tarea, como
+Ensure httpd is started. Use el módulo ansible.builtin.service
+para esta tarea. Establezca la clave name del servicio en httpd, la clave state
+en started y la clave enabled en true. La tarea debe contar con el siguiente
+contenido:
+    - name: Ensure httpd is started
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+3.5.
+Su playbook de Ansible site.yml completo debe coincidir con el siguiente ejemplo.
+Asegúrese de que la sangría de las palabras clave de su play, la lista de tareas y las
+palabras clave de cada tarea sean todas correctas.
+---
+- name: Install and start Apache HTTPD
+  hosts: web
+  tasks:
+    - name: Ensure httpd package is present
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+    - name: Correct index.html is present
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+    - name: Ensure httpd is started
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+Guarde el archivo y salga.
+ 4.
+Antes de ejecutar el playbook, ejecute el comando ansible-navigator run --
+syntax-check para validar su sintaxis. Corrija cualquier error antes de continuar. Debe ver
+una salida similar a la siguiente:
+56
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-basic]$ ansible-navigator run \
+> -m stdout site.yml --syntax-check
+playbook: /home/student/playbook-basic/site.yml
+ 5.
+Ejecute su playbook. Lea la salida generada para garantizar que todas las tareas se hayan
+completado satisfactoriamente.
+[student@workstation playbook-basic]$ ansible-navigator run \
+> -m stdout site.yml
+PLAY [Install and start Apache HTTPD] ******************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+TASK [Ensure httpd package is present]
+ ************************************************
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [Correct index.html is present] *******************************************
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [Ensure httpd is started]
+ ********************************************************
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+PLAY RECAP *********************************************************************
+serverc.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverd.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Si todo fue bien, usted deberá ser capaz de ejecutar el playbook por segunda vez y ver
+todas las tareas completas sin cambios en los hosts gestionados.
+[student@workstation playbook-basic]$ ansible-navigator run \
+> -m stdout site.yml
+PLAY [Install and start Apache HTTPD] ******************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+TASK [Ensure httpd package is present]
+ ************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+57
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+TASK [Correct index.html is present] *******************************************
+ok: [serverc.lab.example.com]
+ok: [serverd.lab.example.com]
+TASK [Ensure httpd is started]
+ ********************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+PLAY RECAP *********************************************************************
+serverc.lab.example.com    : ok=4    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverd.lab.example.com    : ok=4    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 7.
+Use el comando curl para verificar que serverc.lab.example.com y
+serverd.lab.example.com se hayan configurado como un servidor HTTPD.
+[student@workstation playbook-basic]$ curl serverc.lab.example.com
+This is a test page.
+[student@workstation playbook-basic]$ curl serverd.lab.example.com
+This is a test page.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-basic
+58
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Implementación de varios plays
+Objetivos
+• Escribir un playbook que use múltiples plays con aumento de privilegios por play y aprovechar
+eficazmente el navegador de contenido de automatización para encontrar nuevos módulos en
+Ansible Content Collections disponibles a fin de implementar tareas para un play.
+Escritura de varios plays
+Un playbook es un archivo YAML que contiene una lista de uno o más plays. Recuerde que un solo
+play es una lista ordenada de tareas para ejecutar respecto de hosts seleccionados del inventario.
+Por lo tanto, si un playbook contiene varios plays, cada play podría aplicar sus tareas a un conjunto
+de hosts diferente.
+Esto puede ser muy útil cuando se organiza una implementación compleja que puede involucrar
+diferentes tareas en diferentes hosts. Puede escribir un playbook que ejecute un play respecto de
+un conjunto de hosts y que, cuando este finaliza, ejecute otro play respecto de otro conjunto de
+hosts.
+Escribir un playbook que contenga varios plays es muy sencillo. Cada play en el playbook se
+escribe como un ítem de lista de nivel superior en el playbook. Cada play es un ítem de una lista
+que contiene las palabras clave de plays habituales.
+En el siguiente ejemplo se muestra un playbook simple con dos plays. El primer play se ejecuta
+respecto de web.example.com y el segunda, respecto de database.example.com.
+---
+# This is a simple playbook with two plays
+- name: First play
+  hosts: web.example.com
+  tasks:
+    - name: First task
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+    - name: Second task
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+- name: Second play
+  hosts: database.example.com
+  tasks:
+    - name: First task
+      ansible.builtin.service:
+        name: mariadb
+        enabled: true
+RH294-RHEL9.0-es-3-20240620
+59
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Usuarios remotos y aumento de privilegios en los plays
+Los plays pueden usar usuarios remotos o parámetros de aumento de privilegios diferentes a
+aquellos especificados por los valores predeterminados en el archivo de configuración. Puede
+anular esta configuración en el play en sí en el mismo nivel que las palabras clave hosts o tasks.
+Atributos de usuario
+Las tareas en playbooks se ejecutan generalmente a través de una conexión de red en los hosts
+gestionados. Ansible tiene que conectarse a cada host gestionado como algún usuario para
+ejecutar esas tareas.
+De forma predeterminada, si usa ansible-navigator run para ejecutar un playbook, Ansible
+se conecta al host gestionado como el usuario actual dentro del entorno de ejecución de la
+automatización, root.
+nota
+Si ejecuta un comando de Ansible que no usa entornos de ejecución, como
+ansible-playbook, Ansible intentará de forma predeterminada autenticarse
+en el host gestionado remoto con el nombre de usuario de la cuenta que usó para
+ejecutar el comando.
+Puede establecer una directiva remote_user en el archivo ansible.cfg de su proyecto para
+configurar Ansible para usar una cuenta de usuario diferente en los hosts gestionados cuando
+inicie sesión inicialmente. Si aún necesita que las tareas se ejecuten como root, puede usar el
+aumento de privilegios para cambiar a ese usuario después de la conexión remota inicial.
+Sin embargo, también puede especificar el usuario remoto que Ansible usa para cada play.
+Si el usuario remoto definido en la configuración Ansible para la ejecución de las tareas no es
+adecuado, se lo puede sobrescribir usando la palabra clave remote_user dentro de un play.
+remote_user: remoteuser
+Importante
+Ansible determina qué cuenta de usuario usar cuando se conecta a un host
+gestionado según la siguiente lista, seleccionando el primer nombre de usuario que
+encuentra en este orden:
+• La variable ansible_user establecida para el host o el grupo, si está
+configurada.
+• El remote_user del play actual, si está configurado.
+• El remote_user del archivo de configuración ansible.cfg, si está
+configurado.
+Si no se ha establecido ningún valor para ninguna de las configuraciones anteriores
+y está ejecutando playbooks usando ansible-navigator con un entorno de
+ejecución, Ansible usa root. (Si usa ansible-playbook, Ansible usa el nombre
+del usuario que ejecutó el comando).
+60
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Atributos de aumento de privilegios
+También puede configurar el aumento de privilegios en un play. Use la palabra clave booleana
+become para habilitar o deshabilitar el aumento de privilegios para un play o tarea individual. Esto
+anula la configuración en el archivo de configuración ansible.cfg. Puede seleccionar yes o
+true para habilitar el aumento de privilegios, o no o false para deshabilitarlo.
+become: true
+Si se habilita el aumento de privilegios, use la palabra clave become_method en el play para
+especificar el método de aumento de privilegios para usar para ese play. El siguiente ejemplo
+especifica que se use sudo como el método de aumento de privilegios.
+become_method: sudo
+Asimismo, con el aumento de privilegios habilitado, puede usar la palabra clave become_user en
+el play para definir la cuenta del usuario que debe usarse para el aumento de privilegios en ese
+play específico.
+become_user: privileged_user
+En el siguiente ejemplo se demuestran algunas de estas palabras clave en un play:
+- name: /etc/hosts is up-to-date
+  hosts: datacenter-west
+  remote_user: automation
+  become: true
+  tasks:
+    - name: server.example.com in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: '192.0.2.42 server.example.com server'
+        state: present
+Selección de módulos
+La gran cantidad de módulos incluidos con Ansible brinda a los administradores muchas
+herramientas para tareas administrativas comunes.
+En la siguiente tabla, se enumera un pequeño número de ejemplos de módulos útiles. Existen
+muchos otros.
+RH294-RHEL9.0-es-3-20240620
+61
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Módulos de Ansible
+Categoría
+Los módulos
+Archivos
+• ansible.builtin.copy: copiar un archivo local en el host gestionado.
+• ansible.builtin.file: establecer permisos y otras propiedades de
+archivos.
+• ansible.builtin.lineinfile: garantizar que una línea particular
+esté o no esté en un archivo.
+• ansible.posix.synchronize: sincronizar contenido usando rsync.
+Software
+• ansible.builtin.package: administrar los paquetes usando el
+gestor de paquetes detectado automáticamente nativo del sistema
+operativo.
+• ansible.builtin.dnf: administrar paquetes usando el administrador
+de paquetes DNF.
+• ansible.builtin.apt: administrar paquetes usando el administrador
+de paquetes APT.
+• ansible.builtin.pip: administrar paquetes de Python desde PyPI.
+Sistema
+• ansible.posix.firewalld: administrar puertos y servicios arbitrarios
+con firewalld.
+• ansible.builtin.reboot: reiniciar una máquina.
+• ansible.builtin.service: administrar servicios.
+• ansible.builtin.user: agregar, eliminar y administrar cuentas de
+usuario.
+Herramientas de
+red
+• ansible.builtin.get_url: descargar archivos por HTTP, HTTPS o
+FTP.
+• ansible.builtin.uri: interactuar con servicios web.
+Documentación de módulos
+Para ver una lista de los módulos disponibles en su entorno de ejecución de automatización actual,
+ejecute el comando ansible-navigator doc -l. Esto muestra una lista de nombres de
+módulos y una sinopsis de sus funciones.
+[user@controlnode ~]$ ansible-navigator doc -l
+add_host                                                Add a host (and alt...
+amazon.aws.aws_az_facts                                 Gather information ...
+amazon.aws.aws_az_info                                  Gather information ...
+amazon.aws.aws_caller_info                              Get information abo...
+amazon.aws.aws_s3                                       manage objects in S...
+...output omitted...
+vyos.vyos.vyos_user                                     Manage the collecti...
+vyos.vyos.vyos_vlan                                     Manage VLANs on VyO...
+wait_for                                                Waits for a conditi...
+62
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+wait_for_connection                                     Waits until remote ...
+yum                                                     Manages packages wi...
+yum_repository                                          Add or remove YUM r...
+Importante
+El comando ansible-navigator doc -l muestra los nombres cortos de los
+módulos en Ansible Content Collection ansible.builtin en lugar de sus FQCN.
+Use el comando ansible-navigator doc module_name para mostrar documentación
+detallada de un módulo. Si especifica la opción -m stdout, la documentación formateada se
+muestra en su terminal. Si no especifica esa opción, dejando ansible-navigator en modo
+interactivo, puede desplazarse por la documentación en formato YAML.
+Como alternativa, puede ejecutar el comando ansible-navigator collections en
+modo interactivo y explorar la documentación de las colecciones en el entorno de ejecución de
+automatización actual y sus módulos.
+La documentación del módulo incluye una descripción de para qué es el módulo, una lista de los
+atributos que puede usar para controlar el módulo en una tarea, ejemplos de cómo usar el módulo
+y otros metadatos.
+También puede ver un resumen de todos los atributos que puede usar con un módulo ejecutando
+el comando ansible-navigator -s doc module_name. Esta salida puede servir como
+plantilla de inicio, la cual se puede incluir en un playbook para implementar el módulo para la
+ejecución de la tarea. Los comentarios se incluyen en la salida para explicar cómo usar cada
+atributo.
+nota
+Si está usando el comando ansible-playbook provisto con soporte limitado
+en Red Hat Enterprise Linux, o desde Ansible comunitario, usa su nodo de control
+como un entorno de ejecución. En ese caso, puede usar un comando ansible-
+doc para ver la documentación de los módulos instalados en el nodo de control, que
+funciona con las mismas opciones que ansible-navigator doc.
+Sin embargo, el comando ansible-doc en su nodo de control no se puede usar
+para inspeccionar la documentación de un entorno de ejecución de automatización
+que está usando ansible-navigator.
+Ejecución de comandos arbitrarios en hosts gestionados
+Si no existe un módulo para automatizar alguna tarea, hay módulos especiales disponibles que
+pueden ejecutar comandos arbitrarios en sus hosts gestionados.
+El módulo ansible.builtin.command es el más simple de estos comandos. Su argumento cmd
+especifica el comando que desea ejecutar.
+La siguiente tarea de ejemplo ejecuta /opt/bin/makedb.sh en hosts gestionados.
+- name: Run the /opt/bin/makedb.sh command
+  ansible.builtin.command:
+    cmd: /opt/bin/makedb.sh
+RH294-RHEL9.0-es-3-20240620
+63
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+A diferencia de la mayoría de los módulos, ansible.builtin.command no es idempotente.
+Cada vez que se especifica la tarea en un play, se ejecuta e informa que cambió algo en el host
+gestionado, incluso si no es necesario cambiar nada.
+Puede intentar que la tarea sea más segura configurándola para que se ejecute solo en función
+de la existencia de un archivo. La opción creates hace que la tarea se ejecute solo si falta un
+archivo; la suposición es que si la tarea se ejecuta, crea ese archivo. La opción removes hace que
+la tarea se ejecute solo si hay un archivo; la suposición es que, si la tarea se ejecuta, elimina ese
+archivo.
+Por ejemplo, la siguiente tarea solo se ejecuta si /opt/db/database.db no está presente:
+- name: Initialize the database
+  ansible.builtin.command:
+    cmd: /opt/bin/makedb.sh
+    creates: /opt/db/database.db
+El módulo ansible.builtin.command no puede acceder a las variables del entorno de la
+shell ni realizar operaciones de la shell, como redirección de entrada/salida o pipelines. Cuando
+necesite realizar un procesamiento de shell, puede usar el módulo ansible.builtin.shell.
+Al igual que el módulo ansible.builtin.command, pase los comandos que se deben ejecutar
+como argumentos al módulo.
+Ambos módulos ansible.builtin.command y ansible.builtin.shell requieren una
+instalación Python de trabajo en el host gestionado. Un tercer módulo, ansible.builtin.raw,
+puede ejecutar comandos directamente con la shell remota y eludir el subsistema del módulo.
+Esto es útil cuando administra sistemas que no pueden tener Python instalado (por ejemplo, un
+enrutador de red). También puede usarse para instalar Python en un host gestionado.
+Importante
+De ser posible, intente evitar los módulos ansible.builtin.command,
+ansible.builtin.shell y ansible.builtin.raw en los playbooks, por más
+simple que parezca su uso. Debido a que estos adoptan comandos arbitrarios en los
+hosts gestionados, es muy fácil programar playbooks no idempotentes con estos
+módulos.
+Si no necesita usarlos, probablemente sea mejor usar el módulo
+ansible.builtin.command primero, y recurrir a los módulos
+ansible.builtin.shell o ansible.builtin.raw solo si necesita sus
+características especiales.
+Otro ejemplo sería la siguiente tarea que usa el módulo ansible.builtin.shell que no es
+idempotente. Cada vez que se ejecuta el play, reescribe /etc/resolv.conf aunque ya conste
+de la línea nameserver 192.0.2.1. Una tarea que no es idempotente muestra el estado
+changed cada vez que se ejecuta la tarea.
+- name: Non-idempotent approach with shell module
+  ansible.builtin.shell:
+    cmd: echo "nameserver 192.0.2.1" > /etc/resolv.conf
+Puede crear tareas idempotentes de varias maneras con el módulo ansible.builtin.shell
+y, algunas veces, realizar estas modificaciones y usar ansible.builtin.shell es el mejor
+64
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+enfoque. Pero en este caso, una mejor solución sería usar ansible-navigator doc para
+descubrir el módulo ansible.builtin.copy y usarlo para obtener el efecto deseado.
+El siguiente ejemplo no reescribe el archivo /etc/resolv.conf si ya consta del contenido
+correcto:
+- name: Idempotent approach with copy module
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: "nameserver 192.0.2.1\n"
+El módulo ansible.builtin.copy comprueba si ya se alcanzó el estado y, de ser así, no
+realiza cambios. El módulo ansible.builtin.shell permite mucha flexibilidad, pero también
+requiere de más atención para garantizar que se ejecute con idempotencia.
+Puede ejecutar los playbooks idempotentes de manera repetida para garantizar que los sistemas
+se encuentren en un estado particular sin interrumpir esos sistemas si ya lo están.
+Sintaxis de YAML
+La última parte de este capítulo investiga algunas variaciones de la sintaxis del playbook de
+Ansible o YAML que puede encontrar.
+Comentarios en YAML
+Los comentarios también se pueden usar para asistir a la capacidad de lectura. En YAML, todo lo
+que está a la derecha del símbolo numérico (#) es un comentario. Si hay contenido a la izquierda
+del comentario, coloque un espacio delante del numeral.
+# This is a YAML comment
+some data # This is also a YAML comment
+Cadenas en YAML
+Por lo general, no es necesario colocar entre comillas las cadenas en YAML, inclusive si la cadena
+no contiene espacios. Puede incluir cadenas entre comillas dobles o comillas simples.
+this is a string
+'this is another string'
+"this is yet another a string"
+Puede escribir cadenas de varias líneas de dos formas. Puede usar el carácter de barra vertical (|)
+para denotar que deben preservarse los caracteres de nueva línea dentro de una cadena.
+RH294-RHEL9.0-es-3-20240620
+65
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+include_newlines: |
+        Example Company
+        123 Main Street
+        Atlanta, GA 30303
+También puede escribir cadenas de líneas múltiples usando el carácter mayor que (>) para indicar
+que los caracteres de nueva línea se deben convertir a espacios y que se deben quitar los espacios
+en blanco en las líneas. A menudo, este método se usa para dividir cadenas extensas en caracteres
+de espacio a fin de que puedan abarcar múltiples líneas para una mejor capacidad de lectura.
+fold_newlines: >
+        This is an example
+        of a long string,
+        that will become
+        a single sentence once folded.
+Diccionarios en YAML
+Hemos visto recopilaciones de pares de clave-valor escritos como un bloque con sangría, de la
+siguiente manera:
+  name: svcrole
+  svcservice: httpd
+  svcport: 80
+Los diccionarios también pueden escribirse en un formato de bloque en línea entre llaves, de la
+siguiente manera:
+  {name: svcrole, svcservice: httpd, svcport: 80}
+Evite el formato de bloque en línea, ya que es difícil de leer. Sin embargo, existe al menos una
+situación en la que se usa más comúnmente. Más adelante en este curso hablaremos sobre el
+uso de roles. Cuando un playbook incluye una lista de roles, es más común usar esta sintaxis para
+facilitar la distinción de los roles que se incluyen en un play de las variables que se pasan a un rol.
+Listas en YAML
+También hemos visto listas escritas con la sintaxis normal de un solo guion:
+  hosts:
+    - servera
+    - serverb
+    - serverc
+Las listas también tienen un formato en línea entre corchetes que se ve de la siguiente manera:
+hosts: [servera, serverb, serverc]
+Debe evitar esta sintaxis porque generalmente es más difícil de leer.
+66
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Abreviatura de playbook obsoleto
+Algunos playbooks pueden usar un método de abreviatura anterior para definir tareas y ponen
+los pares de clave-valor para el módulo en la misma línea que el nombre del módulo. Por ejemplo,
+puede ver esta sintaxis:
+  tasks:
+    - name: Shorthand form
+      ansible.builtin.service: name=httpd enabled=true state=started
+En general, escribiría la misma tarea de la siguiente manera:
+  tasks:
+    - name: Normal form
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+En general, debe evitar la forma de abreviatura y usar la forma normal.
+La forma normal tiene más líneas, pero es más fácil para trabajar. Las palabras clave de la tarea se
+apilan verticalmente y son más fáciles de diferenciar. Sus ojos pueden recorrer el play hacia abajo
+con menos movimiento de izquierda a derecha, facilitando la lectura.
+Además, la sintaxis normal es YAML nativa, mientras que la abreviatura no lo es. Las herramientas
+de resaltado de sintaxis en editores de texto pueden ayudarlo de manera más efectiva si usa el
+formato normal en lugar del formato abreviado.
+Puede encontrar esta sintaxis en documentación y playbooks anteriores de otras personas y la
+sintaxis aún funciona.
+Referencias
+Introducción a los playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
+Trabajo con playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks.html
+Soporte y mantenimiento de módulos: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/modules_support.html
+Agregar módulos y complementos localmente: documentación de Ansible
+https://docs.ansible.com/ansible/latest/dev_guide/developing_locally.html
+Sintaxis YAML: documentación de Ansible
+https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+Ansible.Builtin — Ansible Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html
+RH294-RHEL9.0-es-3-20240620
+67
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Implementación de varios plays
+Escribir y usar un playbook que contiene varios plays.
+Resultados
+• Usted deberá ser capaz de construir y ejecutar un playbook para gestionar la
+configuración y realizar la administración de un host gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-multi
+Instrucciones
+ 1.
+El directorio /home/student/playbook-multi se ha creado en la máquina
+workstation para su proyecto de Ansible. El directorio ya se ha llenado con un archivo de
+configuración ansible.cfg y un archivo de inventario denominado inventory. El host
+gestionado, servera.lab.example.com, ya está definido en este archivo de inventario.
+Cree un playbook denominado /home/student/playbook-multi/intranet.yml y
+agregue las líneas necesarias para iniciar el primer play. Debería apuntar al host gestionado
+servera.lab.example.com y habilitar el aumento de privilegios.
+1.1.
+Cambie al directorio /home/student/playbook-multi.
+[student@workstation ~]$ cd ~/playbook-multi
+[student@workstation playbook-multi]$
+1.2.
+Use un editor de texto para crear un nuevo playbook denominado /home/student/
+playbook-multi/intranet.yml. Agregue una línea que conste de tres guiones al
+comienzo del archivo para indicar el comienzo del archivo YAML.
+---
+1.3.
+Agregue la siguiente línea al archivo /home/student/playbook-multi/
+intranet.yml para denotar el comienzo de un play denominado Enable
+intranet services.
+- name: Enable intranet services
+68
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+1.4.
+Agregue la siguiente línea para indicar que el play se aplica al host gestionado
+servera.lab.example.com. Aplique una sangría de dos espacios en la línea
+(alineada con la palabras clave name sobre esta) para indicar que es parte del primer
+play.
+  hosts: servera.lab.example.com
+1.5.
+Agregue la siguiente línea para permitir el aumento de privilegios. Aplique una sangría
+de dos espacios en la línea (alineada con las palabras claves sobre esta) para indicar
+que es parte del primer play.
+  become: true
+1.6.
+Agregue la siguiente línea para definir el comienzo de la lista tasks. Aplique una
+sangría de dos espacios en la línea (y alinearla con las palabras claves sobre esta)
+para indicar que es parte del primer play.
+  tasks:
+ 2.
+Como primera tarea en el primer play, defina una tarea que garantice que los paquetes
+httpd y firewalld estén actualizados.
+Aplique una sangría de cuatro espacios a la primera línea de la tarea. Bajo la palabra clave
+tasks en el primer play, agregue las siguientes líneas.
+    - name: Latest version of httpd and firewalld installed 
+      ansible.builtin.dnf: 
+        name: 
+          - httpd
+          - firewalld
+        state: latest 
+Un nombre descriptivo para la tarea.
+Aplica una sangría de seis espacios y llama al módulo ansible.builtin.dnf.
+La palabra clave name, que es un parámetro del módulo ansible.builtin.dnf,
+tiene una sangría de ocho espacios. La palabra clave name especifica qué paquetes
+debe garantizar el módulo que estén actualizados. La palabra clave name (que es
+diferente del nombre de la tarea) puede tomar una lista de paquetes, que tienen una
+sangría de diez espacios en las dos líneas siguientes.
+Después de la lista de paquetes, la palabra clave state especifica que el módulo
+debe asegurarse de que esté instalada la versión más reciente de los paquetes. La
+palabra clave state también es un parámetro del módulo ansible.builtin.dnf y
+tiene una sangría de ocho espacios.
+ 3.
+Agregue una tarea a la lista del primer play que garantice que el contenido correcto está en
+el archivo /var/www/html/index.html.
+Agregue las siguientes líneas para definir el contenido de /var/www/html/index.html.
+Aplique una sangría de cuatro espacios a la primera línea.
+RH294-RHEL9.0-es-3-20240620
+69
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    - name: Test html page is installed
+      ansible.builtin.copy:
+        content: "Welcome to the example.com intranet!\n"
+        dest: /var/www/html/index.html
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.builtin.copy.
+• Las líneas restantes tienen una sangría de ocho espacios y envían los argumentos
+necesarios para garantizar que el contenido correcto esté en la página web.
+ 4.
+Defina dos tareas más en el play para garantizar que se esté ejecutando el servicio
+firewalld y que se iniciará en el arranque, y permita conexiones con el servicio httpd.
+4.1.
+Agregue las siguientes líneas para garantizar que el servicio firewalld esté
+habilitado y ejecutándose. Aplique una sangría de cuatro espacios a la primera línea.
+    - name: Firewall enabled and running
+      ansible.builtin.service:
+        name: firewalld
+        enabled: true
+        state: started
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de ocho espacios e invoca al módulo
+ansible.builtin.service.
+• Las líneas restantes tienen una sangría de diez espacios y envían los argumentos
+necesarios para garantizar que el servicio firewalld esté habilitado y se haya
+ejecutado.
+4.2.
+Agregue las siguientes líneas para garantizar que firewalld permita conexiones
+HTTP desde los sistemas remotos. Aplique una sangría de cuatro espacios a la
+primera línea.
+    - name: Firewall permits access to httpd service
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.posix.firewalld.
+• Las líneas restantes tienen una sangría de ocho espacios y envían los argumentos
+necesarios para garantizar que se permitan conexiones HTTP remotas
+permanentemente.
+70
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+ 5.
+Agregue una tarea final al primer play que garantice que el servicio httpd se esté
+ejecutando y que se iniciará en el arranque.
+Agregue las siguientes líneas para garantizar que el servicio httpd esté habilitado y
+ejecutándose. Aplique una sangría de cuatro espacios a la primera línea.
+    - name: Web server enabled and running
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.builtin.service.
+• Las entradas restantes están marcadas con ocho espacios y envían los argumentos
+necesarios para garantizar que el servicio httpd esté habilitado y en funcionamiento.
+ 6.
+En el archivo /home/student/playbook-multi/intranet.yml, defina un segundo
+play que tenga como destino workstation.lab.example.com y pruebe el servidor
+web de la intranet. Al probar desde la máquina workstation.lab.example.com, puede
+verificar que la máquina servera.lab.example.com permita solicitudes web externas a
+través del firewall. Este play no requiere de escalamiento de privilegios.
+6.1.
+Agregue la siguiente línea para definir el comienzo de un segundo play. Tenga en
+cuenta que no hay sangría.
+- name: Test intranet web server
+6.2.
+Agregue la siguiente línea para indicar que el play se ejecuta en la máquina
+workstation.lab.example.com. Aplique una sangría de dos espacios a la línea
+para indicar que está contenida por el segundo play.
+  hosts: workstation.lab.example.com
+6.3.
+Agregue la siguiente línea para deshabilitar el aumento de privilegios. Alinee la
+sangría con la palabra clave hosts sobre ella.
+  become: false
+6.4.
+Agregue la siguiente línea al archivo /home/student/playbook-multi/
+intranet.yml para definir el comienzo de la lista tasks. Aplique una sangría de
+dos espacios a la línea para indicar que está contenida por el segundo play.
+  tasks:
+ 7.
+Agregue una sola tarea al segundo play y use el módulo ansible.builtin.uri para
+solicitar contenido de http://servera.lab.example.com. La tarea debe verificar un
+código de estado HTTP de retorno de 200. Configure la tarea para colocar el contenido
+devuelto en la variable de resultados de la tarea.
+RH294-RHEL9.0-es-3-20240620
+71
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Agregue las siguientes líneas para crear la tarea a fin de verificar el servicio web. Aplique
+una sangría de cuatro espacios a la primera línea.
+    - name: Connect to intranet web server
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        return_content: true
+        status_code: 200
+• La primera línea aporta un nombre descriptivo para la tarea.
+• La segunda línea tiene una sangría de seis espacios e invoca al módulo
+ansible.builtin.uri.
+• Las líneas restantes tienen una sangría de ocho espacios y envían los argumentos
+necesarios para ejecutar una consulta de contenido web y verifican el código de estado
+recibido.
+• La palabra clave return_content garantiza que la respuesta del servidor se agregue a
+los resultados de la tarea.
+ 8.
+Verifique que el playbook /home/student/playbook-multi/intranet.yml final
+refleje el siguiente contenido estructurado y, luego, guarde y cierre el archivo.
+---
+- name: Enable intranet services
+  hosts: servera.lab.example.com
+  become: true
+  tasks:
+    - name: Latest version of httpd and firewalld installed
+      ansible.builtin.dnf:
+        name:
+          - httpd
+          - firewalld
+        state: latest
+    - name: Test html page is installed
+      ansible.builtin.copy:
+        content: "Welcome to the example.com intranet!\n"
+        dest: /var/www/html/index.html
+    - name: Firewall enabled and running
+      ansible.builtin.service:
+        name: firewalld
+        enabled: true
+        state: started
+    - name: Firewall permits access to httpd service
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+72
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    - name: Web server enabled and running
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+- name: Test intranet web server
+  hosts: workstation.lab.example.com
+  become: false
+  tasks:
+    - name: Connect to intranet web server
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        return_content: true
+        status_code: 200
+ 9.
+Ejecute el comando ansible-navigator run --syntax-check para validar la sintaxis
+del playbook /home/student/playbook-multi/intranet.yml.
+[student@workstation playbook-multi]$ ansible-navigator run \
+> -m stdout intranet.yml --syntax-check
+playbook: /home/student/playbook-multi/intranet.yml
+ 10. Ejecute el playbook con el comando ansible-navigator run. Lea la salida generada
+para garantizar que todas las tareas se hayan completado satisfactoriamente. Verifique
+que una solicitud HTTP GET para http://servera.lab.example.com proporcione el
+contenido correcto.
+10.1.
+Ejecute el playbook con el comando ansible-navigator run.
+[student@workstation playbook-multi]$ ansible-navigator run \
+> -m stdout intranet.yml
+PLAY [Enable intranet services] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Latest version of httpd and firewalld installed] *************************
+changed: [servera.lab.example.com]
+TASK [Test html page is installed] *********************************************
+changed: [servera.lab.example.com]
+TASK [Firewall enabled and running] ********************************************
+changed: [servera.lab.example.com]
+TASK [Firewall permits access to httpd service] ********************************
+changed: [servera.lab.example.com]
+TASK [Web server enabled and running] ******************************************
+changed: [servera.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+73
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+PLAY [Test intranet web server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [workstation.lab.example.com]
+TASK [Connect to intranet web server] ******************************************
+ok: [workstation.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=5    unreachable=0    failed=0  ...
+workstation.lab.example.com : ok=2    changed=0    unreachable=0    failed=0 ...
+10.2. Use el comando curl para verificar una solicitud HTTP GET para http://
+servera.lab.example.com proporcione el contenido correcto.
+[student@workstation playbook-multi]$ curl http://servera.lab.example.com
+Welcome to the example.com intranet!
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-multi
+74
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Trabajo de laboratorio
+Implementación de un playbook de
+Ansible
+Configurar y realizar tareas administrativas en hosts gestionados usando un playbook.
+Resultados
+• Usted debe ser capaz de construir y ejecutar un playbook de Ansible para instalar,
+configurar y verificar el estado de los servicios web y de bases de datos en un host
+gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-review
+El directorio de trabajo /home/student/playbook-review se ha creado en la
+máquina workstation para su proyecto de Ansible. El directorio ya se completó con un
+archivo de configuración ansible.cfg y un archivo inventory. El host gestionado,
+serverb.lab.example.com, ya está definido en este archivo de inventario.
+Instrucciones
+1.
+Cambie al directorio /home/student/playbook-review y cree un nuevo playbook
+denominado internet.yml. Agregue las entradas necesarias para iniciar un primer play
+denominado Enable internet services y especifique su host gestionado previsto,
+serverb.lab.example.com. Agregue la entrada necesaria para permitir el aumento de
+privilegios y otra para iniciar una lista de tareas.
+2.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir una tarea que instale las últimas versiones de los paquetes
+firewalld, httpd, mariadb-server, php y php-mysqlnd. Aplique una sangría al
+comienzo de la entrada con cuatro espacios.
+3.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir las tareas de configuración del firewall. Deben asegurarse de
+que el servicio firewalld esté habilitado y en ejecución, y que se permita el acceso al
+servicio http. Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+4.
+Agregue las entradas necesarias para asegurar que los servicios httpd y mariadb estén
+habilitados y en ejecución. Aplique una sangría al comienzo de estas entradas con cuatro
+espacios.
+5.
+Agregue la entrada necesaria que usa el módulo ansible.builtin.copy para copiar el
+archivo /home/student/playbook-review/index.php al directorio /var/www/html/
+RH294-RHEL9.0-es-3-20240620
+75
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+en el host gestionado. Asegúrese de que el modo de archivo esté configurado en 0644.
+Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+6.
+Defina otro play en el archivo /home/student/playbook-review/internet.yml
+para que la tarea se realice en el nodo de control. Este play probará el acceso al servidor
+web que debería estar ejecutándose en el host gestionado serverb.lab.example.com.
+Este play no requiere aumento de privilegios y se ejecutará en el host gestionado
+workstation.lab.example.com.
+7.
+Agregue la entrada necesaria que pruebe el servicio web que se ejecuta en serverb desde
+el nodo de control usando el módulo ansible.builtin.uri. Compruebe si existe un
+código de estado de retorno de 200. Aplique una sangría al comienzo de la entrada con
+cuatro espacios.
+8.
+Valide la sintaxis del playbook internet.yml.
+9.
+Use el comando ansible-navigator run para ejecutar el playbook. Lea la salida
+generada para garantizar que todas las tareas se hayan completado satisfactoriamente.
+Evaluación
+Ejecute el comando lab grade playbook-review desde su máquina workstation para
+evaluar su trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un
+resultado satisfactorio.
+[student@workstation ~]$ lab grade playbook-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-review
+76
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Solución
+Implementación de un playbook de
+Ansible
+Configurar y realizar tareas administrativas en hosts gestionados usando un playbook.
+Resultados
+• Usted debe ser capaz de construir y ejecutar un playbook de Ansible para instalar,
+configurar y verificar el estado de los servicios web y de bases de datos en un host
+gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-review
+El directorio de trabajo /home/student/playbook-review se ha creado en la
+máquina workstation para su proyecto de Ansible. El directorio ya se completó con un
+archivo de configuración ansible.cfg y un archivo inventory. El host gestionado,
+serverb.lab.example.com, ya está definido en este archivo de inventario.
+Instrucciones
+1.
+Cambie al directorio /home/student/playbook-review y cree un nuevo playbook
+denominado internet.yml. Agregue las entradas necesarias para iniciar un primer play
+denominado Enable internet services y especifique su host gestionado previsto,
+serverb.lab.example.com. Agregue la entrada necesaria para permitir el aumento de
+privilegios y otra para iniciar una lista de tareas.
+1.1.
+Agregue la siguiente entrada al comienzo del archivo /home/student/playbook-
+review/internet.yml para comenzar con el formato YAML.
+---
+1.2.
+Agregue la siguiente entrada para denotar el comienzo de un play denominado Enable
+internet services.
+- name: Enable internet services
+1.3.
+Agregue la siguiente entrada para indicar que el play se aplica al host gestionado
+serverb.lab.example.com. Asegúrese de que el comienzo de la entrada tenga una
+sangría de dos espacios.
+RH294-RHEL9.0-es-3-20240620
+77
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+  hosts: serverb.lab.example.com
+1.4.
+Agregue la siguiente entrada para permitir el aumento de privilegios. Aplique una
+sangría al comienzo de la entrada con dos espacios.
+  become: true
+1.5.
+Agregue la siguiente entrada para definir el comienzo de la lista tasks. Aplique una
+sangría al comienzo de la entrada con dos espacios.
+  tasks:
+2.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir una tarea que instale las últimas versiones de los paquetes
+firewalld, httpd, mariadb-server, php y php-mysqlnd. Aplique una sangría al
+comienzo de la entrada con cuatro espacios.
+    - name: Latest version of all required packages installed
+      ansible.builtin.dnf:
+        name:
+          - firewalld
+          - httpd
+          - mariadb-server
+          - php
+          - php-mysqlnd
+        state: latest
+3.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir las tareas de configuración del firewall. Deben asegurarse de
+que el servicio firewalld esté habilitado y en ejecución, y que se permita el acceso al
+servicio http. Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+    - name: firewalld enabled and running
+      ansible.builtin.service:
+        name: firewalld
+        enabled: true
+        state: started
+    - name: firewalld permits http service
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+4.
+Agregue las entradas necesarias para asegurar que los servicios httpd y mariadb estén
+habilitados y en ejecución. Aplique una sangría al comienzo de estas entradas con cuatro
+espacios.
+78
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    - name: httpd enabled and running
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+    - name: mariadb enabled and running
+      ansible.builtin.service:
+        name: mariadb
+        enabled: true
+        state: started
+5.
+Agregue la entrada necesaria que usa el módulo ansible.builtin.copy para copiar el
+archivo /home/student/playbook-review/index.php al directorio /var/www/html/
+en el host gestionado. Asegúrese de que el modo de archivo esté configurado en 0644.
+Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+    - name: Test php page is installed
+      ansible.builtin.copy:
+        src: index.php
+        dest: /var/www/html/index.php
+        mode: 0644
+6.
+Defina otro play en el archivo /home/student/playbook-review/internet.yml
+para que la tarea se realice en el nodo de control. Este play probará el acceso al servidor
+web que debería estar ejecutándose en el host gestionado serverb.lab.example.com.
+Este play no requiere aumento de privilegios y se ejecutará en el host gestionado
+workstation.lab.example.com.
+6.1.
+Agregue la siguiente entrada para denotar el comienzo de un segundo play
+denominado Test internet web server.
+- name: Test internet web server
+6.2.
+Agregue la siguiente entrada para indicar que el play se aplica al host gestionado
+workstation. Aplique una sangría al comienzo de la entrada con dos espacios.
+  hosts: workstation
+6.3.
+Agregue la siguiente entrada después de la palabra clave hosts para deshabilitar el
+aumento de privilegios para el segundo play. Aplique una sangría al comienzo de la
+entrada con dos espacios.
+  become: false
+6.4.
+Agregue la siguiente entrada al archivo /home/student/playbook-review/
+internet.yml para definir el comienzo de la lista tasks. Aplique una sangría al
+comienzo de la entrada con dos espacios.
+  tasks:
+RH294-RHEL9.0-es-3-20240620
+79
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+7.
+Agregue la entrada necesaria que pruebe el servicio web que se ejecuta en serverb desde
+el nodo de control usando el módulo ansible.builtin.uri. Compruebe si existe un
+código de estado de retorno de 200. Aplique una sangría al comienzo de la entrada con
+cuatro espacios.
+    - name: Connect to internet web server
+      ansible.builtin.uri:
+        url: http://serverb.lab.example.com
+        status_code: 200
+8.
+Valide la sintaxis del playbook internet.yml.
+[student@workstation playbook-review]$ ansible-navigator run \
+> -m stdout internet.yml --syntax-check
+playbook: /home/student/playbook-review/internet.yml
+9.
+Use el comando ansible-navigator run para ejecutar el playbook. Lea la salida
+generada para garantizar que todas las tareas se hayan completado satisfactoriamente.
+[student@workstation playbook-review]$ ansible-navigator run \
+> -m stdout internet.yml
+PLAY [Enable internet services] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [Latest version of all required packages installed] ***********************
+changed: [serverb.lab.example.com]
+TASK [firewalld enabled and running] *******************************************
+ok: [serverb.lab.example.com]
+TASK [firewalld permits http service] ******************************************
+changed: [serverb.lab.example.com]
+TASK [httpd enabled and running] ***********************************************
+changed: [serverb.lab.example.com]
+TASK [mariadb enabled and running] *********************************************
+changed: [serverb.lab.example.com]
+TASK [Test php page is installed] **********************************************
+changed: [serverb.lab.example.com]
+PLAY [Test internet web server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [workstation]
+TASK [Connect to internet web server] ******************************************
+ok: [workstation]
+80
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=7    changed=5    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Evaluación
+Ejecute el comando lab grade playbook-review desde su máquina workstation para
+evaluar su trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un
+resultado satisfactorio.
+[student@workstation ~]$ lab grade playbook-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-review
+RH294-RHEL9.0-es-3-20240620
+81
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Resumen
+• Un play es una lista ordenada de tareas que se ejecutan respecto de hosts seleccionados del
+inventario.
+• Un playbook es un archivo de texto que contiene una lista de uno o más plays para ejecutar en
+orden.
+• Los playbooks de Ansible se escriben en formato YAML.
+• Los plays de Ansible son idempotentes, lo que significa que evitan realizar cambios si detectan
+que el estado actual coincide con el estado final deseado.
+• Los archivos YAML están estructurados mediante la sangría de espacio para representar la
+jerarquía de datos.
+• Las tareas se implementan mediante el código estandarizado incluido como módulos Ansible.
+• Los módulos de Ansible se empaquetan en Ansible Content Collections, que son un formato
+de distribución para el contenido de Ansible que puede incluir playbooks, roles, módulos y
+complementos (plug-ins).
+• El comando ansible-navigator doc puede enumerar módulos en sus entornos de
+ejecución de automatización y brindar documentación y fragmentos de códigos a modo de
+ejemplo de cómo usarlos en playbooks.
+• El comando ansible-navigator run se usa para ejecutar playbooks y validar la sintaxis del
+playbook.
+82
+RH294-RHEL9.0-es-3-20240620
+
+

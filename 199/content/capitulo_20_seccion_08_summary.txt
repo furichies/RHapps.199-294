@@ -1,0 +1,20 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 17. Control y solución de problemas del proceso de arranque
+
+17.8. Resumen 17.8. Resumen En esta lección, aprendió sobre el proceso de inicio de Red Hat Enterprise Linux, cómo controlar qué servicios se inician en el inicio y cómo diagnosticar y reparar problemas del sistema de archivos durante el inicio. El cargador de arranque GRUB2 es el cargador de arranque predeterminado para RHEL 10. Es responsable de cargar el kernel y la imagen initramfs, y de pasar el control al kernel. GRUB2 también proporciona una interfaz de menú para seleccionar qué instancia de inicio iniciar y modificar la configuración de inicio en tiempo de ejecución. Puede utilizar el comando grubby para realizar diversas tareas de administración de inicio, como agregar o eliminar argumentos del kernel, cambiar la entrada predeterminada del menú de inicio y ver información sobre las entradas existentes del menú de inicio. La unidad systemd toma el control total de la última parte de la secuencia de inicio, según el objetivo predeterminado. El comando systemctl get-default proporciona información sobre el objetivo de unidad systemd predeterminado y el subcomando set-default establece un nuevo objetivo predeterminado. Los administradores pueden cambiar a un destino diferente durante el tiempo de ejecución utilizando el
+
+systemctl isolate command.
+
+El proceso de arranque podría verse interrumpido por un problema del sistema de archivos, como un sistema de archivos dañado o una configuración incorrecta del archivo /etc/fstab. El objetivo de emergencia arranca en un entorno mínimo que permite la resolución de problemas. El comando xfs_repair comprueba y repara problemas con los sistemas de archivos XFS. El archivo /etc/fstab puede incluir un dispositivo inexistente, lo que genera un error en el momento del arranque e interrumpe el proceso de arranque.
+
+
+
+
+
+Capítulo 18. Recuperación del acceso de superusuario Objetivo Obtener acceso administrativo a un sistema cuando la contraseña de superusuario es desconocida o está bloqueada. Secciones Cómo recuperar el acceso de superusuario y restablecer la contraseña raíz (y ejercicio guiado)
+
+
+
+
+

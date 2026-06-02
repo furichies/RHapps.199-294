@@ -1,0 +1,99 @@
+# 19.3. Etiquetado de puertos SELinux
+# Tipo: theory
+# Capítulo: Capítulo 19. Gestión de la seguridad de la red
+
+19.3. Etiquetado de puertos SELinux 19.3. Objetivos del etiquetado de puertos de SELinux Verificar y ajustar las etiquetas de SELinux en puertos de red específicos para que los servicios de red permitidos puedan vincularse a esos puertos para escuchar las conexiones de los clientes. Etiquetado de puertos SELinux Además del contexto de archivos y el etiquetado de tipos de procesos, SELinux etiqueta los puertos de red con un contexto SELinux. SELinux controla el acceso a la red etiquetando los puertos de la red e incluyendo reglas en la política específica de un servicio. Por ejemplo, la política de destino SSH incluye el puerto 22/TCP con la etiqueta de contexto ssh_port_t. En la política HTTP, los puertos predeterminados 80/TCP y 443/TCP utilizan la etiqueta de contexto http_port_t. Cuando un proceso objetivo intenta abrir un puerto para escuchar, SELinux verifica que la política incluya entradas que permitan la vinculación del proceso y el contexto. Luego, SElinux puede impedir que un servicio fraudulento se apodere de los puertos que utilizan otros servicios de red legítimos. Administrar el etiquetado de puertos de SELinux Si un servicio intenta escuchar en un puerto no estándar y el puerto no está etiquetado con el tipo de SELinux correcto, entonces SELinux podría bloquear el intento. Puede corregir este problema cambiando el contexto SELinux en el puerto. Normalmente, la política de destino ya etiqueta todos los puertos esperados con el tipo correcto. Por ejemplo, debido a que el puerto 8008/TCP se usa a menudo para aplicaciones web, ese puerto ya está etiquetado con el contexto http_port_t, que es el tipo de puerto predeterminado para un servidor web. Los puertos individuales se pueden etiquetar con un solo contexto de puerto. Listar etiquetas de puerto Utilice el comando grep para filtrar el número de puerto.
+
+root@host:~# grep gopher /etc/services
+
+gopher 70/tcp # Internet Gopher gopher 70/udp Utilice el comando semanage para enumerar las asignaciones de etiquetas de puerto actuales.
+
+root@host:~# semanage port -l
+
+...salida omitida... http_cache_port_t tcp 8080, 8118, 8123, 10001-10010 http_cache_port_t udp 3130 http_port_t tcp 80, 81, 443, 488, 8008, 8009, 8443, 9000 ...salida omitido... Utilice el comando grep para filtrar la etiqueta del puerto SELinux utilizando el nombre del servicio.
+
+
+
+
+
+19.3. Etiquetado de puertos SELinux
+
+root@host:~# semanage port -l | grep ftp
+
+ftp_data_port_t tcp 20 ftp_port_t tcp 21, 989, 990 ftp_port_t udp 989, 990 tftp_port_t udp 69 Una etiqueta de puerto puede aparecer en la lista muchas veces para cada protocolo de red admitido. Utilice el comando grep para filtrar la etiqueta del puerto SELinux por número de puerto.
+
+root@host:~# semanage port -l | grep -w 70
+
+gopher_port_t tcp 70 gopher_port_t udp 70 Administrar enlaces de puertos Utilice el comando semanage para asignar nuevas etiquetas de puerto, eliminar etiquetas de puerto o modificar las existentes. Importante La mayoría de los servicios en RHEL proporcionan un módulo de política SELinux, que incluye los contextos de puerto predeterminados del servicio. No puede cambiar las etiquetas de puerto predeterminadas utilizando el comando semanage. En su lugar, debe modificar y recargar el módulo de política de servicio de destino. La redacción y generación de módulos de políticas están más allá del alcance de esta lección. Puede etiquetar un puerto nuevo con una etiqueta de contexto de puerto existente. La opción -a del comando semanage port agrega una nueva etiqueta de puerto; la opción -t indica el tipo; y la opción -p denota el protocolo.
+
+root@host:~# semanage port -a -t port_label -p tcp|udp PORTNUMBER
+
+En el siguiente ejemplo, habilite el servicio gopher para escuchar en el puerto 71/TCP:
+
+root@host:~# semanage port -a -t gopher_port_t -p tcp 71
+
+Para ver los cambios en la política predeterminada, use la opción -C del comando semanage port.
+
+root@host:~# semanage port -l -C
+
+Tipo de puerto SELinux Número de puerto proto gopher_port_t tcp 71 Las políticas específicas incluyen muchos tipos de puertos. Las páginas man de SELinux específicas del servicio se nombran utilizando el nombre del servicio más _selinux. Estas páginas de manual incluyen información específica del servicio sobre tipos de SELinux, valores booleanos y tipos de puertos, y no se instalan de forma predeterminada. Para ver una lista de todas las páginas man de SELinux disponibles, instale el paquete.
+
+root@host:~# dnf -y install selinux-policy-doc
+
+Utilice la opción man comando -k para buscar la cadena _selinux.
+
+
+
+
+
+19.3. Etiquetado de puertos SELinux
+
+root@host:~# man -k _selinux
+
+Utilice la opción -d del comando semanage para eliminar una etiqueta de puerto. En el siguiente ejemplo, elimine el enlace del puerto 71/TCP al tipo gopher_port_t:
+
+root@host:~# semanage port -d -t gopher_port_t -p tcp 71
+
+Para cambiar el enlace de un puerto, cuando cambien los requisitos, utilice la opción -m. Esta opción es más eficaz que eliminar el enlace anterior y agregar el último. En el siguiente ejemplo, modifique la etiqueta del puerto 71/TCP de gopher_port_t a la etiqueta de contexto http_port_t:
+
+root@host:~# semanage port -m -t http_port_t -p tcp 71
+
+Verifique los cambios usando el comando semanage.
+
+root@host:~# semanage port -l -C
+
+Tipo de puerto SELinux Número de puerto Proto http_port_t tcp 71
+
+root@host:~# semanage port -l | grep http
+
+http_cache_port_t tcp 8080, 8118, 8123, 10001-10010 http_cache_port_t udp 3130 http_port_t tcp 71, 80, 81, 443, 488, 8008, 8009, 8443, 9000 pegasus_http_port_t tcp 5988 pegasus_https_port_t tcp 5989 Referencias
+
+semanage(8), semanage-port(8), and *_selinux(8) man pages
+
+
+
+
+
+19.4. Ejercicio guiado Etiquetado de puertos SELinux 19.4. Ejercicio guiado Etiquetado de puertos SELinux Verifique y ajuste las etiquetas SELinux en puertos de red específicos para que los servicios de red permitidos puedan vincularse a esos puertos para escuchar las conexiones de los clientes. Resultados Configure un servidor web para alojar contenido utilizando un puerto no estándar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start netsecurity-ports
+
+Instrucciones Su organización está implementando una nueva aplicación web personalizada, que se ejecuta en un puerto no estándar, el puerto 82/TCP. Un administrador junior ya configuró la aplicación en la máquina del servidor. Sin embargo, no se puede acceder al contenido del servidor web. Resuelva el problema de acceso al servidor web. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Intente solucionar el problema del contenido web reiniciando el servicio httpd. 2. Reinicie el servicio httpd. Este comando falla.
+
+[root@servera ~]# systemctl restart httpd
+
+El trabajo para httpd.service falló porque el proceso de control finalizó con un código de error. Consulte "systemctl status httpd.service" y "journalctl -xeu httpd.service" para obtener más detalles. 2.1. Ver el estado del servicio httpd. Observe el error de permiso denegado. Presione Q para salir de la sesión. 2.2.
+
+
+
+
+

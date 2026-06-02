@@ -1,0 +1,262 @@
+# Implementación de archivos personalizados con plantillas Jinja2
+# Tipo: theory
+# Capítulo: Capítulo 5. Implementación de archivos en hosts gestionados
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Implementación de archivos
+personalizados con plantillas Jinja2
+Objetivos
+• Implementar archivos en hosts gestionados que se personalizan mediante el uso de plantillas
+Jinja2.
+Plantillas para archivos
+Ansible Content Collection ansible.builtin ofrece una serie de módulos que se pueden usar
+para modificar archivos existentes. Estos incluyen lineinfile y blockinfile, entre otros. Sin
+embargo, no siempre son fáciles de usar de manera efectiva y correcta.
+Una forma mucho más poderosa de administrar archivos es usar una plantilla. Con este método,
+puede escribir un archivo de configuración de plantilla que se personaliza automáticamente para
+el host gestionado cuando se implementa el archivo, usando datos y variables de Ansible. Esto
+puede ser más fácil de controlar y menos propenso a errores.
+Introducción a Jinja2
+Ansible usa el sistema de plantillas Jinja2 para los archivos de plantilla. Ansible también usa la
+sintaxis de Jinja2 para hacer referencia a las variables de playbooks, por lo que ya sabe un poco
+cómo usarlo.
+Uso de delimitadores
+Las variables y expresiones lógicas se colocan entre etiquetas, o delimitadores. Cuando se evalúa
+una plantilla Jinja2, la expresión {{ EXPR }} se reemplaza con los resultados de esa expresión
+o variable. Las plantillas de Jinja2 también pueden usar {% EXPR %} para estructuras de control
+especiales o lógica que recorre el código de Jinja2 o para realizar pruebas. Use la sintaxis {#
+COMMENT #} para encerrar los comentarios que no deberían aparecer en el archivo final.
+En el siguiente ejemplo de un archivo de plantillas Jinja2, la primera línea incluye un comentario
+que no se incluirá en el archivo final. Las referencias a variables en la segunda línea se reemplazan
+con los valores de datos del sistema a los que hacen referencia.
+{# /etc/hosts line #}
+{{ ansible_facts['default_ipv4']['address'] }}    {{ ansible_facts['hostname'] }}
+Desarrollo de una plantilla Jinja2
+Una plantilla Jinja2 está compuesta por múltiples elementos: datos, variables y expresiones. Estas
+variables y expresiones se reemplazan con sus valores cuando se entrega la plantilla Jinja2. Las
+variables usadas en la plantilla se pueden especificar en la sección vars del playbook. Es posible
+usar la información de los hosts gestionados como variables en una plantilla.
+Los archivos de plantilla generalmente se guardan en el directorio templates del proyecto para
+su playbook y, generalmente, se les asigna una extensión de archivo .j2 para dejar en claro que
+son archivos de plantilla Jinja2.
+RH294-RHEL9.0-es-3-20240620
+207
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+nota
+Un archivo que contiene una plantilla Jinja2 no necesita tener ninguna extensión de
+archivo específica (por ejemplo, .j2). Sin embargo, proporcionar dicha extensión
+de archivo puede hacer que sea más fácil recordar que es un archivo de plantilla.
+En el siguiente ejemplo, se muestra cómo crear una plantilla para /etc/ssh/sshd_config con
+variables y datos recuperados por Ansible de los hosts gestionados. Cuando un play implementa la
+plantilla, los datos se reemplazan por sus valores en el host gestionado que se está configurando.
+# {{ ansible_managed }}
+# DO NOT MAKE LOCAL MODIFICATIONS TO THIS FILE BECAUSE THEY WILL BE LOST
+Port {{ ssh_port }}
+ListenAddress {{ ansible_facts['default_ipv4']['address'] }}
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+SyslogFacility AUTHPRIV
+PermitRootLogin {{ root_allowed }}
+AllowGroups {{ groups_allowed }}
+AuthorizedKeysFile /etc/.rht_authorized_keys .ssh/authorized_keys
+PasswordAuthentication {{ passwords_allowed }}
+ChallengeResponseAuthentication no
+GSSAPIAuthentication yes
+GSSAPICleanupCredentials no
+UsePAM yes
+X11Forwarding yes
+UsePrivilegeSeparation sandbox
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+Subsystem sftp /usr/libexec/openssh/sftp-server
+Implementación de plantillas Jinja2
+Las plantillas Jinja2 son una herramienta valiosa que puede usar para personalizar archivos de
+configuración para ser implementados en los hosts gestionados. Cuando se ha creado la plantilla
+Jinja2 para un archivo de configuración, se puede implementar en los hosts gestionados usando el
+módulo ansible.builtin.template, el cual soporta la transferencia de un archivo local en el
+nodo de control a los hosts gestionados.
+208
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Para usar el módulo ansible.builtin.template, use la siguiente sintaxis. El valor asociado
+con la clave src especifica la plantilla Jinja2 de origen, y el valor asociado a la clave dest
+especifica el archivo que debe crearse en los hosts de destino.
+tasks:
+  - name: template render
+    ansible.builtin.template:
+      src: /tmp/j2-template.j2
+      dest: /tmp/dest-config-file.txt
+nota
+El módulo ansible.builtin.template también le permite especificar
+el propietario (el usuario que posee el archivo), el grupo, los permisos
+y el contexto SELinux del archivo implementado, al igual que el módulo
+ansible.builtin.file. También puede tomar una opción validate para
+ejecutar un comando arbitrario (como visudo -c) con el fin de verificar que la
+sintaxis de un archivo sea correcta antes de copiarlo en una plantilla.
+Para obtener más detalles, consulte ansible-navigator doc
+ansible.builtin.template.
+Administración de archivos con plantillas
+Para evitar que otros administradores del sistema modifiquen los archivos gestionados por
+Ansible, se aconseja incluir un comentario en la parte superior de la plantilla para indicar que el
+archivo no debe editarse manualmente.
+Una forma de hacer esto es usar la cadena "Administrado por Ansible" en la directiva
+ansible_managed. Esta no es una variable normal, pero se puede usar como una en una
+plantilla. Puede establecer el valor de ansible_managed en un archivo ansible.cfg:
+ansible_managed = Ansible managed
+Para incluir la cadena ansible_managed dentro de una plantilla Jinja2, use la siguiente sintaxis:
+{{ ansible_managed }}
+Estructuras de control
+Puede usar las estructuras de control Jinja2 en los archivos de plantilla para reducir la escritura
+repetitiva, ingresar entradas para cada host en un play de forma dinámica o insertar texto
+condicionalmente en un archivo.
+Uso de bucles
+Jinja2 usa la declaración for para proporcionar la funcionalidad de bucles. En el siguiente
+ejemplo, la variable users tiene una lista de valores. La variable user se reemplaza con todos los
+valores incluidos en la variable users, un valor por línea.
+RH294-RHEL9.0-es-3-20240620
+209
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+{% for user in users %}
+      {{ user }}
+{% endfor %}
+La siguiente plantilla de ejemplo usa una declaración for y un condicional para ejecutar a través
+de todos los valores en la variable users y reemplaza myuser con cada valor, salvo cuando el
+valor es root.
+{# for statement #}
+{% for myuser in users if not myuser == "root" %}
+User number {{ loop.index }} - {{ myuser }}
+{% endfor %}
+La variable loop.index se expande al número de índice en el que se encuentra actualmente el
+bucle. Tiene un valor de 1 la primera vez que se ejecuta el bucle, y se va incrementando de a 1 en
+cada iteración.
+Como otro ejemplo, esta plantilla también usa una declaración for. Se supone que el inventario
+que se está usando ha definido una variable myhosts que contiene una lista de hosts que se van a
+gestionar. Si coloca la siguiente declaración for en una plantilla Jinja2, todos los hosts en el grupo
+myhosts del inventario se enumeran en el archivo resultante.
+{% for myhost in groups['myhosts'] %}
+{{ myhost }}
+{% endfor %}
+Para un ejemplo más práctico, puede usar este ejemplo para generar un archivo /etc/hosts de
+datos de host de forma dinámica. Supongamos que tiene el siguiente playbook:
+- name: /etc/hosts is up to date
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Deploy /etc/hosts
+      ansible.builtin.template:
+        src: templates/hosts.j2
+        dest: /etc/hosts
+La siguiente plantilla templates/hosts.j2 de tres líneas crea el archivo de todos los hosts del
+grupo all. (La línea media es extremadamente larga en la plantilla debido a la longitud de los
+nombres de las variables.) Se repite en cada host del grupo para obtener tres datos para el archivo
+/etc/hosts.
+{% for host in groups['all'] %}
+{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} {{ hostvars[host]
+['ansible_facts']['fqdn'] }} {{ hostvars[host]['ansible_facts']['hostname'] }}
+{% endfor %}
+210
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Uso de condicionales
+Jinja2 usa la declaración if para proporcionar control condicional. Esto le permite colocar una
+línea en un archivo implementado si se cumplen ciertas condiciones.
+En el siguiente ejemplo, el valor de la variable result se coloca en el archivo implementado solo
+si el valor de la variable finished es True.
+{% if finished %}
+{{ result }}
+{% endif %}
+Importante
+Puede usar bucles y condicionales de Jinja2 en las plantillas de Ansible, pero no en
+playbooks de Ansible.
+Filtros de variables
+Jinja2 proporciona filtros que cambian el formato de salida para las expresiones de la plantilla,
+esencialmente convirtiendo los datos en una variable a algún otro formato en el archivo que
+resulta de la plantilla.
+Por ejemplo, existen filtros disponibles para lenguajes, como YAML y JSON. El filtro to_json
+formatea la salida de la expresión con JSON, y el filtro to_yaml formatea la salida de la expresión
+con YAML.
+{{ output | to_json }}
+{{ output | to_yaml }}
+Hay filtros adicionales disponibles, como to_nice_json y to_nice_yaml que formatean la
+salida de la expresión en formato JSON o YAML legible por el ojo humano.
+{{ output | to_nice_json }}
+{{ output | to_nice_yaml }}
+Los filtros from_json y from_yaml esperan cadenas en formato JSON o YAML,
+respectivamente.
+{{ output | from_json }}
+{{ output | from_yaml }}
+nota
+Los filtros son un concepto muy poderoso en Ansible y se tratan con más
+profundidad en el Capítulo 7 del curso Desarrollo de automatización avanzada con
+Red Hat Ansible Automation Platform (DO374).
+Para obtener más información, también puede ver "Using filters to manipulate data"
+[https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html] en la
+Guía del usuario de Ansible.
+RH294-RHEL9.0-es-3-20240620
+211
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Referencias
+Módulo ansible.builtin.template: plantilla de un archivo a un host de destino:
+documentación Ansible
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+template_module.html
+Uso de filtros para manipular datos: documentación Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html
+212
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Ejercicio Guiado
+Implementación de archivos
+personalizados con plantillas Jinja2
+Crear un archivo de plantilla simple que su playbook usa para instalar un archivo de Mensaje
+del día personalizado en cada host gestionado.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-template
+Instrucciones
+ 1.
+En workstation, diríjase al directorio de trabajo /home/student/file-template.
+Revise el archivo inventory en el directorio de trabajo actual. Este archivo configura dos
+grupos: webservers y workstations. El sistema servera.lab.example.com está en
+el grupo webservers y el sistema workstation.lab.example.com está en el grupo
+workstations.
+1.1.
+Diríjase al directorio de trabajo /home/student/file-template.
+[student@workstation ~]$ cd ~/file-template
+[student@workstation file-template]$
+1.2.
+Muestre el contenido del archivo inventory.
+[webservers]
+servera.lab.example.com
+[workstations]
+workstation.lab.example.com
+ 2.
+Cree una plantilla para el archivo del Mensaje del día (/etc/motd) y guárdelo en el archivo
+motd.j2 en el directorio de trabajo actual. Incluya las siguientes variables y datos en la
+plantilla:
+• ansible_facts['fqdn'], para insertar el FQDN del host gestionado.
+RH294-RHEL9.0-es-3-20240620
+213
+
+

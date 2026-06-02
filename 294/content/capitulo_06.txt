@@ -1,0 +1,2128 @@
+# Capítulo 6. Administración de plays y playbooks complejos
+
+capítulo 6
+Administración de plays y
+playbooks complejos
+Meta
+Escribir playbooks para plays y playbooks más
+grandes y complejos.
+Objetivos
+•
+Escribir patrones de host sofisticados para
+seleccionar hosts de manera eficiente para un
+play.
+•
+Administrar playbooks grandes importando
+o incluyendo otros playbooks o tareas desde
+archivos externos, ya sea sin condiciones o
+sobre la base de una prueba condicional.
+Secciones
+•
+Selección de hosts con patrones de hosts (y
+ejercicio guiado)
+•
+Inclusión e importación de archivos (y ejercicio
+guiado)
+Trabajo de
+laboratorio
+•
+Administración de plays y playbooks complejos
+RH294-RHEL9.0-es-3-20240620
+227
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Selección de hosts con patrones de hosts
+Objetivos
+• Escribir patrones de host sofisticados para seleccionar hosts de manera eficiente para un play.
+Referencias a hosts de inventario
+Los patrones de host se usan para especificar los hosts en los que se ejecuta su play. En su forma
+más simple, el nombre de un host gestionado o un grupo de hosts en el inventario es un patrón de
+hosts que especifica ese host o grupo de hosts.
+Ya ha usado patrones de hosts en este curso. En un play, la directiva hosts especifica los hosts
+gestionados respecto de los cuales se ejecutará el play.
+En general, es más fácil controlar a qué hosts apunta un play usando cuidadosamente patrones de
+hosts y teniendo grupos de inventario correctos en lugar de establecer condicionales complejos
+en las tareas del play. Por lo tanto, es importante tener una comprensión sólida de los patrones de
+host.
+El siguiente ejemplo de inventario se usa en esta sección para ilustrar patrones de hosts.
+[student@controlnode ~]$ cat myinventory
+web.example.com
+data.example.com
+[lab]
+labhost1.example.com
+labhost2.example.com
+[test]
+test1.example.com
+test2.example.com
+[datacenter1]
+labhost1.example.com
+test1.example.com
+[datacenter2]
+labhost2.example.com
+test2.example.com
+[datacenter:children]
+datacenter1
+datacenter2
+[new]
+192.168.2.1
+192.168.2.2
+228
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Para demostrar cómo se resuelven los patrones de host, los siguientes ejemplos ejecutan el
+playbook de Ansible playbook.yml, que contiene un play que se edita para tener diferentes
+patrones de host para identificar diferentes subconjuntos de hosts gestionados del anterior
+inventario de ejemplo.
+Hosts administrados
+El patrón de host más básico es el nombre de un solo host gestionado detallado en el inventario.
+Esto especifica que el host será el único en el inventario en el que se actuará mediante el comando
+ansible-navigator.
+Cuando se ejecuta el playbook, la primera tarea Gathering Facts debe ejecutarse en todos los
+hosts gestionados que coincidan con el patrón de host. Un error durante esta tarea puede hacer
+que el host gestionado se elimine del play.
+Solo puede usar una dirección IP en un patrón de host si aparece explícitamente en el inventario.
+Si la dirección IP no está en el inventario, no podrá usarla para especificar el host aun si la dirección
+IP se resuelve a ese nombre de host en el DNS.
+En el siguiente ejemplo, se muestra cómo se puede usar el patrón de host para hacer referencia a
+una dirección IP contenida en un inventario.
+[student@controlnode ~]$ cat playbook.yml
+---
+...output omitted...
+  hosts: 192.168.2.1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [192.168.2.1]
+...output omitted...
+nota
+Un problema al hacer referencia a hosts gestionados por medio de una dirección IP
+en el inventario es que puede resultar difícil recordar qué dirección IP corresponde
+a qué host para sus plays. Sin embargo, es posible que deba especificar el host por
+dirección IP para fines de conexión si el host no tiene un nombre de host que pueda
+resolver su entorno de ejecución.
+Puede apuntar a un alias en una dirección IP específica en su inventario si establece
+la variable de host ansible_host. Por ejemplo, podría tener un host en su
+inventario denominado host.example que puede usar para patrones de host,
+grupos de inventario y conexiones directas con ese nombre a la dirección IP
+192.168.2.1 mediante la creación de un archivo host_vars/host.example
+que contenga la siguiente variable de host:
+ansible_host: 192.168.2.1
+RH294-RHEL9.0-es-3-20240620
+229
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Especificar hosts usando un grupo
+Puede usar los nombres de los grupos de hosts de inventario como patrones de hosts. Cuando el
+nombre de un grupo se usa como patrón de host, especifica que el play actúa en los hosts que son
+miembros del grupo.
+[student@controlnode ~]$ cat playbook.yml
+---
+...output omitted...
+  hosts: lab
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [labhost2.example.com]
+...output omitted...
+Recuerde que hay un grupo especial llamado all que coincide con todos los hosts gestionados en
+el inventario.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: all
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [web.example.com]
+ok: [data.example.com]
+ok: [labhost1.example.com]
+ok: [192.168.2.1]
+ok: [test1.example.com]
+ok: [192.168.2.2]
+También hay un grupo especial llamado ungrouped que incluye todos los hosts gestionados en el
+inventario que no son miembros de ningún otro grupo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: ungrouped
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+230
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [web.example.com]
+ok: [data.example.com]
+Coincidencia con varios hosts con comodines
+Otro método de lograr lo mismo que con el patrón del host all es usar el carácter comodín
+asterisco (*), que coincide con cualquier cadena. Si el patrón de host es solo un asterisco entre
+comillas, entonces todos los hosts en el inventario coincidirán.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: '*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [web.example.com]
+ok: [data.example.com]
+ok: [labhost1.example.com]
+ok: [192.168.2.1]
+ok: [test1.example.com]
+ok: [192.168.2.2]
+Importante
+Algunos caracteres que se usan en los patrones de host también tienen significado
+para la shell. Si usa caracteres comodín o de lista especiales en un playbook de
+Ansible, debe colocar su patrón de host entre comillas simples para asegurarse de
+que se analice correctamente.
+  hosts: '!test1.example.com,development'
+El carácter de asterisco también se puede usar para que coincida con cualquier host gestionado o
+grupo que contenga una subcadena específica.
+Por ejemplo, el siguiente patrón de host comodín coincide con todos los nombres de inventario
+que finalizan en .example.com:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: '*.example.com'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+RH294-RHEL9.0-es-3-20240620
+231
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [web.example.com]
+ok: [data.example.com]
+El siguiente ejemplo usa un patrón de host comodín para coincidir con los nombres de hosts o
+grupos de hosts que comienzan con 192.168.2.:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: '192.168.2.*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [192.168.2.1]
+ok: [192.168.2.2]
+El siguiente ejemplo usa un patrón de host comodín para coincidir con los nombres de hosts o
+grupos de hosts que comienzan con datacenter.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: 'datacenter*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+232
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Importante
+Los patrones de host comodín coinciden con todos los nombres de inventario,
+hosts y grupos de hosts. No distinguen entre nombres que son nombres de DNS,
+direcciones IP o grupos, lo que puede generar ciertas coincidencias inesperadas.
+Por ejemplo, compare los resultados de especificar el patrón de host datacenter*
+del ejemplo anterior con los resultados del patrón de host data* basado en el
+inventario de ejemplo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: 'data*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [data.example.com]
+Listas
+Se puede hacer referencia a varias entradas en un inventario con listas lógicas. Una lista de
+patrones de hosts separados por comas coincide con todos los hosts que coinciden con cualquiera
+de esos patrones de hosts.
+Si usted proporciona una lista de hosts gestionados separados por comas, se apuntará a todos
+estos hosts gestionados:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: labhost1.example.com,test2.example.com,192.168.2.2
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test2.example.com]
+ok: [192.168.2.2]
+Si usted proporciona una lista de grupos separados por comas, se apuntará a todos estos hosts en
+cualquiera de esos grupos:
+RH294-RHEL9.0-es-3-20240620
+233
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: lab,datacenter1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [labhost2.example.com]
+ok: [test1.example.com]
+También puede combinar hosts gestionados, grupos de hosts y comodines, como se muestra más
+abajo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: lab,data*,192.168.2.2
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [labhost2.example.com]
+ok: [test1.example.com]
+ok: [test2.example.com]
+ok: [data.example.com]
+ok: [192.168.2.2]
+nota
+El carácter de dos puntos (:) puede usarse en lugar de una coma. Sin embargo, la
+coma es el separador preferido, en especial, cuando se trabaja con direcciones IPv6
+como nombres de hosts gestionados. Puede ver la sintaxis de los dos puntos en
+ejemplos anteriores.
+Si un ítem en una lista comienza con un carácter &, los hosts deben coincidir con ese ítem para
+coincidir con el patrón de host. Funciona de manera similar que un AND lógico.
+Por ejemplo, en nuestro ejemplo de inventario, el siguiente patrón de host coincidirá con las
+máquinas en el grupo lab solo si también se encuentran en el grupo datacenter1:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: lab,&datacenter1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+234
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+También podría especificar que las máquinas en el grupo datacenter1 coincidan
+solo si se encuentran en el grupo lab con los patrones de host &lab,datacenter1 o
+datacenter1,&lab.
+Puede excluir hosts que coincidan con un patrón de una lista si usa el signo de exclamación o
+carácter "bang" (!) delante del patrón de host. Esto funciona como un NOT lógico.
+Este ejemplo coincide con todos los hosts definidos en el grupo datacenter, con la excepción de
+test2.example.com, dado el inventario de ejemplo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: datacenter,!test2.example.com
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+El patrón '!test2.example.com,datacenter' se podría haber usado en el ejemplo anterior
+para obtener el mismo resultado.
+El último ejemplo muestra el uso de un patrón de host que coincide con todos los hosts del
+inventario de prueba, con la excepción de los hosts gestionados en el grupo datacenter1.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: all,!datacenter1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [web.example.com]
+ok: [data.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [192.168.2.1]
+ok: [192.168.2.2]
+RH294-RHEL9.0-es-3-20240620
+235
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Referencias
+Patrones: hosts y grupos como destino: documentación Ansible
+https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
+How to build your inventory — Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+236
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Ejercicio Guiado
+Selección de hosts con patrones de hosts
+Explorar el modo en que pueden usarse los patrones de hosts para especificar hosts de
+inventario para plays. Se le proporcionarán varios ejemplos de inventario para explorar
+patrones de host.
+Resultados
+• Use diferentes patrones de hosts para acceder a diversos hosts en un inventario.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-host
+Instrucciones
+ 1.
+Cambie al directorio /home/student/projects-host y revise el playbook y los archivos
+de inventario en el directorio.
+[student@workstation ~]$ cd ~/projects-host
+[student@workstation projects-host]$
+1.1.
+Enumere el contenido del directorio.
+[student@workstation projects-host]$ ls
+ansible.cfg inventory1 inventory2 playbook.yml
+1.2.
+Inspeccione el primer archivo de inventario de ejemplo, inventory1. Observe cómo
+está organizado el inventario. Identifique los hosts que se encuentran en el inventario
+y los dominios que se usan.
+srv1.example.com
+srv2.example.com
+s1.lab.example.com
+s2.lab.example.com
+[web]
+jupiter.lab.example.com
+saturn.example.com
+[db]
+RH294-RHEL9.0-es-3-20240620
+237
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+db1.example.com
+db2.example.com
+db3.example.com
+[lb]
+lb1.lab.example.com
+lb2.lab.example.com
+[boston]
+db1.example.com
+jupiter.lab.example.com
+lb2.lab.example.com
+[london]
+db2.example.com
+db3.example.com
+file1.lab.example.com
+lb1.lab.example.com
+[dev]
+web1.lab.example.com
+db3.example.com
+[stage]
+file2.example.com
+db2.example.com
+[prod]
+lb2.lab.example.com
+db1.example.com
+jupiter.lab.example.com
+[function:children]
+web
+db
+lb
+city
+[city:children]
+boston
+london
+environments
+[environments:children]
+dev
+stage
+prod
+new
+[new]
+172.25.252.23
+172.25.252.44
+172.25.252.32
+238
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+1.3.
+Inspeccione el segundo archivo de inventario de ejemplo, inventory2. Observe
+cómo está organizado este inventario. Identifique los hosts que se encuentran en el
+inventario y los dominios que se usan.
+workstation.lab.example.com
+[london]
+servera.lab.example.com
+[berlin]
+serverb.lab.example.com
+[tokyo]
+serverc.lab.example.com
+[atlanta]
+serverd.lab.example.com
+[europe:children]
+london
+berlin
+1.4.
+Inspeccione el contenido del playbook, playbook.yml. Actualmente tiene
+db1.example.com como patrón host para su play. Observe cómo ese play usa
+el módulo ansible.builtin.debug para mostrar el nombre de cada host
+gestionado.
+- name: Resolve host patterns
+  hosts: db1.example.com
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+ 2.
+Ejecute el play playbook.yml usando el archivo de inventario inventory1 y revise la
+salida para verificar que el servidor db1.example.com esté presente en el archivo de
+inventario inventory1.
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+PLAY RECAP *********************************************************************
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+239
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ 3.
+Use un patrón de host en el playbook para hacer referencia a una dirección IP contenida en
+el archivo de inventario inventory1. Ejecute el playbook usando el archivo de inventario
+inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: 172.25.252.44
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+PLAY RECAP *********************************************************************
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 4.
+Modifique el patrón de host para usar el grupo all para enumerar todos los hosts
+gestionados en el archivo de inventario inventory1. Ejecute el playbook usando el
+archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+240
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [jupiter.lab.example.com] => {
+    "msg": "jupiter.lab.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [lb2.lab.example.com] => {
+    "msg": "lb2.lab.example.com"
+}
+ok: [file1.lab.example.com] => {
+    "msg": "file1.lab.example.com"
+}
+ok: [web1.lab.example.com] => {
+    "msg": "web1.lab.example.com"
+}
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+ok: [172.25.252.23] => {
+    "msg": "172.25.252.23"
+}
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+ok: [172.25.252.32] => {
+    "msg": "172.25.252.32"
+}
+PLAY RECAP *********************************************************************
+172.25.252.23              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.32              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+241
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file1.lab.example.com      : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+jupiter.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb2.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+web1.lab.example.com       : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 5.
+Modifique el patrón de host para usar el carácter de asterisco (*) para enumerar todos
+los hosts que terminan en example.com administrados en el archivo de inventario
+inventory1. Ejecute el playbook usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: '*example.com'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+ok: [s1.lab.example.com] => {
+242
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [jupiter.lab.example.com] => {
+    "msg": "jupiter.lab.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [lb2.lab.example.com] => {
+    "msg": "lb2.lab.example.com"
+}
+ok: [file1.lab.example.com] => {
+    "msg": "file1.lab.example.com"
+}
+ok: [web1.lab.example.com] => {
+    "msg": "web1.lab.example.com"
+}
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+PLAY RECAP *********************************************************************
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file1.lab.example.com      : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+jupiter.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb2.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+243
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+web1.lab.example.com       : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Como puede ver en la salida del comando anterior, el dominio *.example.com
+contiene 14 hosts. Modifique el patrón de host para que se ignoren los hosts del dominio
+*.lab.example.com. Ejecute el playbook usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: '*.example.com, !*.lab.example.com'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+PLAY RECAP *********************************************************************
+244
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 7.
+Sin acceder a los grupos en el archivo de inventario inventory1, modifique el patrón de
+host para enumerar estos tres hosts: lb1.lab.example.com, s1.lab.example.com y
+db1.example.com. Ejecute el playbook usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: lb1.lab.example.com,s1.lab.example.com,db1.example.com
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+PLAY RECAP *********************************************************************
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+245
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ 8.
+Use un patrón de host comodín para enumerar los hosts que comienzan con una dirección
+IP 172.25. en el archivo de inventario inventory1. Ejecute el playbook usando el archivo
+de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: '172.25.*'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [172.25.252.23] => {
+    "msg": "172.25.252.23"
+}
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+ok: [172.25.252.32] => {
+    "msg": "172.25.252.32"
+}
+PLAY RECAP *********************************************************************
+172.25.252.23              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.32              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 9.
+Use un patrón de host para enumerar todos los hosts del archivo de inventario
+inventory1 que comienzan con la letra "s". Ejecute el playbook usando el archivo de
+inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: 's*'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+246
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+PLAY RECAP *********************************************************************
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Observe los hosts file2.example.com y db2.example.com en la salida del comando
+anterior. Aparecen en la lista, ya que ambos son miembros de un grupo denominado stage,
+que también comienza con la letra "s".
+ 10. Con una lista y un patrón de host comodín, muestre todos los hosts en el inventario
+inventory1 del grupo prod, todos los hosts cuya dirección IP comienza con 172 y todos
+los hosts que contienen lab en su nombre. Ejecute el playbook usando el archivo de
+inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: 'prod,172*,*lab*'
+RH294-RHEL9.0-es-3-20240620
+247
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [lb2.lab.example.com] => {
+    "msg": "lb2.lab.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [jupiter.lab.example.com] => {
+    "msg": "jupiter.lab.example.com"
+}
+ok: [172.25.252.23] => {
+    "msg": "172.25.252.23"
+}
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+ok: [172.25.252.32] => {
+    "msg": "172.25.252.32"
+}
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [file1.lab.example.com] => {
+    "msg": "file1.lab.example.com"
+}
+ok: [web1.lab.example.com] => {
+    "msg": "web1.lab.example.com"
+}
+PLAY RECAP *********************************************************************
+172.25.252.23              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.32              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+248
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+file1.lab.example.com      : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+jupiter.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb2.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+web1.lab.example.com       : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 11.
+Enumere todos los hosts que pertenecen a los grupos db y london. Ejecute el playbook
+usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: db,&london
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+PLAY RECAP *********************************************************************
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+249
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ 12. Modifique el valor de hosts en el archivo playbook.yml para que todos los servidores
+en el grupo london sean el objetivo. Ejecute el playbook usando el archivo de inventario
+inventory2.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: london
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [servera.lab.example.com] => {
+    "msg": "servera.lab.example.com"
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 13. Modifique el valor de hosts en el archivo playbook.yml para que todos los servidores
+en el grupo anidado europe sean el objetivo. Ejecute el playbook usando el archivo de
+inventario inventory2.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: europe
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [servera.lab.example.com] => {
+    "msg": "servera.lab.example.com"
+}
+ok: [serverb.lab.example.com] => {
+    "msg": "serverb.lab.example.com"
+}
+250
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 14. Modifique el valor hosts en el archivo playbook.yml para que todos los servidores que
+no pertenecen a ningún grupo sean el objetivo. Ejecute el playbook usando el archivo de
+inventario inventory2.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: ungrouped
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [workstation.lab.example.com] => {
+    "msg": "workstation.lab.example.com"
+}
+PLAY RECAP *********************************************************************
+workstation.lab.example.com : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 15. Modifique el valor hosts en el archivo playbook.yml para especificar un grupo que no
+existe en el archivo de inventario inventory2. Ejecute el playbook usando el archivo de
+inventario inventory2. Observe el mensaje en la salida de que no se encontró ninguna
+coincidencia para ese patrón de host.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: australia
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+RH294-RHEL9.0-es-3-20240620
+251
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+[WARNING]: Could not match supplied host pattern, ignoring: australia
+PLAY [Resolve host patterns] ***************************************************
+skipping: no hosts matched
+PLAY RECAP *********************************************************************
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio.
+Este paso es importante para garantizar que los recursos de ejercicios anteriores no impacten en
+los siguientes.
+[student@workstation ~]$ lab finish projects-host
+252
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Inclusión e importación de archivos
+Objetivos
+• Administrar playbooks grandes importando o incluyendo otros playbooks o tareas desde
+archivos externos, ya sea sin condiciones o sobre la base de una prueba condicional.
+Gestión de playbooks grandes
+Cuando un playbook se torna largo o complejo, puede dividirlo en archivos más pequeños para
+que sea más fácil de administrar. Puede combinar varios playbooks en un playbook principal o
+insertar listas de tareas de un archivo a un play. Esto puede facilitar la reutilización de plays o
+secuencias de tareas en diferentes proyectos.
+Inclusión o importación de archivos
+Ansible soporta dos operaciones para incorporar contenido en un playbook. Usted puede incluir
+contenido, o puede importar contenido.
+Cuando incluye contenido, es una operación dinámica. Los procesos de Ansible incluyeron
+contenido durante la ejecución del playbook, a medida que se abordaba el contenido.
+Cuando importa contenido, es una operación estática. Los preprocesos de Ansible importaron
+contenido cuando se analizó inicialmente el playbook, antes de que comience la ejecución.
+Importación de playbooks
+Use el módulo ansible.builtin.import_playbook para importar archivos externos que
+contienen listas de plays en un playbook. En otras palabras, puede tener un playbook principal que
+importa uno o más playbooks adicionales.
+Debido a que el contenido que se importa es un playbook completo, el módulo
+ansible.builtin.import_playbook solo se puede usar en el nivel superior de un playbook
+y no se puede usar dentro de un play. Si importa varios playbooks, se importarán y ejecutarán en
+orden.
+A continuación, se muestra un ejemplo simple de un playbook principal que importa dos playbooks
+adicionales:
+- name: Prepare the web server
+  ansible.builtin.import_playbook: web.yml
+- name: Prepare the database server
+  ansible.builtin.import_playbook: db.yml
+También puede intercalar plays en su playbook principal con playbooks importados.
+---
+- name: Play 1
+  hosts: localhost
+RH294-RHEL9.0-es-3-20240620
+253
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+  tasks:
+    - name: Display a message
+      ansible.builtin.debug:
+        msg: Play 1
+- name: Import Playbook
+  ansible.builtin.import_playbook: play2.yml
+En el ejemplo anterior, el play Play 1 se ejecuta primero y, luego, los plays importados del
+playbook play2.yml.
+Importación e inclusión de tareas
+Puede importar o incluir una lista de tareas de un archivo de tareas a un play. Un archivo de tareas
+es un archivo que contiene una lista plana de tareas:
+[user@host ~]$ cat webserver_tasks.yml
+---
+- name: Install the httpd package
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+- name: Start the httpd service
+  ansible.builtin.service:
+    name: httpd
+    state: started
+Importación de archivos de tareas
+Puede importar de forma estática un archivo de tareas en un play dentro de un playbook usando el
+módulo ansible.builtin.import_tasks. Cuando importa un archivo de tareas, las tareas de
+ese archivo se insertan directamente cuando se analiza el playbook. La ubicación de la tarea en el
+playbook que usa el módulo ansible.builtin.import_tasks controla donde se insertan las
+tareas y el orden en que se ejecutan las importaciones múltiples.
+---
+- name: Install web server
+  hosts: webservers
+  tasks:
+    - name: Import webserver tasks
+      ansible.builtin.import_tasks: webserver_tasks.yml
+Cuando importa un archivo de tareas, las tareas de ese archivo se insertan directamente cuando
+se analiza el playbook. Debido a que el módulo ansible.builtin.import_tasks importa
+estáticamente las tareas cuando se analiza el playbook, se deben considerar los siguientes ítems:
+• Al usar el módulo ansible.builtin.import_tasks, las declaraciones condicionales
+establecidas en la importación, como when, se aplican a cada una de las tareas que se importan.
+• No puede usar bucles con el módulo ansible.builtin.import_tasks.
+• Si usa una variable para especificar el nombre del archivo por importar, no puede usar una
+variable de inventario de host o grupo.
+254
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Inclusión de archivos de tareas
+También puede incluir de forma dinámica un archivo de tarea en un play dentro de un playbook
+usando el módulo ansible.builtin.include_tasks.
+---
+- name: Install web server
+  hosts: webservers
+  tasks:
+    - name: Include webserver tasks
+      ansible.builtin.include_tasks: webserver_tasks.yml
+El módulo ansible.builtin.include_tasks no procesa el contenido en el playbook hasta
+que se ejecuta el play y se alcanza esa parte de este. El orden en el que se procesa el contenido
+del playbook afecta el funcionamiento del módulo ansible.builtin.include_tasks.
+• Al usar el módulo ansible.builtin.include_tasks, las declaraciones condicionales, como
+when, establecidas en la inclusión determinan si las tareas están incluidas en el play.
+• Si ejecuta ansible-navigator run --list-tasks para enumerar las tareas
+del playbook, no se muestran las tareas en los archivos de tareas incluidos. Se
+muestran las tareas que incluyen los archivos de tareas. En comparación, el módulo
+ansible.builtin.import_tasks no enumera las tareas que importan archivos de tareas,
+sino las tareas individuales de los archivos de tareas importados.
+• No puede usar ansible-navigator run --start-at-task para iniciar la ejecución del
+playbook desde una tarea que se encuentra en un archivo de tareas incluido.
+• No puede usar una declaración notify para desencadenar un nombre de controlador que se
+encuentra en un archivo de tarea incluido. Puede desencadenar un controlador en el playbook
+principal que incluye un archivo de tareas completo, en cuyo caso se ejecutarán todas las tareas
+en el archivo incluido.
+Importación e inclusión con condicionales
+Las declaraciones condicionales se comportan de manera diferente dependiendo de si está
+importando o incluyendo tareas.
+• Cuando agrega un condicional a una tarea que usa un módulo ansible.builtin.import_*,
+Ansible aplica la condición a todas las tareas dentro del archivo importado.
+• Cuando usa un condicional en una tarea que usa un módulo ansible.builtin.include_*,
+la condición se aplica solo a la tarea de inclusión en sí y no a ninguna otra tarea dentro del
+archivo incluido.
+En otras palabras, si coloca un condicional en una tarea que importa contenido, cada tarea en el
+contenido importado realiza esa verificación condicional antes de ejecutarse.
+Sin embargo, si coloca un condicional en una tarea que incluye contenido, entonces el condicional
+determina si la inclusión ocurre o no. Si ocurre la inclusión, todas las tareas incluidas se ejecutan
+normalmente.
+RH294-RHEL9.0-es-3-20240620
+255
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+nota
+Consulte la Guía del usuario de Ansible [https://docs.ansible.com/ansible/latest/
+user_guide/playbooks_conditionals.html#applying-when-to-roles-imports-
+and-includes] para obtener un análisis más detallado de las diferencias de
+comportamiento entre los módulos ansible.builtin.import_tasks y
+ansible.builtin.include_tasks cuando se usan condicionales.
+Casos de uso para archivos de tareas
+Considere los siguientes ejemplos en los que puede ser útil gestionar conjuntos de tareas como
+archivos externos separados del playbook:
+• Si los servidores nuevos requieren una configuración completa, los administradores pueden
+crear diferentes conjuntos de tareas para crear usuarios, instalar paquetes, configurar servicios,
+configurar privilegios, configurar el acceso a un sistema de archivos compartido, reforzar los
+servidores, instalar actualizaciones de seguridad e instalar un agente de monitoreo. Cada uno
+de estos conjuntos de tareas se puede administrar a través de un archivo autónomo de tareas
+separado.
+• Si los desarrolladores, administradores de sistema y administradores de bases de datos
+gestionan los servidores de manera colectiva, cada organización puede programar su propio
+archivo de tareas que el administrador de sistemas luego puede revisar e integrar.
+• Si un servidor requiere una configuración en particular, se la puede integrar como un conjunto
+de tareas ejecutado en función de un condicional. En otras palabras, las tareas se incluyen solo
+si se cumplen criterios específicos.
+• Si un grupo de servidores tiene que ejecutar una tarea o un conjunto de tareas en particular, las
+tareas solo se pueden ejecutar en un servidor si este es parte de un grupo específico de hosts.
+Administrar archivos de tareas
+Usted puede crear un directorio dedicado para archivos de tareas, y guardar todos los archivos de
+tareas en ese directorio. Su playbook puede incluir o importar archivos de tareas de ese directorio.
+Esto permite la construcción de un playbook complejo y facilita la gestión de su estructura y sus
+componentes.
+Definición de variables para plays y tareas externas
+La incorporación de plays o tareas de archivos externos a los playbooks usando las características
+de importación e inclusión de Ansible mejora la capacidad de volver a usar tareas y playbooks en
+un entorno de Ansible. Para maximizar la posibilidad de reutilización, estos archivos de tareas y
+plays deben ser tan genéricos como sea posible. Las variables se pueden usar para parametrizar
+elementos de plays y tareas a fin de expandir la aplicación de plays y tareas.
+Por ejemplo, el siguiente archivo de tareas instala el paquete necesario para un servicio web y,
+luego, habilita e inicia el servicio requerido.
+---
+- name: Install the httpd package
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+256
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+- name: Start the httpd service
+  ansible.builtin.service:
+    name: httpd
+    enabled: true
+    state: started
+Si parametriza el paquete y los elementos de servicio como se muestra en el siguiente ejemplo, el
+archivo de tareas también se puede usar para la instalación y administración de otro software y sus
+servicios, en lugar de ser útil solo para el servicio web.
+---
+- name: Install the {{ package }} package
+  ansible.builtin.dnf:
+    name: "{{ package }}"
+    state: latest
+- name: Start the {{ service }} service
+  ansible.builtin.service:
+    name: "{{ service }}"
+    enabled: true
+    state: started
+Posteriormente, al incorporar el archivo de tareas en un playbook, defina las variables que se
+usarán para la ejecución de la tarea de la siguiente manera:
+...output omitted...
+  tasks:
+    - name: Import task file and set variables
+      ansible.builtin.import_tasks: task.yml
+      vars:
+        package: httpd
+        service: httpd
+Ansible hace que las variables transferidas estén disponibles para las tareas importadas desde el
+archivo externo.
+Puede usar la misma técnica para hacer que los archivos de play sean más reutilizables. Al
+incorporar un archivo de play en un playbook, se transfieren las variables que se usarán para la
+ejecución del play de la siguiente manera:
+...output omitted...
+- name: Import play file and set the variable
+  ansible.builtin.import_playbook: play.yml
+  vars:
+    package: mariadb
+RH294-RHEL9.0-es-3-20240620
+257
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Importante
+Las versiones anteriores de Ansible usaban el módulo
+ansible.builtin.include para incluir playbooks y archivos de tareas, según el
+contexto. Esta función está en desuso por varios motivos.
+Antes de Ansible 2.0, el módulo ansible.builtin.include funcionaba
+como una importación estática. En Ansible 2.0, se cambió para que funcione
+dinámicamente, pero esto causó ciertas limitaciones. En Ansible 2.1, se hizo posible
+que el módulo ansible.builtin.include sea dinámico o estático dependiendo
+de la configuración de la tarea, lo que era confuso y causaba errores. También hubo
+problemas para garantizar que el módulo ansible.builtin.include funcionase
+correctamente en todos los contextos.
+Por lo tanto, ansible.builtin.include se reemplazó en Ansible 2.4 con
+nuevas directivas como ansible.builtin.include_tasks, import_tasks y
+ansible.builtin.import_playbook. Podría encontrar ejemplos del módulo
+ansible.builtin.include en playbooks anteriores, pero debe evitar usarlo en
+otros más nuevos.
+Referencias
+Inclusión e importación: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_includes.html
+Creación de playbooks reutilizables: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse.html
+Condicionales: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_conditionals.html
+258
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Ejercicio Guiado
+Inclusión e importación de archivos
+Incluir e importar playbooks y tareas en un playbook de Ansible de máximo nivel.
+Resultados
+• Incluir archivos de playbooks y tareas en los playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-file
+Instrucciones
+ 1.
+Cambie al directorio /home/student/projects-file.
+[student@workstation ~]$ cd ~/projects-file
+[student@workstation projects-file]$
+ 2.
+Revise el contenido de los tres archivos en el subdirectorio tasks.
+2.1.
+Revise el contenido del archivo tasks/environment.yml. El archivo contiene
+tareas para la instalación de paquetes y la administración del servicio.
+---
+  - name: Install the {{ package }} package
+    ansible.builtin.dnf:
+      name: "{{ package }}"
+      state: latest
+  - name: Start the {{ service }} service
+    ansible.builtin.service:
+      name: "{{ service }}"
+      enabled: true
+      state: started
+2.2.
+Revise el contenido del archivo tasks/firewall.yml. El archivo contiene tareas
+para la instalación, administración y configuración del software de firewall.
+---
+  - name: Install the firewall
+    ansible.builtin.dnf:
+RH294-RHEL9.0-es-3-20240620
+259
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+      name: "{{ firewall_pkg }}"
+      state: latest
+  - name: Start the firewall
+    ansible.builtin.service:
+      name: "{{ firewall_svc }}"
+      enabled: true
+      state: started
+  - name: Open the port for {{ rule }}
+    ansible.posix.firewalld:
+      service: "{{ item }}"
+      immediate: true
+      permanent: true
+      state: enabled
+    loop: "{{ rule }}"
+2.3.
+Revise el contenido del archivo tasks/placeholder.yml. Este archivo contiene
+una tarea para completar un archivo de contenido web de marcador de posición.
+---
+  - name: Create placeholder file
+    ansible.builtin.copy:
+      content: "{{ ansible_facts['fqdn'] }} has been customized using Ansible.\n"
+      dest: "{{ file }}"
+ 3.
+Revise el contenido del archivo test.yml en el subdirectorio plays. Este archivo contiene
+un play que prueba las conexiones a un servicio web.
+---
+- name: Test web service
+  hosts: workstation
+  become: false
+  tasks:
+    - name: connect to internet web server
+      ansible.builtin.uri:
+        url: "{{ url }}"
+        status_code: 200
+ 4.
+Cree un playbook denominado playbook.yml. Defina el primer play con el nombre
+Configure web server. El play debe ejecutarse contra el host gestionado
+servera.lab.example.com definido en el archivo inventory. El inicio del archivo debe
+aparecer de la siguiente manera:
+---
+- name: Configure web server
+  hosts: servera.lab.example.com
+ 5.
+En el primer play del playbook playbook.yml, configure su sección tasks con tres
+conjuntos de tareas que se incluyen o importan desde archivos de tareas.
+260
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+La primera tarea del play debe incluir el primer conjunto de tareas del archivo de tareas
+tasks/environment.yml. Defina las variables de tareas necesarias para instalar el
+paquete httpd y para habilitar e iniciar el servicio httpd.
+La segunda tarea del play debe importar el segundo conjunto de tareas del archivo de
+tareas tasks/firewall.yml. Defina las variables necesarias de la tarea para instalar el
+paquete firewalld a fin de habilitar e iniciar el servicio firewalld y permitir texto sin
+formato y conexiones HTTP seguras.
+La tercera tarea del play debe importar el segundo conjunto de tareas del archivo de tareas
+tasks/placeholder.yml.
+5.1.
+Cree la sección de tareas en el primer play agregando la siguiente entrada al playbook
+playbook.yml.
+  tasks:
+5.2.
+Incluya el primer conjunto de tareas desde tasks/environment.yml con la
+característica include_tasks. Establezca las variables package y service en
+httpd.
+    - name: Include the environment task file and set the variables
+      include_tasks: tasks/environment.yml
+      vars:
+        package: httpd
+        service: httpd
+5.3.
+Importe el segundo conjunto de tareas desde tasks/firewall.yml con
+la característica import_tasks. Establezca las variables firewall_pkg y
+firewall_svc en firewalld. Establezca la variable rule en http y https.
+    - name: Import the firewall task file and set the variables
+      import_tasks: tasks/firewall.yml
+      vars:
+        firewall_pkg: firewalld
+        firewall_svc: firewalld
+        rule:
+          - http
+          - https
+5.4.
+Importe el último conjunto de tareas desde tasks/placeholder.yml usando la
+característica import_tasks. Establezca la variable file en /var/www/html/
+index.html.
+    - name: Import the placeholder task file and set the variable
+      import_tasks: tasks/placeholder.yml
+      vars:
+        file: /var/www/html/index.html
+ 6.
+Agregue un segundo play al playbook playbook.yml importando el contenido del
+playbook plays/test.yml.
+RH294-RHEL9.0-es-3-20240620
+261
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+6.1.
+Agregue un segundo play al playbook playbook.yml para validar la instalación del
+servidor web. Importar el play desde plays/test.yml. Establezca la variable url
+en http://servera.lab.example.com como variable de play.
+- name: Import test play file and set the variable
+  import_playbook: plays/test.yml
+  vars:
+    url: 'http://servera.lab.example.com'
+6.2.
+El playbook final debería incluir el siguiente contenido:
+---
+- name: Configure web server
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Include the environment task file and set the variables
+      include_tasks: tasks/environment.yml
+      vars:
+        package: httpd
+        service: httpd
+    - name: Import the firewall task file and set the variables
+      import_tasks: tasks/firewall.yml
+      vars:
+        firewall_pkg: firewalld
+        firewall_svc: firewalld
+        rule:
+          - http
+          - https
+    - name: Import the placeholder task file and set the variable
+      import_tasks: tasks/placeholder.yml
+      vars:
+        file: /var/www/html/index.html
+- name: Import test play file and set the variable
+  import_playbook: plays/test.yml
+  vars:
+    url: 'http://servera.lab.example.com'
+6.3.
+Guarde los cambios en el playbook playbook.yml.
+ 7.
+Antes de ejecutar el playbook, ejecute ansible-navigator run -m stdout
+playbook.yml --syntax-check para verificar que su sintaxis sea correcta. Corrija los
+errores informados antes de pasar al siguiente paso.
+[student@workstation projects-file]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+playbook: /home/student/projects-file/playbook.yml
+ 8.
+Ejecute el playbook playbook.yml. La salida de ansible-navigator muestra las
+tareas y los plays que se importan y el archivo de tareas que se incluye.
+262
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+[student@workstation projects-file]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Configure web server] ***********************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Include the environment task file and set the variables] ************
+included: /home/student/projects-file/tasks/environment.yml for
+ servera.lab.example.com
+TASK [Install the httpd package] ******************************************
+changed: [servera.lab.example.com]
+TASK [Start the httpd service] ********************************************
+changed: [servera.lab.example.com]
+TASK [Install the firewall] ***********************************************
+ok: [servera.lab.example.com]
+TASK [Start the firewall] *************************************************
+ok: [servera.lab.example.com]
+TASK [Open the port for ['http', 'https']] ********************************
+changed: [servera.lab.example.com] => (item=http)
+changed: [servera.lab.example.com] => (item=https)
+TASK [Create placeholder file] ********************************************
+changed: [servera.lab.example.com]
+PLAY [Test web service] ***************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [workstation]
+TASK [connect to internet web server] *************************************
+ok: [workstation]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=8    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish projects-file
+RH294-RHEL9.0-es-3-20240620
+263
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+264
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Trabajo de laboratorio
+Administración de plays y playbooks
+complejos
+Modificar un playbook complejo para que sea más fácil de gestionar mediante el uso de
+patrones de host, inclusiones e importaciones.
+Resultados
+• Especifique patrones de host para simplificar las referencias de host en un playbook.
+• Reestructure un playbook para que las tareas se importen desde archivos de tareas
+externos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-review
+Instrucciones
+Ha heredado un playbook del administrador anterior de algunos servidores web. El
+playbook se usa para configurar un servicio web en servera.lab.example.com,
+serverb.lab.example.com, serverc.lab.example.com y serverd.lab.example.com.
+En el playbook, también se configura el firewall en los cuatro hosts gestionados para permitir el
+tráfico web.
+Realice los siguientes cambios en el archivo del playbook playbook.yml para que sea más fácil
+de gestionar.
+1.
+Simplifique la lista de hosts gestionados por el play en el playbook /home/student/
+projects-review/playbook.yml usando un patrón de host comodín.
+Tiene un segundo playbook, /home/student/projects-review/host-test.yml, que
+contiene un play que puede usar para probar los patrones de host antes de usarlos en el play
+del playbook playbook.yml.
+2.
+Reestructure el playbook playbook.yml para que las cuatro primeras tareas del play
+se guarden en un archivo de tareas externo ubicado en tasks/web_tasks.yml. Use el
+módulo ansible.builtin.import_tasks para incorporar este archivo de tareas en el
+play.
+3.
+Reestructure el playbook playbook.yml para que la quinta, sexta y séptima tareas en su
+play se guarden en un archivo de tareas externo ubicado en tasks/firewall_tasks.yml.
+Use el módulo ansible.builtin.import_tasks para incorporar este archivo de tareas
+en el play.
+RH294-RHEL9.0-es-3-20240620
+265
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+4.
+Tanto el archivo tasks/web_tasks.yml como el archivo tasks/firewall_tasks.yml
+contienen tareas que instalan paquetes y habilitan servicios. Esas tareas podrían consolidarse
+en un solo archivo de tarea y podría usar variables, como package y service, para controlar
+qué paquetes y servicios están instalados y habilitados por esas tareas.
+Mueva las tareas que instalan paquetes y habilitan servicios a un archivo nuevo
+llamado tasks/install_and_enable.yml y actualícelos para que usen
+variables. Reemplace las tareas originales en el archivo tasks/web_tasks.yml
+y el archivo tasks/firewall_tasks.yml con una tarea que use el módulo
+ansible.builtin.import_tasks para incorporar el archivo tasks/
+install_and_enable.yml en el play. Asegúrese de pasar las variables adecuadas al
+nuevo archivo de tareas.
+5.
+Confirme que realizó los cambios en el play en playbook.yml correctamente y luego
+ejecute el playbook.
+Evaluación
+Ejecute el comando lab grade projects-review desde workstation para confirmar que
+ha realizado correctamente este ejercicio. Corrija los errores informados y vuelva a ejecutar el
+script hasta obtener un resultado satisfactorio.
+[student@workstation ~]$ lab grade projects-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish projects-review
+266
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Solución
+Administración de plays y playbooks
+complejos
+Modificar un playbook complejo para que sea más fácil de gestionar mediante el uso de
+patrones de host, inclusiones e importaciones.
+Resultados
+• Especifique patrones de host para simplificar las referencias de host en un playbook.
+• Reestructure un playbook para que las tareas se importen desde archivos de tareas
+externos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-review
+Instrucciones
+Ha heredado un playbook del administrador anterior de algunos servidores web. El
+playbook se usa para configurar un servicio web en servera.lab.example.com,
+serverb.lab.example.com, serverc.lab.example.com y serverd.lab.example.com.
+En el playbook, también se configura el firewall en los cuatro hosts gestionados para permitir el
+tráfico web.
+Realice los siguientes cambios en el archivo del playbook playbook.yml para que sea más fácil
+de gestionar.
+1.
+Simplifique la lista de hosts gestionados por el play en el playbook /home/student/
+projects-review/playbook.yml usando un patrón de host comodín.
+Tiene un segundo playbook, /home/student/projects-review/host-test.yml, que
+contiene un play que puede usar para probar los patrones de host antes de usarlos en el play
+del playbook playbook.yml.
+1.1.
+Cambie al directorio /home/student/projects-review. Revise el parámetro
+hosts en el archivo playbook.yml.
+[student@workstation ~]$ cd ~/projects-review
+[student@workstation projects-review]$ cat playbook.yml
+---
+- name: Install and configure web service
+  hosts:
+    - servera.lab.example.com
+RH294-RHEL9.0-es-3-20240620
+267
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+    - serverb.lab.example.com
+    - serverc.lab.example.com
+    - serverd.lab.example.com
+...output omitted...
+1.2.
+Verifique que el patrón del host server*.lab.example.com identifique
+correctamente los cuatro hosts gestionados que son el objetivo del playbook
+playbook.yml. Vea el contenido del playbook host-test.yml, luego ejecute el
+playbook.
+[student@workstation projects-review]$ cat host-test.yml
+---
+- name: List inventory hostnames
+  hosts: server*.lab.example.com
+  gather_facts: false
+  tasks:
+    - name: List inventory hostnames
+      ansible.builtin.debug:
+        msg: "{{inventory_hostname}}"
+[student@workstation projects-review]$ ansible-navigator run \
+> -m stdout host-test.yml
+PLAY [List inventory hostnames] ********************************************
+TASK [List inventory hostnames] ********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "servera.lab.example.com"
+}
+ok: [serverb.lab.example.com] => {
+    "msg": "serverb.lab.example.com"
+}
+ok: [serverc.lab.example.com] => {
+    "msg": "serverc.lab.example.com"
+}
+ok: [serverd.lab.example.com] => {
+    "msg": "serverd.lab.example.com"
+}
+PLAY RECAP *****************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverc.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverd.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+1.3.
+Reemplace la lista de hosts en el playbook playbook.yml con el patrón de host
+server*.lab.example.com.
+268
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+---
+- name: Install and configure web service
+  hosts: server*.lab.example.com
+...output omitted...
+2.
+Reestructure el playbook playbook.yml para que las cuatro primeras tareas del play
+se guarden en un archivo de tareas externo ubicado en tasks/web_tasks.yml. Use el
+módulo ansible.builtin.import_tasks para incorporar este archivo de tareas en el
+play.
+2.1.
+Cree el subdirectorio tasks.
+[student@workstation projects-review]$ mkdir tasks
+2.2.
+Coloque el contenido de las cuatro primeras tareas en el play del playbook
+playbook.yml dentro del archivo tasks/web_tasks.yml. El archivo de tareas
+debe incluir el siguiente contenido:
+---
+- name: Install httpd
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+- name: Enable and start httpd
+  ansible.builtin.service:
+    name: httpd
+    enabled: true
+    state: started
+- name: Tuning configuration installed
+  ansible.builtin.copy:
+    src: files/tune.conf
+    dest: /etc/httpd/conf.d/tune.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart httpd
+- name: Deploy index page
+  ansible.builtin.copy:
+    content: |
+      This is {{ ansible_facts['fqdn'] }}.
+    dest: /var/www/html/index.html
+2.3.
+Elimine las cuatro primeras tareas del play en el playbook playbook.yml. Coloque las
+siguientes líneas para importar el archivo de tareas tasks/web_tasks.yml.
+    - name: Import the web_tasks.yml task file
+      ansible.builtin.import_tasks: tasks/web_tasks.yml
+RH294-RHEL9.0-es-3-20240620
+269
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+3.
+Reestructure el playbook playbook.yml para que la quinta, sexta y séptima tareas en su
+play se guarden en un archivo de tareas externo ubicado en tasks/firewall_tasks.yml.
+Use el módulo ansible.builtin.import_tasks para incorporar este archivo de tareas
+en el play.
+3.1.
+Coloque el contenido de las tres tareas restantes en el play playbook.yml dentro del
+archivo tasks/firewall_tasks.yml. El archivo de tareas debe incluir el siguiente
+contenido.
+---
+- name: Install firewalld
+  ansible.builtin.dnf:
+    name: firewalld
+    state: latest
+- name: Enable and start the firewall
+  ansible.builtin.service:
+    name: firewalld
+    enabled: true
+    state: started
+- name: Open the port for http
+  ansible.posix.firewalld:
+    service: http
+    immediate: true
+    permanent: true
+    state: enabled
+3.2.
+Elimine las tres tareas restantes del play en el playbook playbook.yml. Coloque
+las siguientes líneas en su lugar, lo que importa el archivo de tareas tasks/
+firewall_tasks.yml.
+    - name: Import the firewall_tasks.yml task file
+      ansible.builtin.import_tasks: tasks/firewall_tasks.yml
+4.
+Tanto el archivo tasks/web_tasks.yml como el archivo tasks/firewall_tasks.yml
+contienen tareas que instalan paquetes y habilitan servicios. Esas tareas podrían consolidarse
+en un solo archivo de tarea y podría usar variables, como package y service, para controlar
+qué paquetes y servicios están instalados y habilitados por esas tareas.
+Mueva las tareas que instalan paquetes y habilitan servicios a un archivo nuevo
+llamado tasks/install_and_enable.yml y actualícelos para que usen
+variables. Reemplace las tareas originales en el archivo tasks/web_tasks.yml
+y el archivo tasks/firewall_tasks.yml con una tarea que use el módulo
+ansible.builtin.import_tasks para incorporar el archivo tasks/
+install_and_enable.yml en el play. Asegúrese de pasar las variables adecuadas al
+nuevo archivo de tareas.
+4.1.
+Copie las tareas ansible.builtin.dnf y ansible.builtin.service
+de tasks/web_tasks.yml en un archivo nuevo llamado tasks/
+install_and_enable.yml.
+---
+- name: Install httpd
+  ansible.builtin.dnf:
+270
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+    name: httpd
+    state: latest
+- name: Enable and start httpd
+  ansible.builtin.service:
+    name: httpd
+    enabled: true
+    state: started
+4.2.
+Reemplace los nombres del paquete y el servicio en tasks/
+install_and_enable.yml con las variables package y service.
+---
+- name: Install {{ package }}
+  ansible.builtin.dnf:
+    name: "{{ package }}"
+    state: latest
+- name: Enable and start {{ service }}
+  ansible.builtin.service:
+    name: "{{ service }}"
+    enabled: true
+    state: started
+4.3.
+Reemplace las tareas ansible.builtin.dnf y ansible.builtin.service en
+tasks/web_tasks.yml y tasks/firewall_tasks.yml con una sola tarea que
+use el módulo ansible.builtin.import_tasks para importar el archivo de tareas
+install_and_enable.yml. Defina los valores apropiados en las variables de tareas
+para instalar el paquete correcto e iniciar el servicio correcto.
+---
+- name: Install and start httpd
+  ansible.builtin.import_tasks: install_and_enable.yml
+  vars:
+    package: httpd
+    service: httpd
+- name: Tuning configuration installed
+  ansible.builtin.copy:
+    src: files/tune.conf
+    dest: /etc/httpd/conf.d/tune.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart httpd
+- name: Deploy index page
+  ansible.builtin.copy:
+    content: |
+      This is {{ ansible_facts['fqdn'] }}.
+    dest: /var/www/html/index.html
+RH294-RHEL9.0-es-3-20240620
+271
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+---
+- name: Install and start firewalld
+  ansible.builtin.import_tasks: install_and_enable.yml
+  vars:
+    package: firewalld
+    service: firewalld
+- name: Open the port for http
+  ansible.posix.firewalld:
+    service: http
+    immediate: true
+    permanent: true
+    state: enabled
+5.
+Confirme que realizó los cambios en el play en playbook.yml correctamente y luego
+ejecute el playbook.
+5.1.
+Verifique que el playbook playbook.yml incluya el siguiente contenido:
+---
+- name: Install and configure web service
+  hosts: server*.lab.example.com
+  tasks:
+    - name: Import the web_tasks.yml task file
+      ansible.builtin.import_tasks: tasks/web_tasks.yml
+    - name: Import the firewall_tasks.yml task file
+      ansible.builtin.import_tasks: tasks/firewall_tasks.yml
+  handlers:
+    - name: restart httpd
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+5.2.
+Ejecute el playbook playbook.yml con ansible-navigator run --syntax-
+check para verificar que el playbook no contiene errores de sintaxis. Corrija cualquier
+error antes de continuar.
+[student@workstation projects-review]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+playbook: /home/student/projects-review/playbook.yml
+5.3.
+Ejecute el playbook playbook.yml.
+[student@workstation projects-review]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Install and configure web service] ***********************************
+TASK [Gathering Facts] *****************************************************
+272
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Install httpd] *******************************************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [Enable and start httpd] **********************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [Tuning configuration installed] **************************************
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+TASK [Deploy index page] ***************************************************
+changed: [serverc.lab.example.com]
+changed: [serverd.lab.example.com]
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Install firewalld] ***************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+TASK [Enable and start firewalld] ******************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+ok: [serverc.lab.example.com]
+ok: [serverd.lab.example.com]
+TASK [Open the port for http] **********************************************
+changed: [serverd.lab.example.com]
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+changed: [serverc.lab.example.com]
+RUNNING HANDLER [restart httpd] ********************************************
+changed: [serverd.lab.example.com]
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP *****************************************************************
+RH294-RHEL9.0-es-3-20240620
+273
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+servera.lab.example.com    : ok=9    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=9    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverc.lab.example.com    : ok=9    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverd.lab.example.com    : ok=9    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Evaluación
+Ejecute el comando lab grade projects-review desde workstation para confirmar que
+ha realizado correctamente este ejercicio. Corrija los errores informados y vuelva a ejecutar el
+script hasta obtener un resultado satisfactorio.
+[student@workstation ~]$ lab grade projects-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish projects-review
+274
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Resumen
+• Los patrones de host se usan para especificar los hosts gestionados a los que deben apuntar los
+plays.
+• Puede especificar una lista de múltiples patrones de host en la directiva hosts de un play.
+• Puede usar la característica import_playbook para incorporar archivos de play externos a los
+playbooks.
+• Puede usar la característica include_tasks o import_tasks para incorporar archivos de
+tareas externos a los playbooks.
+• Cuando incluye contenido, Ansible lo procesa dinámicamente a medida que se alcanza el
+contenido. Cuando importa contenido, Ansible lo preprocesa antes de que comience la
+ejecución.
+RH294-RHEL9.0-es-3-20240620
+275
+
+
+276
+RH294-RHEL9.0-es-3-20240620
+
+

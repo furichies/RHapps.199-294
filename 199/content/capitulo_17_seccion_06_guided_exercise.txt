@@ -1,0 +1,110 @@
+# Ejercicio Guiado: Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos 14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los booleanos Cambie el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Configure el servicio web Apache para publicar contenido web desde el directorio de inicio del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-booleans
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Edite el archivo de configuración /etc/httpd/conf.d/userdir.conf para habilitar la función Apache para que los usuarios puedan publicar contenido web desde su directorio de inicio. Comente la línea en la sección IfModule que establece la variable UserDir en el valor deshabilitado y descomente la línea que establece la variable UserDir en el valor public_html. ...salida omitida... <IfModule mod_userdir.c> ...salida omitida...
+
+    # UserDir disabled
+
+...salida omitida...
+
+    UserDir public_html
+
+...salida omitida... </IfModule> 2. Inicie y habilite el servicio web Apache.
+
+[root@servera ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. 3. Regrese como usuario estudiante en la máquina del servidor. Cree el archivo ~/public_html/index.html con el contenido Esto es para estudiantes en SERVERA. contenido. 4. Regrese como usuario estudiante en la máquina del servidor. 4.1.
+
+
+
+
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos
+
+[root@servera ~]# exit
+
+cerrar sesión [estudiante@servera ~]$ Cree el directorio ~/public_html.
+
+[student@servera ~]$ mkdir ~/public_html
+
+4.2. Cree el archivo ~/public_html/index.html con el siguiente contenido:
+
+[student@servera ~]$ echo 'This is student content on SERVERA.' > \
+
+~/public_html/index.html 4.3. Para que el servicio web Apache proporcione el contenido del directorio /home/student/public_html, se debe permitir compartir archivos y subdirectorios en el directorio /home/student. Cuando creó el directorio /home/student/public_html, se configuró automáticamente para permitir que cualquier persona con permiso del directorio de inicio acceda a su contenido. Cambie los permisos del directorio /home/student para permitir que el servicio web Apache acceda al subdirectorio public_html.
+
+[student@servera ~]$ chmod 711 /home/student
+
+4.4. Verifique los permisos del directorio /home/student.
+
+[student@servera ~]$ ls -ld /home/student
+drwx--x--x. 16 student student 4096 Nov  3 09:28 /home/student
+
+4.5. En la máquina de la estación de trabajo, abra el navegador web Firefox e ingrese el
+
+http://servera/~student/index.html address.
+
+Un mensaje de error indica que no tiene permiso para acceder al archivo. 5. Inicie sesión como usuario root en la máquina del servidor. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 6. Utilice el comando getsebool para determinar si algún valor booleano restringe el acceso a los directorios principales para el servicio httpd.
+
+[root@servera ~]# getsebool -a | grep home
+
+...salida omitida... httpd_enable_homedirs --> off ...salida omitida... 7. Utilice el comando setsebool para habilitar el acceso persistente al directorio de inicio para el servicio httpd.
+
+[root@servera ~]# setsebool -P httpd_enable_homedirs on
+
+8. En la máquina de la estación de trabajo, abra el navegador web Firefox e ingrese el
+
+http://servera/~student/index.html address.
+
+9.
+
+
+
+
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-booleans
+
+Verifica que ahora puedes ver el contenido de Esto es estudiante en SERVERA. mensaje. Es posible que tengas que cerrar y volver a abrir tu navegador web para ver el mensaje. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+10.
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux 14.7. Investigación y resolución de problemas de SELinux Objetivos Investigar problemas que potencialmente se relacionen con SELinux mediante el uso de herramientas de análisis de registros de SELinux e interpretando sus resultados. Solucionar problemas de SELinux Cuando las aplicaciones inesperadamente no funcionan debido a denegaciones de acceso a SELinux, hay métodos y herramientas disponibles para resolver estos problemas. Es útil comenzar por comprender algunos conceptos y comportamientos fundamentales cuando SELinux está habilitado. SELinux consta de políticas específicas que definen explícitamente acciones permitidas. Una entrada de política define un proceso etiquetado y un recurso etiquetado que interactúan. La política establece el tipo de proceso y el contexto del archivo o puerto mediante etiquetas. La entrada de política define un tipo de proceso, una etiqueta de recurso y la acción explícita que se permitirá. Una acción puede ser una llamada al sistema, una función del núcleo u otra rutina de programación específica. Si no se crea ninguna entrada para una relación proceso-recurso-acción específica, entonces se deniega la acción. Cuando se rechaza una acción, el intento se registra con información de contexto. Red Hat Enterprise Linux proporciona una política SELinux específica y estable para casi todos los servicios de la distribución. Por lo tanto, es inusual tener problemas de acceso de SELinux con servicios comunes de RHEL cuando están configurados correctamente. Los problemas de acceso a SELinux ocurren cuando los servicios se implementan incorrectamente o cuando las nuevas aplicaciones tienen políticas incompletas. Considere estos conceptos de solución de problemas antes de realizar cambios amplios en la configuración de SELinux. La mayoría de las denegaciones de acceso indican que SELinux está funcionando correctamente al bloquear acciones inadecuadas. La evaluación de acciones denegadas requiere cierta familiaridad con las acciones de servicio normales y esperadas. El problema más común de SELinux es un contexto incorrecto en archivos nuevos, copiados o movidos. Los contextos de archivos se pueden arreglar cuando una política existente hace referencia a su ubicación. Las características opcionales de la política booleana están documentadas en las páginas del manual de _selinux. La implementación de funciones booleanas generalmente requiere establecer una configuración adicional que no sea SELinux. Las políticas de SELinux no reemplazan ni eluden los permisos de archivos ni las restricciones de la lista de control de acceso. Cuando falla una aplicación o servicio común y se sabe que el servicio tiene una política SELinux funcional, primero consulte la página de manual _selinux del servicio para verificar la etiqueta de tipo de contexto correcta. Vea el proceso afectado y los atributos del archivo para verificar que estén configuradas las etiquetas correctas. Monitorear violaciones de SELinux El servicio de resolución de problemas de SELinux, del paquete setroubleshoot-server, proporciona herramientas para diagnosticar problemas de SELinux. Cuando SELinux niega una acción, se registra un mensaje de Access Vector Cache (AVC) en el archivo de registro de seguridad /var/log/audit/audit.log. El servicio de resolución de problemas de SELinux monitorea los eventos AVC y envía un resumen del evento al archivo /var/log/messages. El resumen de AVC incluye un identificador único de evento (UUID). Utilice el comando sealert -l UUID para ver detalles completos del informe para el evento específico. Utilice el comando sealert -a /var/log/audit/audit.log
+
+
+
+
+

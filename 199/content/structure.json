@@ -1,0 +1,1475 @@
+{
+  "chapters": [
+    {
+      "number": 1,
+      "title": "Vía rápida RHCSA",
+      "file": "capitulo_01.txt",
+      "start_page": 8,
+      "end_page": 8,
+      "sections": []
+    },
+    {
+      "number": 2,
+      "title": "Convenciones de documentos",
+      "file": "capitulo_02.txt",
+      "start_page": 9,
+      "end_page": 9,
+      "sections": [
+        {
+          "title": "amonestaciones",
+          "type": "theory",
+          "file": "capitulo_02_seccion_01_theory.txt",
+          "start_page": 9,
+          "end_page": 8,
+          "chars": 1660
+        },
+        {
+          "title": "Uso de Inteligencia Artificial",
+          "type": "theory",
+          "file": "capitulo_02_seccion_02_theory.txt",
+          "start_page": 9,
+          "end_page": 8,
+          "chars": 1660
+        },
+        {
+          "title": "Lenguaje inclusivo",
+          "type": "theory",
+          "file": "capitulo_02_seccion_03_theory.txt",
+          "start_page": 9,
+          "end_page": 9,
+          "chars": 4754
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Introducción",
+      "file": "capitulo_03.txt",
+      "start_page": 10,
+      "end_page": 13,
+      "sections": [
+        {
+          "title": "Vía rápida RHCSA",
+          "type": "theory",
+          "file": "capitulo_03_seccion_01_theory.txt",
+          "start_page": 10,
+          "end_page": 10,
+          "chars": 4323
+        },
+        {
+          "title": "Orientación al ambiente del aula",
+          "type": "theory",
+          "file": "capitulo_03_seccion_02_theory.txt",
+          "start_page": 11,
+          "end_page": 11,
+          "chars": 4026
+        },
+        {
+          "title": "Trabajo de laboratorio: Realizar ejercicios de laboratorio",
+          "type": "lab",
+          "file": "capitulo_03_seccion_03_lab.txt",
+          "start_page": 12,
+          "end_page": 13,
+          "chars": 3419
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Capítulo 1. Registro de sistemas para soporte de Red Hat",
+      "file": "capitulo_04.txt",
+      "start_page": 14,
+      "end_page": 28,
+      "sections": [
+        {
+          "title": "1.1. Registro de sistemas para soporte de Red Hat",
+          "type": "theory",
+          "file": "capitulo_04_seccion_01_theory.txt",
+          "start_page": 15,
+          "end_page": 23,
+          "chars": 18134
+        },
+        {
+          "title": "Cuestionario: Sistemas de registro de cuestionarios para soporte de Red Hat",
+          "type": "quiz",
+          "file": "capitulo_04_seccion_02_quiz.txt",
+          "start_page": 24,
+          "end_page": 27,
+          "chars": 6227
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_04_seccion_03_summary.txt",
+          "start_page": 28,
+          "end_page": 28,
+          "chars": 1358
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Capítulo 2. Administrar archivos desde la línea de comandos",
+      "file": "capitulo_05.txt",
+      "start_page": 29,
+      "end_page": 64,
+      "sections": [
+        {
+          "title": "2.1. Administrar archivos con herramientas de línea de comandos",
+          "type": "theory",
+          "file": "capitulo_05_seccion_01_theory.txt",
+          "start_page": 30,
+          "end_page": 34,
+          "chars": 12013
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar archivos con herramientas de línea de comandos",
+          "type": "guided_exercise",
+          "file": "capitulo_05_seccion_02_guided_exercise.txt",
+          "start_page": 35,
+          "end_page": 38,
+          "chars": 9985
+        },
+        {
+          "title": "2.3. Crear vínculos entre archivos",
+          "type": "theory",
+          "file": "capitulo_05_seccion_03_theory.txt",
+          "start_page": 39,
+          "end_page": 42,
+          "chars": 11580
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Crear vínculos entre archivos",
+          "type": "guided_exercise",
+          "file": "capitulo_05_seccion_04_guided_exercise.txt",
+          "start_page": 43,
+          "end_page": 44,
+          "chars": 5505
+        },
+        {
+          "title": "2.5. Coincidencia de nombres de archivos con expansiones de Shell",
+          "type": "theory",
+          "file": "capitulo_05_seccion_05_theory.txt",
+          "start_page": 45,
+          "end_page": 49,
+          "chars": 12848
+        },
+        {
+          "title": "Cuestionario: Nombres de archivos de coincidencia de cuestionarios con expansiones de Shell",
+          "type": "quiz",
+          "file": "capitulo_05_seccion_06_quiz.txt",
+          "start_page": 50,
+          "end_page": 53,
+          "chars": 5147
+        },
+        {
+          "title": "Trabajo de laboratorio: Práctica de laboratorio Administrar archivos desde la línea de comandos",
+          "type": "lab",
+          "file": "capitulo_05_seccion_07_lab.txt",
+          "start_page": 54,
+          "end_page": 63,
+          "chars": 24950
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_05_seccion_08_summary.txt",
+          "start_page": 64,
+          "end_page": 64,
+          "chars": 1062
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "title": "Capítulo 3. Edición de archivos de texto",
+      "file": "capitulo_06.txt",
+      "start_page": 65,
+      "end_page": 72,
+      "sections": [
+        {
+          "title": "3.1. Editar archivos de texto desde la línea de comando",
+          "type": "theory",
+          "file": "capitulo_06_seccion_01_theory.txt",
+          "start_page": 66,
+          "end_page": 69,
+          "chars": 10617
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Editar archivos de texto desde la línea de comandos",
+          "type": "guided_exercise",
+          "file": "capitulo_06_seccion_02_guided_exercise.txt",
+          "start_page": 70,
+          "end_page": 71,
+          "chars": 4244
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_06_seccion_03_summary.txt",
+          "start_page": 72,
+          "end_page": 72,
+          "chars": 1201
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Capítulo 4. Gestión de usuarios y grupos locales",
+      "file": "capitulo_07.txt",
+      "start_page": 73,
+      "end_page": 118,
+      "sections": [
+        {
+          "title": "4.1. Usuarios y grupos de Linux",
+          "type": "theory",
+          "file": "capitulo_07_seccion_01_theory.txt",
+          "start_page": 74,
+          "end_page": 77,
+          "chars": 10638
+        },
+        {
+          "title": "Cuestionario: Usuarios y grupos de Linux",
+          "type": "quiz",
+          "file": "capitulo_07_seccion_02_quiz.txt",
+          "start_page": 78,
+          "end_page": 80,
+          "chars": 5653
+        },
+        {
+          "title": "4.3. Obtener acceso de superusuario",
+          "type": "theory",
+          "file": "capitulo_07_seccion_03_theory.txt",
+          "start_page": 81,
+          "end_page": 85,
+          "chars": 15631
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Obtenga acceso de superusuario",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_04_guided_exercise.txt",
+          "start_page": 86,
+          "end_page": 89,
+          "chars": 10375
+        },
+        {
+          "title": "4.5. Administrar cuentas de usuarios locales",
+          "type": "theory",
+          "file": "capitulo_07_seccion_05_theory.txt",
+          "start_page": 90,
+          "end_page": 93,
+          "chars": 8392
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar cuentas de usuarios locales",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_06_guided_exercise.txt",
+          "start_page": 94,
+          "end_page": 96,
+          "chars": 7046
+        },
+        {
+          "title": "4.7. Administrar cuentas de grupos locales",
+          "type": "theory",
+          "file": "capitulo_07_seccion_07_theory.txt",
+          "start_page": 97,
+          "end_page": 100,
+          "chars": 8981
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar cuentas de grupos locales",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_08_guided_exercise.txt",
+          "start_page": 101,
+          "end_page": 103,
+          "chars": 8338
+        },
+        {
+          "title": "4.9. Administrar contraseñas de usuario",
+          "type": "theory",
+          "file": "capitulo_07_seccion_09_theory.txt",
+          "start_page": 104,
+          "end_page": 108,
+          "chars": 14522
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar contraseñas de usuarios",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_10_guided_exercise.txt",
+          "start_page": 109,
+          "end_page": 112,
+          "chars": 9569
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio Administrar usuarios y grupos locales",
+          "type": "lab",
+          "file": "capitulo_07_seccion_11_lab.txt",
+          "start_page": 113,
+          "end_page": 117,
+          "chars": 10324
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_07_seccion_12_summary.txt",
+          "start_page": 118,
+          "end_page": 118,
+          "chars": 1751
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "title": "Capítulo 5. Controlar el acceso a los archivos",
+      "file": "capitulo_08.txt",
+      "start_page": 119,
+      "end_page": 151,
+      "sections": [
+        {
+          "title": "5.1. Interpretación de permisos de archivos de Linux",
+          "type": "theory",
+          "file": "capitulo_08_seccion_01_theory.txt",
+          "start_page": 120,
+          "end_page": 123,
+          "chars": 12768
+        },
+        {
+          "title": "Cuestionario: Prueba de interpretación de permisos de archivos de Linux",
+          "type": "quiz",
+          "file": "capitulo_08_seccion_02_quiz.txt",
+          "start_page": 124,
+          "end_page": 126,
+          "chars": 4493
+        },
+        {
+          "title": "5.3. Administrar permisos de archivos desde la línea de comandos",
+          "type": "theory",
+          "file": "capitulo_08_seccion_03_theory.txt",
+          "start_page": 127,
+          "end_page": 131,
+          "chars": 11630
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar permisos de archivos desde la línea de comandos",
+          "type": "guided_exercise",
+          "file": "capitulo_08_seccion_04_guided_exercise.txt",
+          "start_page": 132,
+          "end_page": 134,
+          "chars": 8009
+        },
+        {
+          "title": "5.5. Gestión de permisos predeterminados y permisos especiales",
+          "type": "theory",
+          "file": "capitulo_08_seccion_05_theory.txt",
+          "start_page": 135,
+          "end_page": 139,
+          "chars": 12206
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar permisos predeterminados y permisos especiales",
+          "type": "guided_exercise",
+          "file": "capitulo_08_seccion_06_guided_exercise.txt",
+          "start_page": 140,
+          "end_page": 143,
+          "chars": 8822
+        },
+        {
+          "title": "Trabajo de laboratorio: Acceso de control de laboratorio a archivos",
+          "type": "lab",
+          "file": "capitulo_08_seccion_07_lab.txt",
+          "start_page": 144,
+          "end_page": 150,
+          "chars": 13615
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_08_seccion_08_summary.txt",
+          "start_page": 151,
+          "end_page": 151,
+          "chars": 1936
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Capítulo 6. Instalación y actualización de software con RPM",
+      "file": "capitulo_09.txt",
+      "start_page": 152,
+      "end_page": 188,
+      "sections": [
+        {
+          "title": "6.1. Investigación de paquetes de software RPM",
+          "type": "theory",
+          "file": "capitulo_09_seccion_01_theory.txt",
+          "start_page": 153,
+          "end_page": 158,
+          "chars": 13277
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado: Investigación de un paquete de software RPM",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_02_guided_exercise.txt",
+          "start_page": 159,
+          "end_page": 162,
+          "chars": 9396
+        },
+        {
+          "title": "6.3. Instalación y actualización de paquetes con DNF",
+          "type": "theory",
+          "file": "capitulo_09_seccion_03_theory.txt",
+          "start_page": 163,
+          "end_page": 169,
+          "chars": 17675
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado de instalación y actualización de paquetes con DNF",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_04_guided_exercise.txt",
+          "start_page": 170,
+          "end_page": 174,
+          "chars": 11478
+        },
+        {
+          "title": "6.5. Habilitación de repositorios de software DNF",
+          "type": "theory",
+          "file": "capitulo_09_seccion_05_theory.txt",
+          "start_page": 175,
+          "end_page": 177,
+          "chars": 9795
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Habilitar un repositorio de software DNF",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_06_guided_exercise.txt",
+          "start_page": 178,
+          "end_page": 181,
+          "chars": 9836
+        },
+        {
+          "title": "Trabajo de laboratorio: Instalación de laboratorio y actualización de software con RPM",
+          "type": "lab",
+          "file": "capitulo_09_seccion_07_lab.txt",
+          "start_page": 182,
+          "end_page": 187,
+          "chars": 10014
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_09_seccion_08_summary.txt",
+          "start_page": 188,
+          "end_page": 188,
+          "chars": 1416
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "title": "Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak",
+      "file": "capitulo_10.txt",
+      "start_page": 189,
+      "end_page": 214,
+      "sections": [
+        {
+          "title": "7.1. Configuración de Flatpak para la instalación de aplicaciones",
+          "type": "theory",
+          "file": "capitulo_10_seccion_01_theory.txt",
+          "start_page": 190,
+          "end_page": 195,
+          "chars": 13774
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Configurar Flatpak para la instalación de aplicaciones",
+          "type": "guided_exercise",
+          "file": "capitulo_10_seccion_02_guided_exercise.txt",
+          "start_page": 196,
+          "end_page": 198,
+          "chars": 9247
+        },
+        {
+          "title": "7.3. Administrar aplicaciones desde Flatpak",
+          "type": "theory",
+          "file": "capitulo_10_seccion_03_theory.txt",
+          "start_page": 199,
+          "end_page": 204,
+          "chars": 16292
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar aplicaciones desde Flatpak",
+          "type": "guided_exercise",
+          "file": "capitulo_10_seccion_04_guided_exercise.txt",
+          "start_page": 205,
+          "end_page": 209,
+          "chars": 12017
+        },
+        {
+          "title": "Cuestionario: Prueba de instalación y actualización de aplicaciones mediante Flatpak",
+          "type": "quiz",
+          "file": "capitulo_10_seccion_05_quiz.txt",
+          "start_page": 210,
+          "end_page": 213,
+          "chars": 6617
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_10_seccion_06_summary.txt",
+          "start_page": 214,
+          "end_page": 214,
+          "chars": 1169
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "title": "Capítulo 8. Acceso a medios extraíbles",
+      "file": "capitulo_11.txt",
+      "start_page": 215,
+      "end_page": 240,
+      "sections": [
+        {
+          "title": "8.1. Identificación de sistemas de archivos y dispositivos de bloque",
+          "type": "theory",
+          "file": "capitulo_11_seccion_01_theory.txt",
+          "start_page": 216,
+          "end_page": 219,
+          "chars": 10915
+        },
+        {
+          "title": "Cuestionario: Prueba de identificación de sistemas de archivos y dispositivos de bloque",
+          "type": "quiz",
+          "file": "capitulo_11_seccion_02_quiz.txt",
+          "start_page": 220,
+          "end_page": 221,
+          "chars": 4449
+        },
+        {
+          "title": "8.3. Montaje y desmontaje de sistemas de archivos",
+          "type": "theory",
+          "file": "capitulo_11_seccion_03_theory.txt",
+          "start_page": 222,
+          "end_page": 224,
+          "chars": 8892
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Montar y desmontar un sistema de archivos",
+          "type": "guided_exercise",
+          "file": "capitulo_11_seccion_04_guided_exercise.txt",
+          "start_page": 225,
+          "end_page": 226,
+          "chars": 5887
+        },
+        {
+          "title": "8.5. Localizar archivos en un sistema de archivos",
+          "type": "theory",
+          "file": "capitulo_11_seccion_05_theory.txt",
+          "start_page": 227,
+          "end_page": 233,
+          "chars": 15814
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado para localizar archivos en un sistema de archivos",
+          "type": "guided_exercise",
+          "file": "capitulo_11_seccion_06_guided_exercise.txt",
+          "start_page": 234,
+          "end_page": 236,
+          "chars": 5638
+        },
+        {
+          "title": "Trabajo de laboratorio: Acceso al laboratorio Medios extraíbles",
+          "type": "lab",
+          "file": "capitulo_11_seccion_07_lab.txt",
+          "start_page": 237,
+          "end_page": 239,
+          "chars": 7356
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_11_seccion_08_summary.txt",
+          "start_page": 240,
+          "end_page": 240,
+          "chars": 1865
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "title": "Capítulo 9. Monitoreo y gestión de procesos Linux",
+      "file": "capitulo_12.txt",
+      "start_page": 241,
+      "end_page": 285,
+      "sections": [
+        {
+          "title": "9.1. Procesos y ciclo de vida del proceso",
+          "type": "theory",
+          "file": "capitulo_12_seccion_01_theory.txt",
+          "start_page": 242,
+          "end_page": 246,
+          "chars": 10738
+        },
+        {
+          "title": "Cuestionario: Procesos de prueba y ciclo de vida del proceso",
+          "type": "quiz",
+          "file": "capitulo_12_seccion_02_quiz.txt",
+          "start_page": 247,
+          "end_page": 248,
+          "chars": 4415
+        },
+        {
+          "title": "9.3. Gestión de procesos con control de trabajos",
+          "type": "theory",
+          "file": "capitulo_12_seccion_03_theory.txt",
+          "start_page": 249,
+          "end_page": 251,
+          "chars": 7910
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Gestionar procesos con control de trabajos",
+          "type": "guided_exercise",
+          "file": "capitulo_12_seccion_04_guided_exercise.txt",
+          "start_page": 252,
+          "end_page": 255,
+          "chars": 10113
+        },
+        {
+          "title": "9.5. Envío de señales a procesos",
+          "type": "theory",
+          "file": "capitulo_12_seccion_05_theory.txt",
+          "start_page": 256,
+          "end_page": 261,
+          "chars": 16397
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Envío de señales a procesos",
+          "type": "guided_exercise",
+          "file": "capitulo_12_seccion_06_guided_exercise.txt",
+          "start_page": 262,
+          "end_page": 265,
+          "chars": 10435
+        },
+        {
+          "title": "9.7. Actividad del proceso de seguimiento",
+          "type": "theory",
+          "file": "capitulo_12_seccion_07_theory.txt",
+          "start_page": 266,
+          "end_page": 269,
+          "chars": 10990
+        },
+        {
+          "title": "Ejercicio Guiado: Actividad del proceso del monitor de ejercicio guiado",
+          "type": "guided_exercise",
+          "file": "capitulo_12_seccion_08_guided_exercise.txt",
+          "start_page": 270,
+          "end_page": 274,
+          "chars": 12417
+        },
+        {
+          "title": "Trabajo de laboratorio: Supervisión de laboratorio y gestión de procesos de Linux",
+          "type": "lab",
+          "file": "capitulo_12_seccion_09_lab.txt",
+          "start_page": 275,
+          "end_page": 284,
+          "chars": 23613
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_12_seccion_10_summary.txt",
+          "start_page": 285,
+          "end_page": 285,
+          "chars": 1069
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "title": "Capítulo 10. Control de servicios y demonios",
+      "file": "capitulo_13.txt",
+      "start_page": 286,
+      "end_page": 308,
+      "sections": [
+        {
+          "title": "10.1. Identificar procesos del sistema que se inician automáticamente",
+          "type": "theory",
+          "file": "capitulo_13_seccion_01_theory.txt",
+          "start_page": 287,
+          "end_page": 291,
+          "chars": 14297
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Identificar procesos del sistema que se inician automáticamente",
+          "type": "guided_exercise",
+          "file": "capitulo_13_seccion_02_guided_exercise.txt",
+          "start_page": 292,
+          "end_page": 295,
+          "chars": 9362
+        },
+        {
+          "title": "10.3. Servicios del sistema de control",
+          "type": "theory",
+          "file": "capitulo_13_seccion_03_theory.txt",
+          "start_page": 296,
+          "end_page": 299,
+          "chars": 11302
+        },
+        {
+          "title": "Ejercicio Guiado: Servicios del sistema de control del ejercicio guiado",
+          "type": "guided_exercise",
+          "file": "capitulo_13_seccion_04_guided_exercise.txt",
+          "start_page": 300,
+          "end_page": 303,
+          "chars": 8737
+        },
+        {
+          "title": "Trabajo de laboratorio: Servicios de control de laboratorio y demonios",
+          "type": "lab",
+          "file": "capitulo_13_seccion_05_lab.txt",
+          "start_page": 304,
+          "end_page": 307,
+          "chars": 7010
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_13_seccion_06_summary.txt",
+          "start_page": 308,
+          "end_page": 308,
+          "chars": 1153
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "title": "Capítulo 11. Gestión de la configuración de red",
+      "file": "capitulo_14.txt",
+      "start_page": 309,
+      "end_page": 344,
+      "sections": [
+        {
+          "title": "11.1. Configurar redes desde la línea de comandos",
+          "type": "theory",
+          "file": "capitulo_14_seccion_01_theory.txt",
+          "start_page": 310,
+          "end_page": 315,
+          "chars": 17398
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Configurar redes desde la línea de comandos",
+          "type": "guided_exercise",
+          "file": "capitulo_14_seccion_02_guided_exercise.txt",
+          "start_page": 316,
+          "end_page": 320,
+          "chars": 13541
+        },
+        {
+          "title": "11.3. Edición de archivos de configuración de red",
+          "type": "theory",
+          "file": "capitulo_14_seccion_03_theory.txt",
+          "start_page": 321,
+          "end_page": 325,
+          "chars": 10973
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Editar archivos de configuración de red",
+          "type": "guided_exercise",
+          "file": "capitulo_14_seccion_04_guided_exercise.txt",
+          "start_page": 326,
+          "end_page": 329,
+          "chars": 10971
+        },
+        {
+          "title": "11.5. Configuración de nombres de host y resolución de nombres",
+          "type": "theory",
+          "file": "capitulo_14_seccion_05_theory.txt",
+          "start_page": 330,
+          "end_page": 333,
+          "chars": 10520
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Configurar nombres de host y resolución de nombres",
+          "type": "guided_exercise",
+          "file": "capitulo_14_seccion_06_guided_exercise.txt",
+          "start_page": 334,
+          "end_page": 337,
+          "chars": 8613
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio Administrar configuración de red",
+          "type": "lab",
+          "file": "capitulo_14_seccion_07_lab.txt",
+          "start_page": 338,
+          "end_page": 343,
+          "chars": 12480
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_14_seccion_08_summary.txt",
+          "start_page": 344,
+          "end_page": 344,
+          "chars": 1165
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "title": "Capítulo 12. Programación de tareas del sistema",
+      "file": "capitulo_15.txt",
+      "start_page": 345,
+      "end_page": 370,
+      "sections": [
+        {
+          "title": "12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd",
+          "type": "theory",
+          "file": "capitulo_15_seccion_01_theory.txt",
+          "start_page": 346,
+          "end_page": 349,
+          "chars": 12246
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd",
+          "type": "guided_exercise",
+          "file": "capitulo_15_seccion_02_guided_exercise.txt",
+          "start_page": 350,
+          "end_page": 352,
+          "chars": 8767
+        },
+        {
+          "title": "12.3. Administrar archivos temporales",
+          "type": "theory",
+          "file": "capitulo_15_seccion_03_theory.txt",
+          "start_page": 353,
+          "end_page": 356,
+          "chars": 11234
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar archivos temporales",
+          "type": "guided_exercise",
+          "file": "capitulo_15_seccion_04_guided_exercise.txt",
+          "start_page": 357,
+          "end_page": 359,
+          "chars": 8205
+        },
+        {
+          "title": "12.5. Programar tareas recurrentes del sistema con Cron",
+          "type": "theory",
+          "file": "capitulo_15_seccion_05_theory.txt",
+          "start_page": 360,
+          "end_page": 363,
+          "chars": 10959
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Programar una tarea recurrente del sistema con Cron",
+          "type": "guided_exercise",
+          "file": "capitulo_15_seccion_06_guided_exercise.txt",
+          "start_page": 364,
+          "end_page": 365,
+          "chars": 4120
+        },
+        {
+          "title": "Cuestionario: Tareas de usuario de programación de pruebas",
+          "type": "quiz",
+          "file": "capitulo_15_seccion_07_quiz.txt",
+          "start_page": 366,
+          "end_page": 369,
+          "chars": 4111
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_15_seccion_08_summary.txt",
+          "start_page": 370,
+          "end_page": 370,
+          "chars": 1733
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "title": "Capítulo 13. Análisis y almacenamiento de registros",
+      "file": "capitulo_16.txt",
+      "start_page": 371,
+      "end_page": 415,
+      "sections": [
+        {
+          "title": "13.1. La arquitectura de registro del sistema",
+          "type": "theory",
+          "file": "capitulo_16_seccion_01_theory.txt",
+          "start_page": 372,
+          "end_page": 373,
+          "chars": 6150
+        },
+        {
+          "title": "Cuestionario: Prueba la arquitectura de registro del sistema",
+          "type": "quiz",
+          "file": "capitulo_16_seccion_02_quiz.txt",
+          "start_page": 374,
+          "end_page": 377,
+          "chars": 4030
+        },
+        {
+          "title": "13.3. Interpretación y gestión de eventos Syslog",
+          "type": "theory",
+          "file": "capitulo_16_seccion_03_theory.txt",
+          "start_page": 378,
+          "end_page": 382,
+          "chars": 12523
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado de interpretación y gestión de eventos de Syslog",
+          "type": "guided_exercise",
+          "file": "capitulo_16_seccion_04_guided_exercise.txt",
+          "start_page": 383,
+          "end_page": 384,
+          "chars": 6470
+        },
+        {
+          "title": "13.5. Búsqueda e interpretación de entradas de registro del diario del sistema",
+          "type": "theory",
+          "file": "capitulo_16_seccion_05_theory.txt",
+          "start_page": 385,
+          "end_page": 388,
+          "chars": 12969
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema",
+          "type": "guided_exercise",
+          "file": "capitulo_16_seccion_06_guided_exercise.txt",
+          "start_page": 389,
+          "end_page": 391,
+          "chars": 8014
+        },
+        {
+          "title": "13.7. Configuración de un diario del sistema persistente",
+          "type": "theory",
+          "file": "capitulo_16_seccion_07_theory.txt",
+          "start_page": 392,
+          "end_page": 395,
+          "chars": 11390
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Configurar un diario del sistema persistente",
+          "type": "guided_exercise",
+          "file": "capitulo_16_seccion_08_guided_exercise.txt",
+          "start_page": 396,
+          "end_page": 397,
+          "chars": 5956
+        },
+        {
+          "title": "13.9. Mantener el tiempo sincronizado",
+          "type": "theory",
+          "file": "capitulo_16_seccion_09_theory.txt",
+          "start_page": 398,
+          "end_page": 403,
+          "chars": 15054
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Mantener el tiempo sincronizado",
+          "type": "guided_exercise",
+          "file": "capitulo_16_seccion_10_guided_exercise.txt",
+          "start_page": 404,
+          "end_page": 407,
+          "chars": 9032
+        },
+        {
+          "title": "Trabajo de laboratorio: Análisis de laboratorio y registros de almacenamiento",
+          "type": "lab",
+          "file": "capitulo_16_seccion_11_lab.txt",
+          "start_page": 408,
+          "end_page": 414,
+          "chars": 13116
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_16_seccion_12_summary.txt",
+          "start_page": 415,
+          "end_page": 415,
+          "chars": 1785
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "title": "Capítulo 14. Gestión de la seguridad con SELinux",
+      "file": "capitulo_17.txt",
+      "start_page": 416,
+      "end_page": 449,
+      "sections": [
+        {
+          "title": "14.1. Operando SELinux",
+          "type": "theory",
+          "file": "capitulo_17_seccion_01_theory.txt",
+          "start_page": 417,
+          "end_page": 421,
+          "chars": 12981
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Operar SELinux",
+          "type": "guided_exercise",
+          "file": "capitulo_17_seccion_02_guided_exercise.txt",
+          "start_page": 422,
+          "end_page": 423,
+          "chars": 6244
+        },
+        {
+          "title": "14.3. Controlar los contextos de archivos SELinux",
+          "type": "theory",
+          "file": "capitulo_17_seccion_03_theory.txt",
+          "start_page": 424,
+          "end_page": 429,
+          "chars": 14622
+        },
+        {
+          "title": "Ejercicio Guiado: Control de ejercicios guiados Contextos de archivos SELinux",
+          "type": "guided_exercise",
+          "file": "capitulo_17_seccion_04_guided_exercise.txt",
+          "start_page": 430,
+          "end_page": 432,
+          "chars": 8390
+        },
+        {
+          "title": "14.5. Ajuste de la política SELinux ajustando valores booleanos",
+          "type": "theory",
+          "file": "capitulo_17_seccion_05_theory.txt",
+          "start_page": 433,
+          "end_page": 434,
+          "chars": 7398
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos",
+          "type": "guided_exercise",
+          "file": "capitulo_17_seccion_06_guided_exercise.txt",
+          "start_page": 435,
+          "end_page": 437,
+          "chars": 8490
+        },
+        {
+          "title": "14.7. Investigación y resolución de problemas de SELinux",
+          "type": "theory",
+          "file": "capitulo_17_seccion_07_theory.txt",
+          "start_page": 438,
+          "end_page": 441,
+          "chars": 13310
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado para investigar y resolver problemas de SELinux",
+          "type": "guided_exercise",
+          "file": "capitulo_17_seccion_08_guided_exercise.txt",
+          "start_page": 442,
+          "end_page": 444,
+          "chars": 9634
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio Administrar la seguridad con SELinux",
+          "type": "lab",
+          "file": "capitulo_17_seccion_09_lab.txt",
+          "start_page": 445,
+          "end_page": 448,
+          "chars": 10663
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_17_seccion_10_summary.txt",
+          "start_page": 449,
+          "end_page": 449,
+          "chars": 1779
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "title": "Capítulo 15. Gestión del almacenamiento básico",
+      "file": "capitulo_18.txt",
+      "start_page": 450,
+      "end_page": 481,
+      "sections": [
+        {
+          "title": "15.1. Creación y gestión de sistemas de archivos en particiones estándar",
+          "type": "theory",
+          "file": "capitulo_18_seccion_01_theory.txt",
+          "start_page": 451,
+          "end_page": 459,
+          "chars": 22996
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar",
+          "type": "guided_exercise",
+          "file": "capitulo_18_seccion_02_guided_exercise.txt",
+          "start_page": 460,
+          "end_page": 463,
+          "chars": 9497
+        },
+        {
+          "title": "15.3. Administrar el espacio de intercambio",
+          "type": "theory",
+          "file": "capitulo_18_seccion_03_theory.txt",
+          "start_page": 464,
+          "end_page": 468,
+          "chars": 12688
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar el espacio de intercambio",
+          "type": "guided_exercise",
+          "file": "capitulo_18_seccion_04_guided_exercise.txt",
+          "start_page": 469,
+          "end_page": 472,
+          "chars": 8720
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio Administrar almacenamiento básico",
+          "type": "lab",
+          "file": "capitulo_18_seccion_05_lab.txt",
+          "start_page": 473,
+          "end_page": 480,
+          "chars": 16532
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_18_seccion_06_summary.txt",
+          "start_page": 481,
+          "end_page": 481,
+          "chars": 2141
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "title": "Capítulo 16. Gestión del almacenamiento con Logical Volume Manager",
+      "file": "capitulo_19.txt",
+      "start_page": 482,
+      "end_page": 511,
+      "sections": [
+        {
+          "title": "16.1. Crear volúmenes lógicos",
+          "type": "theory",
+          "file": "capitulo_19_seccion_01_theory.txt",
+          "start_page": 483,
+          "end_page": 488,
+          "chars": 14232
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Crear volúmenes lógicos",
+          "type": "guided_exercise",
+          "file": "capitulo_19_seccion_02_guided_exercise.txt",
+          "start_page": 489,
+          "end_page": 493,
+          "chars": 11005
+        },
+        {
+          "title": "16.3. Ampliar un volumen lógico",
+          "type": "theory",
+          "file": "capitulo_19_seccion_03_theory.txt",
+          "start_page": 494,
+          "end_page": 496,
+          "chars": 7777
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado para ampliar un volumen lógico",
+          "type": "guided_exercise",
+          "file": "capitulo_19_seccion_04_guided_exercise.txt",
+          "start_page": 497,
+          "end_page": 499,
+          "chars": 6462
+        },
+        {
+          "title": "16.5. Reemplazo de volúmenes físicos y administración de LVM",
+          "type": "theory",
+          "file": "capitulo_19_seccion_05_theory.txt",
+          "start_page": 500,
+          "end_page": 502,
+          "chars": 5798
+        },
+        {
+          "title": "Cuestionario: Prueba sobre sustitución de volúmenes físicos y gestión de LVM",
+          "type": "quiz",
+          "file": "capitulo_19_seccion_06_quiz.txt",
+          "start_page": 503,
+          "end_page": 504,
+          "chars": 4877
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio de administración de almacenamiento con Logical Volume Manager",
+          "type": "lab",
+          "file": "capitulo_19_seccion_07_lab.txt",
+          "start_page": 505,
+          "end_page": 510,
+          "chars": 12020
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_19_seccion_08_summary.txt",
+          "start_page": 511,
+          "end_page": 511,
+          "chars": 1393
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "title": "Capítulo 17. Control y solución de problemas del proceso de arranque",
+      "file": "capitulo_20.txt",
+      "start_page": 512,
+      "end_page": 538,
+      "sections": [
+        {
+          "title": "17.1. Administrar el cargador de arranque y la línea de comandos del kernel",
+          "type": "theory",
+          "file": "capitulo_20_seccion_01_theory.txt",
+          "start_page": 513,
+          "end_page": 516,
+          "chars": 9186
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel",
+          "type": "guided_exercise",
+          "file": "capitulo_20_seccion_02_guided_exercise.txt",
+          "start_page": 517,
+          "end_page": 519,
+          "chars": 7962
+        },
+        {
+          "title": "17.3. Exploración del proceso de inicio y selección de un destino de inicio",
+          "type": "theory",
+          "file": "capitulo_20_seccion_03_theory.txt",
+          "start_page": 520,
+          "end_page": 524,
+          "chars": 13164
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio",
+          "type": "guided_exercise",
+          "file": "capitulo_20_seccion_04_guided_exercise.txt",
+          "start_page": 525,
+          "end_page": 527,
+          "chars": 8633
+        },
+        {
+          "title": "17.5. Reparación de sistemas de archivos dañados en el momento del arranque",
+          "type": "theory",
+          "file": "capitulo_20_seccion_05_theory.txt",
+          "start_page": 528,
+          "end_page": 530,
+          "chars": 10621
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado para reparar un sistema de archivos dañado en el momento del arranque",
+          "type": "guided_exercise",
+          "file": "capitulo_20_seccion_06_guided_exercise.txt",
+          "start_page": 531,
+          "end_page": 533,
+          "chars": 6564
+        },
+        {
+          "title": "Trabajo de laboratorio: Control de laboratorio y solución de problemas del proceso de arranque",
+          "type": "lab",
+          "file": "capitulo_20_seccion_07_lab.txt",
+          "start_page": 534,
+          "end_page": 537,
+          "chars": 8179
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_20_seccion_08_summary.txt",
+          "start_page": 538,
+          "end_page": 538,
+          "chars": 2075
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "title": "Capítulo 18. Recuperar el acceso de superusuario",
+      "file": "capitulo_21.txt",
+      "start_page": 539,
+      "end_page": 546,
+      "sections": [
+        {
+          "title": "18.1. Recuperar el acceso de superusuario y restablecer la contraseña raíz",
+          "type": "theory",
+          "file": "capitulo_21_seccion_01_theory.txt",
+          "start_page": 540,
+          "end_page": 543,
+          "chars": 8126
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado para recuperar el acceso de superusuario y restablecer la contraseña raíz",
+          "type": "guided_exercise",
+          "file": "capitulo_21_seccion_02_guided_exercise.txt",
+          "start_page": 544,
+          "end_page": 545,
+          "chars": 4997
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_21_seccion_03_summary.txt",
+          "start_page": 546,
+          "end_page": 546,
+          "chars": 1172
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "title": "Capítulo 19. Gestión de la seguridad de la red",
+      "file": "capitulo_22.txt",
+      "start_page": 547,
+      "end_page": 573,
+      "sections": [
+        {
+          "title": "19.1. Administrar firewalls de servidores",
+          "type": "theory",
+          "file": "capitulo_22_seccion_01_theory.txt",
+          "start_page": 548,
+          "end_page": 555,
+          "chars": 16785
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Administrar un firewall de servidor",
+          "type": "guided_exercise",
+          "file": "capitulo_22_seccion_02_guided_exercise.txt",
+          "start_page": 556,
+          "end_page": 558,
+          "chars": 7740
+        },
+        {
+          "title": "19.3. Etiquetado de puertos SELinux",
+          "type": "theory",
+          "file": "capitulo_22_seccion_03_theory.txt",
+          "start_page": 559,
+          "end_page": 561,
+          "chars": 7471
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Etiquetado de puertos SELinux",
+          "type": "guided_exercise",
+          "file": "capitulo_22_seccion_04_guided_exercise.txt",
+          "start_page": 562,
+          "end_page": 565,
+          "chars": 9078
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio Administrar la seguridad de la red",
+          "type": "lab",
+          "file": "capitulo_22_seccion_05_lab.txt",
+          "start_page": 566,
+          "end_page": 572,
+          "chars": 15162
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_22_seccion_06_summary.txt",
+          "start_page": 573,
+          "end_page": 573,
+          "chars": 1576
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "title": "Capítulo 20. Acceso al almacenamiento conectado a la red",
+      "file": "capitulo_23.txt",
+      "start_page": 574,
+      "end_page": 597,
+      "sections": [
+        {
+          "title": "20.1. Montaje de sistemas de archivos NFS",
+          "type": "theory",
+          "file": "capitulo_23_seccion_01_theory.txt",
+          "start_page": 575,
+          "end_page": 577,
+          "chars": 10204
+        },
+        {
+          "title": "Ejercicio Guiado: Ejercicio guiado Montaje de sistemas de archivos NFS",
+          "type": "guided_exercise",
+          "file": "capitulo_23_seccion_02_guided_exercise.txt",
+          "start_page": 578,
+          "end_page": 580,
+          "chars": 7728
+        },
+        {
+          "title": "20.3. Dispositivos de almacenamiento de montaje automático",
+          "type": "theory",
+          "file": "capitulo_23_seccion_03_theory.txt",
+          "start_page": 581,
+          "end_page": 585,
+          "chars": 15596
+        },
+        {
+          "title": "Ejercicio Guiado: Dispositivos de almacenamiento con montaje automático de ejercicios guiados",
+          "type": "guided_exercise",
+          "file": "capitulo_23_seccion_04_guided_exercise.txt",
+          "start_page": 586,
+          "end_page": 589,
+          "chars": 12415
+        },
+        {
+          "title": "Trabajo de laboratorio: Almacenamiento conectado a la red de acceso al laboratorio",
+          "type": "lab",
+          "file": "capitulo_23_seccion_05_lab.txt",
+          "start_page": 590,
+          "end_page": 596,
+          "chars": 13902
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_23_seccion_06_summary.txt",
+          "start_page": 597,
+          "end_page": 597,
+          "chars": 1457
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "title": "Capítulo 21. Revisión integral",
+      "file": "capitulo_24.txt",
+      "start_page": 598,
+      "end_page": 620,
+      "sections": [
+        {
+          "title": "21.1. Revisión integral",
+          "type": "theory",
+          "file": "capitulo_24_seccion_01_theory.txt",
+          "start_page": 599,
+          "end_page": 600,
+          "chars": 6359
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio para solucionar problemas de arranque y mantener servidores",
+          "type": "lab",
+          "file": "capitulo_24_seccion_02_lab.txt",
+          "start_page": 601,
+          "end_page": 606,
+          "chars": 15813
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio de configuración y gestión de sistemas de archivos y almacenamiento",
+          "type": "lab",
+          "file": "capitulo_24_seccion_03_lab.txt",
+          "start_page": 607,
+          "end_page": 612,
+          "chars": 16183
+        },
+        {
+          "title": "Trabajo de laboratorio: oratorio de configuración y administración de la seguridad del servidor",
+          "type": "lab",
+          "file": "capitulo_24_seccion_04_lab.txt",
+          "start_page": 613,
+          "end_page": 620,
+          "chars": 19391
+        }
+      ]
+    }
+  ]
+}

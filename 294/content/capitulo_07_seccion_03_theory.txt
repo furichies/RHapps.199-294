@@ -1,0 +1,286 @@
+# Creación de roles
+# Tipo: theory
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Creación de roles
+Objetivos
+• Cree un rol en el directorio de proyectos de un playbook y ejecútelo como parte de uno de los
+plays del playbook.
+El proceso de creación de roles
+Crear roles en Ansible no requiere herramientas de desarrollo especiales.
+Crear y usar un rol es un proceso de tres pasos:
+1.
+Cree la estructura del directorio de roles.
+2.
+Defina el contenido de los roles.
+3.
+Use el rol en un playbook.
+Creación de la estructura del directorio de roles
+Ansible busca roles en un subdirectorio llamado roles en el directorio que contiene el playbook
+de Ansible. Cada rol tiene su propio directorio con una estructura de directorios estandarizada.
+Esta estructura le permite almacenar roles con el playbook y otros archivos de soporte.
+Por ejemplo, la siguiente estructura de directorio contiene los archivos que definen el rol motd.
+[user@host ~]$ tree roles/
+roles/
+└── motd
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    ├── meta
+    │   └── main.yml
+    ├── README.md
+    ├── tasks
+    │   └── main.yml
+    └── templates
+        └── motd.j2
+README.md proporciona, en términos legibles para el ser humano, una descripción básica del
+rol, documentación y ejemplos de cómo usarlo, y todos los requisitos de roles ajenos a Ansible. El
+subdirectorio meta contiene un archivo main.yml que especifica información sobre el autor, la
+licencia, la compatibilidad y las dependencias del módulo.
+El subdirectorio files contiene archivos de contenido fijo y el subdirectorio templates contiene
+plantillas que puede implementar el rol.
+288
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Los otros subdirectorios pueden contener los archivos main.yml que definen valores de variables
+predeterminados, manejadores, tareas, metadatos de roles o variables, según su subdirectorio.
+Si existe un subdirectorio, pero se encuentra vacío, como handlers en este ejemplo, es ignorado.
+Puede omitir el subdirectorio por completo si un rol no usa una característica. Este ejemplo omite
+el subdirectorio vars.
+Creación de un esqueleto de roles
+Puede crear todos los subdirectorios y archivos necesarios para un rol nuevo mediante comandos
+estándares de Linux. Como alternativa, existen utilidades de línea de comandos para automatizar
+el proceso de creación de nuevos roles.
+La herramienta de línea de comandos ansible-galaxy (que se analiza en más detalle más
+adelante en este curso) se usa para administrar los roles de Ansible, incluida la creación de nuevos
+roles. Puede ejecutar ansible-galaxy role init para crear la estructura de directorios
+para un nuevo rol. Especifique el nombre del rol como argumento del comando, lo que crea un
+subdirectorio para el nuevo rol en el directorio de trabajo actual.
+[user@host playbook-project]$ cd roles
+[user@host roles]$ ansible-galaxy role init my_new_role
+- Role my_new_role was created successfully
+[user@host roles]$ ls my_new_role/
+defaults  files  handlers  meta  README.md  tasks  templates  tests  vars
+Definición del contenido de los roles
+Después de crear la estructura de directorios, debe escribir el contenido del rol. Un buen lugar
+para comenzar es el archivo de tareas ROLENAME/tasks/main.yml, la lista principal de tareas
+ejecutadas por el rol.
+El siguiente archivo tasks/main.yml gestiona el archivo /etc/motd en los hosts gestionados.
+Usa el módulo template para implementar la plantilla denominada motd.j2 en el host
+gestionado. Como el módulo template se configura dentro de una tarea de rol, la plantilla
+motd.j2 se recupera del subdirectorio templates del rol y no de una tarea de playbook.
+[user@host ~]$ cat roles/motd/tasks/main.yml
+---
+# tasks file for motd
+- name: deliver motd file
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: 0444
+El siguiente comando muestra el contenido de la plantilla motd.j2 del rol motd. Menciona datos
+de Ansible y una variable system_owner.
+RH294-RHEL9.0-es-3-20240620
+289
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[user@host ~]$ cat roles/motd/templates/motd.j2
+This is the system {{ ansible_facts['hostname'] }}.
+Today's date is: {{ ansible_facts['date_time']['date'] }}.
+Only use this system with permission.
+You can ask {{ system_owner }} for access.
+El rol define un valor predeterminado para la variable system_owner. El archivo defaults/
+main.yml de la estructura de directorio del rol es donde se configura este valor.
+El siguiente archivo defaults/main.yml establece la variable system_owner en
+user@host.example.com. Esta dirección de correo electrónico se escribe en el archivo /etc/
+motd de hosts gestionados al que se aplica este rol.
+[user@host ~]$ cat roles/motd/defaults/main.yml
+---
+system_owner: user@host.example.com
+Prácticas recomendadas para el desarrollo de contenido de rol
+Los roles le permiten dividir los playbooks en varios archivos, lo que da como resultado un código
+reutilizable. Para maximizar la eficacia de los roles recién desarrollados, considere implementar las
+siguientes prácticas recomendadas en el desarrollo de roles:
+• Mantenga cada rol en su propio repositorio de control de versiones. Ansible funciona bien con
+repositorios basados en Git.
+• Use variables para configurar roles de modo que pueda volver a usar el rol para realizar tareas
+similares en circunstancias similares.
+• Evite almacenar información confidencial en un rol, como contraseñas o claves SSH. Configure
+las variables de rol que se usan para contener valores confidenciales cuando se llaman en un
+play con valores predeterminados que no son confidenciales. Los playbooks que usan el rol son
+responsables de definir variables sensibles a través de archivos de variables de Ansible Vault u
+otros métodos.
+• Use el comando ansible-galaxy role init para iniciar su rol y, luego, elimine los archivos
+y directorios innecesarios.
+• Cree y mantenga archivos README.md y meta/main.yml para documentar el propósito, el
+autor y el uso del rol.
+• Mantenga su rol enfocado en un propósito o una función específicos. En lugar de escribir un rol
+que haga muchas cosas, escriba más de un rol.
+• Vuelva a usar los roles con frecuencia.
+Evite crear nuevos roles para las configuraciones perimetrales. Si un rol existente sirve para la
+mayoría de la configuración requerida, refactorice el rol existente para integrar el nuevo escenario
+de configuración.
+Use técnicas de prueba de integración y regresión para asegurarse de que el rol proporcione la
+nueva funcionalidad requerida y que no cause problemas a los playbooks existentes.
+290
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+nota
+Una lista no oficial más extensa de buenas prácticas a seguir cuando escribe un rol
+está disponible en https://redhat-cop.github.io/automation-good-
+practices/#_roles_good_practices_for_ansible.
+Cambio del comportamiento de un rol con variables
+Un rol bien redactado usa variables predeterminadas para alterar el comportamiento del rol para
+que coincida con un escenario de configuración relacionado. Los roles que usan variables son más
+genéricos y reutilizables en una variedad de contextos.
+El valor de cualquier variable definida en el directorio defaults de un rol se sobrescribirá si se
+define esa misma variable:
+• En un archivo de inventario, como una variable de host o una variable de grupo.
+• En un archivo YAML en los directorios group_vars o host_vars de un proyecto de playbook.
+• Como una variable anidada en la palabra clave vars de un play.
+• Como una variable cuando se incluye el rol en la palabra clave roles de un play.
+En el siguiente ejemplo, se muestra cómo usar el rol motd con un valor diferente para la variable
+del rol system_owner. El valor especificado, someone@host.example.com, reemplazará a la
+referencia de variable cuando se aplique el rol a un host gestionado.
+[user@host ~]$ cat use-motd-role.yml
+---
+- name: use motd role playbook
+  hosts: remote.example.com
+  remote_user: devops
+  become: true
+  vars:
+    system_owner: someone@host.example.com
+  roles:
+    - role: motd
+Cuando se define de esta manera, la variable system_owner reemplaza el valor de la variable
+predeterminada del mismo nombre. Todas las definiciones de variables anidadas dentro de la
+palabra clave vars no reemplazarán el valor de la misma variable si se la define en el directorio
+vars de un rol.
+En el siguiente ejemplo, también se muestra cómo usar el rol motd con un valor diferente para la
+variable del rol system_owner. El valor especificado, someone@host.example.com, reemplaza
+la referencia de variable independientemente de que esté definida en el directorio vars o
+defaults del rol.
+[user@host ~]$ cat use-motd-role.yml
+---
+- name: use motd role playbook
+  hosts: remote.example.com
+  remote_user: devops
+  become: true
+RH294-RHEL9.0-es-3-20240620
+291
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+  roles:
+    - role: motd
+      system_owner: someone@host.example.com
+Importante
+La precedencia de variables puede causar confusión al trabajar con variables de rol
+en un play.
+• La mayoría de las otras variables anulan las variables predeterminadas de un rol:
+variables de inventario, vars de play, parámetros de rol en línea, etc.
+• Menos variables pueden anular las variables definidas en el directorio vars
+de un rol. Los datos, las variables cargadas con include_vars, las variables
+registradas y los parámetros de rol pueden anular estas variables. Las variables de
+inventario y vars de play no pueden hacerlo. Este comportamiento es importante
+porque ayuda a evitar que el play modifique accidentalmente el funcionamiento
+interno del rol.
+• Las variables declaradas en línea como parámetros de rol tienen una prioridad
+muy alta; también pueden anular las variables definidas en el directorio vars de
+un rol.
+Si un parámetro de rol tiene el mismo nombre que una variable establecida en vars
+del play, un vars de rol o una variable de inventario o playbook, el parámetro de rol
+anulará a la otra variable.
+Definición de las dependencias del rol
+Las dependencias del rol permiten que un rol incluya otros roles como dependencias.
+Por ejemplo, un rol que define un servidor de documentación puede depender de otro rol que
+instale y configure un servidor web.
+Las dependencias se definen en el archivo meta/main.yml en la jerarquía del directorio del rol.
+El siguiente es un archivo meta/main.yml de muestra.
+---
+dependencies:
+  - role: apache
+    port: 8080
+  - role: postgres
+    dbname: serverlist
+    admin_user: felix
+nota
+Un archivo meta/main.yml también puede tener una clave galaxy_info de
+nivel superior que tiene un diccionario de otros atributos que especifican el autor, el
+propósito, la licencia y las versiones de Ansible Core y los sistemas operativos que el
+rol soporta.
+292
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+De forma predeterminada, si varios roles tienen una dependencia de un rol, y ese rol es llamado
+por diferentes roles en el play varias veces con los mismos atributos, entonces el rol solo se
+ejecuta la primera vez que aparece. Este comportamiento se puede reemplazar estableciendo la
+variable allow_duplicates como yes en el archivo meta/main.yml del rol.
+Importante
+Limite las dependencias del rol en otros roles. Las dependencias dificultan el
+mantenimiento del rol, en especial si tiene muchas dependencias complejas.
+Referencias
+Uso de roles — Documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_reuse_roles.html#using-roles
+Uso de variables — Documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html
+Buenas prácticas de roles para Ansible
+https://redhat-cop.github.io/automation-good-practices/
+#_roles_good_practices_for_ansible
+RH294-RHEL9.0-es-3-20240620
+293
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Creación de roles
+Crear un rol de Ansible que usa variables, archivos, plantillas, tareas y manejadores para
+implementar un servicio de red.
+Resultados
+• Crear un rol que use variables y parámetros.
+El rol myvhost instala y configura el servicio Apache en un host. Se provee una plantilla
+llamada vhost.conf.j2 para generar /etc/httpd/conf.d/vhost.conf.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-create
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-create.
+[student@workstation ~]$ cd ~/role-create
+[student@workstation role-create]$
+ 2.
+Cree la estructura de directorio para un rol denominado myvhost. El rol incluye archivos,
+plantillas, tareas y manejadores corregidos. Los directorios defaults, vars y tests no se
+usan en este rol, por lo que puede eliminarlos.
+[student@workstation role-create]$ mkdir -v roles; cd roles
+mkdir: created directory 'roles'
+[student@workstation roles]$ ansible-galaxy role init myvhost
+- Role myvhost was created successfully
+[student@workstation roles]$ rm -rvf myvhost/{defaults,vars,tests}
+removed 'myvhost/defaults/main.yml'
+removed directory: 'myvhost/defaults'
+removed 'myvhost/vars/main.yml'
+removed directory: 'myvhost/vars'
+removed 'myvhost/tests/inventory'
+removed 'myvhost/tests/test.yml'
+removed directory: 'myvhost/tests'
+[student@workstation roles]$ cd ..
+[student@workstation role-create]$
+294
+RH294-RHEL9.0-es-3-20240620
+
+

@@ -1,0 +1,290 @@
+# Inclusión e importación de archivos
+# Tipo: theory
+# Capítulo: Capítulo 6. Administración de plays y playbooks complejos
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Inclusión e importación de archivos
+Objetivos
+• Administrar playbooks grandes importando o incluyendo otros playbooks o tareas desde
+archivos externos, ya sea sin condiciones o sobre la base de una prueba condicional.
+Gestión de playbooks grandes
+Cuando un playbook se torna largo o complejo, puede dividirlo en archivos más pequeños para
+que sea más fácil de administrar. Puede combinar varios playbooks en un playbook principal o
+insertar listas de tareas de un archivo a un play. Esto puede facilitar la reutilización de plays o
+secuencias de tareas en diferentes proyectos.
+Inclusión o importación de archivos
+Ansible soporta dos operaciones para incorporar contenido en un playbook. Usted puede incluir
+contenido, o puede importar contenido.
+Cuando incluye contenido, es una operación dinámica. Los procesos de Ansible incluyeron
+contenido durante la ejecución del playbook, a medida que se abordaba el contenido.
+Cuando importa contenido, es una operación estática. Los preprocesos de Ansible importaron
+contenido cuando se analizó inicialmente el playbook, antes de que comience la ejecución.
+Importación de playbooks
+Use el módulo ansible.builtin.import_playbook para importar archivos externos que
+contienen listas de plays en un playbook. En otras palabras, puede tener un playbook principal que
+importa uno o más playbooks adicionales.
+Debido a que el contenido que se importa es un playbook completo, el módulo
+ansible.builtin.import_playbook solo se puede usar en el nivel superior de un playbook
+y no se puede usar dentro de un play. Si importa varios playbooks, se importarán y ejecutarán en
+orden.
+A continuación, se muestra un ejemplo simple de un playbook principal que importa dos playbooks
+adicionales:
+- name: Prepare the web server
+  ansible.builtin.import_playbook: web.yml
+- name: Prepare the database server
+  ansible.builtin.import_playbook: db.yml
+También puede intercalar plays en su playbook principal con playbooks importados.
+---
+- name: Play 1
+  hosts: localhost
+RH294-RHEL9.0-es-3-20240620
+253
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+  tasks:
+    - name: Display a message
+      ansible.builtin.debug:
+        msg: Play 1
+- name: Import Playbook
+  ansible.builtin.import_playbook: play2.yml
+En el ejemplo anterior, el play Play 1 se ejecuta primero y, luego, los plays importados del
+playbook play2.yml.
+Importación e inclusión de tareas
+Puede importar o incluir una lista de tareas de un archivo de tareas a un play. Un archivo de tareas
+es un archivo que contiene una lista plana de tareas:
+[user@host ~]$ cat webserver_tasks.yml
+---
+- name: Install the httpd package
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+- name: Start the httpd service
+  ansible.builtin.service:
+    name: httpd
+    state: started
+Importación de archivos de tareas
+Puede importar de forma estática un archivo de tareas en un play dentro de un playbook usando el
+módulo ansible.builtin.import_tasks. Cuando importa un archivo de tareas, las tareas de
+ese archivo se insertan directamente cuando se analiza el playbook. La ubicación de la tarea en el
+playbook que usa el módulo ansible.builtin.import_tasks controla donde se insertan las
+tareas y el orden en que se ejecutan las importaciones múltiples.
+---
+- name: Install web server
+  hosts: webservers
+  tasks:
+    - name: Import webserver tasks
+      ansible.builtin.import_tasks: webserver_tasks.yml
+Cuando importa un archivo de tareas, las tareas de ese archivo se insertan directamente cuando
+se analiza el playbook. Debido a que el módulo ansible.builtin.import_tasks importa
+estáticamente las tareas cuando se analiza el playbook, se deben considerar los siguientes ítems:
+• Al usar el módulo ansible.builtin.import_tasks, las declaraciones condicionales
+establecidas en la importación, como when, se aplican a cada una de las tareas que se importan.
+• No puede usar bucles con el módulo ansible.builtin.import_tasks.
+• Si usa una variable para especificar el nombre del archivo por importar, no puede usar una
+variable de inventario de host o grupo.
+254
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Inclusión de archivos de tareas
+También puede incluir de forma dinámica un archivo de tarea en un play dentro de un playbook
+usando el módulo ansible.builtin.include_tasks.
+---
+- name: Install web server
+  hosts: webservers
+  tasks:
+    - name: Include webserver tasks
+      ansible.builtin.include_tasks: webserver_tasks.yml
+El módulo ansible.builtin.include_tasks no procesa el contenido en el playbook hasta
+que se ejecuta el play y se alcanza esa parte de este. El orden en el que se procesa el contenido
+del playbook afecta el funcionamiento del módulo ansible.builtin.include_tasks.
+• Al usar el módulo ansible.builtin.include_tasks, las declaraciones condicionales, como
+when, establecidas en la inclusión determinan si las tareas están incluidas en el play.
+• Si ejecuta ansible-navigator run --list-tasks para enumerar las tareas
+del playbook, no se muestran las tareas en los archivos de tareas incluidos. Se
+muestran las tareas que incluyen los archivos de tareas. En comparación, el módulo
+ansible.builtin.import_tasks no enumera las tareas que importan archivos de tareas,
+sino las tareas individuales de los archivos de tareas importados.
+• No puede usar ansible-navigator run --start-at-task para iniciar la ejecución del
+playbook desde una tarea que se encuentra en un archivo de tareas incluido.
+• No puede usar una declaración notify para desencadenar un nombre de controlador que se
+encuentra en un archivo de tarea incluido. Puede desencadenar un controlador en el playbook
+principal que incluye un archivo de tareas completo, en cuyo caso se ejecutarán todas las tareas
+en el archivo incluido.
+Importación e inclusión con condicionales
+Las declaraciones condicionales se comportan de manera diferente dependiendo de si está
+importando o incluyendo tareas.
+• Cuando agrega un condicional a una tarea que usa un módulo ansible.builtin.import_*,
+Ansible aplica la condición a todas las tareas dentro del archivo importado.
+• Cuando usa un condicional en una tarea que usa un módulo ansible.builtin.include_*,
+la condición se aplica solo a la tarea de inclusión en sí y no a ninguna otra tarea dentro del
+archivo incluido.
+En otras palabras, si coloca un condicional en una tarea que importa contenido, cada tarea en el
+contenido importado realiza esa verificación condicional antes de ejecutarse.
+Sin embargo, si coloca un condicional en una tarea que incluye contenido, entonces el condicional
+determina si la inclusión ocurre o no. Si ocurre la inclusión, todas las tareas incluidas se ejecutan
+normalmente.
+RH294-RHEL9.0-es-3-20240620
+255
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+nota
+Consulte la Guía del usuario de Ansible [https://docs.ansible.com/ansible/latest/
+user_guide/playbooks_conditionals.html#applying-when-to-roles-imports-
+and-includes] para obtener un análisis más detallado de las diferencias de
+comportamiento entre los módulos ansible.builtin.import_tasks y
+ansible.builtin.include_tasks cuando se usan condicionales.
+Casos de uso para archivos de tareas
+Considere los siguientes ejemplos en los que puede ser útil gestionar conjuntos de tareas como
+archivos externos separados del playbook:
+• Si los servidores nuevos requieren una configuración completa, los administradores pueden
+crear diferentes conjuntos de tareas para crear usuarios, instalar paquetes, configurar servicios,
+configurar privilegios, configurar el acceso a un sistema de archivos compartido, reforzar los
+servidores, instalar actualizaciones de seguridad e instalar un agente de monitoreo. Cada uno
+de estos conjuntos de tareas se puede administrar a través de un archivo autónomo de tareas
+separado.
+• Si los desarrolladores, administradores de sistema y administradores de bases de datos
+gestionan los servidores de manera colectiva, cada organización puede programar su propio
+archivo de tareas que el administrador de sistemas luego puede revisar e integrar.
+• Si un servidor requiere una configuración en particular, se la puede integrar como un conjunto
+de tareas ejecutado en función de un condicional. En otras palabras, las tareas se incluyen solo
+si se cumplen criterios específicos.
+• Si un grupo de servidores tiene que ejecutar una tarea o un conjunto de tareas en particular, las
+tareas solo se pueden ejecutar en un servidor si este es parte de un grupo específico de hosts.
+Administrar archivos de tareas
+Usted puede crear un directorio dedicado para archivos de tareas, y guardar todos los archivos de
+tareas en ese directorio. Su playbook puede incluir o importar archivos de tareas de ese directorio.
+Esto permite la construcción de un playbook complejo y facilita la gestión de su estructura y sus
+componentes.
+Definición de variables para plays y tareas externas
+La incorporación de plays o tareas de archivos externos a los playbooks usando las características
+de importación e inclusión de Ansible mejora la capacidad de volver a usar tareas y playbooks en
+un entorno de Ansible. Para maximizar la posibilidad de reutilización, estos archivos de tareas y
+plays deben ser tan genéricos como sea posible. Las variables se pueden usar para parametrizar
+elementos de plays y tareas a fin de expandir la aplicación de plays y tareas.
+Por ejemplo, el siguiente archivo de tareas instala el paquete necesario para un servicio web y,
+luego, habilita e inicia el servicio requerido.
+---
+- name: Install the httpd package
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+256
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+- name: Start the httpd service
+  ansible.builtin.service:
+    name: httpd
+    enabled: true
+    state: started
+Si parametriza el paquete y los elementos de servicio como se muestra en el siguiente ejemplo, el
+archivo de tareas también se puede usar para la instalación y administración de otro software y sus
+servicios, en lugar de ser útil solo para el servicio web.
+---
+- name: Install the {{ package }} package
+  ansible.builtin.dnf:
+    name: "{{ package }}"
+    state: latest
+- name: Start the {{ service }} service
+  ansible.builtin.service:
+    name: "{{ service }}"
+    enabled: true
+    state: started
+Posteriormente, al incorporar el archivo de tareas en un playbook, defina las variables que se
+usarán para la ejecución de la tarea de la siguiente manera:
+...output omitted...
+  tasks:
+    - name: Import task file and set variables
+      ansible.builtin.import_tasks: task.yml
+      vars:
+        package: httpd
+        service: httpd
+Ansible hace que las variables transferidas estén disponibles para las tareas importadas desde el
+archivo externo.
+Puede usar la misma técnica para hacer que los archivos de play sean más reutilizables. Al
+incorporar un archivo de play en un playbook, se transfieren las variables que se usarán para la
+ejecución del play de la siguiente manera:
+...output omitted...
+- name: Import play file and set the variable
+  ansible.builtin.import_playbook: play.yml
+  vars:
+    package: mariadb
+RH294-RHEL9.0-es-3-20240620
+257
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Importante
+Las versiones anteriores de Ansible usaban el módulo
+ansible.builtin.include para incluir playbooks y archivos de tareas, según el
+contexto. Esta función está en desuso por varios motivos.
+Antes de Ansible 2.0, el módulo ansible.builtin.include funcionaba
+como una importación estática. En Ansible 2.0, se cambió para que funcione
+dinámicamente, pero esto causó ciertas limitaciones. En Ansible 2.1, se hizo posible
+que el módulo ansible.builtin.include sea dinámico o estático dependiendo
+de la configuración de la tarea, lo que era confuso y causaba errores. También hubo
+problemas para garantizar que el módulo ansible.builtin.include funcionase
+correctamente en todos los contextos.
+Por lo tanto, ansible.builtin.include se reemplazó en Ansible 2.4 con
+nuevas directivas como ansible.builtin.include_tasks, import_tasks y
+ansible.builtin.import_playbook. Podría encontrar ejemplos del módulo
+ansible.builtin.include en playbooks anteriores, pero debe evitar usarlo en
+otros más nuevos.
+Referencias
+Inclusión e importación: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_includes.html
+Creación de playbooks reutilizables: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse.html
+Condicionales: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_conditionals.html
+258
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Ejercicio Guiado
+Inclusión e importación de archivos
+Incluir e importar playbooks y tareas en un playbook de Ansible de máximo nivel.
+Resultados
+• Incluir archivos de playbooks y tareas en los playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-file
+Instrucciones
+ 1.
+Cambie al directorio /home/student/projects-file.
+[student@workstation ~]$ cd ~/projects-file
+[student@workstation projects-file]$
+ 2.
+Revise el contenido de los tres archivos en el subdirectorio tasks.
+2.1.
+Revise el contenido del archivo tasks/environment.yml. El archivo contiene
+tareas para la instalación de paquetes y la administración del servicio.
+---
+  - name: Install the {{ package }} package
+    ansible.builtin.dnf:
+      name: "{{ package }}"
+      state: latest
+  - name: Start the {{ service }} service
+    ansible.builtin.service:
+      name: "{{ service }}"
+      enabled: true
+      state: started
+2.2.
+Revise el contenido del archivo tasks/firewall.yml. El archivo contiene tareas
+para la instalación, administración y configuración del software de firewall.
+---
+  - name: Install the firewall
+    ansible.builtin.dnf:
+RH294-RHEL9.0-es-3-20240620
+259
+
+

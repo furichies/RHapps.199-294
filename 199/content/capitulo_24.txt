@@ -1,0 +1,453 @@
+# Capítulo 21. Revisión integral
+
+## 21.1. Revisión integral
+
+21.1. Revisión integral 21.1. Objetivos de la revisión integral Después de completar esta sección, debería haber revisado y actualizado los conocimientos y habilidades que aprendió en RHCSA Rapid Track. Revisión de RHCSA Rapid Track Antes de comenzar la revisión integral de este curso, debe sentirse cómodo con los temas tratados en cada capítulo. No dude en pedirle al instructor orientación o aclaraciones adicionales sobre estos temas. Capítulo 1, Registro de sistemas para soporte de Red Hat Registre un sistema utilizando su cuenta de Red Hat para obtener los servicios de soporte y el software que proporciona Red Hat. Capítulo 2, Gestión de archivos desde la línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Capítulo 3, Edición de archivos de texto Cree, vea y edite archivos de texto desde la línea de comandos. Capítulo 4, Gestión de usuarios y grupos locales Obtenga acceso de superusuario a un sistema; crear, administrar y eliminar usuarios y grupos locales; y administrar políticas de contraseñas locales. Capítulo 5, Control del acceso a archivos Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Capítulo 6, Instalación y actualización de software con RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Capítulo 7, Instalación y actualización de aplicaciones mediante Flatpak Instale, actualice y utilice software de escritorio del catálogo de ecosistemas de Red Hat mediante Flatpak. Capítulo 8, Acceso a medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Capítulo 9, Supervisión y gestión de procesos de Linux Investigue, controle y finalice procesos que se ejecutan en un sistema Red Hat Enterprise Linux.
+
+
+
+
+
+21.1. Revisión integral Capítulo 10, Control de servicios y demonios Controle y monitoree los servicios del sistema y demonios que inicia systemd. Capítulo 11, Gestión de la configuración de red Configure interfaces y ajustes de red en servidores Red Hat Enterprise Linux. Capítulo 12, Programación de tareas del sistema Programe programas del sistema que deben ejecutarse de forma recurrente para admitir demonios o funciones del sistema operativo. Capítulo 13, Análisis y almacenamiento de registros Ubique e interprete registros del sistema para solucionar problemas y garantice marcas de tiempo precisas para los eventos de registro. Capítulo 14, Gestión de la seguridad con SELinux Proteja los sistemas y administre la seguridad mediante SELinux. Capítulo 15, Gestión del almacenamiento básico Administre dispositivos de almacenamiento creando particiones, sistemas de archivos y espacios de intercambio desde la línea de comandos. Capítulo 16, Gestión del almacenamiento con Logical Volume Manager Utilice Logical Volume Manager (LVM) para gestionar volúmenes lógicos que pueden contener sistemas de archivos y espacios de intercambio. Capítulo 17, Control y solución de problemas del proceso de inicio Administre cómo se inicia el sistema para controlar qué servicios se inician y para solucionar y reparar problemas de tiempo de inicio. Capítulo 18, Recuperación del acceso de superusuario Obtenga acceso administrativo a un sistema cuando la contraseña de superusuario sea desconocida o esté bloqueada. Capítulo 19, Gestión de la seguridad de la red Controle las conexiones de red a los servicios mediante el firewall del sistema y los servicios de red que pueden vincularse a puertos particulares mediante SELinux. Capítulo 20, Acceso al almacenamiento conectado a la red Acceda al almacenamiento conectado a la red que proporciona el protocolo Network File System (NFS), ya sea manualmente o mediante el montador automático.
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener servidores 21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener servidores Solucione y repare problemas de arranque, actualice el destino de arranque predeterminado del sistema y programe tareas para que se ejecuten de forma recurrente como usuario sin privilegios. Resultados Diagnosticar problemas relacionados con el arranque. Cambie el destino de arranque predeterminado. Programe trabajos recurrentes para que se ejecuten como un usuario sin privilegios. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review1
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Sus deberes incluyen mantener la estabilidad del servidor, solucionar problemas e implementar automatización para respaldar las operaciones de los clientes. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1. Este script crea un problema con el proceso de arranque en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+Un cliente abrió un caso informando que la máquina del servidor no funciona después de reiniciarla durante las tareas de mantenimiento. La descripción del caso menciona que el servidor está bloqueado al arrancar con errores relacionados con
+
+mounting a partition. You have been asked to investigate and to fix the issue.
+
+Acceda a la consola de la máquina serverb e inicie en modo de emergencia para mantenimiento. Busque cualquier mensaje de error en la consola relacionado con un problema al montar una partición. Utilice sombrero rojo como
+
+
+
+
+
+
+
+## Trabajo de laboratorio: oratorio para solucionar problemas de arranque y mantener servidores
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener servidores 21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener servidores Solucione y repare problemas de arranque, actualice el destino de arranque predeterminado del sistema y programe tareas para que se ejecuten de forma recurrente como usuario sin privilegios. Resultados Diagnosticar problemas relacionados con el arranque. Cambie el destino de arranque predeterminado. Programe trabajos recurrentes para que se ejecuten como un usuario sin privilegios. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review1
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Sus deberes incluyen mantener la estabilidad del servidor, solucionar problemas e implementar automatización para respaldar las operaciones de los clientes. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1. Este script crea un problema con el proceso de arranque en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+Un cliente abrió un caso informando que la máquina del servidor no funciona después de reiniciarla durante las tareas de mantenimiento. La descripción del caso menciona que el servidor está bloqueado al arrancar con errores relacionados con
+
+mounting a partition. You have been asked to investigate and to fix the issue.
+
+Acceda a la consola de la máquina serverb e inicie en modo de emergencia para mantenimiento. Busque cualquier mensaje de error en la consola relacionado con un problema al montar una partición. Utilice sombrero rojo como
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener la contraseña de los servidores. Vuelva a montar el sistema de archivos raíz en modo lectura/escritura. Intente montar todos los demás sistemas de archivos e identifique el sistema de archivos que no se puede montar. Edite el archivo /etc/fstab para solucionar el problema. Elimine o comente la línea incorrecta. Reinicie la máquina del servidor y confirme que el sistema ahora arranca sin errores. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break2. Este script cambia el destino predeterminado del destino multiusuario al destino gráfico en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break2
+
+Para reducir el consumo innecesario de recursos de CPU y memoria en la máquina del servidor, se le ha pedido que se asegure de que el destino multiusuario sea el destino predeterminado. Determine el destino predeterminado en la máquina del servidor y cámbielo al destino multiusuario si no es el destino predeterminado. Asegúrese de que la configuración persista después del reinicio. En la máquina del servidor, el usuario estudiante almacena algunos documentos importantes en su directorio de inicio. Para evitar la pérdida de datos, se debe realizar una copia de seguridad del directorio de inicio del usuario estudiante. Se te ha asignado la tarea de
+
+scheduling a recurring job that meets the following criteria:
+
+Hay un script de respaldo disponible en el archivo /home/student/RH134/labs/compreview-review1/backup-home.sh. El script backup-home.sh realiza una copia de seguridad del directorio /home/student desde la máquina serverb a la máquina servera en el directorio /home/student/serverb-backup. Verifique los permisos del script backup-home.sh y asegúrese de que sea ejecutable. En la máquina del servidor, programe un trabajo recurrente como usuario estudiante que ejecute el script backup-home.sh cada hora entre las 7 p. m. y las 9 p. m. todos los días, excepto los sábados y domingos. Reinicie la máquina del servidor y espere a que se complete el inicio antes de calificar. Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review1
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener servidores
+
+student@workstation:~$ lab finish compreview-review1
+
+
+
+
+
+21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener la solución de servidores Solucione y repare problemas de arranque, actualice el destino de arranque predeterminado del sistema y programe tareas para que se ejecuten de forma recurrente como usuario sin privilegios. Resultados Diagnosticar problemas relacionados con el arranque. Cambie el destino de arranque predeterminado. Programe trabajos recurrentes para que se ejecuten como un usuario sin privilegios. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review1
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Sus deberes incluyen mantener la estabilidad del servidor, solucionar problemas e implementar automatización para respaldar las operaciones de los clientes. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1. Este script crea un problema con el proceso de arranque en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+Un cliente abrió un caso informando que la máquina del servidor no funciona después de reiniciarla durante las tareas de mantenimiento. La descripción del caso menciona que el servidor está bloqueado al arrancar con errores relacionados con
+
+mounting a partition. You have been asked to investigate and to fix the issue.
+
+Acceda a la consola de la máquina serverb e inicie en modo de emergencia para mantenimiento. Busque cualquier mensaje de error en la consola relacionado con un problema al montar una partición. Utilice redhat como contraseña.
+
+
+
+
+
+21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener servidores. Vuelva a montar el sistema de archivos raíz en modo lectura/escritura. Intente montar todos los demás sistemas de archivos e identifique el sistema de archivos que no se puede montar. Edite el archivo /etc/fstab para solucionar el problema. Elimine o comente la línea incorrecta. Reinicie la máquina del servidor y confirme que el sistema ahora arranca sin errores. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break2. Este script cambia el destino predeterminado del destino multiusuario al destino gráfico en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break2
+
+Para reducir el consumo innecesario de recursos de CPU y memoria en la máquina del servidor, se le ha pedido que se asegure de que el destino multiusuario sea el destino predeterminado. Determine el destino predeterminado en la máquina del servidor y cámbielo al destino multiusuario si no es el destino predeterminado. Asegúrese de que la configuración persista después del reinicio. En la máquina del servidor, el usuario estudiante almacena algunos documentos importantes en su directorio de inicio. Para evitar la pérdida de datos, se debe realizar una copia de seguridad del directorio de inicio del usuario estudiante. Se te ha asignado la tarea de
+
+scheduling a recurring job that meets the following criteria:
+
+Hay un script de respaldo disponible en el archivo /home/student/RH134/labs/compreview-review1/backup-home.sh. El script backup-home.sh realiza una copia de seguridad del directorio /home/student desde la máquina serverb a la máquina servera en el directorio /home/student/serverb-backup. Verifique los permisos del script backup-home.sh y asegúrese de que sea ejecutable. En la máquina del servidor, programe un trabajo recurrente como usuario estudiante que ejecute el script backup-home.sh cada hora entre las 7 p. m. y las 9 p. m. todos los días, excepto los sábados y domingos. Reinicie la máquina del servidor y espere a que se complete el inicio antes de calificar. Solución Se proporciona una posible solución a este ejercicio. Podría utilizar un método diferente para lograr el resultado especificado. Para prepararlo mejor para los desafíos del mundo real, es posible que la solución proporcionada no incluya comandos, bloques de código o pasos para todas las tareas. Si el script de calificación falla, el sistema muestra una pista sobre qué contenido revisar. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1 y espere a que se inicie la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+...salida omitida... 1. Abra la consola del servidor, donde la máquina arranca en modo de emergencia, y luego resuelva el problema de arranque. 2. Utilice el comando mount para volver a montar el sistema de archivos raíz en modo lectura/escritura. 2.1. Utilice el comando mount para montar los otros sistemas de archivos y encontrar el sistema de archivos que el sistema no puede
+
+mount.
+
+2.2.
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener la evaluación de servidores. Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review1
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review1
+
+Edite el archivo /etc/fstab para eliminar la línea incorrecta y use el comando systemctl daemon-reload para actualizar el demonio systemd. 2.3. Reinicie la máquina del servidor y espere a que se complete el proceso de inicio. 2.4. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break2 y espere a que la máquina del servidor se reinicie antes de continuar. 3. Establezca el destino multiusuario como destino predeterminado en la máquina del servidor. 4. Reinicie la máquina del servidor. 5. Espere hasta que se inicie la máquina del servidor y luego inicie sesión como usuario estudiante. 6. Haga ejecutable el script backup-home.sh.
+
+[student@serverb ~]$ chmod +x ~/RH134/labs/compreview-review1/backup-home.sh
+
+7. Edite el archivo crontab del usuario estudiante utilizando el comando crontab. 8. Agregue el siguiente contenido al archivo crontab: 0 19-21 * * Mon-Fri /home/student/RH134/labs/compreview-review1/backup-home.sh 9. Reinicie la máquina del servidor y espere a que se complete el proceso de inicio. 10.
+
+
+
+
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento 21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento Administre usuarios y grupos, use el Administrador de volúmenes lógicos (LVM) para crear volúmenes lógicos e intercambiar espacio, de manera persistente
+
+mount the Network File System (NFS) share, and schedule a task to clear temporary files on the system.
+
+Resultados Crear un volumen lógico. Montar un sistema de archivos de red. Cree una partición de intercambio que se active automáticamente en el arranque. Configure un directorio para almacenar archivos temporales. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review2
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Se le ha encomendado la tarea de implementar los siguientes cambios de infraestructura para mejorar la administración del almacenamiento, el acceso a los recursos de la red y los controles de acceso de los usuarios. La empresa requiere un espacio de almacenamiento dedicado, escalable y eficiente en la máquina del servidor para los nuevos activos del juego. Configure el almacenamiento para cumplir con las siguientes especificaciones. Utilice el disco /dev/sdb disponible para crear la partición para realizar la copia de seguridad del volumen físico. Elija un tamaño apropiado para que la partición cumpla con los demás requisitos. Cree un volumen lógico vol_home de 1 GiB en un nuevo grupo de volúmenes de 2 GiB denominado extra_storage. El grupo de volúmenes debe utilizar una partición creada en el disco /dev/sdb como volumen físico. El volumen lógico vol_home debe formatearse con un sistema de archivos XFS y montarse de forma persistente en el directorio /user-homes.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: oratorio de configuración y gestión de sistemas de archivos y almacenamiento
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento 21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento Administre usuarios y grupos, use el Administrador de volúmenes lógicos (LVM) para crear volúmenes lógicos e intercambiar espacio, de manera persistente
+
+mount the Network File System (NFS) share, and schedule a task to clear temporary files on the system.
+
+Resultados Crear un volumen lógico. Montar un sistema de archivos de red. Cree una partición de intercambio que se active automáticamente en el arranque. Configure un directorio para almacenar archivos temporales. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review2
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Se le ha encomendado la tarea de implementar los siguientes cambios de infraestructura para mejorar la administración del almacenamiento, el acceso a los recursos de la red y los controles de acceso de los usuarios. La empresa requiere un espacio de almacenamiento dedicado, escalable y eficiente en la máquina del servidor para los nuevos activos del juego. Configure el almacenamiento para cumplir con las siguientes especificaciones. Utilice el disco /dev/sdb disponible para crear la partición para realizar la copia de seguridad del volumen físico. Elija un tamaño apropiado para que la partición cumpla con los demás requisitos. Cree un volumen lógico vol_home de 1 GiB en un nuevo grupo de volúmenes de 2 GiB denominado extra_storage. El grupo de volúmenes debe utilizar una partición creada en el disco /dev/sdb como volumen físico. El volumen lógico vol_home debe formatearse con un sistema de archivos XFS y montarse de forma persistente en el directorio /user-homes.
+
+
+
+
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento La máquina servera exporta /share NFS, que contiene archivos que todas las estaciones de trabajo de desarrollo requieren. Haga que la exportación /share NFS desde la máquina del servidor esté disponible en la máquina del servidor automáticamente al arrancar. Utilice el directorio /local-share como punto de montaje en la máquina del servidor. Configure la máquina serverb para montar persistentemente la exportación servera:/share NFS en el directorio /local-share. Debido al aumento de las demandas de memoria por parte de los ingenieros del juego, proporcione espacio de intercambio para evitar que la máquina del servidor falle durante las cargas máximas. En la máquina del servidor, cree una partición de intercambio de 512 MiB en el disco /dev/sdc. Active persistentemente la partición de intercambio. El equipo de producción necesita acceso a los recursos del juego en la máquina del servidor. Utilice un grupo compartido para la gestión de permisos. Cree el grupo de usuarios de producción. Cree los usuarios de producción1, producción2, producción3 y producción4. Los cuatro usuarios deben ser miembros del grupo complementario de producción y deben utilizar redhat como contraseña. Las pruebas continuas generan muchos artefactos de compilación temporales que deben limpiarse automáticamente para liberar espacio en el disco. En la máquina del servidor, configure un nuevo directorio para almacenamiento temporal que cumpla con los
+
+following specifications:
+
+Configure el directorio /run/volatile para almacenar archivos temporales. El sistema elimina automáticamente los archivos del directorio /run/volatile a los que no se accede durante más de 30 segundos. Establezca 0700 como permisos octales para el directorio /run/volatile. Utilice el archivo /etc/tmpfiles.d/volatile.conf para configurar la eliminación basada en tiempo de los archivos en el directorio /run/volatile. Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review2
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review2
+
+
+
+
+
+21.3. Laboratorio de configuración y administración de sistemas de archivos y solución de almacenamiento Administre usuarios y grupos, use el Administrador de volúmenes lógicos (LVM) para crear volúmenes lógicos e intercambiar espacio, de manera persistente
+
+mount the Network File System (NFS) share, and schedule a task to clear temporary files on the system.
+
+Resultados Crear un volumen lógico. Montar un sistema de archivos de red. Cree una partición de intercambio que se active automáticamente en el arranque. Configure un directorio para almacenar archivos temporales. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review2
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Se le ha encomendado la tarea de implementar los siguientes cambios de infraestructura para mejorar la administración del almacenamiento, el acceso a los recursos de la red y los controles de acceso de los usuarios. La empresa requiere un espacio de almacenamiento dedicado, escalable y eficiente en la máquina del servidor para los nuevos activos del juego. Configure el almacenamiento para cumplir con las siguientes especificaciones. Utilice el disco /dev/sdb disponible para crear la partición para realizar la copia de seguridad del volumen físico. Elija un tamaño apropiado para que la partición cumpla con los demás requisitos. Cree un volumen lógico vol_home de 1 GiB en un nuevo grupo de volúmenes de 2 GiB denominado extra_storage. El grupo de volúmenes debe utilizar una partición creada en el disco /dev/sdb como volumen físico. El volumen lógico vol_home debe formatearse con un sistema de archivos XFS y montarse de forma persistente en el directorio /user-homes.
+
+
+
+
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento La máquina servera exporta /share NFS, que contiene archivos que todas las estaciones de trabajo de desarrollo requieren. Haga que la exportación /share NFS desde la máquina del servidor esté disponible en la máquina del servidor automáticamente al arrancar. Utilice el directorio /local-share como punto de montaje en la máquina del servidor. Configure la máquina serverb para montar persistentemente la exportación servera:/share NFS en el directorio /local-share. Debido al aumento de las demandas de memoria por parte de los ingenieros del juego, proporcione espacio de intercambio para evitar que la máquina del servidor falle durante las cargas máximas. En la máquina del servidor, cree una partición de intercambio de 512 MiB en el disco /dev/sdc. Active persistentemente la partición de intercambio. El equipo de producción necesita acceso a los recursos del juego en la máquina del servidor. Utilice un grupo compartido para la gestión de permisos. Cree el grupo de usuarios de producción. Cree los usuarios de producción1, producción2, producción3 y producción4. Los cuatro usuarios deben ser miembros del grupo complementario de producción y deben utilizar redhat como contraseña. Las pruebas continuas generan muchos artefactos de compilación temporales que deben limpiarse automáticamente para liberar espacio en el disco. En la máquina del servidor, configure un nuevo directorio para almacenamiento temporal que cumpla con los
+
+following specifications:
+
+Configure el directorio /run/volatile para almacenar archivos temporales. El sistema elimina automáticamente los archivos del directorio /run/volatile a los que no se accede durante más de 30 segundos. Establezca 0700 como permisos octales para el directorio /run/volatile. Utilice el archivo /etc/tmpfiles.d/volatile.conf para configurar la eliminación basada en tiempo de los archivos en el directorio /run/volatile. Solución Se proporciona una posible solución a este ejercicio. Podría utilizar un método diferente para lograr el resultado especificado. Para prepararlo mejor para los desafíos del mundo real, es posible que la solución proporcionada no incluya comandos, bloques de código o pasos para todas las tareas. Si el script de calificación falla, el sistema muestra una pista sobre qué contenido revisar. Inicie sesión en la máquina serverb como usuario estudiante usando el comando ssh Student@serverb y use el comando
+
+sudo -i command to switch to the root user.
+
+1. Utilice el siguiente comando para configurar el volumen lógico vol_home y formatéelo con el tipo de sistema de archivos XFS. 2.
+
+
+
+
+
+21.3. Laboratorio de configuración y administración de sistemas de archivos y evaluación de almacenamiento Como usuario estudiante en la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+[root@serverb ~]# parted /dev/sdb mklabel msdos && \
+
+parted /dev/sdb mkpart primario 1MiB 2049MiB && \ parted /dev/sdb set 1 lvm on && \
+
+pvcreate /dev/sdb1 && \
+vgcreate extra_storage /dev/sdb1 && \
+lvcreate -L 1GiB -n vol_home extra_storage && \
+mkdir /user-homes && \
+mkfs -t xfs /dev/extra_storage/vol_home
+
+...salida omitida... Monte persistentemente el volumen lógico /dev/extra_storage/vol_home en el directorio /user-homes.
+
+[root@serverb ~]# echo "/dev/extra_storage/vol_home /user-homes xfs defaults 0 0"\
+
+>> /etc/fstab && \
+
+systemctl daemon-reload && \
+mount /user-homes
+
+...salida omitida... 3. Utilice el siguiente comando para montar el sistema de archivos de red /share en el directorio /local-share.
+
+[root@serverb ~]# mkdir /local-share && \
+echo "servera:/share /local-share nfs rw,sync 0 0" >> /etc/fstab && \
+systemctl daemon-reload && \
+mount /local-share
+
+4. Cree, active y monte de forma persistente la partición de intercambio.
+
+[root@serverb ~]# parted /dev/sdc mklabel msdos && \
+
+parted /dev/sdc mkpart intercambio primario de Linux 1MiB 513MiB && \ mkswap /dev/sdc1
+
+[root@serverb ~]# lsblk -o UUID /dev/sdc1
+
+UUIDcc18ccb6-bd29-48a5-8554-546bf3471b69
+
+[root@serverb ~]# echo "UUID=cc18...1b69 swap swap defaults 0 0" >> /etc/fstab
+[root@serverb ~]# swapon -a
+
+5. Utilice los siguientes comandos para crear el grupo de usuarios de producción, crear y agregar los usuarios que deben tener el grupo suplementario de producción y establecer las contraseñas de usuario requeridas.
+
+[root@serverb ~]# groupadd production
+[root@serverb ~]# for i in 1 2 3 4; do useradd -G production production$i; done
+[root@serverb ~]# for i in 1 2 3 4; do echo redhat | passwd --stdin production$i; done
+
+6. Utilice el siguiente comando para configurar el directorio /run/volatile para almacenar archivos temporales.
+
+[root@serverb ~]# echo "d /run/volatile 0700 root root 30s" > \
+
+/etc/tmpfiles.d/volatile.conf
+
+[root@serverb ~]# systemd-tmpfiles --create /etc/tmpfiles.d/volatile.conf
+
+7.
+
+
+
+
+
+21.3. Laboratorio de configuración y gestión de sistemas de archivos y almacenamiento
+
+student@workstation:~$ lab grade compreview-review2
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review2
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor 21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Configure el acceso seguro a servidores remotos, ajuste la configuración del firewall y solucione problemas de SELinux. Resultados Configurar la autenticación basada en claves SSH. Configure los ajustes del firewall. Ajuste el modo SELinux y los booleanos de SELinux. Solucionar problemas de SELinux. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review3
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Usted es responsable de implementar cambios críticos de seguridad y configuración para garantizar un acceso remoto seguro, un montaje adecuado del sistema de archivos y generación de informes basados ​​en la web. La empresa requiere acceso seguro y sin contraseña desde la máquina del servidor a la máquina del servidor para realizar transferencias de datos automatizadas. El usuario estudiante en la máquina del servidor debe poder iniciar sesión en la máquina del servidor a través de SSH sin ingresar una contraseña. En la máquina del servidor, genere un par de claves SSH para el usuario estudiante. No proteja la clave privada con una frase de contraseña. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor. Verifique que el usuario estudiante pueda iniciar sesión en la máquina del servidor desde la máquina del servidor sin ingresar una contraseña.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: oratorio de configuración y administración de la seguridad del servidor
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor 21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Configure el acceso seguro a servidores remotos, ajuste la configuración del firewall y solucione problemas de SELinux. Resultados Configurar la autenticación basada en claves SSH. Configure los ajustes del firewall. Ajuste el modo SELinux y los booleanos de SELinux. Solucionar problemas de SELinux. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review3
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Usted es responsable de implementar cambios críticos de seguridad y configuración para garantizar un acceso remoto seguro, un montaje adecuado del sistema de archivos y generación de informes basados ​​en la web. La empresa requiere acceso seguro y sin contraseña desde la máquina del servidor a la máquina del servidor para realizar transferencias de datos automatizadas. El usuario estudiante en la máquina del servidor debe poder iniciar sesión en la máquina del servidor a través de SSH sin ingresar una contraseña. En la máquina del servidor, genere un par de claves SSH para el usuario estudiante. No proteja la clave privada con una frase de contraseña. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor. Verifique que el usuario estudiante pueda iniciar sesión en la máquina del servidor desde la máquina del servidor sin ingresar una contraseña.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Está investigando posibles problemas de permisos con el directorio /user-homes/production5 en la máquina del servidor. Ha decidido relajar SELinux para la depuración. Verifique los permisos del directorio /user-homes/production5. Configure SELinux para que se ejecute en modo permisivo de forma predeterminada. Reinicie la máquina del servidor y confirme que el modo SELinux sea permisivo. La máquina servera exporta el directorio de inicio del usuario de producción5 como exportación NFS servera:/user-homes/production5. Configure el servicio autofs para montar el recurso compartido de red en el directorio /localhome/production5 en la máquina serverb. Instale el paquete requerido para configurar el servicio autofs. Configure el servicio autofs para montar la exportación NFS servera.lab.example.com:/user-homes/production5 en el directorio /localhome/production5 de la máquina serverb. En la máquina del servidor, ajuste el booleano SELinux apropiado para que el usuario de producción5 pueda usar el directorio de inicio montado en NFS después de autenticarse con una clave SSH. Utilice redhat como contraseña del usuario de producción5. En la máquina del servidor, como usuario de producción5, genere un nuevo par de claves SSH para la autenticación. Utilice redhat como contraseña para el usuario de producción5. Transfiera la clave pública del par de claves SSH al usuario de producción5 en la máquina del servidor. Utilice redhat como contraseña para el usuario de producción5. Utilice la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Verifique que el comando falle. Ajuste el booleano SELinux use_nfs_home_dirs en la máquina del servidor para permitir que NFS use directorios de inicio. Utilice redhat como contraseña. Verifique y confirme que ahora puede utilizar la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Por razones de seguridad, debe bloquear todas las solicitudes de conexión desde la máquina del servidor a la máquina del servidor. En la máquina del servidor, ajuste la configuración del firewall para bloquear todas las solicitudes de conexión que se originen en la máquina del servidor. Utilice la dirección IPv4 del servidor (172.25.250.10) para configurar la regla del firewall. Un administrador junior configuró el servidor HTTP Apache en la máquina del servidor para escuchar las conexiones en el puerto 30080/TCP. Sin embargo, el servicio no se inicia. Se le ha pedido que investigue y solucione este problema. También se le pedirá que ajuste la configuración del firewall adecuadamente para que el puerto 30080/TCP esté abierto para conexiones entrantes. Intente reiniciar el servicio web. Inspeccione los archivos de registro apropiados para determinar el motivo de la falla del servicio, incluidas posibles violaciones de la política de SELinux. Cuando lo identifique, solucione el problema y asegúrese de que se inicie el servicio. Agregue el puerto 30080/TCP a la zona pública predeterminada para permitir conexiones entrantes. Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Nota Si la tarea no pasa el script de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review3
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review3
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la solución de seguridad del servidor Configure el acceso seguro a servidores remotos, ajuste la configuración del firewall y solucione problemas de SELinux. Resultados Configurar la autenticación basada en claves SSH. Configure los ajustes del firewall. Ajuste el modo SELinux y los booleanos de SELinux. Solucionar problemas de SELinux. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review3
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Usted es responsable de implementar cambios críticos de seguridad y configuración para garantizar un acceso remoto seguro, un montaje adecuado del sistema de archivos y generación de informes basados ​​en la web. La empresa requiere acceso seguro y sin contraseña desde la máquina del servidor a la máquina del servidor para realizar transferencias de datos automatizadas. El usuario estudiante en la máquina del servidor debe poder iniciar sesión en la máquina del servidor a través de SSH sin ingresar una contraseña. En la máquina del servidor, genere un par de claves SSH para el usuario estudiante. No proteja la clave privada con una frase de contraseña. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor. Verifique que el usuario estudiante pueda iniciar sesión en la máquina del servidor desde la máquina del servidor sin ingresar una contraseña.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Está investigando posibles problemas de permisos con el directorio /user-homes/production5 en la máquina del servidor. Ha decidido relajar SELinux para la depuración. Verifique los permisos del directorio /user-homes/production5. Configure SELinux para que se ejecute en modo permisivo de forma predeterminada. Reinicie la máquina del servidor y confirme que el modo SELinux sea permisivo. La máquina servera exporta el directorio de inicio del usuario de producción5 como exportación NFS servera:/user-homes/production5. Configure el servicio autofs para montar el recurso compartido de red en el directorio /localhome/production5 en la máquina serverb. Instale el paquete requerido para configurar el servicio autofs. Configure el servicio autofs para montar la exportación NFS servera.lab.example.com:/user-homes/production5 en el directorio /localhome/production5 de la máquina serverb. En la máquina del servidor, ajuste el booleano SELinux apropiado para que el usuario de producción5 pueda usar el directorio de inicio montado en NFS después de autenticarse con una clave SSH. Utilice redhat como contraseña del usuario de producción5. En la máquina del servidor, como usuario de producción5, genere un nuevo par de claves SSH para la autenticación. Utilice redhat como contraseña para el usuario de producción5. Transfiera la clave pública del par de claves SSH al usuario de producción5 en la máquina del servidor. Utilice redhat como contraseña para el usuario de producción5. Utilice la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Verifique que el comando falle. Ajuste el booleano SELinux use_nfs_home_dirs en la máquina del servidor para permitir que NFS use directorios de inicio. Utilice redhat como contraseña. Verifique y confirme que ahora puede utilizar la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Por razones de seguridad, debe bloquear todas las solicitudes de conexión desde la máquina del servidor a la máquina del servidor. En la máquina del servidor, ajuste la configuración del firewall para bloquear todas las solicitudes de conexión que se originen en la máquina del servidor. Utilice la dirección IPv4 del servidor (172.25.250.10) para configurar la regla del firewall. Un administrador junior configuró el servidor HTTP Apache en la máquina del servidor para escuchar las conexiones en el puerto 30080/TCP. Sin embargo, el servicio no se inicia. Se le ha pedido que investigue y solucione este problema. También se le pedirá que ajuste la configuración del firewall adecuadamente para que el puerto 30080/TCP esté abierto para conexiones entrantes. Intente reiniciar el servicio web. Inspeccione los archivos de registro apropiados para determinar el motivo de la falla del servicio, incluidas posibles violaciones de la política de SELinux. Cuando lo identifique, solucione el problema y asegúrese de que se inicie el servicio. Agregue el puerto 30080/TCP a la zona pública predeterminada para permitir conexiones entrantes. Solución Se proporciona una posible solución a este ejercicio. Podría utilizar un método diferente para lograr el resultado especificado.
+
+
+
+
+
+21.4. Laboratorio de configuración y administración de la seguridad del servidor Para prepararlo mejor para los desafíos del mundo real, es posible que la solución proporcionada no incluya comandos, bloques de código o pasos para todas las tareas. Si el script de calificación falla, el sistema muestra una pista sobre qué contenido revisar. Inicie sesión en la máquina del servidor como usuario estudiante. 1. Genere un par de claves SSH. No proteja la clave privada con una frase de contraseña.
+
+[student@serverb ~]$ ssh-keygen
+
+Generando par de claves públicas/privadas ed25519. Ingrese el archivo en el que guardar la clave (/home/student/.ssh/id_ed25519): Directorio creado '/home/student/.ssh'. Ingrese la frase de contraseña para "/home/student/.ssh/id_ed25519" (vacío si no hay frase de contraseña): Ingrese la misma frase de contraseña nuevamente: ... resultado omitido... 2. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor.
+
+[student@serverb ~]$ ssh-copy-id -i ~/.ssh/id_ed25519.pub student@servera
+
+...salida omitida... 3. Utilice la clave SSH recién creada para iniciar sesión en la máquina del servidor como usuario estudiante.
+
+[student@serverb ~]$ ssh student@servera
+
+... salida omitida... Último inicio de sesión: lunes 21 de julio 19:39:08 2025 desde 172.25.250.11 [student@servera ~]$ 4. En la máquina servera, establezca el parámetro SELINUX en el valor permisivo en el archivo /etc/selinux/config. Luego reinicie el sistema usando el comando de reinicio sudo systemctl. ...salida omitida... SELINUX=permisivo ...salida omitida... 5. Como usuario raíz en la máquina del servidor, instale el paquete autofs, cree los archivos de mapa autofs y reinicie el servicio autofs.
+
+[root@serverb ~]# dnf install -y autofs && \
+echo "/- /etc/auto.production5" > /etc/auto.master.d/production5.autofs
+
+...salida omitida... ¡Completo!
+
+[root@serverb ~]# getent passwd production5
+production5:x:5001:5001::/localhome/production5:/bin/bash
+[root@serverb ~]# echo \
+
+"/localhome/production5 -rw servera.lab.example.com:/user-homes/production5" \ > /etc/auto.production5 && \
+
+systemctl restart autofs
+
+6. Abra una nueva ventana de terminal e inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario de producción5, genere un par de claves SSH sin una frase de contraseña y envíe el par de claves SSH al usuario de producción5 en la máquina del servidor. 7.
+
+
+
+
+
+21.4. Laboratorio de configuración y administración de la seguridad del servidor
+
+[student@servera ~]$ su - production5
+
+Contraseña: sombrero rojo
+
+[production5@servera ~]$ ssh-keygen
+
+...salida omitida... La imagen aleatoria de la clave es: +--[ED25519 256]--+ |      ..E=+=.. . | |       +.@=o+ X | |     o..Oo=o * o | |    o.=o+oo o .  | |   . .o*S. oo | |    ....o | |    ... . .   | |     o.     .    | |    ... | +----[SHA256]-----+
+
+[production5@servera ~]$ ssh-copy-id production5@serverb
+
+...salida omitida... Número de claves agregadas: 1 Ahora intente iniciar sesión en la máquina, con: "ssh 'production5@serverb'" y verifique que solo se hayan agregado las claves que deseaba. Salga y cierre la terminal que está conectada a la máquina del servidor como usuario de producción5. Mantenga abierta la terminal que está conectada a la máquina del servidor como usuario root. Como usuario raíz en la máquina del servidor, establezca el booleano use_nfs_home_dirs SELinux en verdadero.
+
+[root@serverb ~]# setsebool -P use_nfs_home_dirs true
+
+8. En la máquina del servidor, ajuste y vuelva a cargar la configuración del firewall para bloquear todas las solicitudes de conexión que se originen en la máquina del servidor.
+
+[root@serverb ~]# firewall-cmd --add-source=172.25.250.10/32 \
+
+--zone=bloque --permanente && \
+
+firewall-cmd --reload
+
+éxito éxito 9. En la máquina del servidor, utilice los comandos systemctl restart y systemctl status en la unidad httpd.service para investigar el problema con el servidor Apache HTTP. Luego use el comando sealert -a /var/log/audit/audit.log para determinar si una política de SELinux impide que el servicio httpd se enlace al puerto 30080/TCP. 10.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la evaluación de la seguridad del servidor Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review3
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review3
+[root@serverb ~]# systemctl restart httpd.service
+
+El trabajo para httpd.service falló porque el proceso de control finalizó con un código de error. Consulte "systemctl status httpd.service" y "journalctl -xeu httpd.service" para obtener más detalles.
+
+[root@serverb ~]# systemctl status httpd.service
+
+× httpd.service - El servidor HTTP Apache
+
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; disabled; preset: disabled)
+     Active: failed (Result: exit-code) since Mon 2025-07-21 19:49:23 UTC; 25s ago
+
+... salida omitida... 21 de julio 19:49:23 serverb systemd[1]: Iniciando httpd.service - El servidor HTTP Apache... 21 de julio 19:49:23 serverb (httpd)[3077]: httpd.service: Se evalúa la variable de entorno referenciada pero no configurada > 21 de julio 19:49:23 serverb httpd[3077]: (13) Permiso denegado: AH00072: make_sock: no se pudo vincular a la dirección > 21 de julio 19:49:23 serverb httpd[3077]: (13) Permiso denegado: AH00072: make_sock: no se pudo vincular a la dirección > 21 de julio 19:49:23 serverb httpd[3077]: no hay sockets de escucha disponibles, apagándose el 21 de julio 19:49:23 serverb httpd[3077]: AH00015: No se pueden abrir registros el 21 de julio 19:49:23 serverb systemd[1]: httpd.service: proceso principal cerrado, código = salido, estado = 1/FALLO 21 de julio 19:49:23 serverb systemd[1]: httpd.service: error con el resultado 'código de salida'. 21 de julio 19:49:23 serverb systemd[1]: No se pudo iniciar httpd.service: el servidor HTTP Apache. Utilice los siguientes comandos para configurar el contexto SELinux apropiado, reiniciar el servicio httpd y actualizar las reglas del firewall.
+
+[root@serverb ~]# semanage port -a -t http_port_t -p tcp 30080
+[root@serverb ~]# systemctl restart httpd
+[root@serverb ~]# firewall-cmd --add-port=30080/tcp --permanent
+
+éxito
+
+[root@serverb ~]# firewall-cmd --reload
+
+éxito 11.
+
+
+
+
+

@@ -1,0 +1,107 @@
+# Cuestionario: Automatización de la administración de Linux con Ansible
+# Tipo: quiz
+# Capítulo: Capítulo 1. Presentación de Ansible
+
+capítulo 1 |  Presentación de Ansible
+Cuestionario
+Automatización de la administración de
+Linux con Ansible
+Elija la respuesta correcta para las siguientes preguntas:
+ 1.
+¿Qué término describe mejor la arquitectura de Ansible?
+a. Sin agente
+b. Cliente/Servidor
+c. Basado en eventos
+d. Sin estado
+ 2. ¿Qué protocolo de red usa Ansible, de manera predeterminada, para comunicarse con
+nodos administrados?
+a. HTTP
+b. HTTPS
+c. SNMP
+d. SSH
+ 3. ¿Qué archivo define las acciones que realiza Ansible en nodos gestionados?
+a. Inventario de host
+b. Manifiesto
+c. Playbook
+d. Script
+ 4. ¿Qué sintaxis se usa para definir los playbooks de Ansible?
+a. Bash
+b. Perl
+c. Python
+d. YAML
+8
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Solución
+Automatización de la administración de
+Linux con Ansible
+Elija la respuesta correcta para las siguientes preguntas:
+ 1.
+¿Qué término describe mejor la arquitectura de Ansible?
+a. Sin agente
+b. Cliente/Servidor
+c. Basado en eventos
+d. Sin estado
+ 2. ¿Qué protocolo de red usa Ansible, de manera predeterminada, para comunicarse con
+nodos administrados?
+a. HTTP
+b. HTTPS
+c. SNMP
+d. SSH
+ 3. ¿Qué archivo define las acciones que realiza Ansible en nodos gestionados?
+a. Inventario de host
+b. Manifiesto
+c. Playbook
+d. Script
+ 4. ¿Qué sintaxis se usa para definir los playbooks de Ansible?
+a. Bash
+b. Perl
+c. Python
+d. YAML
+RH294-RHEL9.0-es-3-20240620
+9
+
+
+capítulo 1 |  Presentación de Ansible
+Instalación de Ansible
+Objetivos
+• Instalar Ansible en un nodo de control y describir la distinción entre Ansible comunitario y
+Red Hat Ansible Automation Platform.
+Ansible y Red Hat Ansible Automation Platform
+Puede obtener el software Ansible de diferentes formas, cada una con su propio nivel de soporte.
+• De la comunidad upstream
+• Como parte de Red Hat Enterprise Linux, con soporte limitado
+• Con el producto Red Hat Ansible Automation Platform con soporte completo
+Este curso se centra en el último de estos tres y usa las herramientas proporcionadas con Red Hat
+Ansible Automation Platform. Sin embargo, el lenguaje de Ansible y los conceptos básicos son los
+mismos sin importar cómo obtenga el software.
+Ansible comunitario
+La comunidad upstream de Ansible desarrolla Ansible y distribuye versiones de este de dos
+maneras.
+El primero de ellos es Ansible Core. Este es un componente minimalista que consta del tiempo de
+ejecución central (core) que puede interpretar el contenido de Ansible y un conjunto de módulos
+de Ansible de uso común (incluidos como Ansible Content Collections ansible.builtin). Este
+tiempo de ejecución está estructurado para que el nodo de control actúe como el entorno de
+ejecución para el código Ansible.
+El segundo es el Ansible comunitario. Esta es una distribución de Ansible Core más una selección
+de Ansible Content Collections seleccionadas por la comunidad de código abierto, agregando
+módulos y roles adicionales de Ansible.
+Ambos son proporcionados por los desarrolladores upstream como paquetes pip de Python;
+Red Hat no admite ninguna versión de la comunidad.
+Ansible Core en Red Hat Enterprise Linux
+Red Hat proporciona Ansible Core como un paquete RPM, ansible-core, incluido con Red Hat
+Enterprise Linux 9 en el repositorio de AppStream. Su objetivo es permitir el soporte para el
+código de automatización proporcionado o generado por Red Hat. Cuenta con soporte, pero el
+alcance de este se limita a cualquier playbook, rol o módulo de Ansible que se incluya o se genere
+con un producto de Red Hat, como los roles del sistema incluidos en el paquete rhel-system-
+roles, los playbooks de corrección de Red Hat Insights y los playbooks de Ansible que cumplen
+con OpenSCAP. Otros casos de uso, incluido el uso de otros módulos y complementos de Ansible
+incluidos con Ansible Core 2.13, están fuera del alcance del soporte.
+Para obtener más información, consulte el artículo de la base de conocimiento "Uso de Ansible en
+RHEL 9" [https://access.redhat.com/articles/6393321].
+10
+RH294-RHEL9.0-es-3-20240620
+
+

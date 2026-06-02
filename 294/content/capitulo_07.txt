@@ -1,0 +1,3608 @@
+# Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7
+Simplificación de playbooks
+con roles y Ansible Content
+Collections
+Meta
+Usar los roles de Ansible y Ansible Content
+Collections para desarrollar playbooks más
+rápidamente y volver a usar el código de Ansible.
+Objetivos
+•
+Describir el propósito de un rol de Ansible,
+su estructura y cómo se usan los roles en los
+playbooks.
+•
+Cree un rol en el directorio de proyectos de un
+playbook y ejecútelo como parte de uno de los
+plays del playbook.
+•
+Seleccionar y recuperar roles de fuentes
+externas, como repositorios de Git o Ansible
+Galaxy, y usarlos en sus playbooks.
+•
+Obtener un conjunto de roles relacionados,
+módulos suplementarios y otro contenido de
+Ansible Content Collection y usarlos en un
+playbook.
+•
+Escribir playbooks que aprovechen los roles
+del sistema de Red Hat Enterprise Linux para
+realizar operaciones estándares.
+Secciones
+•
+Descripción de la estructura del rol (y
+cuestionario)
+•
+Creación de roles (y ejercicio guiado)
+•
+Implementación de roles desde fuentes
+externas de contenido (y ejercicio guiado)
+•
+Obtención de roles y módulos de las
+colecciones de contenido (y ejercicio guiado)
+•
+Reutilización de contenido con roles de
+sistema (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Simplificación de playbooks con roles y Ansible
+Content Collections
+RH294-RHEL9.0-es-3-20240620
+277
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Descripción de la estructura del rol
+Objetivos
+• Describir el propósito de un rol de Ansible, su estructura y cómo se usan los roles en los
+playbooks.
+Estructuración de playbooks de Ansible con roles
+A medida que desarrolla más playbooks, probablemente descubrirá que tiene muchas
+oportunidades para volver a usar el código de playbooks que ya ha escrito. Tal vez podría volver
+a usar un play para configurar una base de datos MySQL para una aplicación para configurar
+una base de datos MySQL para otra aplicación, con diferentes nombres de host, contraseñas y
+usuarios.
+Ese play puede ser largo y complejo, con muchos archivos incluidos o importados, y con tareas y
+manejadores para gestionar diversas situaciones. Copiar todo ese código en otro playbook podría
+ser un trabajo no menor.
+Los roles de Ansible facilitan la reutilización del código genérico de Ansible. Puede empaquetar
+todas las tareas, variables, archivos, plantillas y otros recursos necesarios para aprovisionar
+infraestructura o implementar aplicaciones en una estructura de directorios estandarizada. Copie
+un rol de un proyecto a otro copiando el directorio, luego llame al rol dentro de un play.
+Un rol bien escrito puede tomar variables pasadas del playbook. Estas variables pueden ajustar el
+comportamiento de los roles mediante la configuración de todos los nombres de host específicos
+del sitio, direcciones IP, nombres de usuario, contraseñas y otros detalles locales específicos.
+Por ejemplo, podría escribir un rol con el fin de implementar un servidor de base de datos para
+soportar variables que configuran el nombre de host, el usuario administrador de la base de datos
+y la contraseña, y otros parámetros que necesitan personalización para su instalación.
+También puede garantizar que se establezcan valores predeterminados razonables para esas
+variables en el rol, si no se establecen en el play que invoca el rol.
+Los roles Ansible tienen los siguientes beneficios:
+• Los roles agrupan el contenido, lo que permite intercambiar el código fácilmente con otros.
+• Los roles pueden definir los elementos fundamentales de un tipo de sistema, como un servidor
+web, servidor de base de datos o repositorio de git.
+• Los roles hacen que los proyectos más grandes sean más manejables.
+• Los roles se pueden desarrollar en paralelo por diferentes usuarios.
+Además de escribir, usar, volver a usar y compartir sus propios roles, puede obtener roles de
+otras fuentes. Puede encontrar roles mediante el uso de paquetes de distribución, como Ansible
+Content Collections. O puede descargar roles desde el centro de automatización de Red Hat, un
+centro de automatización privado y desde el sitio web de Ansible Galaxy de la comunidad.
+Red Hat Enterprise Linux incluye algunos roles en el paquete rhel-system-roles. Aprenderá
+más sobre rhel-system-roles más adelante en este capítulo.
+278
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Análisis de la estructura de roles de Ansible
+Una función Ansible se define mediante una estructura estandarizada de subdirectorios y archivos.
+El directorio de nivel superior define el nombre del propio rol. Los archivos se organizan en
+subdirectorios que se nombran de acuerdo con el propósito de cada archivo en el rol, como tasks
+y handlers.
+Los subdirectorios files y templates contienen archivos a los que hacen referencia tareas en
+otros playbooks y archivos de tareas.
+El siguiente comando tree muestra la estructura de directorio del rol user.example.
+[user@host roles]$ tree user.example
+user.example/
+├── defaults
+│   └── main.yml
+├── files
+├── handlers
+│   └── main.yml
+├── meta
+│   └── main.yml
+├── README.md
+├── tasks
+│   └── main.yml
+├── templates
+├── tests
+│   ├── inventory
+│   └── test.yml
+└── vars
+    └── main.yml
+Subdirectorios del rol de Ansible
+Subdirectorio
+Función
+defaults
+El archivo main.yml en este directorio contiene los valores
+predeterminados de variables del rol que se pueden sobrescribir cuando
+se usa un rol. Estas variables tienen poca prioridad y están destinadas a
+modificarse y personalizarse en los plays.
+files
+Este directorio contiene archivos estáticos a los que hacen referencia las
+tareas de los roles.
+handlers
+El archivo main.yml en este directorio contiene las definiciones del
+administrador de roles.
+meta
+El archivo main.yml en este directorio contiene información acerca del
+rol, incluido el autor, la licencia, las plataformas y las dependencias de roles
+opcionales.
+tasks
+El archivo main.yml en este directorio contiene las definiciones de las
+tareas de los roles.
+RH294-RHEL9.0-es-3-20240620
+279
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Subdirectorio
+Función
+templates
+Este directorio contiene plantillas Jinja2 a las que hacen referencia las
+tareas de los roles.
+tests
+Este directorio puede contener un inventario y un playbook de test.yml
+que se pueden usar para probar un rol.
+vars
+El archivo main.yml en este directorio define los valores de la variable
+del rol. A menudo, estas variables se utilizan para fines internos dentro del
+rol. Estas variables tienen una alta prioridad y no están diseñadas para ser
+cambiadas cuando se usan en un playbook.
+No todos los roles tienen todos estos directorios.
+Definición de variables y valores predeterminados
+Las variables del rol se definen mediante la creación de un archivo vars/main.yml con pares de
+clave-valor en la jerarquía del directorio del rol. Se hace referencia a estas variables en los archivos
+de tareas de rol como cualquier otra variable: {{ VAR_NAME }}. Estas variables tienen una alta
+prioridad y no se las puede reemplazar por variables de inventario. Estas variables son usadas por
+el funcionamiento interno del rol.
+Las variables predeterminadas permiten que se establezcan valores predeterminados para las
+variables que se pueden usar en un play para configurar el rol o personalizar su comportamiento.
+Estas variables se definen mediante la creación de un archivo defaults/main.yml con pares de
+clave-valor en la jerarquía del directorio del rol. Las variables predeterminadas tienen la prioridad
+más baja de cualquiera de las variables disponibles.
+Los valores de las variables predeterminadas pueden reemplazarse con cualquier otra variable,
+incluidas las variables de inventario. El objetivo de estas variables es proporcionarle a la persona
+que escribe un play que utiliza el rol una manera de personalizar o controlar exactamente lo que
+va a hacer. Puede usar las variables predeterminadas para proporcionarle información al rol de que
+necesita configurar o implementar algo correctamente.
+Defina una variable específica en vars/main.yml o defaults/main.yml, pero no en ambos
+lugares. Utilice variables predeterminadas cuando desee que los valores de las variables se
+reemplacen.
+Importante
+Los roles no deben tener datos específicos del sitio ni contener secretos como
+contraseñas o claves privadas, ya que se supone que los roles son genéricos,
+reutilizables y que se pueden compartir libremente. Por lo tanto, los detalles
+específicos del sitio no deben ser codificados en ellos.
+Los secretos deben proporcionarse al rol a través de otros medios. Este requisito es
+una de las razones por las que puede querer establecer variables de rol al invocar a
+un rol. Las variables de rol establecidas en el play podrían proporcionar el secreto, o
+apuntar a un archivo cifrado por Ansible Vault que contenga el secreto.
+Uso de roles de Ansible en un play
+Hay varias formas de invocar roles en un play. Los dos métodos principales son:
+280
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+• Puede incluirlos o importarlos como una tarea en su lista tasks.
+• Puede crear una lista roles que ejecute roles específicos antes de las tareas de su play.
+El primer método es el más flexible, pero el segundo método también se usa comúnmente y se
+inventó antes que el primer método.
+Importación e inclusión de roles como tareas
+Los roles se pueden agregar a un play mediante una tarea ordinaria. Use el módulo
+ansible.builtin.import_role para importar estadísticamente un rol y el módulo
+ansible.builtin.include_role para incluir dinámicamente un rol.
+El siguiente play muestra cómo se puede importar un rol usando una tarea con el módulo
+ansible.builtin.import_role. El play de ejemplo ejecuta la tarea A normal task
+primero, luego importa el rol role2.
+- name: Run a role as a task
+  hosts: remote.example.com
+  tasks:
+    - name: A normal task
+      ansible.builtin.debug:
+        msg: 'first task'
+    - name: A task to import role2 here
+      ansible.builtin.import_role:
+        name: role2
+Con el módulo ansible.builtin.import_role, Ansible trata el rol como una importación
+estática y lo analiza durante el procesamiento inicial del playbook.
+En el ejemplo anterior, cuando se analiza el playbook:
+• Si roles/role2/tasks/main.yml existe, Ansible agrega las tareas en ese archivo al play.
+• Si roles/role2/handlers/main.yml existe, Ansible agrega los manejadores en ese archivo
+al play.
+• Si roles/role2/defaults/main.yml existe, Ansible agrega las variables predeterminadas
+en ese archivo al play.
+• Si roles/role2/vars/main.yml existe, Ansible agrega las variables en ese archivo al
+play (posiblemente anulando los valores de las variables predeterminadas del rol debido a la
+precedencia).
+Importante
+Debido a que ansible.builtin.import_role se procesa cuando se analiza
+el playbook, los manejadores del rol, las variables predeterminadas y las variables
+del rol están expuestas a todas las tareas y funciones del play y se puede acceder a
+ellas mediante tareas y funciones que la preceden en el play (incluso aunque el rol
+todavía no se haya ejecutado).
+También puede establecer variables para el rol al invocar a la tarea, de la misma manera que puede
+establecer variables de tarea:
+RH294-RHEL9.0-es-3-20240620
+281
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+- name: Run a role as a task
+  hosts: remote.example.com
+  tasks:
+    - name: A task to include role2 here
+      ansible.builtin.import_role:
+        name: role2
+      vars:
+        var1: val1
+        var2: val2
+El módulo ansible.builtin.include_role funciona de manera similar, pero incluye
+dinámicamente el rol cuando el playbook se está ejecutando en lugar de importarlo estáticamente
+cuando el playbook se analiza inicialmente.
+Una diferencia clave entre los dos módulos es cómo manejan las palabras clave, los condicionales y
+los bucles al nivel de tarea:
+• ansible.builtin.import_role aplica los condicionales y los bucles de la tarea a cada una
+de las tareas que se importan.
+• ansible.builtin.include_role aplica los condicionales y los bucles de la tarea a la
+declaración que determina si el rol está incluido o no.
+Además, cuando incluye un rol, sus variables de rol y las variables predeterminadas no se exponen
+al resto del play, a diferencia de ansible.builtin.import_role.
+Uso de una sección de roles en un play
+Otra forma de invocar roles en un play es enumerarlos en una sección roles. La sección roles
+es muy similar a la sección tasks, excepto que en lugar de consistir en una lista de tareas,
+consiste en una lista de roles.
+En el siguiente play de ejemplo, se ejecuta el rol role1 y, a continuación, se ejecuta el rol role2.
+---
+- name: A play that only has roles
+  hosts: remote.example.com
+  roles:
+    - role: role1
+    - role: role2
+Por cada rol especificado, las tareas, los manejadores, las variables y las dependencias de los roles
+se importan al play en el orden en que aparecen en la lista.
+Cuando usa una sección roles para importar roles a un play, los roles se ejecutan primero, antes
+que cualquier tarea que defina para ese play. No importa si la sección roles aparece antes o
+después de la sección tasks en el play.
+---
+- name: Roles run before tasks
+  hosts: remote.example.com
+  tasks:
+    - name: A task
+      ansible.builtin.debug:
+282
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        msg: "This task runs after the role."
+  roles:
+    - role: role1
+Debido a que los roles se ejecutan primero, generalmente tiene sentido enumerar la sección
+roles antes de la sección tasks, si debe tener ambas. El play anterior se puede reescribir de la
+siguiente manera sin cambiar la forma en que se ejecuta:
+---
+- name: Roles run before tasks
+  hosts: remote.example.com
+  roles:
+    - role: role1
+  tasks:
+    - name: A task.
+      ansible.builtin.debug:
+        msg: "This task runs after the role."
+Importante
+No se requiere una sección tasks en un play. De hecho, generalmente es
+una buena práctica evitar las secciones roles y tasks en un play para evitar
+confusiones sobre el orden en que se ejecutan los roles y las tareas.
+Si debe tener una sección tasks y roles, es mejor crear tareas que usen
+ansible.builtin.import_role y ansible.builtin.include_role para
+que se ejecuten en los puntos correctos en la ejecución del play.
+En el siguiente ejemplo, se establecen valores para dos variables de rol de role2, var1 y var2.
+Las variables defaults y vars se anulan cuando se usa role2.
+---
+- name: A play that runs the second role with variables
+  hosts: remote.example.com
+  roles:
+    - role: role1
+    - role: role2
+      var1: val1
+      var2: val2
+Otra sintaxis del playbook equivalente que puede ver en este caso es:
+---
+- name: A play that runs the second role with variables
+  hosts: remote.example.com
+  roles:
+    - role: role1
+    - { role: role2, var1: val1, var2: val2 }
+Hay situaciones en las que esto puede ser más difícil de leer, aunque sea más compacto.
+RH294-RHEL9.0-es-3-20240620
+283
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Ansible busca líneas de roles duplicadas en la sección roles. Si se enumeran dos
+roles con exactamente los mismos parámetros, el rol solo se ejecuta una vez.
+Por ejemplo, la siguiente sección roles solo ejecuta role1 una vez:
+roles:
+  - { role: role1, service: "httpd" }
+  - { role: role2, var1: true }
+  - { role: role1, service: "httpd" }
+Para ejecutar el mismo rol por segunda vez, debe tener diferentes parámetros
+definidos:
+roles:
+  - { role: role1, service: "httpd" }
+  - { role: role2, var1: true }
+  - { role: role1, service: "postfix" }
+Secciones de tareas especiales
+Hay dos secciones de tareas especiales, pre_tasks y post_tasks, que se usan ocasionalmente
+con las secciones roles. La sección pre_tasks es una lista de tareas, similar a tasks, pero
+estas tareas se ejecutan antes que cualquiera de los roles en la sección roles. Si alguna de las
+tareas en la sección pre-tasks notifica a un manejador, las tareas del manejador se ejecutan
+antes que los roles o las tareas normales.
+Los plays también soportan una palabra clave post_tasks. Estas tareas se ejecutan después de
+las tasks del play y los manejadores notificados por las tasks del play.
+El siguiente play muestra un ejemplo con pre_tasks, roles, tasks, post_tasks y handlers.
+Es raro que un play tenga todas estas secciones.
+- name: Play to illustrate order of execution
+  hosts: remote.example.com
+  pre_tasks:
+    - name: This task runs first
+      ansible.builtin.debug:
+        msg: This task is in pre_tasks
+      notify: my handler
+      changed_when: true
+  roles:
+    - role: role1
+  tasks:
+    - name: This task runs after the roles
+      ansible.builtin.debug:
+        msg: This task is in tasks
+      notify: my handler
+      changed_when: true
+  post_tasks:
+    - name: This task runs last
+      ansible.builtin.debug:
+284
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        msg: This task is in post_tasks
+      notify: my handler
+      changed_when: true
+  handlers:
+    - name: my handler
+      ansible.builtin.debug:
+        msg: Running my handler
+En el ejemplo anterior, se ejecuta una tarea ansible.builtin.debug en cada sección tasks y
+en el rol de la sección roles. Cada una de esas tareas notifica al manejador my handler, lo que
+significa que la tarea my handler se ejecuta tres veces:
+• Después de que se ejecuten todas las tareas pre_tasks
+• Después de que se ejecuten todas las tareas roles y tasks
+• Después de que se ejecuten todas las post_tasks
+nota
+En general, si cree que necesita las secciones pre_tasks y post_tasks en su play
+porque está usando roles, considere importar los roles como tareas e incluir solo
+una sección tasks. Alternativamente, podría ser más sencillo tener varios plays en
+su playbook.
+Referencias
+Roles: Documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html
+RH294-RHEL9.0-es-3-20240620
+285
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Cuestionario
+Descripción de la estructura del rol
+Elija las respuestas correctas para las siguientes preguntas:
+ 1.
+¿Cuál de las siguientes declaraciones describe mejor los roles?
+a. Configuración que permite que usuarios específicos ejecuten playbooks de Ansible.
+b. Playbooks para un centro de datos.
+c. Recopilación de archivos de tareas YAML e ítems complementarios dispuestos en una
+estructura específica.
+ 2. ¿Qué subdirectorio de roles contiene archivos Jinja2 a los que hacen referencia las
+tareas de los roles?
+a. Manejadores
+b. Archivos
+c. Plantillas
+d. Variables
+e. Meta
+ 3. ¿Cómo se usa un rol en un play para que sus variables de rol y las variables
+predeterminadas estén expuestas al resto del play?
+a. Use la palabra clave pre_tasks.
+b. Use la palabra clave post_tasks.
+c. Use el módulo ansible.builtin.import_role.
+d. Use el módulo ansible.builtin.include_role.
+ 4. ¿Qué archivo en la jerarquía de directorio de un rol debe contener los valores
+predeterminados de variables que se pueden usar como parámetros para el rol?
+a. defaults/main.yml
+b. meta/main.yml
+c. vars/main.yml
+d. El archivo del inventario del host.
+286
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Solución
+Descripción de la estructura del rol
+Elija las respuestas correctas para las siguientes preguntas:
+ 1.
+¿Cuál de las siguientes declaraciones describe mejor los roles?
+a. Configuración que permite que usuarios específicos ejecuten playbooks de Ansible.
+b. Playbooks para un centro de datos.
+c. Recopilación de archivos de tareas YAML e ítems complementarios dispuestos en una
+estructura específica.
+ 2. ¿Qué subdirectorio de roles contiene archivos Jinja2 a los que hacen referencia las
+tareas de los roles?
+a. Manejadores
+b. Archivos
+c. Plantillas
+d. Variables
+e. Meta
+ 3. ¿Cómo se usa un rol en un play para que sus variables de rol y las variables
+predeterminadas estén expuestas al resto del play?
+a. Use la palabra clave pre_tasks.
+b. Use la palabra clave post_tasks.
+c. Use el módulo ansible.builtin.import_role.
+d. Use el módulo ansible.builtin.include_role.
+ 4. ¿Qué archivo en la jerarquía de directorio de un rol debe contener los valores
+predeterminados de variables que se pueden usar como parámetros para el rol?
+a. defaults/main.yml
+b. meta/main.yml
+c. vars/main.yml
+d. El archivo del inventario del host.
+RH294-RHEL9.0-es-3-20240620
+287
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Creación de roles
+Objetivos
+• Cree un rol en el directorio de proyectos de un playbook y ejecútelo como parte de uno de los
+plays del playbook.
+El proceso de creación de roles
+Crear roles en Ansible no requiere herramientas de desarrollo especiales.
+Crear y usar un rol es un proceso de tres pasos:
+1.
+Cree la estructura del directorio de roles.
+2.
+Defina el contenido de los roles.
+3.
+Use el rol en un playbook.
+Creación de la estructura del directorio de roles
+Ansible busca roles en un subdirectorio llamado roles en el directorio que contiene el playbook
+de Ansible. Cada rol tiene su propio directorio con una estructura de directorios estandarizada.
+Esta estructura le permite almacenar roles con el playbook y otros archivos de soporte.
+Por ejemplo, la siguiente estructura de directorio contiene los archivos que definen el rol motd.
+[user@host ~]$ tree roles/
+roles/
+└── motd
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    ├── meta
+    │   └── main.yml
+    ├── README.md
+    ├── tasks
+    │   └── main.yml
+    └── templates
+        └── motd.j2
+README.md proporciona, en términos legibles para el ser humano, una descripción básica del
+rol, documentación y ejemplos de cómo usarlo, y todos los requisitos de roles ajenos a Ansible. El
+subdirectorio meta contiene un archivo main.yml que especifica información sobre el autor, la
+licencia, la compatibilidad y las dependencias del módulo.
+El subdirectorio files contiene archivos de contenido fijo y el subdirectorio templates contiene
+plantillas que puede implementar el rol.
+288
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Los otros subdirectorios pueden contener los archivos main.yml que definen valores de variables
+predeterminados, manejadores, tareas, metadatos de roles o variables, según su subdirectorio.
+Si existe un subdirectorio, pero se encuentra vacío, como handlers en este ejemplo, es ignorado.
+Puede omitir el subdirectorio por completo si un rol no usa una característica. Este ejemplo omite
+el subdirectorio vars.
+Creación de un esqueleto de roles
+Puede crear todos los subdirectorios y archivos necesarios para un rol nuevo mediante comandos
+estándares de Linux. Como alternativa, existen utilidades de línea de comandos para automatizar
+el proceso de creación de nuevos roles.
+La herramienta de línea de comandos ansible-galaxy (que se analiza en más detalle más
+adelante en este curso) se usa para administrar los roles de Ansible, incluida la creación de nuevos
+roles. Puede ejecutar ansible-galaxy role init para crear la estructura de directorios
+para un nuevo rol. Especifique el nombre del rol como argumento del comando, lo que crea un
+subdirectorio para el nuevo rol en el directorio de trabajo actual.
+[user@host playbook-project]$ cd roles
+[user@host roles]$ ansible-galaxy role init my_new_role
+- Role my_new_role was created successfully
+[user@host roles]$ ls my_new_role/
+defaults  files  handlers  meta  README.md  tasks  templates  tests  vars
+Definición del contenido de los roles
+Después de crear la estructura de directorios, debe escribir el contenido del rol. Un buen lugar
+para comenzar es el archivo de tareas ROLENAME/tasks/main.yml, la lista principal de tareas
+ejecutadas por el rol.
+El siguiente archivo tasks/main.yml gestiona el archivo /etc/motd en los hosts gestionados.
+Usa el módulo template para implementar la plantilla denominada motd.j2 en el host
+gestionado. Como el módulo template se configura dentro de una tarea de rol, la plantilla
+motd.j2 se recupera del subdirectorio templates del rol y no de una tarea de playbook.
+[user@host ~]$ cat roles/motd/tasks/main.yml
+---
+# tasks file for motd
+- name: deliver motd file
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: 0444
+El siguiente comando muestra el contenido de la plantilla motd.j2 del rol motd. Menciona datos
+de Ansible y una variable system_owner.
+RH294-RHEL9.0-es-3-20240620
+289
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[user@host ~]$ cat roles/motd/templates/motd.j2
+This is the system {{ ansible_facts['hostname'] }}.
+Today's date is: {{ ansible_facts['date_time']['date'] }}.
+Only use this system with permission.
+You can ask {{ system_owner }} for access.
+El rol define un valor predeterminado para la variable system_owner. El archivo defaults/
+main.yml de la estructura de directorio del rol es donde se configura este valor.
+El siguiente archivo defaults/main.yml establece la variable system_owner en
+user@host.example.com. Esta dirección de correo electrónico se escribe en el archivo /etc/
+motd de hosts gestionados al que se aplica este rol.
+[user@host ~]$ cat roles/motd/defaults/main.yml
+---
+system_owner: user@host.example.com
+Prácticas recomendadas para el desarrollo de contenido de rol
+Los roles le permiten dividir los playbooks en varios archivos, lo que da como resultado un código
+reutilizable. Para maximizar la eficacia de los roles recién desarrollados, considere implementar las
+siguientes prácticas recomendadas en el desarrollo de roles:
+• Mantenga cada rol en su propio repositorio de control de versiones. Ansible funciona bien con
+repositorios basados en Git.
+• Use variables para configurar roles de modo que pueda volver a usar el rol para realizar tareas
+similares en circunstancias similares.
+• Evite almacenar información confidencial en un rol, como contraseñas o claves SSH. Configure
+las variables de rol que se usan para contener valores confidenciales cuando se llaman en un
+play con valores predeterminados que no son confidenciales. Los playbooks que usan el rol son
+responsables de definir variables sensibles a través de archivos de variables de Ansible Vault u
+otros métodos.
+• Use el comando ansible-galaxy role init para iniciar su rol y, luego, elimine los archivos
+y directorios innecesarios.
+• Cree y mantenga archivos README.md y meta/main.yml para documentar el propósito, el
+autor y el uso del rol.
+• Mantenga su rol enfocado en un propósito o una función específicos. En lugar de escribir un rol
+que haga muchas cosas, escriba más de un rol.
+• Vuelva a usar los roles con frecuencia.
+Evite crear nuevos roles para las configuraciones perimetrales. Si un rol existente sirve para la
+mayoría de la configuración requerida, refactorice el rol existente para integrar el nuevo escenario
+de configuración.
+Use técnicas de prueba de integración y regresión para asegurarse de que el rol proporcione la
+nueva funcionalidad requerida y que no cause problemas a los playbooks existentes.
+290
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+nota
+Una lista no oficial más extensa de buenas prácticas a seguir cuando escribe un rol
+está disponible en https://redhat-cop.github.io/automation-good-
+practices/#_roles_good_practices_for_ansible.
+Cambio del comportamiento de un rol con variables
+Un rol bien redactado usa variables predeterminadas para alterar el comportamiento del rol para
+que coincida con un escenario de configuración relacionado. Los roles que usan variables son más
+genéricos y reutilizables en una variedad de contextos.
+El valor de cualquier variable definida en el directorio defaults de un rol se sobrescribirá si se
+define esa misma variable:
+• En un archivo de inventario, como una variable de host o una variable de grupo.
+• En un archivo YAML en los directorios group_vars o host_vars de un proyecto de playbook.
+• Como una variable anidada en la palabra clave vars de un play.
+• Como una variable cuando se incluye el rol en la palabra clave roles de un play.
+En el siguiente ejemplo, se muestra cómo usar el rol motd con un valor diferente para la variable
+del rol system_owner. El valor especificado, someone@host.example.com, reemplazará a la
+referencia de variable cuando se aplique el rol a un host gestionado.
+[user@host ~]$ cat use-motd-role.yml
+---
+- name: use motd role playbook
+  hosts: remote.example.com
+  remote_user: devops
+  become: true
+  vars:
+    system_owner: someone@host.example.com
+  roles:
+    - role: motd
+Cuando se define de esta manera, la variable system_owner reemplaza el valor de la variable
+predeterminada del mismo nombre. Todas las definiciones de variables anidadas dentro de la
+palabra clave vars no reemplazarán el valor de la misma variable si se la define en el directorio
+vars de un rol.
+En el siguiente ejemplo, también se muestra cómo usar el rol motd con un valor diferente para la
+variable del rol system_owner. El valor especificado, someone@host.example.com, reemplaza
+la referencia de variable independientemente de que esté definida en el directorio vars o
+defaults del rol.
+[user@host ~]$ cat use-motd-role.yml
+---
+- name: use motd role playbook
+  hosts: remote.example.com
+  remote_user: devops
+  become: true
+RH294-RHEL9.0-es-3-20240620
+291
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+  roles:
+    - role: motd
+      system_owner: someone@host.example.com
+Importante
+La precedencia de variables puede causar confusión al trabajar con variables de rol
+en un play.
+• La mayoría de las otras variables anulan las variables predeterminadas de un rol:
+variables de inventario, vars de play, parámetros de rol en línea, etc.
+• Menos variables pueden anular las variables definidas en el directorio vars
+de un rol. Los datos, las variables cargadas con include_vars, las variables
+registradas y los parámetros de rol pueden anular estas variables. Las variables de
+inventario y vars de play no pueden hacerlo. Este comportamiento es importante
+porque ayuda a evitar que el play modifique accidentalmente el funcionamiento
+interno del rol.
+• Las variables declaradas en línea como parámetros de rol tienen una prioridad
+muy alta; también pueden anular las variables definidas en el directorio vars de
+un rol.
+Si un parámetro de rol tiene el mismo nombre que una variable establecida en vars
+del play, un vars de rol o una variable de inventario o playbook, el parámetro de rol
+anulará a la otra variable.
+Definición de las dependencias del rol
+Las dependencias del rol permiten que un rol incluya otros roles como dependencias.
+Por ejemplo, un rol que define un servidor de documentación puede depender de otro rol que
+instale y configure un servidor web.
+Las dependencias se definen en el archivo meta/main.yml en la jerarquía del directorio del rol.
+El siguiente es un archivo meta/main.yml de muestra.
+---
+dependencies:
+  - role: apache
+    port: 8080
+  - role: postgres
+    dbname: serverlist
+    admin_user: felix
+nota
+Un archivo meta/main.yml también puede tener una clave galaxy_info de
+nivel superior que tiene un diccionario de otros atributos que especifican el autor, el
+propósito, la licencia y las versiones de Ansible Core y los sistemas operativos que el
+rol soporta.
+292
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+De forma predeterminada, si varios roles tienen una dependencia de un rol, y ese rol es llamado
+por diferentes roles en el play varias veces con los mismos atributos, entonces el rol solo se
+ejecuta la primera vez que aparece. Este comportamiento se puede reemplazar estableciendo la
+variable allow_duplicates como yes en el archivo meta/main.yml del rol.
+Importante
+Limite las dependencias del rol en otros roles. Las dependencias dificultan el
+mantenimiento del rol, en especial si tiene muchas dependencias complejas.
+Referencias
+Uso de roles — Documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_reuse_roles.html#using-roles
+Uso de variables — Documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html
+Buenas prácticas de roles para Ansible
+https://redhat-cop.github.io/automation-good-practices/
+#_roles_good_practices_for_ansible
+RH294-RHEL9.0-es-3-20240620
+293
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Creación de roles
+Crear un rol de Ansible que usa variables, archivos, plantillas, tareas y manejadores para
+implementar un servicio de red.
+Resultados
+• Crear un rol que use variables y parámetros.
+El rol myvhost instala y configura el servicio Apache en un host. Se provee una plantilla
+llamada vhost.conf.j2 para generar /etc/httpd/conf.d/vhost.conf.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-create
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-create.
+[student@workstation ~]$ cd ~/role-create
+[student@workstation role-create]$
+ 2.
+Cree la estructura de directorio para un rol denominado myvhost. El rol incluye archivos,
+plantillas, tareas y manejadores corregidos. Los directorios defaults, vars y tests no se
+usan en este rol, por lo que puede eliminarlos.
+[student@workstation role-create]$ mkdir -v roles; cd roles
+mkdir: created directory 'roles'
+[student@workstation roles]$ ansible-galaxy role init myvhost
+- Role myvhost was created successfully
+[student@workstation roles]$ rm -rvf myvhost/{defaults,vars,tests}
+removed 'myvhost/defaults/main.yml'
+removed directory: 'myvhost/defaults'
+removed 'myvhost/vars/main.yml'
+removed directory: 'myvhost/vars'
+removed 'myvhost/tests/inventory'
+removed 'myvhost/tests/test.yml'
+removed directory: 'myvhost/tests'
+[student@workstation roles]$ cd ..
+[student@workstation role-create]$
+294
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ 3.
+Edite el archivo main.yml en el subdirectorio tasks del rol. El rol debe ejecutar las
+siguientes tareas:
+• Instale el paquete httpd.
+• Habilite e inicie el servicio httpd.
+• Instale el archivo de configuración del servidor web, con una plantilla proporcionada por
+el rol.
+3.1.
+Edite el archivo roles/myvhost/tasks/main.yml. Incluya el código para usar el
+módulo ansible.builtin.dnf a fin de instalar el paquete httpd. Asegúrese de
+que el archivo contenga el siguiente contenido:
+---
+# tasks file for myvhost
+- name: Ensure httpd is installed
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+3.2.
+Agregue un código al archivo roles/myvhost/tasks/main.yml para usar el
+módulo ansible.builtin.service para iniciar y habilitar el servicio httpd.
+- name: Ensure httpd is started and enabled
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: true
+3.3.
+Agregue otra estrofa para usar el módulo ansible.builtin.template para crear
+/etc/httpd/conf.d/vhost.conf en el host gestionado. El módulo invoca un
+manejador para reiniciar el daemon httpd cuando se actualiza este archivo.
+- name: vhost file is installed
+  ansible.builtin.template:
+    src: vhost.conf.j2
+    dest: /etc/httpd/conf.d/vhost.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart httpd
+3.4.
+Guarde sus cambios y salga del archivo roles/myvhost/tasks/main.yml.
+ 4.
+Cree el manejador para reiniciar el servicio httpd. Edite el archivo roles/
+myvhost/handlers/main.yml e incluya el código para usar el módulo
+ansible.builtin.service, luego guarde el archivo y salga. Asegúrese de que el
+archivo contenga el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+295
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+# handlers file for myvhost
+- name: restart httpd
+  ansible.builtin.service:
+    name: httpd
+    state: restarted
+ 5.
+El archivo vhost.conf.j2 es una plantilla que se usa para configurar el servidor web
+Apache mediante el uso de variables:
+# {{ ansible_managed }}
+<VirtualHost *:80>
+    ServerAdmin webmaster@{{ ansible_fqdn }}
+    ServerName {{ ansible_fqdn }}
+    ErrorLog logs/{{ ansible_hostname }}-error.log
+    CustomLog logs/{{ ansible_hostname }}-common.log common
+    DocumentRoot /var/www/vhosts/{{ ansible_hostname }}/
+    <Directory /var/www/vhosts/{{ ansible_hostname }}/>
+    Options +Indexes +FollowSymlinks +Includes
+    Order allow,deny
+    Allow from all
+    </Directory>
+</VirtualHost>
+Mueva la plantilla vhost.conf.j2 del directorio del proyecto al subdirectorio templates
+del rol.
+[student@workstation role-create]$ mv -v vhost.conf.j2 roles/myvhost/templates/
+renamed 'vhost.conf.j2' -> 'roles/myvhost/templates/vhost.conf.j2'
+ 6.
+Cree el contenido HTML que alojará el servidor web.
+6.1.
+Cree el directorio files/html/ para almacenar el contenido.
+[student@workstation role-create]$ mkdir -pv files/html
+mkdir: created directory 'files'
+mkdir: created directory 'files/html'
+6.2.
+Cree un archivo index.html debajo del directorio con el contenido: simple
+index.
+[student@workstation role-create]$ echo 'simple index' > files/html/index.html
+ 7.
+Pruebe el rol myvhost para asegurarse de que funciona adecuadamente.
+7.1.
+Escriba un playbook que use el rol, denominado use-vhost-role.yml. Incluya una
+tarea para copiar el contenido HTML del directorio files/html/. Use el módulo
+296
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ansible.builtin.copy e incluya una barra oblicua final (/) después del nombre
+del directorio fuente. Asegúrese de que el archivo contenga el siguiente contenido:
+---
+- name: Use myvhost role playbook
+  hosts: webservers
+  pre_tasks:
+    - name: pre_tasks message
+      ansible.builtin.debug:
+        msg: 'Ensure web server configuration.'
+  roles:
+    - myvhost
+  post_tasks:
+    - name: HTML content is installed
+      ansible.builtin.copy:
+        src: files/html/
+        dest: "/var/www/vhosts/{{ ansible_hostname }}"
+    - name: post_tasks message
+      ansible.builtin.debug:
+        msg: 'Web server is configured.'
+nota
+La barra trailing hace que el directorio de origen y todo su contenido se copien en el
+host gestionado.
+7.2.
+Antes de ejecutar el playbook use-vhost-role.yml, ejecute el comando
+ansible-navigator con la opción --syntax-check para verificar que su sintaxis
+sea correcta. Si informa errores, corríjalos antes de pasar al siguiente paso. Debe ver
+una salida similar a la siguiente:
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout use-vhost-role.yml --syntax-check
+playbook: /home/student/role-create/use-vhost-role.yml
+7.3.
+Ejecute el playbook use-vhost-role.yml. Revise la salida para confirmar que
+Ansible realizó las acciones en el servidor web servera.
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout use-vhost-role.yml
+PLAY [Use myvhost role playbook] *********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [pre_tasks message] *****************************************************
+ok: [servera.lab.example.com] => {
+    "msg": "Ensure web server configuration."
+}
+RH294-RHEL9.0-es-3-20240620
+297
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [myvhost : Ensure httpd is installed] ***********************************
+changed: [servera.lab.example.com]
+TASK [myvhost : Ensure httpd is started and enabled] *************************
+changed: [servera.lab.example.com]
+TASK [myvhost : vhost file is installed] *************************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [myvhost : restart httpd] ************************************
+changed: [servera.lab.example.com]
+TASK [HTML content is installed] *********************************************
+changed: [servera.lab.example.com]
+TASK [post_tasks message] ****************************************************
+ok: [servera.lab.example.com] => {
+    "msg": "Web server is configured."
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=8    changed=5    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.4.
+Ejecute el playbook verify-httpd.yml para confirmar que el rol funcionó.
+El paquete httpd debe instalarse y el servicio httpd debe estar habilitado y
+ejecutándose.
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout verify-httpd.yml
+PLAY [Verify the httpd service] **********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify the httpd service is installed] *********************************
+changed: [servera.lab.example.com]
+TASK [Is the httpd service installed] ****************************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': 'httpd-2.4.51-7.el9_0.x86_64',
+ 'stderr': '', 'rc': 0, 'cmd': ['rpm', '-q', 'httpd'], 'start': '2022-07-18
+ 15:56:40.412987', 'end': '2022-07-18 15:56:40.429762', 'delta': '0:00:00.016775',
+ 'msg': '', 'stdout_lines': ['httpd-2.4.51-7.el9_0.x86_64'], 'stderr_lines': [],
+ 'failed': False}.stdout"
+}
+TASK [Verify the httpd service is started] ***********************************
+changed: [servera.lab.example.com]
+TASK [Is the httpd service started] ******************************************
+ok: [servera.lab.example.com] => {
+298
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+    "msg": "{'changed': True, 'stdout': 'active', 'stderr': '', 'rc': 0, 'cmd':
+ ['systemctl', 'is-active', 'httpd'], 'start': '2022-07-18 15:56:40.853778',
+ 'end': '2022-07-18 15:56:40.863193', 'delta': '0:00:00.009415', 'msg': '',
+ 'stdout_lines': ['active'], 'stderr_lines': [], 'failed': False}.stdout"
+}
+TASK [Verify the httpd service is enabled] ***********************************
+changed: [servera.lab.example.com]
+TASK [Is the httpd service enabled] ******************************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': 'enabled', 'stderr': '', 'rc': 0, 'cmd':
+ ['systemctl', 'is-enabled', 'httpd'], 'start': '2022-07-18 15:56:41.282211',
+ 'end': '2022-07-18 15:56:41.291881', 'delta': '0:00:00.009670', 'msg': '',
+ 'stdout_lines': ['enabled'], 'stderr_lines': [], 'failed': False}.stdout"
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=7    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.5.
+Ejecute el playbook verify-config.yml para confirmar que el archivo de
+configuración de Apache está implementado y que todas las variables en la plantilla
+se expandieron correctamente.
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout verify-config.yml
+PLAY [Verify the httpd config] ***********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify the httpd config file is in place] ******************************
+changed: [servera.lab.example.com]
+TASK [What does the httpd config file contain] *******************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': '# Ansible managed\\n\\n<VirtualHost
+ \*:80>\\n    ServerAdmin webmaster@servera.lab.example.com\\n   
+ ServerName servera.lab.example.com\\n    ErrorLog logs/servera-error.log\
+\n    CustomLog logs/servera-common.log common\\n    DocumentRoot /var/www/
+vhosts/servera/\\n\\n    <Directory /var/www/vhosts/servera/>\\n\\tOptions
+ +Indexes +FollowSymlinks +Includes\\n\\tOrder allow,deny\\n\\tAllow from all
+\\n    </Directory>\\n</VirtualHost>', 'stderr': '', 'rc': 0, 'cmd': ['cat',
+ '/etc/httpd/conf.d/vhost.conf'], 'start': '2022-07-18 16:15:11.441593',
+ 'end': '2022-07-18 16:15:11.445100', 'delta': '0:00:00.003507', 'msg': '',
+ 'stdout_lines': ['# Ansible managed', '', '<VirtualHost *:80>', '    ServerAdmin
+ webmaster@servera.lab.example.com', '    ServerName servera.lab.example.com',
+ '    ErrorLog logs/servera-error.log', '    CustomLog logs/servera-common.log
+ common', '    DocumentRoot /var/www/vhosts/servera/', '', '    <Directory /
+var/www/vhosts/servera/>', '\\tOptions +Indexes +FollowSymlinks +Includes', '\
+\tOrder allow,deny', '\\tAllow from all', '    </Directory>', '</VirtualHost>'],
+ 'stderr_lines': [], 'failed': False}.stdout_lines"
+RH294-RHEL9.0-es-3-20240620
+299
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.6.
+El contenido HTML se sirve desde un directorio llamado /var/www/vhosts/
+servera. Ejecute el playbook verify-content.yml para confirmar que el archivo
+index.html en ese directorio contiene la cadena "simple index".
+[student@workstation role-create]$ ansible-navigator run \
+> -m stdout verify-content.yml
+PLAY [Verify the index.html file] ********************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify the index.html file is in place] ********************************
+changed: [servera.lab.example.com]
+TASK [What does the index.html config file contain] **************************
+ok: [servera.lab.example.com] => {
+    "msg": "{'changed': True, 'stdout': 'simple index', 'stderr': '', 'rc':
+ 0, 'cmd': ['cat', '/var/www/vhosts/servera/index.html'], 'start': '2022-07-18
+ 16:24:54.665447', 'end': '2022-07-18 16:24:54.669959', 'delta': '0:00:00.004512',
+ 'msg': '', 'stdout_lines': ['simple index'], 'stderr_lines': [], 'failed':
+ False}.stdout_lines"
+}
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.7.
+Confirme que el contenido del servidor web esté disponible.
+[student@workstation role-create]$ curl http://servera.lab.example.com
+simple index
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-create
+300
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Implementación de roles desde fuentes
+externas de contenido
+Objetivos
+• Seleccionar y recuperar roles de fuentes externas, como repositorios de Git o Ansible Galaxy, y
+usarlos en sus playbooks.
+Fuentes de contenido externo
+Si está usando roles en sus playbooks de Ansible, debe obtener esos roles de alguna fuente
+administrada centralmente. Esta práctica garantiza que todos sus proyectos tengan la versión
+actual del rol y que cada proyecto pueda beneficiarse de las correcciones de errores descubiertas
+por otros proyectos con los que comparten el rol.
+Por ejemplo, si el rol es contenido privado creado y coordinado por su organización, podría
+almacenarse en un repositorio de Git administrado por su organización. Alternativamente, podría
+distribuirse como un archivo de almacenamiento tar desde un sitio web o por otros medios.
+Además, la comunidad de código abierto mantiene algunos roles a través del sitio web de Ansible
+Galaxy. Red Hat no son revisa ni respalda oficialmente estos roles, pero pueden contener código
+que su organización considere útil.
+Importante
+Es cada vez más común que los roles se empaqueten como Ansible Content
+Collections y que sus autores los ofrezcan a través de distintos métodos:
+• En Ansible Content Collections certificadas por Red Hat desde el centro de
+automatización alojado de Red Hat en https://console.redhat.com o a
+través de un centro de automatización privado
+• Como contenido privado empaquetado desde un centro de automatización
+privado
+• Por la comunidad de Ansible Galaxy en https://galaxy.ansible.com
+Esta sección solo cubre cómo obtener roles que no están empaquetados en Ansible
+Content Collections.
+Lo ideal sería poder descargar la última versión del rol en el directorio roles de su proyecto de
+forma sencilla, siempre que sea necesario.
+Presentación de Ansible Galaxy
+Una librería pública de contenido de Ansible programada por una variedad de administradores y
+usuarios de Ansible se encuentra disponible en Ansible Galaxy [https://galaxy.ansible.com]. Esta
+librería contiene miles de roles de Ansible y cuenta con una base de datos de búsqueda que lo
+ayuda a identificar roles que podrían ayudarlos a realizar una tarea administrativa.
+El comando ansible-galaxy que usa para descargar y gestionar roles de Ansible Galaxy
+también se puede usar para descargar y gestionar roles de sus propios repositorios de Git.
+RH294-RHEL9.0-es-3-20240620
+301
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Herramienta de línea de comando de Ansible Galaxy
+Puede usar la herramienta de línea de comandos ansible-galaxy con el argumento role para
+buscar, instalar, enumerar, eliminar, iniciar o mostrar información acerca de roles.
+[user@host project]$ ansible-galaxy role -h
+usage: ansible-galaxy role [-h] ROLE_ACTION ...
+positional arguments:
+  ROLE_ACTION
+    init      Initialize new role with the base structure of a role.
+    remove    Delete roles from roles_path.
+    delete    Removes the role from Galaxy. It does not remove or alter the actual
+ GitHub repository.
+    list      Show the name and version of each role installed in the roles_path.
+    search    Search the Galaxy database by tags, platforms, author and multiple
+ keywords.
+    import    Import a role into a galaxy server
+    setup     Manage the integration between Galaxy and the given source.
+    info      View more details about a specific role.
+    install   Install role(s) from file(s), URL(s) or Ansible Galaxy
+optional arguments:
+  -h, --help   show this help message and exit
+Instalación de roles con un archivo de requisitos
+Si tiene un playbook en el que se deben instalar roles específicos, puede crear un archivo roles/
+requirements.yml en el directorio del proyecto que especifica los roles que son necesarios.
+Este archivo actúa como manifiesto de dependencias para el proyecto de playbook, lo que
+permite desarrollar y probar playbooks por separado desde cualquier rol de soporte.
+Luego, antes de ejecutar ansible-navigator run, puede usar el comando ansible-galaxy
+role para instalar esos roles en el directorio roles de su proyecto.
+nota
+Si usa el controlador de automatización, descarga automáticamente los roles
+especificados en su archivo roles/requirements.yml cuando ejecuta su
+playbook.
+Por ejemplo, podría tener un rol en un repositorio público en un servidor Git en https://
+git.example.com/someuser/someuser.myrole. Un requirements.yml sencillo para
+instalar someuser.myrole puede incluir el siguiente contenido:
+- src: https://git.example.com/someuser/someuser.myrole
+  scm: git
+  version: "1.5.0"
+El atributo src especifica la fuente del rol, en este caso la URL del repositorio del rol en su
+servidor Git. También puede usar la autenticación basada en claves SSH especificando algo como
+git@git.example.com:someuser/someuser.myrole según lo provisto por su repositorio
+de Git.
+302
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+El atributo scm indica que este rol es de un repositorio de Git.
+El atributo version es opcional y especifica la versión del rol que se instalará, en este caso,
+1.5.0. En el caso de un rol almacenado en Git, la versión puede ser el nombre de una rama, una
+etiqueta o un hash de confirmación de Git. Si no especifica una versión, el comando usa la última
+confirmación en la rama predeterminada.
+Importante
+Especifique la versión del rol en su archivo requirements.yml, en especial para
+los playbooks en producción.
+Si no especifica una versión, obtendrá la última versión del rol.
+Si el autor upstream realiza cambios en el rol que son incompatibles con su
+playbook, puede causar una falla de automatización u otros problemas.
+Para instalar roles usando un archivo de requisitos de roles, ejecute el comando ansible-galaxy
+role install desde el directorio de su proyecto. Incluya las siguientes opciones:
+• -r roles/requirements.yml para especificar la ubicación de su archivo de requisitos
+• -p roles para instalar el rol en un subdirectorio del directorio roles
+[user@host project]$ ansible-galaxy role install -r roles/requirements.yml \
+> -p roles
+Starting galaxy role install process
+- downloading role from https://git.example.com/someuser/someuser.myrole
+- extracting myrole to /home/user/project/roles/someuser.myrole
+- someuser.myrole (1.5.0) was installed successfully
+Importante
+Si no especifica la opción -p roles, ansible-galaxy role install
+usa el primer directorio en la configuración predeterminada roles_path para
+determinar dónde instalar el rol. Se establece de forma predeterminada el directorio
+~/.ansible/roles del usuario, que está fuera del directorio del proyecto y no
+está disponible para el entorno de ejecución si usa ansible-navigator para
+ejecutar sus playbooks.
+Una forma de evitar la necesidad de especificar -p roles es aplicar la siguiente
+configuración en la sección ansible.cfg del archivo defaults de su proyecto:
+roles_path = roles
+Si tiene un archivo de almacenamiento tar que contiene un rol, puede usar roles/
+requirements.yml para instalar ese archivo desde una URL:
+RH294-RHEL9.0-es-3-20240620
+303
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+# from a role tar ball, given a URL;
+#   supports 'http', 'https', or 'file' protocols
+- src: file:///opt/local/roles/tarrole.tar
+  name: tarrole
+- src: https://www.example.com/role-archive/someuser.otherrole.tar
+  name: someuser.otherrole
+nota
+Red Hat recomienda que use el control de versiones con roles, almacenándolos en
+un sistema de control de versiones como Git. Si un cambio reciente en un rol causa
+problemas, usar el control de versiones para desarrollar el rol permite revertirlo a
+una versión anterior y estable.
+Encontrar roles administrados por la comunidad en
+Ansible Galaxy
+La comunidad de código abierto de Ansible opera un servidor público, https://
+galaxy.ansible.com, que contiene roles y Ansible Content Collections compartidos por otros
+usuarios de Ansible.
+Advertencia
+Estos roles pueden ser útiles, pero Red Hat no los admite, ni audita ni revisa este
+código. Los voluntarios de la comunidad de Ansible mantienen este sitio. Use estos
+roles bajo su propio riesgo.
+Exploración de roles en Ansible Galaxy
+La pestaña Search del lado izquierdo de la página de inicio del sitio web Ansible Galaxy le da a los
+usuarios acceso a información acerca de los roles publicados en Ansible Galaxy. Puede buscar un
+rol de Ansible por nombre, con etiquetas o por otros atributos de roles.
+Los resultados se presentan en orden descendente de la puntuación Best Match, que es una
+puntuación calculada basada en la calidad del rol, la popularidad del rol y los criterios de búsqueda.
+(Content Scoring [https://galaxy.ansible.com/docs/contributing/content_scoring.html] en la
+documentación de Ansible Galaxy tiene más información sobre cómo Ansible Galaxy califica los
+roles).
+304
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Figura 7.1: Pantalla de búsqueda de Ansible Galaxy
+Ansible Galaxy informa la cantidad de veces que se ha descargado cada rol de Ansible Galaxy.
+Además, Ansible Galaxy también informa la cantidad de visualizaciones, bifurcaciones y estrellas
+que tiene el repositorio de GitHub del rol. Los usuarios pueden usar esta información para ayudar
+a determinar qué tan activo es el desarrollo para un rol y qué tan popular es en la comunidad.
+En la siguiente figura, se muestran los resultados de la búsqueda que Ansible Galaxy mostró
+después de buscar la palabra clave redis.
+Figura 7.2: Ejemplo de resultados de búsqueda de Ansible Galaxy
+El menú Filters a la derecha del cuadro de búsqueda permite búsquedas por tipo, tipo de
+colaborador, colaborador, plataforma en la nube, obsoleta, plataforma y etiquetas.
+Los posibles valores de la plataforma incluyen EL para Red Hat Enterprise Linux (y distribuciones
+estrechamente relacionadas como CentOS) y Fedora, entre otros.
+Las etiquetas son cadenas arbitrarias de una palabra establecidas por el autor del rol que
+describen y categorizan el rol. Puede usar etiquetas para encontrar roles relevantes. Los posibles
+valores de etiqueta incluyen system, development, web, monitoring y otros. Un rol puede
+tener hasta 20 etiquetas en Ansible Galaxy.
+RH294-RHEL9.0-es-3-20240620
+305
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+En la interfaz de búsqueda de Ansible Galaxy, las búsquedas por palabra clave
+coinciden con las palabras o frases del archivo README, el nombre del contenido o la
+descripción del contenido. Las búsquedas por etiqueta, por el contrario, coinciden
+específicamente con los valores de las etiquetas que el autor estableció para el rol.
+Búsqueda de roles desde la línea de comando
+El comando ansible-galaxy role search busca roles en Ansible Galaxy.
+Si especifica una cadena como argumento, se usa para buscar roles en Ansible Galaxy por palabra
+clave. Puede usar las opciones --author, --platforms y --galaxy-tags para acotar los
+resultados de la búsqueda. También puede usar esas opciones como término de búsqueda
+principal.
+Por ejemplo, el comando ansible-galaxy role search --author geerlingguy muestra
+todos los roles enviados por el usuario geerlingguy. Los resultados se muestran en orden
+alfabético, no en orden descendente por Best Match.
+En el ejemplo siguiente, se muestran los nombres de los roles que incluyen redis y están
+disponibles para la plataforma Enterprise Linux (EL).
+[user@host ~]$ ansible-galaxy role search 'redis' --platforms EL
+Found 232 roles matching your search:
+ Name                                Description
+ ----                                -----------
+ ...output omitted...
+ aboveops.ct_redis                   Ansible role for creating Redis container
+ adfinis-sygroup.redis               Ansible role for Redis
+ adriano-di-giovanni.redis           Ansible role for Redis
+ AerisCloud.redis                    Installs redis on a server
+ alainvanhoof.alpine_redis           Redis for Alpine Linux
+ ...output omitted...
+El comando ansible-galaxy role info muestra información más detallada acerca de un rol.
+Ansible Galaxy obtiene esta información de varios lugares, incluido el archivo meta/main.yml del
+rol y su repositorio de GitHub.
+El siguiente comando muestra información acerca del rol geerlingguy.redis, disponible desde
+Ansible Galaxy.
+[user@host ~]$ ansible-galaxy role info geerlingguy.redis
+Role: geerlingguy.redis
+        description: Redis for Linux
+...output omitted...
+        created: 2023-05-08T20:50:00.204075Z
+        download_count: 1306420
+        github_branch: master
+        github_repo: ansible-role-redis
+        github_user: geerlingguy
+306
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        id: 10990
+        imported: 2022-09-26T12:10:34.707632-04:00
+        modified: 2023-10-29T18:44:43.771821Z
+        path: ('/home/student/.ansible/roles', '/usr/share/ansible/roles', '/etc/
+ansible/roles')
+        upstream_id: 468
+        username: geerlingguy
+Descargar roles desde Ansible Galaxy
+En el siguiente ejemplo, se muestra cómo configurar un archivo de requisitos con una variedad de
+fuentes remotas.
+[user@host project]$ cat roles/requirements.yml
+# from Ansible Galaxy, using the latest version
+- src: geerlingguy.redis 
+# from Ansible Galaxy, overriding the name and using a specific version
+- src: geerlingguy.redis
+  version: "1.5.0" 
+  name: redis_prod
+# from any Git based repository, using HTTPS
+- src: https://github.com/geerlingguy/ansible-role-nginx.git
+  scm: git 
+  version: master
+  name: nginx
+# from a role tar ball, given a URL;
+#   supports 'http', 'https', or 'file' protocols
+- src: file:///opt/local/roles/myrole.tar 
+  name: myrole 
+La palabra clave src especifica el nombre de rol de Ansible Galaxy. Si el rol no está alojado
+en Ansible Galaxy, la palabra clave src indica la URL del rol.
+La palabra clave version se usa para especificar la versión de un rol. La palabra clave
+version puede tener cualquier valor que corresponda a una bifurcación, etiqueta o hash de
+confirmación del repositorio de software del rol.
+Si el rol está alojado en un repositorio de control de origen, se necesita el atributo scm.
+Si el rol está alojado en Ansible Galaxy o como una colección de archivos tar en un servidor
+web, se omite la palabra clave scm.
+La palabra clave name se usa para anular el nombre local del rol.
+Gestión de roles descargados
+El comando ansible-galaxy role también puede administrar roles locales, como aquellos que
+se encuentran en el directorio roles de un proyecto de playbook. El comando ansible-galaxy
+role list enumera los roles locales.
+RH294-RHEL9.0-es-3-20240620
+307
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[user@host project]$ ansible-galaxy role list
+# /home/user/project/roles
+- geerlingguy.redis, 1.7.0
+- redis_prod, 1.5.0
+- nginx, master
+- myrole, (unknown version)
+...output omitted...
+Puede eliminar un rol con el comando ansible-galaxy role remove.
+[user@host ~]$ ansible-galaxy role remove nginx
+- successfully removed nginx
+Referencias
+ansible-galaxy: documentación Ansible
+https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html
+Red Hat Hybrid Cloud Console | Ansible Automation Platform Dashboard
+https://console.redhat.com/ansible/ansible-dashboard
+308
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Implementación de roles desde fuentes
+externas de contenido
+Usar el comando ansible-galaxy para descargar e instalar un rol de Ansible.
+Resultados
+• Crear un archivo de roles para especificar las dependencias de roles para un playbook.
+• Instalar roles especificados en un archivo de requisitos.
+• Enumerar los roles descargados mediante el comando ansible-galaxy.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-galaxy
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-galaxy.
+[student@workstation ~]$ cd ~/role-galaxy
+[student@workstation role-galaxy]$
+ 2.
+Crear un archivo de requisitos de rol en el directorio de su proyecto que descargue el rol
+student.bash_env. Este rol configura los archivos de inicialización predeterminados para
+la shell Bash usada para los usuarios recién creados, el prompt predeterminado para las
+cuentas de estos usuarios y el color del prompt que se usará.
+Cree un archivo denominado requirements.yml en el subdirectorio roles. La URL
+del repositorio de Git del rol es: git@workstation.lab.example.com:student/
+bash_env.
+Para ver cómo el rol afecta el comportamiento de los hosts de producción, use la rama
+main del repositorio. Establezca el nombre local del rol en student.bash_env.
+Asegúrese de que el archivo roles/requirements.yml contenga el siguiente
+contenido:
+RH294-RHEL9.0-es-3-20240620
+309
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+# requirements.yml
+- src: git@workstation.lab.example.com:student/bash_env
+  scm: git
+  version: main
+  name: student.bash_env
+ 3.
+Use el comando ansible-galaxy para procesar el nuevo archivo de requisitos que instala
+el rol student.bash_env.
+3.1.
+Enumere el contenido del subdirectorio roles antes de instalar el rol, de modo que
+pueda comparar su estado actual con los resultados del comando.
+[student@workstation role-galaxy]$ ls roles/
+requirements.yml
+3.2.
+Use el comando ansible-galaxy role install para descargar e instalar los
+roles enumerados en el archivo roles/requirements.yml en el subdirectorio
+roles de su proyecto.
+[student@workstation role-galaxy]$ ansible-galaxy role install \
+> -r roles/requirements.yml -p roles
+Starting galaxy role install process
+- extracting student.bash_env to /home/student/role-galaxy/roles/student.bash_env
+- student.bash_env (main) was installed successfully
+3.3.
+Enumere el contenido del subdirectorio roles después de instalar el rol. Confirme
+que tiene un nuevo subdirectorio, denominado student.bash_env, que coincide
+con el valor de name especificado en el archivo de requisitos.
+[student@workstation role-galaxy]$ ls roles/
+requirements.yml  student.bash_env
+3.4.
+Use el comando ansible-galaxy role list para enumerar los roles del
+proyecto en el subdirectorio roles.
+[student@workstation role-galaxy]$ ansible-galaxy role list -p roles
+# /home/student/role-galaxy/roles
+- student.bash_env, main
+# /usr/share/ansible/roles
+- linux-system-roles.certificate, (unknown version)
+- linux-system-roles.cockpit, (unknown version)
+- linux-system-roles.crypto_policies, (unknown version)
+- linux-system-roles.firewall, (unknown version)
+- linux-system-roles.ha_cluster, (unknown version)
+- linux-system-roles.kdump, (unknown version)
+- linux-system-roles.kernel_settings, (unknown version)
+...output omitted...
+[WARNING]: - the configured path /home/student/.ansible/roles does not exist.
+310
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Si no especifica la opción -p roles en su comando ansible-galaxy role
+list, el rol que instaló no aparece en la lista porque el subdirectorio roles no está
+en su roles_path predeterminado.
+[student@workstation role-galaxy]$ ansible-galaxy role list
+# /usr/share/ansible/roles
+- linux-system-roles.certificate, (unknown version)
+- linux-system-roles.cockpit, (unknown version)
+- linux-system-roles.crypto_policies, (unknown version)
+- linux-system-roles.firewall, (unknown version)
+- linux-system-roles.ha_cluster, (unknown version)
+- linux-system-roles.kdump, (unknown version)
+- linux-system-roles.kernel_settings, (unknown version)
+...output omitted...
+[WARNING]: - the configured path /home/student/.ansible/roles does not exist.
+ 4.
+Cree un playbook denominado use-bash_env-role.yml que use el rol
+student.bash_env. El playbook incluye el siguiente contenido:
+---
+- name: Use student.bash_env role playbook
+  hosts: devservers
+  vars:
+    default_prompt: '[\u on \h in \W dir]\$ '
+  pre_tasks:
+    - name: Ensure test user does not exist
+      ansible.builtin.user:
+        name: student2
+        state: absent
+        force: true
+        remove: true
+  roles:
+    - student.bash_env
+  post_tasks:
+    - name: Create the test user
+RH294-RHEL9.0-es-3-20240620
+311
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+      ansible.builtin.user:
+        name: student2
+        state: present
+        password: "{{ 'redhat' | password_hash }}"
+Para ver los efectos del cambio de configuración, debe crear una cuenta de usuario. Las
+secciones pre_tasks y post_tasks del playbook garantizan que la cuenta de usuario
+student2 elimine y cree cada vez que se ejecuta el playbook.
+Cuando ejecute el playbook use-bash_env-role.yml, la cuenta student2 se crea con
+una contraseña de redhat.
+nota
+La contraseña student2 se genera con un filtro. Los filtros toman datos
+y los modifican; aquí, la cadena redhat se modifica pasándola al filtro
+password_hash para convertir el valor en un hash de contraseña protegido. De
+forma predeterminada, el algoritmo de hash utilizado es sha512.
+Los filtros son un tema avanzado que no se trata en este curso.
+ 5.
+Ejecute el playbook use-bash_env-role.yml.
+El rol student.bash_env crea archivos de configuración de plantillas estándares
+en /etc/skel en el host gestionado. Los archivos que crea incluyen .bashrc,
+.bash_profile y .vimrc.
+[student@workstation role-galaxy]$ ansible-navigator run \
+> -m stdout use-bash_env-role.yml
+PLAY [Use student.bash_env role playbook] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Ensure test user does not exist] *****************************************
+ok: [servera.lab.example.com]
+TASK [student.bash_env : put away .bashrc] *************************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .bash_profile] *******************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .vimrc] **************************************
+changed: [servera.lab.example.com]
+TASK [Create the test user] ****************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+312
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ 6.
+Use SSH para iniciar sesión en la máquina servera con el usuario student2. Observe el
+aviso personalizado para el usuario student2 y desconéctese de la máquina servera.
+[student@workstation role-galaxy]$ ssh student2@servera
+...output omitted...
+[student2 on servera in ~ dir]$ exit
+logout
+Connection to servera closed.
+[student@workstation role-galaxy]$
+ 7.
+Ejecute el playbook usando la versión de desarrollo del rol student.bash_env.
+La versión de desarrollo del rol se encuentra en la rama dev del repositorio de Git. La
+versión de desarrollo del rol usa una nueva variable, prompt_color.
+Antes de ejecutar el playbook, agregue la variable prompt_color a la sección vars del
+playbook y establezca su valor en blue.
+7.1.
+Actualice el archivo roles/requirements.yml y establezca el valor version en
+dev. Asegúrese de que el archivo roles/requirements.yml contenga el siguiente
+contenido:
+---
+# requirements.yml
+- src: git@workstation.lab.example.com:student/bash_env
+  scm: git
+  version: dev
+  name: student.bash_env
+7.2.
+Modifique ~/role-galaxy/ansible.cfg y agregue la configuración roles_path
+a la sección [defaults] del archivo. Esto establece la ruta de roles predeterminada
+y le permite omitir la opción -p roles al escribir comandos ansible-galaxy.
+Cuando se completa, el archivo incluye el siguiente contenido:
+[defaults]
+inventory=inventory
+remote_user=devops
+roles_path=roles
+[privilege_escalation]
+become=true
+become_method=sudo
+become_user=root
+become_ask_pass=false
+7.3.
+Elimine la versión existente del rol student.bash_env del subdirectorio roles.
+[student@workstation role-galaxy]$ ansible-galaxy role remove student.bash_env
+- successfully removed student.bash_env
+7.4.
+Use el comando ansible-galaxy role install para instalar el rol con el archivo
+de requisitos actualizado.
+RH294-RHEL9.0-es-3-20240620
+313
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-galaxy]$ ansible-galaxy role install \
+> -r roles/requirements.yml
+Starting galaxy role install process
+- extracting student.bash_env to /home/student/role-galaxy/roles/student.bash_env
+- student.bash_env (dev) was installed successfully
+7.5.
+Modifique el archivo use-bash_env-role.yml. Agregue la variable
+prompt_color con un valor de blue a la sección vars del playbook. Asegúrese de
+que el archivo contenga el siguiente contenido:
+---
+- name: Use student.bash_env role playbook
+  hosts: devservers
+  vars:
+    prompt_color: blue
+    default_prompt: '[\u on \h in \W dir]\$ '
+  pre_tasks:
+...output omitted...
+7.6.
+Ejecute el playbook use-bash_env-role.yml.
+[student@workstation role-galaxy]$ ansible-navigator run \
+> -m stdout use-bash_env-role.yml
+PLAY [Use student.bash_env role playbook] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Ensure test user does not exist] *****************************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .bashrc] *************************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .bash_profile] *******************************
+ok: [servera.lab.example.com]
+TASK [student.bash_env : put away .vimrc] **************************************
+ok: [servera.lab.example.com]
+TASK [Create the test user] ****************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 8.
+Use SSH para iniciar sesión en la máquina servera con el usuario student2. El indicador
+personalizado para el usuario student2 ahora se muestra con caracteres azules.
+314
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-galaxy]$ ssh student2@servera
+...output omitted...
+[student2 on servera in ~ dir]$
+ 9.
+Cierre sesión de servera.
+[student2 on servera in ~ dir]$ exit
+logout
+Connection to servera closed.
+[student@workstation role-galaxy]$
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-galaxy
+RH294-RHEL9.0-es-3-20240620
+315
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Obtención de roles y módulos de las
+colecciones de contenido
+Objetivos
+• Obtener un conjunto de roles relacionados, módulos suplementarios y otro contenido de Ansible
+Content Collection y usarlos en un playbook.
+Ansible Content Collections
+Cuando se desarrolló Ansible por primera vez, todos los módulos que usaba se incluían como
+parte del paquete de software central (core). A medida que aumentaba la cantidad de módulos, se
+hizo más difícil para el proyecto upstream gestionar todos estos módulos. Cada módulo requería
+un nombre único y sincronizar las actualizaciones del módulo con las actualizaciones del código
+central (core) de Ansible.
+Con Ansible Content Collections, las actualizaciones del código Ansible se separan de las
+actualizaciones de módulos y complementos (plug-ins). Una Ansible Content Collection
+proporciona un conjunto de módulos, roles y otros complementos (plug-ins) relacionados que
+puede usar en sus playbooks. Este enfoque permite a los proveedores y desarrolladores mantener
+y distribuir sus colecciones a su propio ritmo, independientemente de las versiones de Ansible.
+Por ejemplo:
+• La colección de contenido redhat.insights ofrece módulos y roles que puede usar para
+registrar un sistema con Red Hat Insights para Red Hat Enterprise Linux.
+• La colección de contenido cisco.ios, soportada y mantenida por Cisco, ofrece módulos y
+complementos (plug-ins) que administran dispositivos de red de Cisco IOS.
+• La colección de contenido community.crypto proporciona módulos que crean certificados
+SSL/TLS.
+Ansible Content Collections también brindan flexibilidad. Puede instalar solo el contenido que
+necesita en lugar de instalar todos los módulos soportados.
+También puede seleccionar una versión específica de una colección (posiblemente una anterior
+o posterior) o elegir entre una versión de una colección compatible con Red Hat o proveedores, o
+una proporcionada por la comunidad.
+Ansible 2.9 y posteriores admiten Ansible Content Collections. Upstream Ansible separó la
+mayoría de los módulos del código central de Ansible en Ansible Base 2.10 y Ansible Core 2.11 y
+los colocó en colecciones. Red Hat Ansible Automation Platform 2.2 proporciona entornos de
+ejecución de automatización basados en Ansible Core 2.13 que heredan esta característica.
+nota
+Puede desarrollar sus propias colecciones para proporcionar roles y módulos
+personalizados a sus equipos. La creación de Ansible Content Collections por su
+cuenta está fuera del alcance de este curso. Puede obtener más información sobre
+cómo crear Ansible Content Collections en el curso que sigue a este, Desarrollo de
+automatización avanzada con Red Hat Ansible Automation Platform (DO374).
+316
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Espacios de nombres para Ansible Content Collections
+Para facilitar la especificación de las colecciones y su contenido por nombre, los nombres de las
+colecciones se organizan en espacios de nombres. Los proveedores, socios, desarrolladores y
+creadores de contenido pueden usar espacios de nombres para asignar nombres únicos a sus
+colecciones sin entrar en conflicto con otras colecciones.
+El espacio de nombres es la primera parte de un nombre de colección. Por ejemplo, todas
+las colecciones que la comunidad Ansible mantiene están en el espacio de nombres
+community y tiene nombres tales como community.crypto, community.postgresql y
+community.rabbitmq. Asimismo, Ansible Content Collections que Red Hat mantiene y admite
+directamente pueden usar el espacio de nombres redhat y tener nombres como redhat.rhv,
+redhat.satellite y redhat.insights.
+Selección de fuentes de Ansible Content Collections
+Independientemente de si está usando ansible-navigator con el entorno de ejecución de
+automatización mínima o ansible-playbook en Ansible Core bare metal, siempre tiene al
+menos una Ansible Content Collection disponible: ansible.builtin.
+Además, su entorno de ejecución de automatización puede tener entornos de ejecución de
+automatización adicionales integrados, por ejemplo, el entorno de ejecución predeterminado
+usado por Red Hat Ansible Automation Platform 2.2, ee-supported-rhel8.
+Si necesita tener Ansible Content Collections adicionales, puede agregarlas al subdirectorio
+collections de su proyecto Ansible. Puede obtener Ansible Content Collections de varias
+fuentes:
+Automation Hub
+El centro de automatización es un servicio proporcionado por Red Hat para distribuir Ansible
+Content Collections certificadas por Red Hat que son compatibles con Red Hat y los partners
+del ecosistema. Como cliente final, puede abrir un ticket de soporte con Red Hat para estas
+Ansible Content Collections que serán abordadas por Red Hat y el partner del ecosistema.
+Necesita una suscripción válida a Red Hat Ansible Automation Platform para acceder al centro
+de automatización. Use la interfaz de usuario web del centro de automatización en https://
+console.redhat.com/ansible/automation-hub/ para explorar estas colecciones.
+Centro de automatización privado
+Su organización puede tener su propio centro de automatización privado en el sitio y también
+puede usar ese centro para distribuir sus propias Ansible Content Collections. El centro de
+automatización privado se incluye en Red Hat Ansible Automation Platform.
+Ansible Galaxy
+Ansible Galaxy es un sitio web respaldado por la comunidad que alberga Ansible Content
+Collections que han sido enviadas por una variedad de desarrolladores y usuarios de
+Ansible. Ansible Galaxy es una librería pública que no ofrece garantías formales de soporte
+y que no está organizada por Red Hat. Por ejemplo, las colecciones community.crypto,
+community.postgresql y community.rabbitmq están disponibles en esa plataforma.
+Use la interfaz de usuario web de Ansible Galaxy en https://galaxy.ansible.com/ para buscar
+colecciones.
+Repositorio de Git de terceros o archivo de almacenamiento
+También puede descargar Ansible Content Collections desde un repositorio de Git o un
+archivo de almacenamiento local o remoto tar, al igual que puede descargar roles.
+RH294-RHEL9.0-es-3-20240620
+317
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Instalación de Ansible Content Collections
+Antes de que sus playbooks puedan usar contenido de una Ansible Content Collection, debe
+asegurarse de que la colección esté disponible en su entorno de ejecución de automatización.
+El ajuste de configuración de Ansible collections_paths especifica una lista separada por dos
+puntos de rutas en el sistema donde Ansible busca colecciones instaladas.
+Puede establecer esta directiva en el archivo de configuración ansible.cfg.
+Importante
+El siguiente valor predeterminado hace referencia a la directiva
+collections_paths.
+~/.ansible/collections:/usr/share/ansible/collections
+Si establece collections_paths en algún otro valor en el archivo ansible.cfg
+de su proyecto Ansible y elimina esos dos directorios, entonces ansible-
+navigator no puede encontrar las Ansible Content Collections proporcionadas
+dentro del entorno de ejecución de automatización en su versión de esos
+directorios.
+El siguiente ejemplo usa el comando ansible-galaxy collection install para descargar
+e instalar la Ansible Content Collection community.crypto. La opción -p collections
+instala la colección en el subdirectorio local collections.
+[user@controlnode ~]$ ansible-galaxy collection install community.crypto \
+> -p collections
+Importante
+Debe especificar la opción -p collections o ansible-galaxy instala la
+colección en función de su configuración actual collections_paths, o en
+su directorio ~/.ansible/collections/ en el nodo de control de forma
+predeterminada. El comando ansible-navigator no carga este directorio en el
+entorno de ejecución de la automatización, aunque este directorio está disponible
+para los comandos de Ansible que usan el nodo de control como entorno de
+ejecución, como ansible-playbook.
+Cuando instala la colección community.crypto, es posible que vea una advertencia de que los
+playbooks de su proyecto de Ansible podrían no encontrar la colección porque la ruta especificada
+no forma parte de la ruta configurada de las colecciones de Ansible.
+Puede ignorar esta advertencia con seguridad porque su proyecto Ansible verifica el subdirectorio
+local collections antes de verificar los directorios especificados por la configuración
+collections_paths y puede usar las colecciones almacenadas allí.
+El comando también puede instalar una colección desde un archivo tar local o remoto o un
+repositorio de git. Un repositorio de Git debe tener un archivo galaxy.yml o MANIFEST.json
+válido que proporcione metadatos sobre la colección, como su espacio de nombres y número de
+versión. Por ejemplo, consulte la colección community.general en https://github.com/
+ansible-collections/community.general.
+318
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[user@controlnode ~]$ ansible-galaxy collection install \
+> /tmp/community-dns-1.2.0.tar.gz -p collections
+...output omitted...
+[user@controlnode ~]$ ansible-galaxy collection install \
+> http://www.example.com/redhat-insights-1.0.5.tar.gz -p collections
+...output omitted...
+[user@controlnode ~]$ ansible-galaxy collection install \
+> git@git.example.com:organization/repo_name.git -p collections
+Instalación de Ansible Content Collections con un archivo de
+requisitos
+Si su proyecto de Ansible necesita colecciones de contenido de Ansible adicionales, puede crear
+un archivo collections/requirements.yml en el directorio del proyecto que enumera todas
+las colecciones que requiere el proyecto. El controlador de automatización detecta este archivo e
+instala automáticamente las colecciones especificadas antes de ejecutar sus playbooks.
+Un archivo de requisitos para Ansible Content Collections es un archivo YAML que consta de una
+clave de diccionario collections que tiene la lista de colecciones para instalar como su valor.
+Cada ítem de la lista también puede especificar la versión particular de la colección para instalar,
+como se muestra en el siguiente ejemplo:
+---
+collections: 
+  - name: community.crypto 
+  - name: ansible.posix
+    version: 1.2.0 
+  - name: /tmp/community-dns-1.2.0.tar.gz 
+  - name: http://www.example.com/redhat-insights-1.0.5.tar.gz 
+  - name: git+https://github.com/ansible-collections/community.general.git 
+    version: main
+El valor de esta clave de diccionario es la lista de colecciones requeridas por el proyecto
+Ansible.
+Instale Ansible Content Collection community.crypto desde la primera fuente disponible.
+La siguiente parte de esta sección abarca cómo configurar las fuentes.
+Instale la versión 1.2.0 de la Ansible Content Collection ansible.posix desde la primera
+fuente disponible. Es una buena práctica especificar la versión siempre que sea posible.
+Instale una Ansible Content Collection desde un archivo de almacenamiento local tar en
+particular.
+Instale una Ansible Content Collection desde el archivo tar en la URL remota especificada.
+Instale Ansible Content Collection community.general desde un repositorio público de
+Git, seleccionando la versión en la rama main. La directiva version puede ser una rama, una
+etiqueta o un hash de confirmación.
+RH294-RHEL9.0-es-3-20240620
+319
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+El comando ansible-galaxy puede usar el archivo collections/requirements.yml
+para instalar todas esas colecciones. Especifique el archivo de requisitos con la opción --
+requirements-file (o -r) y use la opción -p collections para instalar Ansible Content
+Collection en el subdirectorio collections.
+[root@controlnode ~]# ansible-galaxy collection install \
+> -r collections/requirements.yml -p collections
+Configuración de fuentes de Ansible Content Collection
+De forma predeterminada, el comando ansible-galaxy usa Ansible Galaxy en https://
+galaxy.ansible.com/ para descargar Ansible Content Collections. Es posible que no desee usar
+este comando, prefiriendo el centro de automatización o su propio centro de automatización
+privado. Alternativamente, es posible que desee probar el centro de automatización primero y
+luego probar Ansible Galaxy.
+Puede configurar las fuentes que usa ansible-galaxy para obtener Ansible Content
+Collections en el archivo ansible.cfg de su proyecto de Ansible. Las partes relevantes de ese
+archivo pueden verse como el siguiente ejemplo:
+...output omitted...
+[galaxy]
+server_list = automation_hub, galaxy  
+[galaxy_server.automation_hub]
+url=https://console.redhat.com/api/automation-hub/  
+auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-
+connect/token 
+token=eyJh...Jf0o 
+[galaxy_server.galaxy]
+url=https://galaxy.ansible.com/
+Enumere todos los repositorios que el comando ansible-galaxy debe usar en orden. Para
+cada nombre que defina, agregue una sección [galaxy_server.name] a este archivo
+que proporciona los parámetros de conexión. Este ejemplo configura el comando ansible-
+galaxy para obtener Ansible Content Collections desde el centro de automatización
+primero ([galaxy_server.automation_hub]). Si una colección no está disponible en
+esa fuente, el comando ansible-galaxy intentará obtener la colección del sitio web de
+Ansible Galaxy ([galaxy_server.galaxy]).
+Proporcione la URL para acceder al repositorio.
+Proporcione la URL para la autenticación.
+Para acceder al centro de automatización, necesita un token de autenticación asociado
+a su cuenta. Use la interfaz de usuario web del centro de automatización en https://
+console.redhat.com/ansible/automation-hub/token/ para generar ese token.
+Para obtener más detalles sobre ese proceso, consulte los enlaces en la sección Referencias.
+En lugar de un token, puede usar los parámetros username y password para proporcionar el
+nombre de usuario y la contraseña del portal de clientes.
+320
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+...output omitted...
+[galaxy_server.automation_hub]
+url=https://cloud.redhat.com/api/automation-hub/
+username=operator1
+password=Sup3r53cR3t
+...output omitted...
+Es posible que no desee exponer sus credenciales en el archivo ansible.cfg porque el archivo
+podría llegar a confirmarse usando el control de versiones.
+Es preferible eliminar los parámetros de autenticación del archivo ansible.cfg y definirlos en las
+variables de entorno, como se muestra en el siguiente ejemplo:
+export ANSIBLE_GALAXY_SERVER_<server_id>_<key>=value
+server_id
+Identificador del servidor en mayúsculas. El identificador del servidor es el
+nombre que se usó en el parámetro server_list y en el nombre de la sección
+[galaxy_server.server_id].
+key
+Nombre del parámetro en mayúsculas.
+En el siguiente ejemplo se proporciona el parámetro token como una variable de entorno:
+[user@controlnode ~]$ cat ansible.cfg
+...output omitted...
+[galaxy_server.automation_hub]
+url=https://cloud.redhat.com/api/automation-hub/
+auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-
+connect/token
+[user@controlnode ~]$ export \
+> ANSIBLE_GALAXY_SERVER_AUTOMATION_HUB_TOKEN='eyJh...Jf0o'
+[user@controlnode ~]$ ansible-galaxy collection install ansible.posix \
+> -p collections
+Uso de recursos de Ansible Content Collections
+Después de instalar una Ansible Content Collection en su proyecto de Ansible, puede usarla con
+los playbooks de Ansible de ese proyecto.
+Puede usar el comando ansible-navigator collections en el directorio de su proyecto
+Ansible para enumerar todas las colecciones que están instaladas en su entorno de ejecución de
+automatización. Esto incluye las Ansible Content Collections en el subdirectorio collections de
+su proyecto.
+Puede seleccionar el número de línea de la colección en el modo interactivo de ansible-
+navigator para ver su contenido. Luego, puede seleccionar el número de línea de un módulo,
+rol u otro complemento (plug-in) para ver su documentación. También puede usar otras
+herramientas, como ansible-navigator doc, con el FQCN de un módulo para ver la
+documentación de ese módulo.
+El siguiente playbook invoca el módulo mysql_user de la colección community.mysql para una
+tarea.
+RH294-RHEL9.0-es-3-20240620
+321
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+- name: Create the operator1 user in the test database
+  hosts: db.example.com
+  tasks:
+    - name: Ensure the operator1 database user is defined
+      community.mysql.mysql_user:
+        name: operator1
+        password: Secret0451
+        priv: '.:ALL'
+        state: present
+El siguiente playbook usa el rol organizations de la colección redhat.satellite.
+---
+- name: Add the test organizations to Red Hat Satellite
+  hosts: localhost
+  tasks:
+    - name: Ensure the organizations exist
+      include_role:
+        name: redhat.satellite.organizations
+      vars:
+        satellite_server_url: https://sat.example.com
+        satellite_username: admin
+        satellite_password: Sup3r53cr3t
+        satellite_organizations:
+          - name: test1
+            label: tst1
+            state: present
+            description: Test organization 1
+          - name: test2
+            label: tst2
+            state: present
+            description: Test organization 2
+Referencias
+Contenido certificado de Ansible Automation Platform
+https://access.redhat.com/articles/3642632
+Preguntas frecuentes sobre el contenido certificado de Ansible
+https://access.redhat.com/articles/4916901
+Uso de colecciones: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/collections_using.html
+Playbook del usuario de Galaxy: documentación de Ansible
+https://docs.ansible.com/ansible/latest/galaxy/user_guide.html
+322
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Obtención de roles y módulos de las
+colecciones de contenido
+Instalar una Ansible Content Collection y usar un rol o módulo de esa colección de contenido
+en un playbook.
+Resultados
+• Use el comando ansible-galaxy para instalar un Ansible Content Collection.
+• Use el archivo requirements.yml para instalar varias Ansible Content Collections.
+• Ejecute playbooks que usen roles y módulos de Ansible Content Collections.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-collections
+Instrucciones
+ 1.
+Instale e inspeccione la colección gls.utils.
+1.1.
+Cambie al directorio /home/student/role-collections.
+[student@workstation ~]$ cd ~/role-collections
+[student@workstation role-collections]$
+1.2.
+Use el archivo de almacenamiento gls-utils-0.0.1.tar.gz en su directorio del
+proyecto para instalar la colección gls.utils en el directorio collections.
+[student@workstation role-collections]$ ansible-galaxy collection \
+> install gls-utils-0.0.1.tar.gz -p collections
+...output omitted...
+gls.utils:0.0.1 was installed successfully
+RH294-RHEL9.0-es-3-20240620
+323
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Cuando se usa para colecciones, el comando ansible-galaxy usa los directorios
+definidos por la variable collections_paths. Puede definir un conjunto diferente
+de directorios mediante la configuración de la variable collections_paths en
+la sección [defaults] de su archivo de configuración de Ansible, o puede usar la
+opción -p para especificar un directorio desde la línea de comandos.
+De manera predeterminada, el comando ansible-navigator busca colecciones
+instaladas en el directorio del proyecto collections y el directorio /usr/share/
+ansible/collections en el entorno de ejecución de la automatización.
+1.3.
+Use el comando ansible-navigator collections para iniciar la interfaz de
+usuario interactiva basada en texto (TUI) y enumere las colecciones instaladas.
+[student@workstation role-collections]$ ansible-navigator collections
+1.4.
+Identifique la colección gls.utils en la lista de colecciones instaladas.
+   Name                 Version Shadowed Type       Path
+ 0│amazon.aws           3.2.0   False    contained  /usr/share/ansible/
+collections/ansible_collections/amazon/aws
+ 1│ansible.builtin      2.13.3  False    contained  /usr/lib/python3.9/site-
+packages/ansible
+ ...output omitted...
+17│gls.utils            0.0.1   False    bind_mount /home/student/role-
+collections/collections/ansible_collections/gls/utils
+...output omitted...
+1.5.
+Escriba :17 y, luego, presione Enter. Observe que la colección gls.utils
+proporciona dos roles: backup y restore.
+  Gls.utils Type   Added      Deprecated  Description
+0│backup    role   Unknown    Unknown     Curriculum Developer
+1│newping   module historical False       Try to connect to host, verify a usable
+ python and return C(pong) on success
+2│restore   role   Unknown    Unknown     Curriculum Developer
+1.6.
+Presione 0 para leer la documentación del rol gls.utils.backup y, luego,
+identifique las variables aceptadas por el rol.
+Image: gls.utils.backup
+Description: Curriculum Developer
+...output omitted...
+24│  backup
+25│  ======
+26│
+27│  This role backups up the files and directories provided using the
+ `backup_files` variable.
+28│  The backup is identified with a given name (`backup_id`) and can be restored
+ using the `gls.utils.restore` role.
+324
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+29│
+30│  If a backup with the same name already exists, then the role immediately
+ returns.
+31│
+...output omitted...
+38│
+39│  Role Variables
+40│  --------------
+41│
+42│  The role accepts the following variables:
+43│
+44│  * `backup_id`: The name (or ID) for the backup. This can be any string you
+ want (without spaces). This name is used to identify the backup when you call the
+ `restore` role.
+45│    By default, `backup_id` is set to `test`.
+46│  * `backup_files`: The list of files and directories to backup. You can use
+ globs (`*`) in those path names. Files and directories that do not exist on the
+ system are silently skipped.
+47│    `/etc` by default.
+...output omitted...
+1.7.
+Presione Esc para regresar a la pantalla anterior. Observe que la colección
+gls.utils proporciona el módulo newping.
+  Gls.utils Type   Added      Deprecated  Description
+0│backup    role   Unknown    Unknown     Curriculum Developer
+1│newping   module historical False       Try to connect to host, verify a usable
+ python and return C(pong) on success
+2│restore   role   Unknown    Unknown     Curriculum Developer
+1.8.
+Presione 1 para leer la documentación del módulo newping.
+Image: gls.utils.myping
+...output omitted...
+21│doc:
+22│  author:
+23│  - Ansible Core Team
+24│  description:
+25│  - A trivial test module, this module always returns C(pong) on successful
+ contact.
+26│    It does not make sense in playbooks, but it is useful from C(/usr/bin/
+ansible)
+27│    to verify the ability to login and that a usable Python is configured.
+28│  - This is NOT ICMP ping, this is just a trivial test module that requires
+ Python
+29│    on the remote-node.
+30│  - For Windows targets, use the M(ansible.windows.win_ping) module instead.
+31│  - For Network targets, use the M(ansible.netcommon.net_ping) module instead.
+32│  module: newping
+33│  options:
+34│    data:
+35│  default: pong
+36│  description:
+37│  - Data to return for the C(ping) return value.
+RH294-RHEL9.0-es-3-20240620
+325
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+38│  - If this parameter is set to C(crash), the module will cause an exception.
+39│  type: str
+...output omitted...
+nota
+También puede ejecutar ansible-navigator doc gls.utils.newping
+desde la línea de comandos para mostrar la documentación del módulo.
+1.9.
+Escriba :q y, luego, presione Enter para salir.
+ 2.
+Complete y luego ejecute el playbook /home/student/role-collections/bck.yml.
+El playbook use el módulo gls.utils.newping y el rol gls.utils.backup.
+2.1.
+Edite el playbook bck.yml. En la primera tarea, use el módulo
+gls.utils.newping.
+...output omitted...
+  tasks:
+    - name: Ensure the machine is up
+      gls.utils.newping:
+        data: pong
+...output omitted...
+No cierre el archivo aún.
+2.2.
+En la segunda tarea, incluya el rol gls.utils.backup. Al finalizar la edición del
+archivo, guárdelo y ciérrelo.
+...output omitted...
+    - name: Ensure configuration files are saved
+      ansible.builtin.include_role:
+        name: gls.utils.backup
+      vars:
+        backup_id: backup_etc
+        backup_files:
+          - /etc/sysconfig
+          - /etc/yum.repos.d
+El archivo resultante debe incluir el siguiente contenido:
+---
+- name: Backup the system configuration
+  hosts: servera.lab.example.com
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Ensure the machine is up
+      gls.utils.newping:
+        data: pong
+    - name: Ensure configuration files are saved
+      ansible.builtin.include_role:
+326
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        name: gls.utils.backup
+      vars:
+        backup_id: backup_etc
+        backup_files:
+          - /etc/sysconfig
+          - /etc/yum.repos.d
+2.3.
+Verifique la sintaxis del playbook bck.yml. Si recibe algún error, compare su
+playbook con el ejemplo anterior.
+[student@workstation role-collections]$ ansible-navigator run \
+> -m stdout bck.yml --syntax-check
+playbook: /home/student/role-collections/bck.yml
+2.4.
+Ejecute el playbook.
+[student@workstation role-collections]$ ansible-navigator run \
+> -m stdout bck.yml
+PLAY [Backup the system configuration] *****************************************
+TASK [Ensure the machine is up] ************************************************
+ok: [servera.lab.example.com]
+TASK [Ensure configuration files are saved] ************************************
+TASK [gls.utils.backup : Ensure the backup directory exists] *******************
+changed: [servera.lab.example.com]
+TASK [gls.utils.backup : Ensure the backup exists] *****************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 3.
+En la segunda parte de este ejercicio, instale las Ansible Content Collections especificadas
+por el archivo requirements.yml del proyecto de Ansible.
+Para probar su trabajo, ejecute el playbook new_system.yml. Ese playbook usa los roles
+redhat.insights.insights_client y redhat.rhel_system_roles.selinux
+para configurar Red Hat Insights y SELinux en la máquina servera.lab.example.com.
+3.1.
+Revise el archivo requirements.yml. El archivo enumera tres Ansible Content
+Collections para instalar desde archivos de almacenamiento tar en el directorio de
+su proyecto de Ansible. Actualmente, la colección redhat.insights requiere el
+módulo community.general.ini_file no soportado.
+El script lab start descarga estos archivos de almacenamiento tar en el
+directorio de su proyecto desde el centro de automatización de Red Hat en https://
+console.redhat.com/ansible/automation-hub.
+RH294-RHEL9.0-es-3-20240620
+327
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+collections:
+  - name: /home/student/role-collections/redhat-insights-1.0.7.tar.gz
+  - name: /home/student/role-collections/redhat-rhel_system_roles-1.19.3.tar.gz
+  - name: /home/student/role-collections/community-general-5.5.0.tar.gz
+3.2.
+Use el comando ansible-galaxy con el archivo requirements.yml para instalar
+las colecciones.
+[student@workstation role-collections]$ ansible-galaxy collection install \
+> -r requirements.yml -p collections
+...output omitted...
+redhat.insights:1.0.7 was installed successfully
+...output omitted...
+redhat.rhel_system_roles:1.19.3 was installed successfully
+...output omitted...
+community.general:5.5.0 was installed successfully
+3.3.
+Use el comando ansible-galaxy collection list para verificar que las
+colecciones estén instaladas.
+[student@workstation role-collections]$ ansible-galaxy collection list \
+> -p collections
+...output omitted...
+# /home/student/role-collections/collections/ansible_collections
+Collection               Version
+------------------------ -------
+community.general        5.5.0
+gls.utils                0.0.1
+redhat.insights          1.0.7
+redhat.rhel_system_roles 1.19.3
+Puede haber otras colecciones instaladas en /usr/share/ansible/
+collections/ansible_collections.
+3.4.
+Use el comando ansible-navigator collections para iniciar la TUI interactiva
+y enumere las colecciones instaladas.
+[student@workstation role-collections]$ ansible-navigator collections
+3.5.
+Identifique la colección redhat.insights en la lista de colecciones instaladas.
+328
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-collections]$ ansible-navigator collections
+   Name                 Version Shadowed Type       Path
+ 0│amazon.aws           3.2.0   False    contained  /usr/share/ansible/
+collections/ansible_collections/amazon/aws
+ 1│ansible.builtin      2.13.3  False    contained  /usr/lib/python3.9/site-
+packages/ansible
+ ...output omitted...
+23│redhat.insights      1.0.7   False    bind_mount /home/student/role-
+collections/collections/ansible_collections/redhat/insights
+...output omitted...
+3.6.
+Escriba :23 y, luego, presione Enter. Observe que la colección redhat.insights
+proporciona el rol insights_client.
+  Redhat.insights   Type      Added   Deprecated Description
+0│compliance        role      Unknown Unknown    Install and configure Red Hat
+ Insights Client
+1│insights          inventory None    False      insights inventory source
+2│insights_client   role      Unknown Unknown    Install and configure Red Hat
+ Insights Client
+3│insights_config   module    None    False      This module handles initial
+ configuration of the insights client on install
+4│insights_register module    None    False      This module registers the
+ insights client
+3.7.
+Presione 2 para revisar la documentación del rol insights_client.
+Image: redhat.insights.insights_client
+Description: Install and configure Red Hat Insights Client
+  0│---
+  1│argument_specs: {}
+  2│argument_specs_path: ''
+  3│defaults: {}
+  4│defaults_path: ''
+  5│full_name: redhat.insights.insights_client
+  6│info:
+  7│  galaxy_info:
+  8│    author: Red Hat, Inc
+  9│    categories:
+ 10│    - packaging
+ 11│    - system
+ 12│    company: Red Hat, Inc.
+ 13│    dependencies: []
+ 14│    description: Install and configure Red Hat Insights Client
+...output omitted...
+Escriba :q y, luego, presione Enter para salir de la TUI ansible-navigator.
+3.8.
+Revise el playbook new_system.yml. Este playbook usa roles de las colecciones
+redhat.insights y redhat.rhel_system_roles.
+RH294-RHEL9.0-es-3-20240620
+329
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+- name: Configure the system
+  hosts: servera.lab.example.com
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ensure the system is registered with Insights
+      ansible.builtin.include_role:
+        name: redhat.insights.insights_client
+      vars:
+        auto_config: false
+        insights_proxy: http://proxy.example.com:8080
+    - name: Ensure SELinux mode is Enforcing
+      ansible.builtin.include_role:
+        name: redhat.rhel_system_roles.selinux
+      vars:
+        selinux_state: enforcing
+3.9.
+Ejecute el playbook new_system.yml en modo de comprobación para confirmar
+que instaló correctamente las colecciones requeridas.
+[student@workstation role-collections]$ ansible-navigator run \
+> -m stdout new_system.yml --check
+...output omitted...
+TASK [redhat.insights.insights_client : Set Insights Configuration Values] ***
+changed: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Register Insights Client] ************
+ok: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Change permissions of Insights Config
+ directory so that Insights System ID can be read] ***************************
+ok: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Change permissions of machine_id file so
+ that Insights System ID can be read] ****************************************
+ok: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Create directory for ansible custom facts]
+changed: [servera.lab.example.com]
+TASK [redhat.insights.insights_client : Install custom insights fact] *******
+changed: [servera.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.selinux : Install SELinux python3 tools] *****
+ok: [servera.lab.example.com]
+330
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [redhat.rhel_system_roles.selinux : refresh facts] *********************
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.selinux : Install SELinux tool semanage] *****
+ok: [servera.lab.example.com]
+...output omitted...
+Importante
+Debido a que los sistemas de aula no están registrados con Red Hat Subscription
+Management y es posible que no tengan acceso a Internet, el playbook
+new_system.yml no se puede completar correctamente. No obstante, para
+confirmar que instaló correctamente las colecciones requeridas, aún podrá ejecutar
+el playbook en modo de comprobación.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-collections
+RH294-RHEL9.0-es-3-20240620
+331
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Reutilización de contenido con roles de
+sistema
+Objetivos
+• Escribir playbooks que aprovechen los roles del sistema de Red Hat Enterprise Linux para
+realizar operaciones estándares.
+Roles de sistema
+Roles del sistema son un conjunto de roles de Ansible que puede usar para configurar y gestionar
+diversos componentes, subsistemas y paquetes de software incluidos en Red Hat Enterprise
+Linux. Los roles del sistema proporcionan automatización para muchas tareas comunes de
+configuración del sistema, incluida la sincronización de la hora, las redes, el firewall, el ajuste y el
+registro.
+Estos roles están destinados a proporcionar una API de automatización que sea uniforme en
+varias versiones principales y secundarias de Red Hat Enterprise Linux. El artículo de la base
+de conocimiento en https://access.redhat.com/articles/3050101 documenta las
+versiones de Red Hat Enterprise Linux en sus hosts gestionados que admiten roles específicos.
+Gestión simplificada de la configuración
+Los roles del sistema pueden ayudarlo a simplificar la automatización en varias versiones de
+Red Hat Enterprise Linux. Por ejemplo, el servicio de sincronización de hora recomendado es
+diferente en diferentes versiones de Red Hat Enterprise Linux.
+• Se prefiere el servicio chronyd en RHEL 9.
+• Se prefiere el servicio ntpd en RHEL 6.
+En un entorno con una combinación de versiones de Red Hat Enterprise Linux, debe gestionar los
+archivos de configuración para ambos servicios.
+Puede usar un playbook de Ansible que ejecute el rol redhat.rhel_system_roles.timesync
+para configurar la sincronización de la hora para los hosts gestionados que ejecutan cualquiera de
+las versiones de Red Hat Enterprise Linux.
+Con los roles del sistema, ya no necesita mantener los archivos de configuración para ambos
+servicios.
+Soporte para roles de sistema
+Los roles del sistema se proporcionan como Ansible Content Collections
+redhat.rhel_system_roles certificadas por Red Hat a través del centro de automatización
+para los clientes de Red Hat Ansible Automation Platform, como parte de su suscripción.
+Además, los roles se proporcionan como un paquete RPM (rhel-system-roles) con Red Hat
+Enterprise Linux 9 para su uso con la versión de Ansible Core proporcionada por ese sistema
+operativo. Estos roles del sistema tienen los mismos beneficios de soporte de ciclo de vida que la
+suscripción a Red Hat Enterprise Linux.
+La mayoría de los roles de sistema son "totalmente soportados" y tienen interfaces estables.
+Para cualquier rol del sistema con "soporte completo", Red Hat se esfuerza por garantizar que
+332
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+los nombres de las variables del rol y cómo funcionan no se modifiquen en futuras versiones. Por
+lo tanto, la refactorización del playbook debido a actualizaciones en el rol del sistema debe ser
+mínima.
+Algunos roles del sistema se encuentran en Technology Preview. Estos se prueban y son estables,
+pero pueden estar sujetos a cambios futuros que sean incompatibles con el estado actual del rol.
+Se recomiendan pruebas de integración para los playbooks que incorporan roles de Technology
+Preview. Los playbooks pueden requerir la refactorización si las variables del rol cambian en una
+versión futura del rol.
+Puede acceder a la documentación de los roles del sistema en ansible-navigator
+o revisando la documentación en el Portal de clientes de Red Hat en  Tareas
+de administración y configuración mediante roles del sistema en RHEL  [https://
+access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html-single/
+administration_and_configuration_tasks_using_system_roles_in_rhel/index.].
+Instalación de Ansible Content Collection de los roles
+del sistema
+Puede instalar Ansible Content Collection redhat.rhel_system_roles con el comando
+ansible-galaxy collection install. Un proyecto de Ansible puede especificar esta
+dependencia creando un archivo collections/requirements.yml. En el siguiente ejemplo,
+se supone que su proyecto está configurado para extraer Ansible Content Collections del centro
+de automatización.
+---
+collections:
+  - name: redhat.rhel_system_roles
+El siguiente comando instala las colecciones necesarias para un proyecto determinado en el
+directorio collections/ del proyecto.
+[user@demo demo-project]$ ansible-galaxy collection \
+> install -p collections/ -r collections/requirements.yml
+...output omitted...
+nota
+El desarrollo upstream se realiza a través del proyecto Linux System Roles; sus
+versiones de desarrollo de los roles del sistema se proporcionan a través de Ansible
+Galaxy como Ansible Content Collection fedora.linux_system_roles.
+Red Hat no admite estos roles.
+Ejemplo: rol de sincronización de tiempos
+Supongamos que necesita configurar la sincronización temporal de NTP en sus servidores web.
+Podría escribir la automatización usted mismo para realizar cada una de las tareas necesarias.
+Pero la colección de roles del sistema incluye un rol que puede realizar la configuración,
+redhat.rhel_system_roles.timesync.
+En la documentación de este rol se describen todas las variables que afectan el comportamiento
+del rol y se incluyen tres fragmentos de playbook que ilustran diferentes configuraciones de
+sincronización temporal.
+RH294-RHEL9.0-es-3-20240620
+333
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Para configurar manualmente los servidores NTP, el rol tiene una variable llamada
+timesync_ntp_servers. Esta variable define una lista de servidores NTP para usar. Cada ítem
+de la lista se compone de uno o más atributos. Los dos atributos clave son hostname y iburst.
+Atributo
+Propósito
+hostname
+El nombre de host de un servidor NTP con el que se puede
+sincronizar.
+iburst
+Un valor booleano que habilita o deshabilita la sincronización
+inicial rápida. Se establece de forma predeterminada en no en el
+rol; normalmente debe establecerse en yes.
+Dada esta información, el siguiente ejemplo es un play que usa el rol
+redhat.rhel_system_roles.timesync para configurar los hosts gestionados a fin de
+obtener el tiempo de tres servidores NTP usando la sincronización inicial rápida.
+- name: Time Synchronization Play
+  hosts: webservers
+  vars:
+    timesync_ntp_servers:
+      - hostname: 0.rhel.pool.ntp.org
+        iburst: yes
+      - hostname: 1.rhel.pool.ntp.org
+        iburst: yes
+      - hostname: 2.rhel.pool.ntp.org
+        iburst: yes
+  roles:
+    - redhat.rhel_system_roles.timesync
+Este ejemplo establece las variables de rol en una sección vars del play, pero una mejor práctica
+sería configurarlas como variables de inventario para hosts o grupos de hosts.
+Considere un proyecto de guía con la siguiente estructura:
+[user@demo demo-project]$ tree
+.
+├── ansible.cfg
+├── group_vars
+│   └── webservers
+│       └── timesync.yml
+├── inventory
+└── timesync_playbook.yml
+Define las variables de sincronización temporal que anulan los valores predeterminados de
+rol para los hosts en el grupo webservers en el inventario. A continuación, se muestra un
+ejemplo de cómo se vería este archivo:
+334
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+timesync_ntp_servers:
+  - hostname: 0.rhel.pool.ntp.org
+    iburst: yes
+  - hostname: 1.rhel.pool.ntp.org
+    iburst: yes
+  - hostname: 2.rhel.pool.ntp.org
+    iburst: yes
+El contenido del playbook se simplifica a lo siguiente:
+- name: Time Synchronization Play
+  hosts: webservers
+  roles:
+    - redhat.rhel_system_roles.timesync
+Esta estructura separa claramente el rol, el código del playbook y los ajustes de configuración. El
+código del playbook es simple, fácil de leer y no debe requerir una refactorización compleja. El
+contenido de rol es mantenido y soportado por Red Hat. Todas las configuraciones se manejan
+como variables de inventario.
+Esta estructura también soporta un entorno dinámico y heterogéneo. Los hosts con nuevos
+requisitos de sincronización temporal se pueden colocar en un nuevo grupo de hosts. Las variables
+apropiadas se definen en un archivo YAML y se colocan en el subdirectorio correspondiente
+group_vars (o host_vars).
+Ejemplo: rol de SELinux
+Como otro ejemplo, el rol redhat.rhel_system_roles.selinux simplifica la administración
+de ajustes de configuración de SELinux. Este rol se implementa usando los módulos de Ansible
+relacionados con SELinux. La ventaja de usar este rol en lugar de escribir sus propias tareas es que
+lo exime de la responsabilidad de escribir esas tareas. En su lugar, proporciona variables al rol para
+configurarlo, y el código mantenido en el rol garantizará que se aplique la configuración deseada
+de SELinux.
+Este rol puede ejecutar las siguientes tareas:
+• Establecer el modo de ejecución o permisivo
+• Ejecutar restorecon en partes de la jerarquía del sistema de archivos
+• Configurar valores booleanos de SELinux
+• Configurar de manera persistente los contextos de archivos de SELinux
+• Configurar asignaciones de usuarios de SELinux
+Llamada al rol de SELinux
+A veces, el rol SELinux debe garantizar que los hosts gestionados se reinicien para aplicar
+completamente los cambios. Sin embargo, el rol nunca reinicia los hosts, lo que le permite
+controlar cómo se maneja el reinicio. Por lo tanto, es un poco más complicado de lo habitual usar
+correctamente este rol en un play.
+El rol establecerá una variable booleana, selinux_reboot_required, en true y fallará si se
+necesita un reinicio. Puede usar una estructura block/rescue para recuperarse de la falla, ya
+sea que falle el play si la variable no se configura en true o reinicia el host gestionado y vuelve a
+ejecutar el rol si está en true. El bloque en su play debe verse parecido a lo siguiente:
+RH294-RHEL9.0-es-3-20240620
+335
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+    - name: Apply SELinux role
+      block:
+        - include_role:
+            name: redhat.rhel_system_roles.selinux
+      rescue:
+        - name: Check for failure for other reasons than required reboot
+          ansible.builtin.fail:
+          when: not selinux_reboot_required
+        - name: Restart managed host
+          ansible.builtin.reboot:
+        - name: Reapply SELinux role to complete changes
+          include_role:
+            name: redhat.rhel_system_roles.selinux
+Configuración del rol de SELinux
+Las variables usadas para configurar el rol redhat.rhel_system_roles.selinux se
+describen en la documentación del rol. En los siguientes ejemplos, se muestran algunas formas de
+usar este rol.
+La variable selinux_state establece el modo en que se ejecuta SELinux. Puede establecerse
+en enforcing, permissive o disabled. Si no está configurada, el modo no se cambia.
+selinux_state: enforcing
+La variable selinux_booleans toma una lista de valores booleanos de SELinux para ajustarse.
+Cada ítem de la lista es un diccionario de variables: name del booleano, state (tanto en on como
+en off), e independientemente de que el ajuste deba ser persistent en los reinicios.
+Este ejemplo establece httpd_enable_homedirs en on continuamente:
+selinux_booleans:
+  - name: 'httpd_enable_homedirs'
+    state: 'on'
+    persistent: 'yes'
+La variable selinux_fcontexts requiere una lista de contextos de archivo para establecerse
+continuamente (o eliminarse) y funciona de manera similar al comando selinux fcontext.
+En el siguiente ejemplo, se garantiza que la política tenga una regla para establecer el tipo de
+SELinux predeterminado para todos los archivos de /srv/www en httpd_sys_content_t.
+selinux_fcontexts:
+  - target: '/srv/www(/.*)?'
+    setype: 'httpd_sys_content_t'
+    state: 'present'
+La variable selinux_restore_dirs especifica una lista de directorios en los que se puede
+ejecutar el comando restorecon:
+336
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+selinux_restore_dirs:
+  - /srv/www
+La variable selinux_ports toma una lista de puertos que deben tener un tipo específico de
+SELinux.
+selinux_ports:
+  - ports: '82'
+    setype: 'http_port_t'
+    proto: 'tcp'
+    state: 'present'
+Existen otras variables y opciones para este rol. Consulte la documentación del rol para obtener
+más información.
+Uso de roles del sistema solo con Ansible Core
+nota
+Esta sección es relevante si planea usar roles del sistema sin una suscripción a
+Red Hat Ansible Automation Platform, mediante el uso de la versión de Ansible Core
+que se proporciona con Red Hat Enterprise Linux 9.
+Si no tiene una suscripción a Red Hat Ansible Automation Platform, pero tiene sistemas Red Hat
+Enterprise Linux, puede usar roles de sistema con la versión de Ansible Core proporcionada con
+RHEL.
+Esa versión de Ansible Core solo es compatible con roles del sistema y otro código de
+automatización proporcionado por Red Hat. Además, no incluye ansible-navigator, por lo
+que debe usar herramientas como ansible-playbook que tratan su nodo de control como el
+entorno de ejecución para ejecutar su automatización.
+Debido a que ansible-playbook no usa entornos de ejecución, la única Ansible Content
+Collection que tiene disponible de forma predeterminada es la colección ansible.builtin.
+Otros paquetes incluidos en Red Hat Enterprise Linux pueden agregar Ansible Content
+Collections adicionales al nodo de control.
+Instalación del paquete RPM de roles del sistema
+Asegúrese de que su nodo de control esté registrado con Red Hat Subscription Manager y tenga
+una suscripción a Red Hat Enterprise Linux. También debe instalar el paquete RPM ansible-
+core.
+Para instalar el paquete RPM rhel-system-roles, asegúrese de que el repositorio de paquetes
+de AppStream esté habilitado. Para Red Hat Enterprise Linux 9 en la arquitectura del procesador
+x86_64, este es el repositorio rhel-9-for-x86_64-appstream-rpms. Luego puede instalar
+instale el paquete.
+[user@controlnode ~]$ sudo dnf install rhel-system-roles
+RH294-RHEL9.0-es-3-20240620
+337
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Si usa Ansible Core desde una instalación básica de Red Hat Enterprise Linux
+para su nodo de control y no tiene una suscripción a Red Hat Ansible Automation
+Platform en ese nodo, entonces su nodo de control debe ser una instalación
+completamente actualizada de la versión más reciente de Red Hat Enterprise Linux.
+También debe usar la versión más reciente de los paquetes ansible-core y
+rhel-system-roles.
+Después de la instalación, la colección se instala en el directorio /usr/share/ansible/
+collections/ansible_collections/redhat/rhel_system_roles en su nodo de
+control. Los roles individuales también se instalan en el directorio /usr/share/ansible/roles
+para compatibilidad con versiones anteriores:
+[user@controlnode ~]$ ls -1F /usr/share/ansible/roles/
+linux-system-roles.certificate@
+linux-system-roles.cockpit@
+linux-system-roles.crypto_policies@
+linux-system-roles.firewall@
+linux-system-roles.ha_cluster@
+linux-system-roles.kdump@
+linux-system-roles.kernel_settings@
+linux-system-roles.logging@
+linux-system-roles.metrics@
+linux-system-roles.nbde_client@
+linux-system-roles.nbde_server@
+linux-system-roles.network@
+linux-system-roles.postfix@
+linux-system-roles.selinux@
+linux-system-roles.ssh@
+linux-system-roles.sshd@
+linux-system-roles.storage@
+linux-system-roles.timesync@
+linux-system-roles.tlog@
+linux-system-roles.vpn@
+rhel-system-roles.certificate/
+rhel-system-roles.cockpit/
+rhel-system-roles.crypto_policies/
+rhel-system-roles.firewall/
+rhel-system-roles.ha_cluster/
+rhel-system-roles.kdump/
+rhel-system-roles.kernel_settings/
+rhel-system-roles.logging/
+rhel-system-roles.metrics/
+rhel-system-roles.nbde_client/
+rhel-system-roles.nbde_server/
+rhel-system-roles.network/
+rhel-system-roles.postfix/
+rhel-system-roles.selinux/
+rhel-system-roles.ssh/
+rhel-system-roles.sshd/
+rhel-system-roles.storage/
+338
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+rhel-system-roles.timesync/
+rhel-system-roles.tlog/
+rhel-system-roles.vpn/
+El nombre upstream correspondiente de cada rol está vinculado al rol de sistema RHEL. Esto
+permite que cualquiera de los dos nombres hagan referencia a roles individuales en un playbook.
+Importante
+Si está usando ansible-playbook para ejecutar su playbook y este hace
+referencia a un rol del sistema que se instaló usando el FQCN del paquete RPM,
+debe usar la versión redhat.rhel_system_roles de su nombre. Por ejemplo,
+puede hacer referencia al rol firewall como:
+• redhat.rhel_system_roles.firewall (su FQCN en la colección)
+• rhel-system-roles.firewall (su nombre como rol independiente)
+• linux-system-roles.firewall (su nombre como rol independiente
+upstream)
+No puede usar fedora.linux_system_roles.firewall porque la colección
+fedora.linux_system_roles no está instalada en el sistema.
+Además, los nombres de roles independientes solo funcionan si /usr/share/
+ansible/roles está en su configuración roles_path.
+Acceso a la documentación para roles de sistema
+Si está trabajando con roles del sistema en Red Hat Enterprise Linux y no tiene ansible-
+navigator disponible, existen otras formas de obtener documentación sobre los roles del
+sistema.
+La documentación oficial para los roles del sistema se encuentra en  Tareas de
+administración y configuración mediante roles del sistema en RHEL  [https://
+access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html-single/
+administration_and_configuration_tasks_using_system_roles_in_rhel/index].
+Sin embargo, si instaló los roles del sistema desde el paquete RPM, la documentación también
+está disponible en el directorio /usr/share/doc/rhel-system-roles/.
+[user@controlnode ~]$ ls -1 /usr/share/doc/rhel-system-roles/
+certificate
+cockpit
+collection
+crypto_policies
+firewall
+ha_cluster
+kdump
+kernel_settings
+logging
+metrics
+nbde_client
+nbde_server
+network
+postfix
+selinux
+RH294-RHEL9.0-es-3-20240620
+339
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ssh
+sshd
+storage
+timesync
+tlog
+vpn
+El directorio de documentación de cada rol contiene un archivo README.md. El archivo
+README.md contiene una descripción del rol, junto con la información de uso del rol.
+El archivo README.md también describe las variables de rol que afectan el comportamiento
+del rol. A menudo el archivo README.md contiene un fragmento de playbook que muestra la
+configuración de variables para un escenario de configuración común.
+Algunos directorios de documentación de roles contienen ejemplos de playbooks. Cuando
+use un rol por primera vez, revise los playbooks de ejemplo adicionales en el directorio de
+documentación.
+Ejecución de playbooks sin el navegador de contenido de
+automatización
+Puede usar el comando ansible-playbook para ejecutar un playbook que usa roles de sistema
+en Red Hat Enterprise Linux cuando no tiene Red Hat Ansible Automation Platform o ansible-
+navigator.
+La sintaxis de ansible-playbook es muy similar a ansible-navigator run -m stdout y
+toma muchas de las mismas opciones.
+[user@controlnode ~]$ ansible-playbook playbook.yml
+Referencias
+Red Hat Enterprise Linux (RHEL) System Roles
+https://access.redhat.com/articles/3050101
+Red Hat Enterprise Linux System Roles Ansible Collection
+https://console.redhat.com/ansible/automation-hub/repo/published/redhat/
+rhel_system_roles
+Alcance del soporte para el paquete Ansible Core incluido en los repositorios
+de AppStream de RHEL 9 y RHEL 8.6 y posteriores
+https://access.redhat.com/articles/6325611
+Uso de Ansible en RHEL 9
+https://access.redhat.com/articles/6393321
+Roles de sistema de Linux
+https://linux-system-roles.github.io/
+Ansible Collection de roles del sistema Linux
+https://galaxy.ansible.com/fedora/linux_system_roles
+340
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Reutilización de contenido con roles de
+sistema
+Usar uno de los roles de sistema junto con tareas para configurar la sincronización temporal y
+la zona horaria de los hosts gestionados.
+Resultados
+• Instalar los roles de sistema de Red Hat Enterprise Linux.
+• Buscar y usar la documentación de roles de sistema.
+• Usar el rol redhat.rhel_system_roles.timesync en un playbook para configurar la
+sincronización temporal en hosts remotos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-system
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-system.
+[student@workstation ~]$ cd ~/role-system
+[student@workstation role-system]$
+ 2.
+Instale los roles del sistema en su nodo de control, workstation.lab.example.com.
+Confirme que los roles del sistema se hayan instalado mediante ansible-galaxy.
+2.1.
+Use el comando ansible-galaxy collection list para mostrar las
+colecciones instaladas.
+[student@workstation role-system]$ ansible-galaxy collection list
+2.2.
+Cree el directorio collections.
+[student@workstation role-system]$ mkdir -p collections
+2.3.
+El directorio ./collections no es una ubicación de búsqueda predeterminada para
+las colecciones. Agregue la clave collections_paths al archivo ansible.cfg, de
+modo que se busque en el directorio ./collections.
+RH294-RHEL9.0-es-3-20240620
+341
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[defaults]
+inventory=./inventory
+remote_user=devops
+collections_paths=./collections:~/.ansible/collections:/usr/share/ansible/collections
+2.4.
+Use el comando ansible-galaxy para instalar la colección
+redhat.rhel_system_roles desde el tarball provisto.
+[student@workstation role-system]$ ansible-galaxy collection \
+> install -p collections/ redhat-rhel_system_roles-1.19.3.tar.gz
+Process install dependency map
+Starting collection install process
+Installing 'redhat.rhel_system_roles:1.19.3' to '/home/student/role-system/
+collections/ansible_collections/redhat/rhel_system_roles'
+redhat.rhel_system_roles:1.19.3 was installed successfully
+2.5.
+Use el comando ansible-galaxy collection list para verificar que los roles
+del sistema ahora estén disponibles.
+[student@workstation role-system]$ ansible-galaxy collection list
+# /home/student/role-system/collections/ansible_collections
+Collection               Version
+------------------------ -------
+redhat.rhel_system_roles 1.19.3
+ 3.
+Cree el playbook configure_time.yml con un play que se dirija al grupo de hosts
+database_servers y ejecute el rol redhat.rhel_system_roles.timesync en su
+sección roles.
+---
+- name: Time Synchronization
+  hosts: database_servers
+  roles:
+    - redhat.rhel_system_roles.timesync
+ 4.
+La documentación del rol contiene una descripción de cada variable del rol, incluido el valor
+predeterminado de la variable. Determine las variables de rol que debe anular para cumplir
+con los requisitos de sincronización temporal.
+Coloque los valores de las variables de rol en un archivo denominado timesync.yml.
+Debido a que los valores de estas variables se aplican a todos los hosts del inventario,
+coloque el archivo timesync.yml en el subdirectorio group_vars/all.
+4.1.
+Consulte la sección Variables de rol del archivo README.md para conocer el rol
+redhat.rhel_system_roles.timesync.
+[student@workstation role-system]$ cat \
+> collections/ansible_collections/redhat/rhel_system_roles/roles/timesync/README.md
+...output omitted...
+Role Variables
+342
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+--------------
+...output omitted...
+# List of NTP servers
+timesync_ntp_servers:
+  - hostname: foo.example.com   # Hostname or address of the server
+    minpoll: 4                  # Minimum polling interval (default 6)
+    maxpoll: 8                  # Maximum polling interval (default 10)
+    iburst: yes                 # Flag enabling fast initial synchronization
+                                # (default no)
+    pool: no                    # Flag indicating that each resolved address
+                                # of the hostname is a separate NTP server
+                                # (default no)
+...output omitted...
+# Name of the package which should be installed and configured for NTP.
+# Possible values are "chrony" and "ntp". If not defined, the currently active
+# or enabled service will be configured. If no service is active or enabled, a
+# package specific to the system and its version will be selected.
+timesync_ntp_provider: chrony
+...output omitted...
+4.2.
+Cree el subdirectorio group_vars/all.
+[student@workstation role-system]$ mkdir -pv group_vars/all
+mkdir: created directory 'group_vars'
+mkdir: created directory 'group_vars/all'
+4.3.
+Cree un archivo group_vars/all/timesync.yml, agregue definiciones de
+variables para satisfacer los requisitos de sincronización temporal. El archivo ahora
+contiene lo siguiente:
+---
+#redhat.rhel_system_roles.timesync variables for all hosts
+timesync_ntp_provider: chrony
+timesync_ntp_servers:
+  - hostname: classroom.example.com
+    iburst: yes
+ 5.
+Agregue dos tareas al archivo configure_time.yml para obtener y establecer
+condicionalmente la zona horaria para cada host. Asegúrese de que ambas tareas se
+ejecuten después del rol redhat.rhel_system_roles.timesync.
+Debido a que los hosts no pertenecen a la misma zona horaria, use una variable
+(host_timezone) para el nombre de la zona horaria.
+5.1.
+Cree una sección post_tasks en el playbook configure_time.yml y, luego,
+agregue la primera tarea.
+RH294-RHEL9.0-es-3-20240620
+343
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+  post_tasks:
+    - name: Get time zone
+      ansible.builtin.command: timedatectl show
+      register: current_timezone
+      changed_when: false
+5.2.
+Agregue una segunda tarea para establecer la zona horaria, pero solo cuando la zona
+horaria sea incorrecta. Dado que el registro del sistema y otros servicios usan la zona
+horaria del sistema, reinicie cada host cuando se modifique la zona horaria. Agregue
+una palabra clave notify a la tarea, con un valor asociado de reboot host. La
+sección post_tasks del play debe decir:
+    - name: Set time zone
+      ansible.builtin.command: "timedatectl set-timezone {{ host_timezone }}"
+      when: host_timezone not in current_timezone.stdout
+      notify: reboot host
+5.3.
+Agregue el manejador reboot host al play Time Synchronization. El playbook
+completo ahora contiene lo siguiente:
+---
+- name: Time Synchronization
+  hosts: database_servers
+  roles:
+    - redhat.rhel_system_roles.timesync
+  post_tasks:
+    - name: Get time zone
+      ansible.builtin.command: timedatectl show
+      register: current_timezone
+      changed_when: false
+    - name: Set time zone
+      ansible.builtin.command: "timedatectl set-timezone {{ host_timezone }}"
+      when: host_timezone not in current_timezone.stdout
+      notify: reboot host
+  handlers:
+    - name: reboot host
+      ansible.builtin.reboot:
+ 6.
+Para cada centro de datos, cree un archivo llamado timezone.yml con un valor apropiado
+para la variable host_timezone. Use el comando timedatectl list-timezones para
+encontrar la cadena de zona horaria válida para cada centro de datos.
+6.1.
+Cree los subdirectorios group_vars para los grupos de hosts na_datacenter y
+europe_datacenter.
+344
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-system]$ mkdir -pv \
+> group_vars/{na_datacenter,europe_datacenter}
+mkdir: created directory 'group_vars/na_datacenter'
+mkdir: created directory 'group_vars/europe_datacenter'
+6.2.
+Use el comando timedatectl list-timezones para determinar la zona horaria
+para los centros de datos de EE. UU. y Europa:
+[student@workstation role-system]$ timedatectl list-timezones | grep Chicago
+America/Chicago
+[student@workstation role-system]$ timedatectl list-timezones | grep Helsinki
+Europe/Helsinki
+6.3.
+Cree el timezone.yml para ambos centros de datos:
+[student@workstation role-system]$ echo "host_timezone: America/Chicago" > \
+> group_vars/na_datacenter/timezone.yml
+[student@workstation role-system]$ echo "host_timezone: Europe/Helsinki" > \
+> group_vars/europe_datacenter/timezone.yml
+ 7.
+Ejecute el playbook configure_time.yml.
+7.1.
+Use el comando ansible-navigator run --syntax-check para validar la
+sintaxis del playbook.
+[student@workstation role-system]$ ansible-navigator run \
+> -m stdout configure_time.yml --syntax-check
+playbook: /home/student/role-system/configure_time.yml
+7.2.
+Ejecute el playbook configure_time.yml.
+[student@workstation role-system]$ ansible-navigator run \
+> -m stdout configure_time.yml
+PLAY [Time Synchronization] **************************************************
+TASK [Gathering Facts] *******************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.timesync : Set version specific variables] ****
+...output omitted...
+TASK [redhat.rhel_system_roles.timesync : Enable timemaster] *****************
+skipping: [servera.lab.example.com]
+skipping: [serverb.lab.example.com]
+RUNNING HANDLER [redhat.rhel_system_roles.timesync : restart chronyd] ********
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+345
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [Get time zone] *********************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Set time zone] *********************************************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+RUNNING HANDLER [reboot host] ************************************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=18   changed=6    unreachable=0    failed=0   
+ skipped=25   rescued=0    ignored=0
+serverb.lab.example.com    : ok=18   changed=6    unreachable=0    failed=0   
+ skipped=25   rescued=0    ignored=0
+ 8.
+Verifique la configuración de zona horaria de cada servidor. Use los siguientes comandos
+para ver la salida del comando date en las máquinas servera y serverb.
+nota
+Las zonas horarias reales enumeradas variarán según la época del año y si el horario
+de verano está activo.
+[student@workstation role-system]$ ssh servera date
+Tue Aug 16 07:43:33 PM CDT 2022
+[student@workstation role-system]$ ssh serverb date
+Wed Aug 17 03:43:41 AM EEST 2022
+Cada servidor tiene una configuración de zona horaria basada en su ubicación geográfica.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-system
+346
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Trabajo de laboratorio
+Simplificación de playbooks con roles y
+Ansible Content Collections
+Crear roles de Ansible que usan variables, archivos, plantillas, tareas y manejadores.
+Resultados
+• Cree roles de Ansible que usen variables, archivos, plantillas, tareas y manejadores para
+configurar un servidor web de desarrollo.
+• En un playbook, use un rol que esté alojado en un repositorio remoto.
+• Use un rol de sistema de Red Hat Enterprise Linux en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-review
+Instrucciones
+Su organización debe proporcionar un único servidor web para alojar el código de desarrollo para
+todos los desarrolladores web. Tiene la tarea de escribir un playbook para configurar este servidor
+web de desarrollo.
+El servidor web de desarrollo debe cumplir varios requisitos:
+• La configuración del servidor de desarrollo debe coincidir con la configuración del servidor de
+producción. El servidor de producción se debe configurar mediante un rol Ansible, desarrollado
+por el equipo de infraestructura de la organización.
+• Cada desarrollador recibe un directorio en el servidor de desarrollo para alojar el código y el
+contenido. Se accede al contenido de cada desarrollador con un puerto asignado no estándar.
+• SELinux está configurado en modo de ejecución y está usando la política de destino.
+Su playbook debe:
+• Usar un rol para configurar directorios y puertos para cada desarrollador del servidor web. Debe
+escribir este rol.
+Este rol depende de un rol para configurar Apache que fue escrito por su organización. Debe
+especificar la versión v1.4 del rol para definir la dependencia. La URL del repositorio de Git de
+la dependencia es: git@workstation.lab.example.com:infra/apache.
+RH294-RHEL9.0-es-3-20240620
+347
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+• Use el rol redhat.rhel_system_roles.selinux para configurar SELinux para permitir
+que los host externos accedan a los puertos HTTP no estándares usados por el servidor web.
+Se le proporcionará un archivo de variable selinux.yml que puede usar en el directorio
+group_vars para pasar la configuración correcta al rol.
+1.
+Cambie al directorio /home/student/role-review.
+2.
+Use el comando ansible-galaxy collection install para instalar la colección
+redhat.rhel_system_roles desde el archivo de almacenamiento tar provisto, luego
+verifique que se haya instalado correctamente.
+3.
+Cree un playbook denominado web_dev_server.yml con un solo play denominado
+Configure Dev Web Server. Configure el play para apuntar al grupo de hosts
+dev_webserver. No agregue ningún rol ni tarea al play todavía.
+Asegúrese de que el play obligue a los manejadores a ejecutarse, ya que puede encontrar un
+error al desarrollar el playbook.
+4.
+Verifique la sintaxis del playbook y, luego, ejecútelo. Se debe aprobar la comprobación de la
+sintaxis y el playbook debe ejecutarse correctamente. El play solo recopila datos porque aún
+no tiene roles ni tareas.
+5.
+Asegúrese de instalar los roles que sean dependencias de roles en su playbook.
+Por ejemplo, el rol apache.developer_configs que escriba más adelante en este trabajo
+de laboratorio depende del rol infra.apache.
+Cree un archivo roles/requirements.yml. Este archivo instala el rol desde el repositorio
+de Git en git@workstation.lab.example.com:infra/apache, use la versión v1.4 y
+asígnele el nombre infra.apache localmente.
+Puede suponer que las claves SSH están configuradas para permitirle obtener roles de ese
+repositorio automáticamente. Instale el rol con el comando ansible-galaxy.
+6.
+Inicie un nuevo rol llamado apache.developer_configs en el subdirectorio roles.
+Agregue el rol infra.apache como una dependencia para el nuevo rol, usando la misma
+información de nombre, fuente, versión y sistema de control de versión del archivo roles/
+requirements.yml.
+El archivo developer_tasks.yml del directorio del proyecto contiene tareas para el rol.
+Mueva este archivo a la ubicación correcta en la jerarquía del directorio del rol para el archivo
+de tareas que se usa para este rol y reemplace el archivo existente en esa ubicación.
+El archivo developer.conf.j2 del directorio del proyecto es una plantilla de Jinja2 usada
+por el archivo de tareas. Mueva este archivo a la ubicación correcta para los archivos de
+plantilla usados por este rol.
+7.
+El rol apache.developer_configs crea una cuenta de usuario y configura una
+instancia de servidor web para la lista de usuarios definida en la variable denominada
+web_developers.
+El archivo web_developers.yml del directorio del proyecto define la variable
+web_developers que es la lista de usuarios del rol.
+Revise este archivo y colóquelo en la ubicación correcta para definir la variable
+web_developers para el grupo de hosts del servidor web de desarrollo de su inventario.
+8.
+Agregue el rol apache.developer_configs al play en el playbook
+web_dev_server.yml.
+9.
+Verifique la sintaxis del playbook y, luego, ejecútelo. La verificación de la sintaxis debe
+aprobarse, pero el playbook debe fallar cuando el rol infra.apache intenta reiniciar
+Apache HTTPD.
+348
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+10.
+Apache HTTPD no pudo reiniciarse en el paso anterior porque los puertos de red que usa
+para sus desarrolladores están etiquetados con los contextos de SELinux incorrectos.
+Puede usar el archivo de variable proporcionado, selinux.yml, con el rol
+redhat.rhel_system_roles.selinux para corregir el problema.
+Cree una sección pre_tasks para su play en el playbook web_dev_server.yml. En esa
+sección, use una tarea para incluir el rol redhat.rhel_system_roles.selinux en una
+estructura block/rescue para que se lo aplique correctamente.
+Mueva el archivo selinux.yml a la ubicación correcta, de modo que sus variables se
+configuren para el grupo de hosts dev_webserver.
+11.
+Verifique el playbook web_dev_server.yml final y ejecute una comprobación de sintaxis.
+Se debe aprobar la comprobación de la sintaxis.
+Valide que el playbook web_dev_server.yml pase una comprobación de sintaxis.
+12.
+Ejecute el playbook web_dev_server.yml. Debe ser capaz de realizarse de manera
+correcta.
+13.
+Pruebe la configuración del servidor web de desarrollo. Verifique que todos los extremos
+sean accesibles y proporcionen el contenido de cada desarrollador.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade role-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-review
+RH294-RHEL9.0-es-3-20240620
+349
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Solución
+Simplificación de playbooks con roles y
+Ansible Content Collections
+Crear roles de Ansible que usan variables, archivos, plantillas, tareas y manejadores.
+Resultados
+• Cree roles de Ansible que usen variables, archivos, plantillas, tareas y manejadores para
+configurar un servidor web de desarrollo.
+• En un playbook, use un rol que esté alojado en un repositorio remoto.
+• Use un rol de sistema de Red Hat Enterprise Linux en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-review
+Instrucciones
+Su organización debe proporcionar un único servidor web para alojar el código de desarrollo para
+todos los desarrolladores web. Tiene la tarea de escribir un playbook para configurar este servidor
+web de desarrollo.
+El servidor web de desarrollo debe cumplir varios requisitos:
+• La configuración del servidor de desarrollo debe coincidir con la configuración del servidor de
+producción. El servidor de producción se debe configurar mediante un rol Ansible, desarrollado
+por el equipo de infraestructura de la organización.
+• Cada desarrollador recibe un directorio en el servidor de desarrollo para alojar el código y el
+contenido. Se accede al contenido de cada desarrollador con un puerto asignado no estándar.
+• SELinux está configurado en modo de ejecución y está usando la política de destino.
+Su playbook debe:
+• Usar un rol para configurar directorios y puertos para cada desarrollador del servidor web. Debe
+escribir este rol.
+Este rol depende de un rol para configurar Apache que fue escrito por su organización. Debe
+especificar la versión v1.4 del rol para definir la dependencia. La URL del repositorio de Git de
+la dependencia es: git@workstation.lab.example.com:infra/apache.
+350
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+• Use el rol redhat.rhel_system_roles.selinux para configurar SELinux para permitir
+que los host externos accedan a los puertos HTTP no estándares usados por el servidor web.
+Se le proporcionará un archivo de variable selinux.yml que puede usar en el directorio
+group_vars para pasar la configuración correcta al rol.
+1.
+Cambie al directorio /home/student/role-review.
+[student@workstation ~]$ cd ~/role-review
+[student@workstation role-review]$
+2.
+Use el comando ansible-galaxy collection install para instalar la colección
+redhat.rhel_system_roles desde el archivo de almacenamiento tar provisto, luego
+verifique que se haya instalado correctamente.
+2.1.
+Use el comando ansible-galaxy collection install para instalar la colección
+redhat.rhel_system_roles desde el archivo de almacenamiento tar provisto.
+[student@workstation role-review]$ ansible-galaxy collection \
+> install -p collections/ redhat-rhel_system_roles-1.19.3.tar.gz
+Starting galaxy collection install process
+Process install dependency map
+Starting collection install process
+Installing 'redhat.rhel_system_roles:1.19.3' to '/home/student/role-review/
+collections/ansible_collections/redhat/rhel_system_roles'
+redhat.rhel_system_roles:1.19.3 was installed successfully
+2.2.
+Use el comando ansible-galaxy collection list para verificar que la
+colección se haya instalado correctamente y los roles del sistema ahora estén
+disponibles.
+[student@workstation role-review]$ ansible-galaxy collection list
+# /home/student/role-review/collections/ansible_collections
+Collection               Version
+------------------------ -------
+redhat.rhel_system_roles 1.19.3
+...output omitted...
+3.
+Cree un playbook denominado web_dev_server.yml con un solo play denominado
+Configure Dev Web Server. Configure el play para apuntar al grupo de hosts
+dev_webserver. No agregue ningún rol ni tarea al play todavía.
+Asegúrese de que el play obligue a los manejadores a ejecutarse, ya que puede encontrar un
+error al desarrollar el playbook.
+El playbook /home/student/role-review/web_dev_server.yml completo incluye el
+siguiente contenido:
+---
+- name: Configure Dev Web Server
+  hosts: dev_webserver
+  force_handlers: true
+RH294-RHEL9.0-es-3-20240620
+351
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+4.
+Verifique la sintaxis del playbook y, luego, ejecútelo. Se debe aprobar la comprobación de la
+sintaxis y el playbook debe ejecutarse correctamente. El play solo recopila datos porque aún
+no tiene roles ni tareas.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml --syntax-check
+playbook: /home/student/role-review/web_dev_server.yml
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml
+PLAY [Configure Dev Web Server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.
+Asegúrese de instalar los roles que sean dependencias de roles en su playbook.
+Por ejemplo, el rol apache.developer_configs que escriba más adelante en este trabajo
+de laboratorio depende del rol infra.apache.
+Cree un archivo roles/requirements.yml. Este archivo instala el rol desde el repositorio
+de Git en git@workstation.lab.example.com:infra/apache, use la versión v1.4 y
+asígnele el nombre infra.apache localmente.
+Puede suponer que las claves SSH están configuradas para permitirle obtener roles de ese
+repositorio automáticamente. Instale el rol con el comando ansible-galaxy.
+5.1.
+Cree un subdirectorio roles para el proyecto de playbook.
+[student@workstation role-review]$ mkdir -v roles
+mkdir: created directory 'roles'
+5.2.
+Cree un archivo roles/requirements.yml y agregue una entrada para el rol
+infra.apache. Use la versión v1.4 del repositorio de git del rol.
+El archivo roles/requirements.yml completo cuenta con el siguiente contenido:
+- name: infra.apache
+  src: git@workstation.lab.example.com:infra/apache
+  scm: git
+  version: v1.4
+5.3.
+Instale las dependencias del proyecto.
+[student@workstation role-review]$ ansible-galaxy role install \
+> -r roles/requirements.yml -p roles
+Starting galaxy role install process
+- extracting infra.apache to /home/student/role-review/roles/infra.apache
+- infra.apache (v1.4) was installed successfully
+6.
+Inicie un nuevo rol llamado apache.developer_configs en el subdirectorio roles.
+352
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Agregue el rol infra.apache como una dependencia para el nuevo rol, usando la misma
+información de nombre, fuente, versión y sistema de control de versión del archivo roles/
+requirements.yml.
+El archivo developer_tasks.yml del directorio del proyecto contiene tareas para el rol.
+Mueva este archivo a la ubicación correcta en la jerarquía del directorio del rol para el archivo
+de tareas que se usa para este rol y reemplace el archivo existente en esa ubicación.
+El archivo developer.conf.j2 del directorio del proyecto es una plantilla de Jinja2 usada
+por el archivo de tareas. Mueva este archivo a la ubicación correcta para los archivos de
+plantilla usados por este rol.
+6.1.
+Use el comando ansible-galaxy role init para crear un esqueleto de rol para el
+rol apache.developer_configs.
+[student@workstation role-review]$ cd roles
+[student@workstation roles]$ ansible-galaxy role init apache.developer_configs
+- Role apache.developer_configs was created successfully
+[student@workstation roles]$ cd ..
+[student@workstation role-review]$
+6.2.
+Modifique el archivo roles/apache.developer_configs/meta/main.yml del rol
+apache.developer_configs para reflejar una dependencia del rol infra.apache.
+Después de la edición, la variable dependencies se define de la siguiente manera:
+dependencies:
+  - name: infra.apache
+    src: git@workstation.lab.example.com:infra/apache
+    scm: git
+    version: v1.4
+6.3.
+Reemplace el archivo tasks/main.yml del rol con el archivo
+developer_tasks.yml.
+[student@workstation role-review]$ mv -v developer_tasks.yml \
+> roles/apache.developer_configs/tasks/main.yml
+renamed 'developer_tasks.yml' -> 'roles/apache.developer_configs/tasks/main.yml'
+6.4.
+Coloque el archivo developer.conf.j2 en el directorio templates del rol.
+[student@workstation role-review]$ mv -v developer.conf.j2 \
+> roles/apache.developer_configs/templates/
+renamed 'developer.conf.j2' -> 'roles/apache.developer_configs/templates/
+developer.conf.j2'
+7.
+El rol apache.developer_configs crea una cuenta de usuario y configura una
+instancia de servidor web para la lista de usuarios definida en la variable denominada
+web_developers.
+El archivo web_developers.yml del directorio del proyecto define la variable
+web_developers que es la lista de usuarios del rol.
+Revise este archivo y colóquelo en la ubicación correcta para definir la variable
+web_developers para el grupo de hosts del servidor web de desarrollo de su inventario.
+RH294-RHEL9.0-es-3-20240620
+353
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+7.1.
+Revise el archivo web_developers.yml.
+---
+web_developers:
+  - username: jdoe
+    name: John Doe
+    user_port: 9081
+  - username: jdoe2
+    name: Jane Doe
+    user_port: 9082
+Se define una variable name, username y user_port para cada desarrollador web.
+7.2.
+Coloque el archivo web_developers.yml en el subdirectorio group_vars/
+dev_webserver.
+[student@workstation role-review]$ mkdir -pv group_vars/dev_webserver
+mkdir: created directory 'group_vars'
+mkdir: created directory 'group_vars/dev_webserver'
+[student@workstation role-review]$ mv -v web_developers.yml \
+> group_vars/dev_webserver/
+renamed 'web_developers.yml' -> 'group_vars/dev_webserver/web_developers.yml'
+8.
+Agregue el rol apache.developer_configs al play en el playbook
+web_dev_server.yml.
+Asegúrese de que el playbook /home/student/role-review/web_dev_server.yml
+incluya el siguiente contenido:
+---
+- name: Configure Dev Web Server
+  hosts: dev_webserver
+  force_handlers: true
+  roles:
+    - apache.developer_configs
+9.
+Verifique la sintaxis del playbook y, luego, ejecútelo. La verificación de la sintaxis debe
+aprobarse, pero el playbook debe fallar cuando el rol infra.apache intenta reiniciar
+Apache HTTPD.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml --syntax-check
+playbook: /home/student/role-review/web_dev_server.yml
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml
+PLAY [Configure Dev Web Server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+...output omitted...
+TASK [apache.developer_configs : Create user accounts] *************************
+354
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+changed: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John
+ Doe', 'user_port': 9081})
+changed: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane
+ Doe', 'user_port': 9082})
+...output omitted...
+RUNNING HANDLER [infra.apache : restart firewalld] *****************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [infra.apache : restart apache] ********************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg": "Unable to
+ restart service httpd: Job for httpd.service failed because the control process
+ exited with error code.\nSee \"systemctl status httpd.service\" and \"journalctl
+ -xeu httpd.service\" for details.\n"}
+NO MORE HOSTS LEFT *************************************************************
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=14   changed=12   unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+Se produce un error al reiniciar el servicio httpd. El daemon de servicio httpd no puede
+enlazar a los puertos HTTP no estándares, debido al contexto de SELinux en esos puertos.
+10.
+Apache HTTPD no pudo reiniciarse en el paso anterior porque los puertos de red que usa
+para sus desarrolladores están etiquetados con los contextos de SELinux incorrectos.
+Puede usar el archivo de variable proporcionado, selinux.yml, con el rol
+redhat.rhel_system_roles.selinux para corregir el problema.
+Cree una sección pre_tasks para su play en el playbook web_dev_server.yml. En esa
+sección, use una tarea para incluir el rol redhat.rhel_system_roles.selinux en una
+estructura block/rescue para que se lo aplique correctamente.
+Mueva el archivo selinux.yml a la ubicación correcta, de modo que sus variables se
+configuren para el grupo de hosts dev_webserver.
+10.1.
+Agregue la sección pre_tasks al final del play en el playbook
+web_dev_server.yml.
+Puede revisar el archivo /home/student/role-review/collections/
+ansible_collections/redhat/rhel_system_roles/tests/selinux/
+tests_port.yml para obtener un esquema básico de cómo aplicar el rol.
+Asegúrese de que la sección pre_tasks incluya el siguiente contenido:
+...output omitted...
+  pre_tasks:
+    - name: Verify SELinux configuration
+      block:
+        - name: Apply SELinux role
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+      rescue:
+        # Fail if failed for a different reason than selinux_reboot_required.
+        - name: Handle general failure
+          ansible.builtin.fail:
+RH294-RHEL9.0-es-3-20240620
+355
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+            msg: "SELinux role failed."
+          when: not selinux_reboot_required
+        - name: Restart managed host
+          ansible.builtin.reboot:
+            msg: "Ansible rebooting system for updates."
+        - name: Reapply SELinux role to complete changes
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+10.2. El archivo selinux.yml contiene definiciones de variables para el rol
+redhat.rhel_system_roles.selinux. Utilice el archivo para definir variables para
+el grupo de hosts del play.
+[student@workstation role-review]$ cat selinux.yml
+---
+# variables used by redhat.rhel_system_roles.selinux
+selinux_policy: targeted
+selinux_state: enforcing
+selinux_ports:
+  - ports:
+      - "9081"
+      - "9082"
+    proto: 'tcp'
+    setype: 'http_port_t'
+    state: 'present'
+[student@workstation role-review]$ mv -v selinux.yml \
+> group_vars/dev_webserver/
+renamed 'selinux.yml' -> 'group_vars/dev_webserver/selinux.yml'
+11.
+Verifique el playbook web_dev_server.yml final y ejecute una comprobación de sintaxis.
+Se debe aprobar la comprobación de la sintaxis.
+Asegúrese de que el playbook web_dev_server.yml final incluya el siguiente contenido:
+---
+- name: Configure Dev Web Server
+  hosts: dev_webserver
+  force_handlers: true
+  roles:
+    - apache.developer_configs
+  pre_tasks:
+    - name: Verify SELinux configuration
+      block:
+        - name: Apply SELinux role
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+      rescue:
+        # Fail if failed for a different reason than selinux_reboot_required.
+        - name: Handle general failure
+356
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+          ansible.builtin.fail:
+            msg: "SELinux role failed."
+          when: not selinux_reboot_required
+        - name: Restart managed host
+          ansible.builtin.reboot:
+            msg: "Ansible rebooting system for updates."
+        - name: Reapply SELinux role to complete changes
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+nota
+El comando ansible-navigator run ejecuta las tareas del play en el orden
+correcto, independientemente de si pre_tasks está al final del play o en la
+posición "correcta" del orden de ejecución en el archivo del playbook.
+Aún así ejecuta las tareas del play en el orden correcto.
+Valide que el playbook web_dev_server.yml pase una comprobación de sintaxis.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml --syntax-check
+playbook: /home/student/role-review/web_dev_server.yml
+12.
+Ejecute el playbook web_dev_server.yml. Debe ser capaz de realizarse de manera
+correcta.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml
+PLAY [Configure Dev Web Server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Apply SELinux role] ******************************************************
+...output omitted...
+TASK [redhat.rhel_system_roles.selinux : Set an SELinux label on a port] *******
+changed: [servera.lab.example.com] => (item={'ports': ['9081', '9082'], 'proto':
+ 'tcp', 'setype': 'http_port_t', 'state': 'present'})
+TASK [redhat.rhel_system_roles.selinux : Set linux user to SELinux user mapping]
+ ***
+TASK [redhat.rhel_system_roles.selinux : Get SELinux modules facts] ************
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.selinux : include_tasks] ************************
+skipping: [servera.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+357
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [infra.apache : Apache Package is installed] ******************************
+ok: [servera.lab.example.com]
+TASK [infra.apache : Apache Service is started] ********************************
+changed: [servera.lab.example.com]
+...output omitted...
+TASK [apache.developer_configs : Create user accounts] *************************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Give student access to all accounts] **********
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Create content directory] *********************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Create skeleton index.html if needed] *********
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Set firewall port] ****************************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Copy Per-Developer Config files] **************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=21   changed=2    unreachable=0    failed=0   
+ skipped=16   rescued=0    ignored=0
+358
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+13.
+Pruebe la configuración del servidor web de desarrollo. Verifique que todos los extremos
+sean accesibles y proporcionen el contenido de cada desarrollador.
+[student@workstation role-review]$ curl servera
+This is the production server on servera.lab.example.com
+[student@workstation role-review]$ curl servera:9081
+This is index.html for user: John Doe (jdoe)
+[student@workstation role-review]$ curl servera:9082
+This is index.html for user: Jane Doe (jdoe2)
+[student@workstation role-review]$
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade role-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-review
+RH294-RHEL9.0-es-3-20240620
+359
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Resumen
+• Los roles de Ansible lo ayudan a volver a usar y compartir el código de Ansible.
+• Ansible Content Collections_ distribuye roles, módulos y otros complementos (plug-ins) de
+Ansible relacionados que puede usar en proyectos de Ansible y entornos de ejecución de
+automatización.
+• Use el comando ansible-galaxy para gestionar los roles de Ansible y Ansible Content
+Collections.
+• Red Hat proporciona Ansible Content Collections certificadas por Red Hat a través de un
+centro de automatización de servicios basados en la nube. Red Hat y sus partners admiten estas
+Ansible Content Collections.
+• Puede distribuir Ansible Content Collections certificadas por Red Hat o sus propias Ansible
+Content Collections desde un centro de automatización privado en las instalaciones.
+• Ansible Galaxy proporciona una librería de roles de Ansible de terceros y Ansible Content
+Collections que son gestionadas por la comunidad y no son admitidas por Red Hat.
+• Los roles del sistema (redhat.rhel_system_roles) se proporcionan como un paquete
+RPM o como una Ansible Content Collection que consta de varios roles destinados a ayudarlo a
+configurar subsistemas de hosts gestionados en varias versiones de Red Hat Enterprise Linux.
+• Los roles y Ansible Content Collections que necesita un proyecto se pueden especificar
+mediante archivos requirements.yml y se pueden instalar en su proyecto de Ansible
+manualmente mediante ansible-galaxy.
+360
+RH294-RHEL9.0-es-3-20240620
+
+

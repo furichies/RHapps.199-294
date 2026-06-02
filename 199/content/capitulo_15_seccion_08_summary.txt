@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.8. Resumen 12.8. Resumen En esta lección, aprendió sobre los métodos que se utilizan para ejecutar tareas recurrentes del sistema automáticamente. La mayoría de las tareas recurrentes del sistema ahora utilizan unidades de temporizador systemd. Las unidades temporizadoras activan otros tipos de unidades, generalmente unidades de servicio, para realizar tareas en fechas y horas o intervalos específicos. La herramienta systemd-tmpfiles proporciona una forma estructurada de administrar directorios y archivos temporales. Limpiar y mantener archivos temporales es crucial para ayudar a prevenir problemas de espacio en disco y mantener actualizados los datos de trabajo. El demonio crond monitorea los archivos crontab para ejecutar tareas recurrentes y urgentes en sistemas que siempre están en ejecución. El demonio crond también está configurado para usar el comando anacron para ayudar a garantizar que los trabajos programados no se omitan debido a que el sistema no se ejecuta en un momento específico y, en general, para ejecutar trabajos estandarizados del sistema en un cronograma preestablecido.
+
+
+
+
+
+Capítulo 13. Análisis y almacenamiento de registros Objetivo Localizar e interpretar los registros del sistema para solucionar problemas y garantizar marcas de tiempo precisas para los eventos de registro. Secciones Arquitectura de registros del sistema (y cuestionario) Interpretación y gestión de eventos Syslog (y ejercicio guiado) Búsqueda e interpretación de entradas de registro del diario del sistema (y ejercicio guiado) Configuración de un diario del sistema persistente (y ejercicio guiado) Mantenimiento de tiempo sincronizado (y ejercicio guiado) Análisis y almacenamiento de registros de laboratorio
+
+
+
+
+

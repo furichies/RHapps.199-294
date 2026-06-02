@@ -1,0 +1,124 @@
+# Trabajo de laboratorio: Servicios de control de laboratorio y demonios
+# Tipo: lab
+# Capítulo: Capítulo 10. Control de servicios y demonios
+
+10.5. Servicios de control de laboratorio y demonios 10.5. Servicios de control de laboratorio y demonios Controla y monitorea los servicios del sistema y demonios que inicia systemd. Resultados Habilitar, deshabilitar, iniciar y detener servicios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade services-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. En la máquina del servidor, inicie el servicio psacct. 1. Verificar el estado actual del servicio psacct. Si el servicio psacct está detenido, inícielo. 2. Configure el servicio psacct para que se inicie al iniciar el sistema. 3. Verifique el estado del servicio rsyslog. Si el servicio rsyslog se está ejecutando, deténgalo y verifique que ya no esté activo. 4. Configure el servicio rsyslog para que no se inicie durante el inicio del sistema. 5. Reinicie la máquina del servidor para que la configuración de inicio de los servicios surta efecto. Espere a que la máquina se inicie antes de evaluar esta actividad. La máquina puede tardar unos minutos en iniciarse. 6.
+
+
+
+
+
+10.5. Servicios de control de laboratorio y solución de demonios Controle y monitoree los servicios del sistema y los demonios que inicia systemd. Resultados Habilitar, deshabilitar, iniciar y detener servicios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-review
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. En la máquina del servidor, inicie el servicio psacct. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Verifique el estado actual del servicio psacct. Si el servicio psacct está detenido, inícielo. 2. Verificar el estado del servicio psacct.
+
+[root@serverb ~]# systemctl status psacct
+
+○ psacct.service: contabilidad de procesos del kernel
+
+     Loaded: loaded (/usr/lib/systemd/system/psacct.service; disabled; preset: disabled)
+     Active: inactive (dead)
+
+El servicio psacct está en estado inactivo y deshabilitado. El estado deshabilitado confirma que el servicio no se inicia en el momento del arranque. 2.1. Inicie el servicio psacct.
+
+[root@serverb ~]# systemctl start psacct
+
+2.2. Verifique que el servicio psacct se esté ejecutando.
+
+[root@serverb ~]# systemctl is-active psacct
+
+activo 2.3. Configure el servicio psacct para que se inicie al iniciar el sistema. 3. Habilite el servicio psacct para que se inicie al iniciar el sistema. 3.1.
+
+
+
+
+
+10.5. Servicios de control de laboratorio y evaluación de demonios Como usuario estudiante en la estación de trabajo, utilice el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+[root@serverb ~]# systemctl enable psacct
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/psacct.service' → '/usr/lib/systemd/system/psacct.service'. Verifique que el servicio psacct esté habilitado para iniciarse en el inicio del sistema.
+
+[root@serverb ~]# systemctl is-enabled psacct
+
+habilitado 3.2. Verifique el estado del servicio rsyslog. Si el servicio rsyslog se está ejecutando, deténgalo y verifique que ya no esté activo. 4. Verifique el estado del servicio rsyslog. Observe que el servicio rsyslog se está ejecutando y habilitado para iniciarse en el momento del arranque.
+
+[root@serverb ~]# systemctl status rsyslog
+
+● rsyslog.service: servicio de registro del sistema
+
+     Loaded: loaded (/usr/lib/systemd/system/rsyslog.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2025-05-26 14:29:48 UTC; 2h 47min ago
+
+...salida omitida... 4.1. Detenga el servicio rsyslog.
+
+[root@serverb ~]# systemctl stop rsyslog
+
+4.2. Verifique que el servicio rsyslog esté detenido.
+
+[root@serverb ~]# systemctl is-active rsyslog
+
+inactivo 4.3. Configure el servicio rsyslog para que no se inicie durante el inicio del sistema. 5. Deshabilite el servicio rsyslog para que no se inicie durante el inicio del sistema.
+
+[root@serverb ~]# systemctl disable rsyslog
+
+Se eliminó '/etc/systemd/system/multi-user.target.wants/rsyslog.service'. 5.1. Verifique que el servicio rsyslog no se inicie durante el proceso de inicio.
+
+[root@serverb ~]# systemctl is-enabled rsyslog
+
+deshabilitado 5.2. Reinicie la máquina del servidor para que la configuración de inicio de los servicios surta efecto. Espere a que la máquina se inicie antes de evaluar esta actividad.
+
+[root@serverb ~]# systemctl reboot
+
+Conexión al servidor cerrada por el host remoto. Conexión al servidor cerrada.
+
+student@workstation:~$
+
+La máquina puede tardar unos minutos en iniciarse. 6.
+
+
+
+
+
+10.5. Servicios de control de laboratorio y demonios
+
+student@workstation:~$ lab grade services-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-review
+
+
+
+
+
+10.6. Resumen 10.6. Resumen En esta lección, aprendió que la utilidad systemd proporciona herramientas para activar recursos del sistema, demonios del servidor y otros procesos, tanto en el momento del arranque como en un sistema en ejecución. Por ejemplo, el comando systemctl habilita y deshabilita servicios y puede enumerar el estado de todos los demonios que se ejecutan en el sistema. Puede administrar cada demonio configurando su configuración de inicio automático o iniciando, deteniendo y reiniciando el demonio. La utilidad systemd también gestiona unidades de servicio, unidades de socket y unidades de ruta. Puede enmascarar una unidad de servicio para que no se ejecute, incluso para satisfacer dependencias.
+
+
+
+
+

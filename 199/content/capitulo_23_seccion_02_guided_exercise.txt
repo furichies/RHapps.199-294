@@ -1,0 +1,108 @@
+# Ejercicio Guiado: Ejercicio guiado Montaje de sistemas de archivos NFS
+# Tipo: guided_exercise
+# Capítulo: Capítulo 20. Acceso al almacenamiento conectado a la red
+
+20.2. Ejercicio guiado Montaje de sistemas de archivos NFS 20.2. Ejercicio guiado Montar sistemas de archivos NFS Busque, monte y desmonte exportaciones NFS remotas. Resultados Montar manualmente el directorio de exportación NFS. Monte el directorio de exportación NFS de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-nfs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. En la máquina servera, monte manualmente el servidor NFS serverb:/shares/public en el directorio /public y luego desmóntelo. 2. Cree el punto de montaje /public en la máquina del servidor.
+
+[root@servera ~]# mkdir /public
+
+2.1. Monte manualmente la exportación NFS /shares/public desde la máquina serverb en el directorio /public.
+
+[root@servera ~]# mount -t nfs serverb:/shares/public /public
+
+2.2. Enumere el contenido de la exportación NFS montada.
+
+[root@servera ~]# ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 2.3. Muestre las opciones del comando de montaje para la exportación NFS montada.
+
+[root@servera ~]# mount | grep public
+serverb:/shares/public on /public type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+2.4. Desmonte la exportación NFS. 2.5.
+
+
+
+
+
+20.2. Ejercicio guiado Montar sistemas de archivos NFS Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que
+
+[root@servera ~]# umount /public
+
+Monte de forma persistente la exportación serverb:/shares/public NFS en el directorio /public utilizando el archivo /etc/fstab. 3. Agregue una entrada al archivo /etc/fstab para que serverb:/shares/public export se monte en el directorio /public. Monte la exportación NFS para montar la exportación sincrónicamente con permiso de lectura/escritura.
+
+serverb:/shares/public /public nfs rw,sync 0 0
+
+3.1. Cargue el demonio systemd con la nueva configuración.
+
+[root@servera ~]# systemctl daemon-reload
+
+3.2. Monte la exportación NFS.
+
+[root@servera ~]# mount /public
+
+3.3. Enumere el contenido del directorio exportado.
+
+[root@servera ~]# ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 3.4. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+3.5. Después de que la máquina del servidor termine de reiniciarse, inicie sesión como usuario estudiante y pruebe la exportación NFS montada persistentemente. 4. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+[student@workstation ~]$ ssh student@servera
+
+[estudiante@servera ~]$ 4.1. Pruebe la exportación NFS que está montada en el directorio /public.
+
+[student@servera ~]$ ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 4.2. Muestra el contenido del archivo /public/hello.
+
+[student@servera ~]$ cat /public/hello
+
+¡Hola Mundo! 4.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[admin1@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada. 5.
+
+
+
+
+
+20.2. Ejercicio guiado Los recursos de montaje de sistemas de archivos NFS de ejercicios anteriores no afectan los próximos ejercicios.
+
+student@workstation:~$ lab finish nfsclient-nfs
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento 20.3. Montaje automático de dispositivos de almacenamiento Objetivos Montar automáticamente dispositivos de almacenamiento cuando se accede a ellos y desmontarlos cuando ya no estén en uso activo, configurando el montador automático. Montar exportaciones NFS con Automounter El automounter (autofs) es un servicio que monta automáticamente sistemas de archivos y exportaciones NFS según demanda, y los desmonta automáticamente cuando los recursos montados ya no están en uso. La función de montaje automático se creó para resolver el problema de que los usuarios sin privilegios no tienen permisos suficientes para usar el comando de montaje. Sin utilizar el comando de montaje, los usuarios sin privilegios no pueden acceder a medios extraíbles como CD, DVD y unidades de disco extraíbles. Además, si un sistema de archivos local o remoto no se monta en el arranque mediante el archivo /etc/fstab, entonces un usuario sin privilegios no puede montar ni acceder a esos sistemas de archivos desmontados. Los archivos de configuración del montador automático se completan con información de montaje del sistema de archivos, de manera similar a las entradas del archivo /etc/fstab. Aunque el archivo /etc/fstab monta los sistemas de archivos durante el arranque del sistema y permanecen
+
+mounted until system shutdown or other intervention, the automounter does not necessarily mount during system boot.
+
+El montador automático monta sistemas de archivos según demanda, cuando un usuario o una aplicación intenta ingresar al punto de montaje del sistema de archivos para acceder a los archivos. Beneficios de Automounter Automounter utiliza recursos equivalentes a los sistemas de archivos que se montan en el arranque, porque un sistema de archivos utiliza recursos sólo cuando un programa lee o escribe archivos abiertos. Los sistemas de archivos montados e inactivos, y los sistemas de archivos desmontados, casi no utilizan recursos. La ventaja de un montador automático es que, al desmontar el sistema de archivos cada vez que ya no está en uso, el sistema de archivos está protegido contra daños inesperados cuando está abierto. Cuando se indica al sistema de archivos que se monte nuevamente, el servicio autofs usa la configuración de montaje más actual, a diferencia del archivo /etc/fstab, que aún puede usar una configuración que se montó hace meses durante el último arranque del sistema. Además, si la configuración de su servidor NFS incluye rutas y servidores redundantes, el montador automático puede seleccionar la conexión más rápida cada vez que se solicita un nuevo sistema de archivos. El servicio Automounter El servicio Automounter admite los mismos sistemas de archivos locales y remotos que el archivo /etc/fstab, incluidos los protocolos de intercambio de archivos NFS y SMB, y admite las mismas opciones de montaje específicas del protocolo, incluidos los parámetros de seguridad. Los sistemas de archivos que se montan mediante el montador automático están disponibles de forma predeterminada para todos los usuarios, pero pueden restringirse mediante opciones de permiso de acceso. Debido a que el montador automático es una configuración del lado del cliente que utiliza los comandos estándar montar y desmontar para administrar sistemas de archivos, los sistemas de archivos montados automáticamente en uso exhiben el mismo comportamiento que los sistemas de archivos que se montan usando el archivo /etc/fstab. La diferencia es que un sistema de archivos de montaje automático permanece desmontado hasta que se accede al punto de montaje, lo que hace que el sistema de archivos se monte inmediatamente y permanezca montado cuando el sistema de archivos está en uso. Cuando todos los archivos del sistema de archivos están cerrados y todos los usuarios y procesos abandonan el directorio del punto de montaje, el montador automático desmontará el sistema de archivos después de un tiempo de espera mínimo.
+
+
+
+
+

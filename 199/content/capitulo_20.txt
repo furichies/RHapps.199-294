@@ -1,0 +1,708 @@
+# Capítulo 17. Control y solución de problemas del proceso de arranque
+
+## 17.1. Administrar el cargador de arranque y la línea de comandos del kernel
+
+17.1. Administrar el cargador de arranque y la línea de comandos del kernel 17.1. Administrar el cargador de arranque y la línea de comandos del kernel Objetivos Describir cómo el cargador de arranque selecciona y carga el sistema operativo, reinstala el cargador de arranque y modifica la configuración del cargador de arranque y los argumentos de la línea de comandos del kernel. El cargador de arranque Los sistemas informáticos modernos son combinaciones complejas de hardware y software. Pasar de un estado indefinido y apagado a un sistema en ejecución con un mensaje de inicio de sesión requiere que muchas piezas de hardware y software funcionen juntas. Cuando se enciende una computadora, carga un sistema de arranque de firmware desde un chip ROM en la placa base. En las máquinas x86 modernas, este sistema de arranque de firmware suele ser una interfaz de firmware extensible unificada (UEFI) o un sistema básico de entrada/salida (BIOS). La BIOS era más común en las máquinas fabricadas antes de 2020 y UEFI es el sistema más común presente en las placas base actuales. El trabajo del sistema de arranque del firmware es cargar un cargador de arranque desde un disco y pasar el control del proceso de arranque al cargador de arranque. Los cargadores de arranque son programas diseñados para interactuar con el sistema de arranque del firmware, configurar el sistema para el arranque y luego iniciar el kernel para continuar con la inicialización del sistema. El cargador de arranque predeterminado para Red Hat Enterprise Linux 10 es el GRand Unified Bootloader versión 2 (GRUB2). GRUB2 con UEFI En un sistema UEFI, el firmware de arranque lee la configuración de la RAM no volátil (NVRAM) para determinar qué disco y aplicación de interfaz de firmware extensible (EFI) cargar. El disco normalmente contiene una partición del sistema EFI, que generalmente está montada en el directorio /boot/efi. GRUB2 genera archivos que el sistema UEFI puede cargar. Una vez cargada la aplicación EFI del cargador de arranque GRUB2, el sistema pasa a la siguiente etapa de arranque. GRUB2 con BIOS En un sistema BIOS, el firmware de arranque lee un sector de arranque especialmente formateado en un disco para la imagen del cargador de arranque boot.img. Esta imagen del cargador de arranque carga la imagen core.img desde el espacio MBR sin particiones antes de la primera partición. La imagen core.img carga módulos adicionales que pueden inicializar sistemas de archivos y el sistema pasa a la siguiente etapa de arranque. GRUB2 genera e instala estas imágenes en el espacio MBR del disco. Etapas de inicio adicionales Después de que GRUB2 haya inicializado y cargado completamente los discos, presenta un menú de inicio al usuario.
+
+
+
+
+
+17.1. Administrar el cargador de inicio y la línea de comandos del kernel Figura 23. Menú GRUB2 Desde este menú de inicio, puede seleccionar qué kernel preconfigurado iniciar, así como aplicar cualquier argumento del kernel para iniciar. El paquete del kernel de Linux normalmente genera estas entradas del menú de inicio cuando instala una nueva versión. Para modificar una entrada de inicio desde el menú de GRUB2, puede utilizar el editor integrado. Puede acceder al editor en GRUB2 presionando E.
+
+
+
+
+
+17.1. Administrar el cargador de arranque y la línea de comandos del kernel Figura 24. Editor de GRUB2 Los cambios realizados dentro del editor de GRUB2 se aplican sólo a esa instancia de arranque. Para que los cambios sean persistentes en futuras instancias de arranque, puede realizar esos cambios utilizando el comando grubby. Control de GRUB2 desde un sistema iniciado Puede modificar la configuración predeterminada de GRUB2 utilizando el comando grubby. Puede utilizar el comando grubby para realizar diversas tareas, como agregar o eliminar argumentos del kernel, cambiar la entrada predeterminada del menú de inicio y ver información sobre las entradas existentes del menú de inicio. Para ver información sobre una entrada existente, puede usar la opción --info del comando sucio.
+
+user@host:~$ grubby --info 1
+index=1 
+kernel="/boot/vmlinuz-6.12.0-55.12.1.el10_0.x86_64" 
+args="console=tty0 ... crashkernel=2G-64G:256M,64G-:512M $tuned_params" 
+root="UUID=15507695-22bb-4c65-94e6-a438e095983f" 
+initrd="/boot/initramfs-6.12.0-55.12.1.el10_0.x86_64.img $tuned_initrd" 
+title="Red Hat Enterprise Linux (6.12.0-55.12.1.el10_0.x86_64) 10.0 (Coughlan)" 
+id="b70d796f931842cb9776f658cd068435-6.12.0-55.12.1.el10_0.x86_64" 
+
+El valor del índice es el número de entrada para la lista del menú de inicio, comenzando en 0. El valor del kernel es la ruta al kernel de Linux que carga GRUB2. El valor args es una lista de argumentos del kernel que se pasan al kernel de Linux. El valor raíz es el dispositivo de bloque en el que existen el kernel y la imagen initramfs. El valor initrd es la ruta a la imagen inicial del sistema de archivos RAM, dentro de la cual arrancan las primeras etapas de Linux. El valor del título es el nombre que se muestra para la entrada de inicio en el menú de inicio de GRUB2. El valor de identificación es un identificador único para esta entrada de inicio.
+
+
+
+
+
+17.1. Administrar el cargador de arranque y la línea de comandos del kernel Para cambiar la entrada de arranque predeterminada, de modo que GRUB2 la elija automáticamente en el arranque, puede usar la opción del comando grubby --set-default-index.
+
+root@host:~# grubby --set-default-index 0
+
+The default is /boot/loader/entries/ffffffffffffffffffffffffffffffff-6.12.0-55.9.1.el10_0.x86_64.conf with index 0 and kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 Kernel Command-line Arguments You can pass various arguments to the Linux kernel to configurar el sistema en el arranque. En algunos casos, un argumento de línea de comandos es la única forma de cambiar una configuración, como definir cómo se comporta el kernel si falla. Los argumentos de línea de comandos del kernel disponibles y el comportamiento exacto dependen de la versión del kernel de Linux que haya instalado. Para agregar un argumento de línea de comando o realizar otros cambios relacionados con el kernel, puede usar el comando sucio: opción actualizar kernel. El siguiente ejemplo agrega el argumento de línea de comandos rhgb quiet para suprimir los mensajes de inicio del kernel mediante la opción --args:
+
+root@host:~# grubby --update-kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 \
+
+--args="rhgb quiet" Para eliminar el argumento de la línea de comandos, agregue el argumento rhgb quiet usando la opción --remove-args:
+
+root@host:~# grubby --update-kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 \
+
+--remove-args="rhgb quiet" Referencias a las páginas man grubby(8), kernel-command-line(7), bootparam(7) y dracut.cmdline(7) Para obtener más información, consulte el capítulo Configuración de los parámetros de la línea de comandos del kernel en la guía Administración, monitoreo y actualización del kernel en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/administración_monitoreo_y_actualización_del_kernel/index#configuración-de-los-parámetros-de-línea-de-comando-del-kernel
+
+
+
+
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel 17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel Modificar la configuración del cargador de arranque para controlar el proceso de arranque. Resultados Reinicie el sistema y examine el menú de GRUB2. Vea la configuración actual del cargador de arranque desde la línea de comando. Vuelva a configurar el cargador de arranque para seleccionar un kernel diferente como predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-grub
+
+Instrucciones Reinicie la máquina del servidor y luego inspeccione el menú de GRUB2. Seleccione la opción de inicio predeterminada. 1. Abra la consola de la máquina del servidor y luego reinicie la máquina enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. 1.1. Después de que se inicialice el cargador de arranque, presione Esc para detener el temporizador del cargador de arranque. La entrada seleccionada es el kernel predeterminado para iniciar la máquina. 1.2. Presione E para abrir el editor de los argumentos iniciales de la línea de comandos para la opción de inicio predeterminada. No realice ningún cambio en la configuración. 1.3. Presione Ctrl+X o use el teclado en pantalla para enviar F10 a la consola para iniciar el sistema con la configuración predeterminada. 1.4. Vea información sobre la configuración de arranque del kernel predeterminada. 2. Inicie sesión en la máquina del servidor como usuario root. Utilice redhat como contraseña.
+
+servera login: root
+
+Contraseña: redhat ...salida omitida... [root@servera ~]# 2.1. Obtenga el índice del kernel predeterminado usando el comando grubby:
+
+[root@servera ~]# grubby --default-index
+
+1 2.2. Ver la información del kernel en el índice 1: 2.3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel 17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel Modificar la configuración del cargador de arranque para controlar el proceso de arranque. Resultados Reinicie el sistema y examine el menú de GRUB2. Vea la configuración actual del cargador de arranque desde la línea de comando. Vuelva a configurar el cargador de arranque para seleccionar un kernel diferente como predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-grub
+
+Instrucciones Reinicie la máquina del servidor y luego inspeccione el menú de GRUB2. Seleccione la opción de inicio predeterminada. 1. Abra la consola de la máquina del servidor y luego reinicie la máquina enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. 1.1. Después de que se inicialice el cargador de arranque, presione Esc para detener el temporizador del cargador de arranque. La entrada seleccionada es el kernel predeterminado para iniciar la máquina. 1.2. Presione E para abrir el editor de los argumentos iniciales de la línea de comandos para la opción de inicio predeterminada. No realice ningún cambio en la configuración. 1.3. Presione Ctrl+X o use el teclado en pantalla para enviar F10 a la consola para iniciar el sistema con la configuración predeterminada. 1.4. Vea información sobre la configuración de arranque del kernel predeterminada. 2. Inicie sesión en la máquina del servidor como usuario root. Utilice redhat como contraseña.
+
+servera login: root
+
+Contraseña: redhat ...salida omitida... [root@servera ~]# 2.1. Obtenga el índice del kernel predeterminado usando el comando grubby:
+
+[root@servera ~]# grubby --default-index
+
+1 2.2. Ver la información del kernel en el índice 1: 2.3.
+
+
+
+
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel
+
+[root@servera ~]# grubby --info 1
+index=1
+kernel="/boot/vmlinuz-6.12.0-55.12.1.el10_0.x86_64"
+args="console=tty0 console=ttyS0,115200n8 no_timer_check crashkernel=2G-64G:256M,64G-:512M 
+
+$params_tuned"
+
+root="UUID=15507695-22bb-4c65-94e6-a438e095983f"
+initrd="/boot/initramfs-6.12.0-55.12.1.el10_0.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (6.12.0-55.12.1.el10_0.x86_64) 10.0 (Coughlan)"
+id="b70d796f931842cb9776f658cd068435-6.12.0-55.12.1.el10_0.x86_64"
+
+Utilice el comando grubby para seleccionar el kernel en el índice 0 para el arranque. Tenga en cuenta el núcleo de este índice que se utilizará en el siguiente paso.
+
+[root@servera ~]# grubby --set-default-index 0
+
+The default is /boot/loader/entries/ffffffffffffffffffffffffffffffff-6.12.0-55.9.1.el10_0.x86_64.conf with index 0 and kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 3. Use the grubby command to add the rhgb quiet kernel command-line argumento para el nuevo kernel predeterminado. Reinicie el sistema para ver los efectos. 4. Agregue el argumento de línea de comandos rhgb quiet kernel al nuevo kernel predeterminado.
+
+[root@servera ~]# grubby --update-kernel \
+/boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 --args="rhgb quiet"
+
+4.1. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+4.2. La máquina del servidor ahora arranca usando el kernel predeterminado recién configurado. Tenga en cuenta que la ronda inicial de mensajes del kernel ahora está suprimida y los primeros mensajes que ve son de la unidad systemd. 5. Revierta los cambios en los argumentos de la línea de comandos utilizando el comando sucio y vuelva al kernel más reciente. Reinicie el sistema nuevamente y verifique que arranque correctamente. 6. Inicie sesión en la máquina del servidor como usuario root. Utilice redhat como contraseña
+
+servera login: root
+
+Contraseña: redhat ...salida omitida... [root@servera ~]# 6.1. Cambie el índice del kernel predeterminado a 1. Tenga en cuenta el kernel de este índice que se utilizará en el siguiente paso.
+
+[root@servera ~]# grubby --set-default 1
+
+El valor predeterminado es /boot/loader/entries/b70d796f931842cb9776f658cd068435-6.12.0-55.12.1.el10_0.x86_64.conf con índice 1 y kernel /boot/vmlinuz-6.12.0-55.12.1.el10_0.x86_64 6.2. Revierta los cambios en el kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64.
+
+[root@servera ~]# grubby --update-kernel \
+/boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 --remove-args="rhgb quiet"
+
+6.3. Reinicie el sistema para verificar que arranca correctamente. 6.4.
+
+
+
+
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel. Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-grub
+[root@servera ~]# systemctl reboot
+
+Cierre la consola de la máquina del servidor. 7.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio 17.3. Exploración del proceso de inicio y selección de un destino de inicio Objetivos Describir cómo se inicia un sistema Red Hat Enterprise Linux, cambiar el destino de inicio predeterminado e iniciar manualmente el sistema en un destino distinto al predeterminado. Inicialización del sistema en Red Hat Enterprise Linux 10 Una vez que se enciende el sistema y se inicia el cargador de arranque, comienza el proceso de inicialización del sistema. La siguiente lista ofrece una descripción general de alto nivel del proceso de inicialización del sistema en Red Hat Enterprise Linux 10. El cargador de arranque carga el kernel y la imagen initramfs desde el disco y los coloca en la memoria. La imagen initramfs es un archivo con los módulos del kernel para todo el hardware requerido en el arranque, scripts de inicialización y más. En RHEL 10, la imagen initramfs contiene un sistema de archivos raíz de arranque con un kernel en ejecución y una unidad systemd. Puede utilizar el comando lsinitrd para inspeccionar la imagen initramfs y extraer su contenido. El cargador de arranque pasa el control al kernel, junto con las opciones especificadas en la línea de comando del kernel y la ubicación de la imagen initramfs en la memoria. El kernel inicializa todo el hardware para el cual puede encontrar un controlador en la imagen initramfs y luego ejecuta el
+
+/sbin/init script from the initramfs image as PID 1. You can override this script by using the init= kernel
+
+parámetro. En RHEL 10, el script /sbin/init es un enlace simbólico a la unidad systemd. La unidad systemd de la imagen initramfs ejecuta todas las unidades para el objetivo initrd.target. Esta unidad incluye el montaje del sistema de archivos raíz en el directorio /sysroot, que aparece en el archivo /etc/fstab del disco. El kernel cambia (pivota) el sistema de archivos raíz desde la imagen initramfs al sistema de archivos raíz en el directorio /sysroot. Luego, la unidad systemd se vuelve a ejecutar utilizando la copia instalada de la unidad systemd en el disco. Entonces, la unidad systemd tiene el control total del proceso de arranque. La unidad systemd busca un destino predeterminado, que está configurado en el sistema o se pasa desde la línea de comandos del kernel. Luego, la unidad systemd inicia (y detiene) las unidades para cumplir con la configuración para ese objetivo y resuelve automáticamente las dependencias entre unidades. Estos objetivos normalmente inician un inicio de sesión basado en texto o una pantalla de inicio de sesión gráfica, completando así el proceso de inicio. Selección de un objetivo systemd Un objetivo systemd es un conjunto de unidades systemd que el sistema debe comenzar para alcanzar el estado deseado. La siguiente tabla enumera los objetivos más importantes.
+
+
+
+
+
+
+
+## 17.3. Exploración del proceso de inicio y selección de un destino de inicio
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio 17.3. Exploración del proceso de inicio y selección de un destino de inicio Objetivos Describir cómo se inicia un sistema Red Hat Enterprise Linux, cambiar el destino de inicio predeterminado e iniciar manualmente el sistema en un destino distinto al predeterminado. Inicialización del sistema en Red Hat Enterprise Linux 10 Una vez que se enciende el sistema y se inicia el cargador de arranque, comienza el proceso de inicialización del sistema. La siguiente lista ofrece una descripción general de alto nivel del proceso de inicialización del sistema en Red Hat Enterprise Linux 10. El cargador de arranque carga el kernel y la imagen initramfs desde el disco y los coloca en la memoria. La imagen initramfs es un archivo con los módulos del kernel para todo el hardware requerido en el arranque, scripts de inicialización y más. En RHEL 10, la imagen initramfs contiene un sistema de archivos raíz de arranque con un kernel en ejecución y una unidad systemd. Puede utilizar el comando lsinitrd para inspeccionar la imagen initramfs y extraer su contenido. El cargador de arranque pasa el control al kernel, junto con las opciones especificadas en la línea de comando del kernel y la ubicación de la imagen initramfs en la memoria. El kernel inicializa todo el hardware para el cual puede encontrar un controlador en la imagen initramfs y luego ejecuta el
+
+/sbin/init script from the initramfs image as PID 1. You can override this script by using the init= kernel
+
+parámetro. En RHEL 10, el script /sbin/init es un enlace simbólico a la unidad systemd. La unidad systemd de la imagen initramfs ejecuta todas las unidades para el objetivo initrd.target. Esta unidad incluye el montaje del sistema de archivos raíz en el directorio /sysroot, que aparece en el archivo /etc/fstab del disco. El kernel cambia (pivota) el sistema de archivos raíz desde la imagen initramfs al sistema de archivos raíz en el directorio /sysroot. Luego, la unidad systemd se vuelve a ejecutar utilizando la copia instalada de la unidad systemd en el disco. Entonces, la unidad systemd tiene el control total del proceso de arranque. La unidad systemd busca un destino predeterminado, que está configurado en el sistema o se pasa desde la línea de comandos del kernel. Luego, la unidad systemd inicia (y detiene) las unidades para cumplir con la configuración para ese objetivo y resuelve automáticamente las dependencias entre unidades. Estos objetivos normalmente inician un inicio de sesión basado en texto o una pantalla de inicio de sesión gráfica, completando así el proceso de inicio. Selección de un objetivo systemd Un objetivo systemd es un conjunto de unidades systemd que el sistema debe comenzar para alcanzar el estado deseado. La siguiente tabla enumera los objetivos más importantes.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio Tabla 22. Destinos comúnmente utilizados graphical.target Este destino admite múltiples usuarios y proporciona inicios de sesión gráficos y basados ​​en texto. multi-user.target Este destino admite múltiples usuarios y proporciona inicios de sesión basados ​​únicamente en texto. Rescue.target Este objetivo proporciona un sistema de usuario único para permitir la reparación de su sistema. Emergency.target Este objetivo inicia el sistema mínimo para reparar su sistema cuando la unidad Rescue.target no se inicia. Un objetivo puede ser parte de otro objetivo. Por ejemplo, la unidad de destino gráfico incluye la unidad de destino multiusuario, que depende de la unidad de destino básico y otras. Puede ver estas dependencias con el siguiente comando:
+
+user@host:~$ systemctl list-dependencies graphical.target | grep target
+
+objetivo.gráfico * └─objetivo.multiusuario * ├─destino.basic * │ ├─destino.rutas * │ ├─destino.slices * │ ├─sockets.target * │ ├─sysinit.target * │ │ ├─cryptsetup.target * | | ├─integritysetup.target * │ │ ├─local-fs.target ...salida omitida... Para enumerar los objetivos disponibles, utilice el siguiente comando:
+
+user@host:~$ systemctl list-units --type=target --all
+  UNIT                      LOAD      ACTIVE   SUB    DESCRIPTION
+  ---------------------------------------------------------------------------
+  basic.target              loaded    active   active Basic System
+
+...salida omitida...
+
+  cloud-config.target       loaded    active   active Cloud-config availability
+  cloud-init.target         loaded    active   active Cloud-init target
+  cryptsetup-pre.target     loaded    inactive dead   Local Encrypted Volumes (Pre)
+  cryptsetup.target         loaded    active   active Local Encrypted Volumes
+
+...salida omitida... Seleccione un destino en tiempo de ejecución En un sistema en ejecución, los administradores pueden cambiar a un destino diferente usando el comando systemctl Insulated.
+
+root@host:~# systemctl isolate multi-user.target
+
+Aislar un objetivo detiene todos los servicios que el objetivo no requiere (y sus dependencias) e inicia cualquier servicio requerido que aún no se haya iniciado. Propósito objetivo
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio No todos los destinos se pueden aislar. Puede aislar solo destinos donde la opción AllowIsolate=yes esté configurada en sus archivos de unidad. Por ejemplo, puedes aislar el objetivo gráfico:
+
+user@host:~$ systemctl cat graphical.target
+# /usr/lib/systemd/system/graphical.target
+
+...salida omitida... [Unidad] Descripción=Interfaz gráfica Documentación=man:systemd.special(7) Requires=multi-user.target Wants=display-manager.service Conflicts=rescue.service rescate.target After=multi-user.target rescate.servicio rescate.target display-manager.service AllowIsolate=yes Pero no puede aislar el objetivo de cryptsetup:
+
+user@host:~$ systemctl cat cryptsetup.target
+# /usr/lib/systemd/system/cryptsetup.target
+
+...salida omitida... [Unidad] Descripción=Volúmenes cifrados locales Documentación=man:systemd.special(7) Establecer un destino predeterminado Cuando se inicia el sistema, la unidad systemd activa el destino default.target. Normalmente, el archivo default.target en el directorio /etc/systemd/system es un enlace simbólico a los destinos graphical.target o multi-user.target. En lugar de editar este enlace simbólico manualmente, el comando systemctl proporciona dos subcomandos para administrar este
+
+link: get-default and set-default.
+
+Utilice el comando systemctl para obtener el objetivo predeterminado:
+
+root@host:~# systemctl get-default
+
+multi-user.target Utilice el comando systemctl para configurar graphical.target como destino predeterminado:
+
+root@host:~# systemctl set-default graphical.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/graphical.target'. Utilice el comando systemctl para verificar el destino predeterminado:
+
+root@host:~# systemctl get-default
+
+Graphical.target Utilice los objetivos de emergencia y rescate Al agregar las opciones systemd.unit=rescue.target o systemd.unit=emergency.target a la línea de comando del kernel desde el cargador de arranque, el sistema ingresa a un shell de rescate o emergencia en lugar de un proceso de arranque estándar. Ambos shells requieren la contraseña de root.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio El destino de emergencia monta el sistema de archivos raíz en modo de solo lectura. En este punto, el usuario root no puede cambiar el archivo /etc/fstab hasta que la unidad se vuelva a montar en modo lectura/escritura usando el comando mount -o remount,rw /. Por el contrario, el objetivo de rescate espera a que se complete la unidad sysinit.target, de modo que se inicialice una mayor parte del sistema, como el servicio de registro o el montaje de sistemas de archivos con acceso de lectura/escritura. Los administradores pueden utilizar estos shells para solucionar problemas que impiden que el sistema se inicie como se esperaba, por ejemplo, un bucle de dependencia entre servicios o una entrada incorrecta en el archivo /etc/fstab. Después de salir de estos shells, el sistema continúa con el proceso de inicio estándar. Seleccione un destino diferente en el momento del arranque Para seleccionar un destino diferente en el momento del arranque, agregue la opción systemd.unit=target.target a la línea de comando del kernel desde el cargador de arranque. Por ejemplo, para iniciar el sistema en un shell de rescate donde puede cambiar la configuración del sistema casi sin
+
+services running, append the following option to the kernel command line from the boot loader:
+systemd.unit=rescue.target
+
+Este cambio de configuración afecta solo a un inicio y es una herramienta útil para solucionar problemas del proceso de inicio. Para utilizar este método para seleccionar un destino diferente, siga estos pasos: Apagar y reiniciar Para apagar o reiniciar un sistema en ejecución desde la línea de comandos, puede utilizar el comando systemctl. El comando systemctl poweroff detiene todos los servicios en ejecución, desmonta todos los sistemas de archivos (o los vuelve a montar como de solo lectura cuando no se pueden desmontar) y luego apaga el sistema. El comando systemctl reboot detiene todos los servicios en ejecución, desmonta todos los sistemas de archivos y luego reinicia el sistema. También puede utilizar la versión más corta de estos comandos, poweroff y reboot, que son enlaces simbólicos al
+
+systemctl unit equivalents.
+
+Nota Los comandos systemctl halt y halt también están disponibles para detener el sistema. A diferencia del apagado
+
+command, these commands do not power off the system; they bring down a system to a point where it is safe
+
+para apagarlo manualmente. Inicie o reinicie el sistema. 1. En el menú de GRUB2, interrumpa la cuenta regresiva presionando cualquier tecla (excepto Enter, que inicia un inicio normal). 2. Mueva el cursor a la entrada del kernel para comenzar. 3. Presione E para editar la entrada actual. 4. Mueva el cursor a la línea que comienza con Linux, que es la línea de comando del kernel. 5. Agregue systemd.unit=target.target; por ejemplo, systemd.unit=emergency.target. 6. Presione Ctrl+X para iniciar con estos cambios. 7.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio Referencias a las páginas man de bootup(7), dracut.bootup(7), lsinitrd(1), systemd.target(5), systemd.special(7), sulogin(8) y systemctl(1). Para obtener más información, consulte el capítulo Administración de systemd en la guía Uso de archivos de unidad systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_systemd_unit_files_to_customize_and_optimize_your_system/index#managing-systemd
+
+
+
+
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio 17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Cambie el destino de inicio predeterminado e inicie manualmente el sistema en un destino distinto al predeterminado. Resultados Actualice el destino predeterminado del sistema y utilice un destino temporal desde el cargador de arranque. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-selecting
+
+Instrucciones Abra la consola de la máquina de la estación de trabajo y confirme que el destino gráfico es el destino de inicio predeterminado.
+
+student@workstation:~$ systemctl get-default
+
+Graphical.target 1. Cambie manualmente al destino multiusuario sin reiniciar. Utilice el comando sudo para escalar los privilegios. Utilice estudiante como contraseña.
+
+student@workstation:~$ sudo systemctl isolate multi-user.target
+
+[sudo] contraseña para estudiante: estudiante 2. El sistema ahora presenta una consola basada en texto en lugar de una interfaz gráfica. Inicie sesión como usuario root. Utilice redhat como contraseña.
+
+workstation login: root
+
+Contraseña: sombrero rojo
+
+root@workstation:~#
+
+3. Configure la máquina de la estación de trabajo para que inicie automáticamente en el destino multiusuario y luego reinicie la máquina de la estación de trabajo para verificar la configuración. Cuando termine, cambie el objetivo de la unidad systemd nuevamente al objetivo gráfico. 4. Establezca el objetivo predeterminado en el objetivo multiusuario.
+
+root@workstation:~# systemctl set-default multi-user.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/multi-user.target'. 4.1. Reinicie la máquina de la estación de trabajo.
+
+root@workstation:~# systemctl reboot
+
+4.2. Después de que el sistema se reinicie, espere a que expire el tiempo de espera del menú GRUB2 o presione Entrar para omitir la cuenta regresiva. El sistema presenta una consola basada en texto y no una pantalla de inicio de sesión gráfica. 4.3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio 17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Cambie el destino de inicio predeterminado e inicie manualmente el sistema en un destino distinto al predeterminado. Resultados Actualice el destino predeterminado del sistema y utilice un destino temporal desde el cargador de arranque. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-selecting
+
+Instrucciones Abra la consola de la máquina de la estación de trabajo y confirme que el destino gráfico es el destino de inicio predeterminado.
+
+student@workstation:~$ systemctl get-default
+
+Graphical.target 1. Cambie manualmente al destino multiusuario sin reiniciar. Utilice el comando sudo para escalar los privilegios. Utilice estudiante como contraseña.
+
+student@workstation:~$ sudo systemctl isolate multi-user.target
+
+[sudo] contraseña para estudiante: estudiante 2. El sistema ahora presenta una consola basada en texto en lugar de una interfaz gráfica. Inicie sesión como usuario root. Utilice redhat como contraseña.
+
+workstation login: root
+
+Contraseña: sombrero rojo
+
+root@workstation:~#
+
+3. Configure la máquina de la estación de trabajo para que inicie automáticamente en el destino multiusuario y luego reinicie la máquina de la estación de trabajo para verificar la configuración. Cuando termine, cambie el objetivo de la unidad systemd nuevamente al objetivo gráfico. 4. Establezca el objetivo predeterminado en el objetivo multiusuario.
+
+root@workstation:~# systemctl set-default multi-user.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/multi-user.target'. 4.1. Reinicie la máquina de la estación de trabajo.
+
+root@workstation:~# systemctl reboot
+
+4.2. Después de que el sistema se reinicie, espere a que expire el tiempo de espera del menú GRUB2 o presione Entrar para omitir la cuenta regresiva. El sistema presenta una consola basada en texto y no una pantalla de inicio de sesión gráfica. 4.3.
+
+
+
+
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Inicie sesión como usuario raíz. Utilice redhat como contraseña.
+
+workstation login: root
+
+Contraseña: sombrero rojo
+
+root@workstation:~#
+
+4.4. Vuelva a establecer el objetivo de unidad systemd predeterminado en el objetivo gráfico.
+
+root@workstation:~# systemctl set-default graphical.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/graphical.target'. 4.5. El paso anterior concluye la primera parte del ejercicio, donde practicará la configuración del objetivo predeterminado de systemd. En esta segunda parte del ejercicio, practicará la recuperación del sistema iniciando desde el destino de rescate. Acceda al cargador de arranque reiniciando nuevamente la máquina de la estación de trabajo. Desde el menú del cargador de arranque, inicie en el objetivo de rescate. 5. Reinicie la máquina de la estación de trabajo.
+
+root@workstation:~# systemctl reboot
+
+5.1. Cuando aparezca el menú del cargador de arranque, presione cualquier tecla para interrumpir la cuenta atrás (excepto Enter, que inicia un arranque normal). 5.2. Pulsa Esc para interrumpir la cuenta atrás. 5.3. Presione E para editar la entrada predeterminada actual. 5.4. Usando las teclas del cursor, vaya a la línea que comienza con el texto de Linux. 5.5. Presione Fin o Ctrl+E para mover el cursor al final de la línea. 5.6. Agregue la opción systemd.unit=rescue.target al final de la línea. Nota Si el texto en la consola es difícil de ver, considere cambiar la resolución al editar la línea del kernel en la entrada del cargador de arranque. Para cambiar la resolución de la consola, agregue el parámetro video=640x480 o vga=ask en la línea que comienza con la palabra linux, después del parámetro rd.break. Para la mayoría de las consolas, un
+
+resolution of 640x480 is enough. By using the vga=ask parameter, you can choose a more suitable
+
+resolución para su entorno. 5.7. Presione Ctrl+X para iniciar usando la configuración modificada. 5.8. Inicie sesión en modo rescate. Es posible que deba presionar Enter para obtener un mensaje de limpieza. Utilice redhat como contraseña. Proporcione la contraseña de root para mantenimiento (o presione Control-D para continuar): redhat
+
+root@workstation:~#
+
+5.9. Confirme que el sistema de archivos raíz esté en modo lectura/escritura. 6.
+
+
+
+
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-selecting
+root@workstation:~# mount
+
+...salida omitida...
+
+/dev/sda3 on / type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+...salida omitida... Presione Ctrl+D para continuar con el proceso de arranque. El sistema arranca en modo gráfico. Nota En su configuración predeterminada, el destino gráfico inicia el sistema en una pantalla de inicio de sesión gráfica donde puede iniciar sesión como cualquier usuario. En el entorno de laboratorio, el objetivo gráfico está configurado para iniciar sesión automáticamente como usuario estudiante. 7.
+
+
+
+
+
+17.5. Reparación de sistemas de archivos dañados en el momento del arranque 17.5. Reparación de sistemas de archivos dañados en el momento del arranque Objetivos Reparar sistemas de archivos que están mal configurados o dañados y que hacen que el proceso de arranque se detenga prematuramente. Problemas con el sistema de archivos Durante el proceso de arranque, la unidad systemd monta los sistemas de archivos persistentes que están definidos en el archivo /etc/fstab. Los errores en el archivo /etc/fstab o sistemas de archivos dañados pueden impedir que un sistema complete el proceso de inicio. En algunos escenarios de falla, el sistema sale del proceso de inicio y abre un shell de emergencia que requiere la contraseña del usuario root. La siguiente lista describe algunos problemas comunes de montaje del sistema de archivos al analizar el archivo /etc/fstab durante el proceso.
+
+boot process:
+
+Sistema de archivos dañado La unidad systemd intenta reparar el sistema de archivos. Si el problema no se puede reparar automáticamente, el sistema abre un shell de emergencia. Dispositivo de almacenamiento, UUID de dispositivo o punto de montaje inexistente. La unidad systemd agota el tiempo de espera a que el dispositivo de almacenamiento esté disponible. Si el dispositivo no responde, el sistema abre un caparazón de emergencia. Comprobación y reparación de daños en el sistema de archivos Red Hat Enterprise Linux 10 proporciona herramientas para comprobar y reparar problemas del sistema de archivos. En el caso de problemas menores que se detectan durante el arranque, estas utilidades intentan reparar el sistema de archivos automáticamente. Para los sistemas de archivos de diario, como XFS y ext4, puede que solo sea necesario reproducir el diario, lo que suele ser una operación rápida. En el caso de problemas de corrupción más graves del sistema de archivos, un administrador del sistema puede utilizar las herramientas para comprobar y reparar los sistemas de archivos manualmente. La herramienta que ayuda a mantener los sistemas de archivos en buen estado durante el arranque se conoce genéricamente como herramienta de verificación del sistema de archivos o comando fsck. Sin embargo, la herramienta que repara el sistema de archivos XFS no sigue la misma convención de nomenclatura. Aunque hay un archivo binario fsck.xfs en el sistema, su único propósito es satisfacer los requisitos de arranque y sale inmediatamente con un código de salida de 0. El comando xfs_repair puede verificar y reparar problemas con los sistemas de archivos XFS que una reparación automática no soluciona.
+
+root@host:~# xfs_repair block-device
+
+Para realizar operaciones de verificación y reparación en sistemas de archivos ext4, use el comando fsck.ext4, que es un enlace físico al comando e2fsck que también cubre los sistemas de archivos ext3 y ext2 heredados. Utilice la opción -p para reparar automáticamente problemas menores sin intervención del usuario.
+
+
+
+
+
+
+
+## 17.5. Reparación de sistemas de archivos dañados en el momento del arranque
+
+17.5. Reparación de sistemas de archivos dañados en el momento del arranque 17.5. Reparación de sistemas de archivos dañados en el momento del arranque Objetivos Reparar sistemas de archivos que están mal configurados o dañados y que hacen que el proceso de arranque se detenga prematuramente. Problemas con el sistema de archivos Durante el proceso de arranque, la unidad systemd monta los sistemas de archivos persistentes que están definidos en el archivo /etc/fstab. Los errores en el archivo /etc/fstab o sistemas de archivos dañados pueden impedir que un sistema complete el proceso de inicio. En algunos escenarios de falla, el sistema sale del proceso de inicio y abre un shell de emergencia que requiere la contraseña del usuario root. La siguiente lista describe algunos problemas comunes de montaje del sistema de archivos al analizar el archivo /etc/fstab durante el proceso.
+
+boot process:
+
+Sistema de archivos dañado La unidad systemd intenta reparar el sistema de archivos. Si el problema no se puede reparar automáticamente, el sistema abre un shell de emergencia. Dispositivo de almacenamiento, UUID de dispositivo o punto de montaje inexistente. La unidad systemd agota el tiempo de espera a que el dispositivo de almacenamiento esté disponible. Si el dispositivo no responde, el sistema abre un caparazón de emergencia. Comprobación y reparación de daños en el sistema de archivos Red Hat Enterprise Linux 10 proporciona herramientas para comprobar y reparar problemas del sistema de archivos. En el caso de problemas menores que se detectan durante el arranque, estas utilidades intentan reparar el sistema de archivos automáticamente. Para los sistemas de archivos de diario, como XFS y ext4, puede que solo sea necesario reproducir el diario, lo que suele ser una operación rápida. En el caso de problemas de corrupción más graves del sistema de archivos, un administrador del sistema puede utilizar las herramientas para comprobar y reparar los sistemas de archivos manualmente. La herramienta que ayuda a mantener los sistemas de archivos en buen estado durante el arranque se conoce genéricamente como herramienta de verificación del sistema de archivos o comando fsck. Sin embargo, la herramienta que repara el sistema de archivos XFS no sigue la misma convención de nomenclatura. Aunque hay un archivo binario fsck.xfs en el sistema, su único propósito es satisfacer los requisitos de arranque y sale inmediatamente con un código de salida de 0. El comando xfs_repair puede verificar y reparar problemas con los sistemas de archivos XFS que una reparación automática no soluciona.
+
+root@host:~# xfs_repair block-device
+
+Para realizar operaciones de verificación y reparación en sistemas de archivos ext4, use el comando fsck.ext4, que es un enlace físico al comando e2fsck que también cubre los sistemas de archivos ext3 y ext2 heredados. Utilice la opción -p para reparar automáticamente problemas menores sin intervención del usuario.
+
+
+
+
+
+17.5. Reparación de sistemas de archivos dañados en el momento del arranque
+
+root@host:~# fsck.ext4 -p block-device
+
+Advertencia El procedimiento adecuado para reparar un sistema de archivos es montar y desmontar el sistema de archivos para que reproduzca los archivos de registro para evitar datos corruptos o residuales. Además, el sistema de archivos debe desmontarse antes de ejecutar los comandos xfs_repair o e2fsck para evitar una posible pérdida o corrupción de datos. Reparación de problemas del sistema de archivos durante el arranque Para acceder a un sistema que no puede completar el arranque debido a problemas del sistema de archivos, la arquitectura de la unidad systemd proporciona un destino de arranque de emergencia, que abre un shell de emergencia que requiere la contraseña de root para acceder. El siguiente ejemplo muestra el resultado del proceso de arranque cuando el sistema encuentra un problema en el sistema de archivos y cambia al modo
+
+emergency target:
+
+...salida omitida... [* ] Se está ejecutando un trabajo de inicio para /dev/sda2 (27s / 1min 30s) [ TIEMPO ] Se agotó el tiempo de espera para el dispositivo /dev/sda2. [DEPEND] Error de dependencia para /mnt/mountfolder [DEPEND] Error de dependencia para sistemas de archivos locales. [DEPENDER] La dependencia falló porque Mark necesita volver a etiquetarse después del reinicio. ...salida omitida... [Aceptar] Se inició el Shell de emergencia. [OK] Se alcanzó el modo de emergencia objetivo. ... salida omitida... Proporcione la contraseña de root para mantenimiento (o presione Control-D para continuar): La unidad systemd no pudo montar el dispositivo /dev/sda2 y se agotó el tiempo de espera. Debido a que el dispositivo no está disponible, el sistema abre un shell de emergencia para acceso de mantenimiento. Para reparar problemas del sistema de archivos cuando su sistema abre un shell de emergencia, primero ubique el sistema de archivos erróneo y luego
+
+find and repair the fault. Now reload the systemd unit configuration to retry the automatic mounting.
+
+Utilice el comando mount para encontrar qué sistemas de archivos están montados actualmente en la unidad systemd.
+
+root@host:~# mount
+
+...salida omitida... /dev/sda1 en / escriba xfs (ro,relatime,seclabel,attr2,inode64,noquota) ...salida omitida... Dependiendo de en qué etapa del proceso de arranque se encuentre el sistema cuando aparece el problema, es posible que el sistema de archivos raíz aún esté montado en modo de solo lectura. Si el sistema de archivos raíz está montado con la opción ro (solo lectura), entonces no podrá editar el archivo /etc/fstab. Vuelva a montar temporalmente el sistema de archivos raíz con la opción rw (lectura/escritura) para editar el archivo /etc/fstab. La opción de remontar cambia los parámetros de montaje sin desmontar el sistema de archivos.
+
+root@host:~# mount -o remount,rw /
+
+Intente montar todos los sistemas de archivos enumerados en el archivo /etc/fstab utilizando la opción --all del comando de montaje. Esta opción procesa todas las entradas del sistema de archivos, pero omite aquellos sistemas de archivos que ya están montados. El comando muestra los errores que ocurren al montar un sistema de archivos.
+
+
+
+
+
+17.5. Reparación de sistemas de archivos dañados en el momento del arranque
+
+root@host:~# mount --all
+mount: /mnt/mountfolder: mount point does not exist.
+
+En este escenario, donde el directorio /mnt/mountfolder no existe, cree el directorio /mnt/mountfolder antes de volver a intentar el montaje. Pueden aparecer otros mensajes de error, incluidos errores tipográficos en las entradas o nombres de dispositivos o UUID incorrectos. Después de corregir todos los problemas en el archivo /etc/fstab, informe al demonio systemd que registre el nuevo archivo /etc/fstab usando el comando systemctl daemon-reload.
+
+root@host:~# systemctl daemon-reload
+
+Luego, vuelva a intentar montar todas las entradas.
+
+root@host:~# mount --all
+
+La unidad systemd procesa el archivo /etc/fstab transformando cada entrada en un tipo de montaje y luego iniciando la unidad como un servicio. El comando systemctl daemon-reload solicita a la unidad systemd que reconstruya y recargue todas las configuraciones de la unidad. Si la opción --all del comando de montaje tiene éxito sin más errores, entonces la prueba final es verificar que los sistemas de archivos se monten correctamente durante el inicio del sistema. Reinicie el sistema y espere a que se complete el inicio.
+
+root@host:~# systemctl reboot
+
+Para una prueba rápida del archivo /etc/fstab, utilice la opción de entrada de montaje nofail. El uso de la opción nofail en una entrada /etc/fstab permite que el sistema arranque incluso si el montaje del sistema de archivos no tiene éxito. Esta opción no debe usarse con sistemas de archivos de producción que siempre deben montarse. Con la opción nofail, una aplicación podría iniciarse cuando faltan datos del sistema de archivos, con posibles consecuencias graves. Referencias Páginas man xfs_repair(8), fsck(8), e2fsck(8), systemd-fsck(8), systemd-fstab-generator(8) y systemd.mount(5) Para obtener más información, consulte el capítulo Comprobación y reparación de un sistema de archivos en Gestión de sistemas de archivos
+
+guide at https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/managing_file_systems/index#comprobación-y-reparación-de-un-sistema-de-archivos
+
+
+
+
+
+17.6. Ejercicio guiado para reparar un sistema de archivos dañado en el momento del arranque 17.6. Ejercicio guiado Reparar un sistema de archivos dañado en el momento del arranque Repare un sistema de archivos dañado o mal configurado que hace que el proceso de arranque se detenga prematuramente. Resultados Diagnosticar problemas del sistema de archivos y recuperar el sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-repairing
+
+Instrucciones Acceda a la consola de la máquina del servidor y reinicie la máquina. Observe que el proceso de inicio no se completa. 1. Reinicie la máquina del servidor enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. El proceso de arranque no se completa. 1.1. Abra un shell de emergencia desde el menú del cargador de arranque. Nota Como alternativa, puede omitir este paso esperando a que se complete el proceso de inicio y a que el sistema abra un shell de emergencia. Si adopta este enfoque, continúe con el Paso 3. 2. Cuando aparezca el menú del cargador de arranque, presione cualquier tecla para interrumpir la cuenta regresiva, excepto la tecla Enter. 2.1. Presione E para editar la entrada predeterminada actual. 2.2. Utilice las teclas del cursor para ir a la línea que comienza con el texto de Linux. 2.3. Presione Fin o Ctrl+E para mover el cursor al final de la línea. 2.4. Agregue la cadena systemd.unit=emergency.target al final de la línea. Nota Si el texto en la consola es difícil de ver, considere cambiar la resolución al editar la línea del kernel en la entrada del cargador de arranque. Para cambiar la resolución de la consola, agregue el parámetro video=640x480 o vga=ask en el
+
+line that starts with the linux word, after the systemd.unit=emergency.target parameter.
+
+Para la mayoría de las consolas, una resolución de 640x480 es suficiente. Al utilizar el parámetro vga=ask, puede elegir una resolución más adecuada para su entorno. 2.5. Presione Ctrl+X para iniciar usando la configuración modificada. 2.6.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado para reparar un sistema de archivos dañado en el momento del arranque
+
+17.6. Ejercicio guiado para reparar un sistema de archivos dañado en el momento del arranque 17.6. Ejercicio guiado Reparar un sistema de archivos dañado en el momento del arranque Repare un sistema de archivos dañado o mal configurado que hace que el proceso de arranque se detenga prematuramente. Resultados Diagnosticar problemas del sistema de archivos y recuperar el sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-repairing
+
+Instrucciones Acceda a la consola de la máquina del servidor y reinicie la máquina. Observe que el proceso de inicio no se completa. 1. Reinicie la máquina del servidor enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. El proceso de arranque no se completa. 1.1. Abra un shell de emergencia desde el menú del cargador de arranque. Nota Como alternativa, puede omitir este paso esperando a que se complete el proceso de inicio y a que el sistema abra un shell de emergencia. Si adopta este enfoque, continúe con el Paso 3. 2. Cuando aparezca el menú del cargador de arranque, presione cualquier tecla para interrumpir la cuenta regresiva, excepto la tecla Enter. 2.1. Presione E para editar la entrada predeterminada actual. 2.2. Utilice las teclas del cursor para ir a la línea que comienza con el texto de Linux. 2.3. Presione Fin o Ctrl+E para mover el cursor al final de la línea. 2.4. Agregue la cadena systemd.unit=emergency.target al final de la línea. Nota Si el texto en la consola es difícil de ver, considere cambiar la resolución al editar la línea del kernel en la entrada del cargador de arranque. Para cambiar la resolución de la consola, agregue el parámetro video=640x480 o vga=ask en el
+
+line that starts with the linux word, after the systemd.unit=emergency.target parameter.
+
+Para la mayoría de las consolas, una resolución de 640x480 es suficiente. Al utilizar el parámetro vga=ask, puede elegir una resolución más adecuada para su entorno. 2.5. Presione Ctrl+X para iniciar usando la configuración modificada. 2.6.
+
+
+
+
+
+17.6. Ejercicio guiado Reparar un sistema de archivos dañado en el momento del arranque Inicie sesión en el shell de emergencia. Utilice redhat como contraseña. ...salida omitida... Proporcione la contraseña de root para mantenimiento (o presione Control-D para continuar): redhat [root@servera ~]# 3. Determine qué sistemas de archivos monta actualmente la unidad systemd. La unidad systemd monta el sistema de archivos raíz en modo de solo lectura.
+
+[root@servera ~]# mount
+
+...salida omitida...
+
+/dev/sda3 on / type xfs (ro,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+...salida omitida... 4. Vuelva a montar el sistema de archivos raíz en modo lectura/escritura.
+
+[root@servera ~]# mount -o remount,rw /
+
+5. Intente montar todos los demás sistemas de archivos. La opción -a del comando mount monta todos los sistemas de archivos enumerados en el archivo /etc/fstab que aún no están montados.
+
+[root@servera ~]# mount -a
+mount: /fakeroot: mount point does not exist.
+       dmesg(1) may have more information after failed mount system call.
+
+6. Edite el archivo /etc/fstab para solucionar el problema. 7. Modifique la línea incorrecta del archivo /etc/fstab para montar correctamente el sistema de archivos raíz. Reemplace el punto de montaje /fakeroot con el punto de montaje /. El UUID del dispositivo del sistema de archivos raíz puede diferir en su sistema. UUID=15507695-22bb-4c65-94e6-a438e095983f / xfs defaults 0 0 ...salida omitida... 7.1. Vuelva a cargar la unidad systemd para que el sistema registre la nueva configuración del archivo /etc/fstab.
+
+[root@servera ~]# systemctl daemon-reload
+
+7.2. Verifique que el archivo /etc/fstab ahora sea correcto intentando montar todas las entradas.
+
+[root@servera ~]# mount -a
+
+8. Reinicie el sistema y espere a que se complete el inicio. El sistema ahora debería iniciarse como se esperaba.
+
+[root@servera ~]# systemctl reboot
+
+9. Verifique que pueda iniciar sesión como usuario estudiante. Utilice estudiante como contraseña.
+
+servera login: student
+
+Contraseña: estudiante [estudiante@servera ~]$ 10. Cierre la consola de la máquina del servidor. 11.
+
+
+
+
+
+17.6. Ejercicio guiado Reparar un sistema de archivos dañado al finalizar el tiempo de inicio En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-repairing
+
+
+
+
+
+17.7. Control de laboratorio y solución de problemas del proceso de arranque 17.7. Control de laboratorio y solución de problemas del proceso de arranque Administre el arranque de un sistema, controle los servicios y repare problemas de tiempo de arranque solucionando los problemas. Resultados Diagnosticar y solucionar problemas de arranque. Establezca el objetivo de unidad systemd predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade boot-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-review
+
+Abra la consola de la máquina del servidor. Reinicie la máquina del servidor. El proceso de arranque no se completa. Solucione el problema de arranque para que el sistema arranque como se esperaba. 1. Cambie el objetivo de unidad systemd predeterminado en la máquina serverb para que el sistema inicie automáticamente una interfaz gráfica cuando se inicie. No hay ninguna interfaz gráfica instalada en la máquina del servidor. Establezca sólo el destino predeterminado y no instale los paquetes. 2. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Control de laboratorio y solución de problemas del proceso de arranque
+
+17.7. Control de laboratorio y solución de problemas del proceso de arranque 17.7. Control de laboratorio y solución de problemas del proceso de arranque Administre el arranque de un sistema, controle los servicios y repare problemas de tiempo de arranque solucionando los problemas. Resultados Diagnosticar y solucionar problemas de arranque. Establezca el objetivo de unidad systemd predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade boot-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-review
+
+Abra la consola de la máquina del servidor. Reinicie la máquina del servidor. El proceso de arranque no se completa. Solucione el problema de arranque para que el sistema arranque como se esperaba. 1. Cambie el objetivo de unidad systemd predeterminado en la máquina serverb para que el sistema inicie automáticamente una interfaz gráfica cuando se inicie. No hay ninguna interfaz gráfica instalada en la máquina del servidor. Establezca sólo el destino predeterminado y no instale los paquetes. 2. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+
+17.7. Laboratorio de control y resolución de problemas de la solución del proceso de inicio Administre el inicio de un sistema, controle los servicios y repare los problemas de tiempo de inicio solucionando los problemas. Resultados Diagnosticar y solucionar problemas de arranque. Establezca el objetivo de unidad systemd predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-review
+
+Instrucciones Abra la consola de la máquina del servidor. Reinicie la máquina del servidor. El proceso de arranque no se completa. Solucione el problema de arranque para que el sistema arranque como se esperaba. 1. Reinicie la máquina del servidor enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. Observe que un trabajo de inicio no parece completarse y el sistema finalmente abre un shell de emergencia. 1.1. Inicie sesión en el shell de emergencia. Utilice redhat como contraseña. ...salida omitida... Proporcione la contraseña de root para mantenimiento (o presione Control-D para continuar): redhat [root@serverb ~]# 1.2. Compruebe si es necesario montar el sistema de archivos raíz en modo lectura/escritura.
+
+[root@serverb ~]# mount
+/dev/sda3 on / type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+...salida omitida... 1.3. Intente montar todos los sistemas de archivos. Utilice la opción mount comando -a para montar todos los sistemas de archivos enumerados en el archivo /etc/fstab que aún no están montados. El UUID del dispositivo puede ser diferente en su sistema.
+
+[root@serverb ~]# mount -a
+mount: /olddata: can't find UUID=4d5c85a5-8921-4a06-8aff-80567e9689bc.
+
+1.4. Edite el archivo /etc/fstab para eliminar o comentar la línea incorrecta que monta el punto de montaje /olddata. 1.5.
+
+
+
+
+
+17.7. Control de laboratorio y solución de problemas de la evaluación del proceso de arranque Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. ...salida omitida...
+
+# UUID=4d5c85a5-8921-4a06-8aff-80567e9689bc  /olddata  xfs  defaults  0 0
+
+Vuelva a cargar la unidad systemd para registrar la nueva configuración del archivo /etc/fstab.
+
+[root@serverb ~]# systemctl daemon-reload
+
+1.6. Verifique que el archivo /etc/fstab ahora sea correcto intentando montar todas las entradas.
+
+[root@serverb ~]# mount -a
+
+1.7. Reinicie la máquina del servidor y espere a que se complete el inicio. El sistema ahora debe iniciarse como se esperaba.
+
+[root@serverb ~]# systemctl reboot
+
+1.8. Cierre la consola de la máquina del servidor. 1.9. Cambie el objetivo de unidad systemd predeterminado en la máquina serverb para que el sistema inicie automáticamente una interfaz gráfica cuando se inicie. No hay ninguna interfaz gráfica instalada en la máquina del servidor. Establezca sólo el destino predeterminado y no instale los paquetes. 2. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 2.1. Establezca el objetivo gráfico como objetivo predeterminado.
+
+[root@serverb ~]# systemctl set-default graphical.target
+
+Se eliminó /etc/systemd/system/default.target. Enlace simbólico creado /etc/systemd/system/default.target → /usr/lib/systemd/system/graphical.target. 2.2. Verifique que el objetivo gráfico esté configurado.
+
+[root@serverb ~]# systemctl get-default
+
+objetivo.gráfico 2.3. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+3.
+
+
+
+
+
+17.7. Control de laboratorio y solución de problemas del proceso de arranque
+
+student@workstation:~$ lab grade boot-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-review
+
+
+
+
+
+17.8. Resumen 17.8. Resumen En esta lección, aprendió sobre el proceso de inicio de Red Hat Enterprise Linux, cómo controlar qué servicios se inician en el inicio y cómo diagnosticar y reparar problemas del sistema de archivos durante el inicio. El cargador de arranque GRUB2 es el cargador de arranque predeterminado para RHEL 10. Es responsable de cargar el kernel y la imagen initramfs, y de pasar el control al kernel. GRUB2 también proporciona una interfaz de menú para seleccionar qué instancia de inicio iniciar y modificar la configuración de inicio en tiempo de ejecución. Puede utilizar el comando grubby para realizar diversas tareas de administración de inicio, como agregar o eliminar argumentos del kernel, cambiar la entrada predeterminada del menú de inicio y ver información sobre las entradas existentes del menú de inicio. La unidad systemd toma el control total de la última parte de la secuencia de inicio, según el objetivo predeterminado. El comando systemctl get-default proporciona información sobre el objetivo de unidad systemd predeterminado y el subcomando set-default establece un nuevo objetivo predeterminado. Los administradores pueden cambiar a un destino diferente durante el tiempo de ejecución utilizando el
+
+systemctl isolate command.
+
+El proceso de arranque podría verse interrumpido por un problema del sistema de archivos, como un sistema de archivos dañado o una configuración incorrecta del archivo /etc/fstab. El objetivo de emergencia arranca en un entorno mínimo que permite la resolución de problemas. El comando xfs_repair comprueba y repara problemas con los sistemas de archivos XFS. El archivo /etc/fstab puede incluir un dispositivo inexistente, lo que genera un error en el momento del arranque e interrumpe el proceso de arranque.
+
+
+
+
+
+
+
+## Resumen
+
+17.8. Resumen 17.8. Resumen En esta lección, aprendió sobre el proceso de inicio de Red Hat Enterprise Linux, cómo controlar qué servicios se inician en el inicio y cómo diagnosticar y reparar problemas del sistema de archivos durante el inicio. El cargador de arranque GRUB2 es el cargador de arranque predeterminado para RHEL 10. Es responsable de cargar el kernel y la imagen initramfs, y de pasar el control al kernel. GRUB2 también proporciona una interfaz de menú para seleccionar qué instancia de inicio iniciar y modificar la configuración de inicio en tiempo de ejecución. Puede utilizar el comando grubby para realizar diversas tareas de administración de inicio, como agregar o eliminar argumentos del kernel, cambiar la entrada predeterminada del menú de inicio y ver información sobre las entradas existentes del menú de inicio. La unidad systemd toma el control total de la última parte de la secuencia de inicio, según el objetivo predeterminado. El comando systemctl get-default proporciona información sobre el objetivo de unidad systemd predeterminado y el subcomando set-default establece un nuevo objetivo predeterminado. Los administradores pueden cambiar a un destino diferente durante el tiempo de ejecución utilizando el
+
+systemctl isolate command.
+
+El proceso de arranque podría verse interrumpido por un problema del sistema de archivos, como un sistema de archivos dañado o una configuración incorrecta del archivo /etc/fstab. El objetivo de emergencia arranca en un entorno mínimo que permite la resolución de problemas. El comando xfs_repair comprueba y repara problemas con los sistemas de archivos XFS. El archivo /etc/fstab puede incluir un dispositivo inexistente, lo que genera un error en el momento del arranque e interrumpe el proceso de arranque.
+
+
+
+
+
+Capítulo 18. Recuperación del acceso de superusuario Objetivo Obtener acceso administrativo a un sistema cuando la contraseña de superusuario es desconocida o está bloqueada. Secciones Cómo recuperar el acceso de superusuario y restablecer la contraseña raíz (y ejercicio guiado)
+
+
+
+
+

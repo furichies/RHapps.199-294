@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 15. Gestión del almacenamiento básico
+
+15.6. Resumen 15.6. Resumen En esta lección, aprendió a administrar dispositivos de almacenamiento local mediante la creación de particiones, sistemas de archivos y espacios de intercambio desde la línea de comandos. Los esquemas de partición son divisiones lógicas de dispositivos de bloques que permiten a los administradores cumplir con requisitos de almacenamiento específicos, como organizar datos, mejorar el rendimiento y mejorar la seguridad. El esquema de partición Master Boot Record (MBR) es el estándar en sistemas que ejecutan firmware BIOS, y el esquema de tabla de particiones GUID (GPT) se utiliza en sistemas que ejecutan firmware UEFI. El comando parted ve, agrega, modifica y elimina particiones en los discos. Es compatible con los esquemas de partición MBR y GPT. El sistema de archivos XFS es el formato de sistema de archivos predeterminado y recomendado para Red Hat Enterprise Linux 10. El comando mkfs.xfs crea un sistema de archivos XFS en una partición de disco. El comando mount adjunta temporalmente un dispositivo a un directorio de punto de montaje. Para montar dispositivos de forma persistente, modifique el archivo /etc/fstab, que enumera y configura los dispositivos que se montarán en el arranque. El kernel utiliza espacio de intercambio para complementar la memoria física del sistema manteniendo páginas de memoria inactivas en el disco. El comando mkswap inicializa los espacios de intercambio en las particiones del disco. El comando swapon activa temporalmente los espacios de intercambio. El comando swapoff los desactiva. Para activar el espacio de intercambio de forma persistente, utilice el archivo /etc/fstab.
+
+
+
+
+
+Capítulo 16. Gestión del almacenamiento con Logical Volume Manager Objetivo Utilice Logical Volume Manager (LVM) para gestionar volúmenes lógicos que puedan contener sistemas de archivos y espacios de intercambio. Secciones Creación de volúmenes lógicos (y ejercicio guiado) Ampliación de un volumen lógico (y ejercicio guiado) Reemplazo de volúmenes físicos y administración de LVM (y prueba) Práctica de laboratorio Administrar almacenamiento con Logical Volume Manager
+
+
+
+
+

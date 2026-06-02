@@ -1,0 +1,355 @@
+# Obtención de roles y módulos de las colecciones de contenido
+# Tipo: theory
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Obtención de roles y módulos de las
+colecciones de contenido
+Objetivos
+• Obtener un conjunto de roles relacionados, módulos suplementarios y otro contenido de Ansible
+Content Collection y usarlos en un playbook.
+Ansible Content Collections
+Cuando se desarrolló Ansible por primera vez, todos los módulos que usaba se incluían como
+parte del paquete de software central (core). A medida que aumentaba la cantidad de módulos, se
+hizo más difícil para el proyecto upstream gestionar todos estos módulos. Cada módulo requería
+un nombre único y sincronizar las actualizaciones del módulo con las actualizaciones del código
+central (core) de Ansible.
+Con Ansible Content Collections, las actualizaciones del código Ansible se separan de las
+actualizaciones de módulos y complementos (plug-ins). Una Ansible Content Collection
+proporciona un conjunto de módulos, roles y otros complementos (plug-ins) relacionados que
+puede usar en sus playbooks. Este enfoque permite a los proveedores y desarrolladores mantener
+y distribuir sus colecciones a su propio ritmo, independientemente de las versiones de Ansible.
+Por ejemplo:
+• La colección de contenido redhat.insights ofrece módulos y roles que puede usar para
+registrar un sistema con Red Hat Insights para Red Hat Enterprise Linux.
+• La colección de contenido cisco.ios, soportada y mantenida por Cisco, ofrece módulos y
+complementos (plug-ins) que administran dispositivos de red de Cisco IOS.
+• La colección de contenido community.crypto proporciona módulos que crean certificados
+SSL/TLS.
+Ansible Content Collections también brindan flexibilidad. Puede instalar solo el contenido que
+necesita en lugar de instalar todos los módulos soportados.
+También puede seleccionar una versión específica de una colección (posiblemente una anterior
+o posterior) o elegir entre una versión de una colección compatible con Red Hat o proveedores, o
+una proporcionada por la comunidad.
+Ansible 2.9 y posteriores admiten Ansible Content Collections. Upstream Ansible separó la
+mayoría de los módulos del código central de Ansible en Ansible Base 2.10 y Ansible Core 2.11 y
+los colocó en colecciones. Red Hat Ansible Automation Platform 2.2 proporciona entornos de
+ejecución de automatización basados en Ansible Core 2.13 que heredan esta característica.
+nota
+Puede desarrollar sus propias colecciones para proporcionar roles y módulos
+personalizados a sus equipos. La creación de Ansible Content Collections por su
+cuenta está fuera del alcance de este curso. Puede obtener más información sobre
+cómo crear Ansible Content Collections en el curso que sigue a este, Desarrollo de
+automatización avanzada con Red Hat Ansible Automation Platform (DO374).
+316
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Espacios de nombres para Ansible Content Collections
+Para facilitar la especificación de las colecciones y su contenido por nombre, los nombres de las
+colecciones se organizan en espacios de nombres. Los proveedores, socios, desarrolladores y
+creadores de contenido pueden usar espacios de nombres para asignar nombres únicos a sus
+colecciones sin entrar en conflicto con otras colecciones.
+El espacio de nombres es la primera parte de un nombre de colección. Por ejemplo, todas
+las colecciones que la comunidad Ansible mantiene están en el espacio de nombres
+community y tiene nombres tales como community.crypto, community.postgresql y
+community.rabbitmq. Asimismo, Ansible Content Collections que Red Hat mantiene y admite
+directamente pueden usar el espacio de nombres redhat y tener nombres como redhat.rhv,
+redhat.satellite y redhat.insights.
+Selección de fuentes de Ansible Content Collections
+Independientemente de si está usando ansible-navigator con el entorno de ejecución de
+automatización mínima o ansible-playbook en Ansible Core bare metal, siempre tiene al
+menos una Ansible Content Collection disponible: ansible.builtin.
+Además, su entorno de ejecución de automatización puede tener entornos de ejecución de
+automatización adicionales integrados, por ejemplo, el entorno de ejecución predeterminado
+usado por Red Hat Ansible Automation Platform 2.2, ee-supported-rhel8.
+Si necesita tener Ansible Content Collections adicionales, puede agregarlas al subdirectorio
+collections de su proyecto Ansible. Puede obtener Ansible Content Collections de varias
+fuentes:
+Automation Hub
+El centro de automatización es un servicio proporcionado por Red Hat para distribuir Ansible
+Content Collections certificadas por Red Hat que son compatibles con Red Hat y los partners
+del ecosistema. Como cliente final, puede abrir un ticket de soporte con Red Hat para estas
+Ansible Content Collections que serán abordadas por Red Hat y el partner del ecosistema.
+Necesita una suscripción válida a Red Hat Ansible Automation Platform para acceder al centro
+de automatización. Use la interfaz de usuario web del centro de automatización en https://
+console.redhat.com/ansible/automation-hub/ para explorar estas colecciones.
+Centro de automatización privado
+Su organización puede tener su propio centro de automatización privado en el sitio y también
+puede usar ese centro para distribuir sus propias Ansible Content Collections. El centro de
+automatización privado se incluye en Red Hat Ansible Automation Platform.
+Ansible Galaxy
+Ansible Galaxy es un sitio web respaldado por la comunidad que alberga Ansible Content
+Collections que han sido enviadas por una variedad de desarrolladores y usuarios de
+Ansible. Ansible Galaxy es una librería pública que no ofrece garantías formales de soporte
+y que no está organizada por Red Hat. Por ejemplo, las colecciones community.crypto,
+community.postgresql y community.rabbitmq están disponibles en esa plataforma.
+Use la interfaz de usuario web de Ansible Galaxy en https://galaxy.ansible.com/ para buscar
+colecciones.
+Repositorio de Git de terceros o archivo de almacenamiento
+También puede descargar Ansible Content Collections desde un repositorio de Git o un
+archivo de almacenamiento local o remoto tar, al igual que puede descargar roles.
+RH294-RHEL9.0-es-3-20240620
+317
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Instalación de Ansible Content Collections
+Antes de que sus playbooks puedan usar contenido de una Ansible Content Collection, debe
+asegurarse de que la colección esté disponible en su entorno de ejecución de automatización.
+El ajuste de configuración de Ansible collections_paths especifica una lista separada por dos
+puntos de rutas en el sistema donde Ansible busca colecciones instaladas.
+Puede establecer esta directiva en el archivo de configuración ansible.cfg.
+Importante
+El siguiente valor predeterminado hace referencia a la directiva
+collections_paths.
+~/.ansible/collections:/usr/share/ansible/collections
+Si establece collections_paths en algún otro valor en el archivo ansible.cfg
+de su proyecto Ansible y elimina esos dos directorios, entonces ansible-
+navigator no puede encontrar las Ansible Content Collections proporcionadas
+dentro del entorno de ejecución de automatización en su versión de esos
+directorios.
+El siguiente ejemplo usa el comando ansible-galaxy collection install para descargar
+e instalar la Ansible Content Collection community.crypto. La opción -p collections
+instala la colección en el subdirectorio local collections.
+[user@controlnode ~]$ ansible-galaxy collection install community.crypto \
+> -p collections
+Importante
+Debe especificar la opción -p collections o ansible-galaxy instala la
+colección en función de su configuración actual collections_paths, o en
+su directorio ~/.ansible/collections/ en el nodo de control de forma
+predeterminada. El comando ansible-navigator no carga este directorio en el
+entorno de ejecución de la automatización, aunque este directorio está disponible
+para los comandos de Ansible que usan el nodo de control como entorno de
+ejecución, como ansible-playbook.
+Cuando instala la colección community.crypto, es posible que vea una advertencia de que los
+playbooks de su proyecto de Ansible podrían no encontrar la colección porque la ruta especificada
+no forma parte de la ruta configurada de las colecciones de Ansible.
+Puede ignorar esta advertencia con seguridad porque su proyecto Ansible verifica el subdirectorio
+local collections antes de verificar los directorios especificados por la configuración
+collections_paths y puede usar las colecciones almacenadas allí.
+El comando también puede instalar una colección desde un archivo tar local o remoto o un
+repositorio de git. Un repositorio de Git debe tener un archivo galaxy.yml o MANIFEST.json
+válido que proporcione metadatos sobre la colección, como su espacio de nombres y número de
+versión. Por ejemplo, consulte la colección community.general en https://github.com/
+ansible-collections/community.general.
+318
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[user@controlnode ~]$ ansible-galaxy collection install \
+> /tmp/community-dns-1.2.0.tar.gz -p collections
+...output omitted...
+[user@controlnode ~]$ ansible-galaxy collection install \
+> http://www.example.com/redhat-insights-1.0.5.tar.gz -p collections
+...output omitted...
+[user@controlnode ~]$ ansible-galaxy collection install \
+> git@git.example.com:organization/repo_name.git -p collections
+Instalación de Ansible Content Collections con un archivo de
+requisitos
+Si su proyecto de Ansible necesita colecciones de contenido de Ansible adicionales, puede crear
+un archivo collections/requirements.yml en el directorio del proyecto que enumera todas
+las colecciones que requiere el proyecto. El controlador de automatización detecta este archivo e
+instala automáticamente las colecciones especificadas antes de ejecutar sus playbooks.
+Un archivo de requisitos para Ansible Content Collections es un archivo YAML que consta de una
+clave de diccionario collections que tiene la lista de colecciones para instalar como su valor.
+Cada ítem de la lista también puede especificar la versión particular de la colección para instalar,
+como se muestra en el siguiente ejemplo:
+---
+collections: 
+  - name: community.crypto 
+  - name: ansible.posix
+    version: 1.2.0 
+  - name: /tmp/community-dns-1.2.0.tar.gz 
+  - name: http://www.example.com/redhat-insights-1.0.5.tar.gz 
+  - name: git+https://github.com/ansible-collections/community.general.git 
+    version: main
+El valor de esta clave de diccionario es la lista de colecciones requeridas por el proyecto
+Ansible.
+Instale Ansible Content Collection community.crypto desde la primera fuente disponible.
+La siguiente parte de esta sección abarca cómo configurar las fuentes.
+Instale la versión 1.2.0 de la Ansible Content Collection ansible.posix desde la primera
+fuente disponible. Es una buena práctica especificar la versión siempre que sea posible.
+Instale una Ansible Content Collection desde un archivo de almacenamiento local tar en
+particular.
+Instale una Ansible Content Collection desde el archivo tar en la URL remota especificada.
+Instale Ansible Content Collection community.general desde un repositorio público de
+Git, seleccionando la versión en la rama main. La directiva version puede ser una rama, una
+etiqueta o un hash de confirmación.
+RH294-RHEL9.0-es-3-20240620
+319
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+El comando ansible-galaxy puede usar el archivo collections/requirements.yml
+para instalar todas esas colecciones. Especifique el archivo de requisitos con la opción --
+requirements-file (o -r) y use la opción -p collections para instalar Ansible Content
+Collection en el subdirectorio collections.
+[root@controlnode ~]# ansible-galaxy collection install \
+> -r collections/requirements.yml -p collections
+Configuración de fuentes de Ansible Content Collection
+De forma predeterminada, el comando ansible-galaxy usa Ansible Galaxy en https://
+galaxy.ansible.com/ para descargar Ansible Content Collections. Es posible que no desee usar
+este comando, prefiriendo el centro de automatización o su propio centro de automatización
+privado. Alternativamente, es posible que desee probar el centro de automatización primero y
+luego probar Ansible Galaxy.
+Puede configurar las fuentes que usa ansible-galaxy para obtener Ansible Content
+Collections en el archivo ansible.cfg de su proyecto de Ansible. Las partes relevantes de ese
+archivo pueden verse como el siguiente ejemplo:
+...output omitted...
+[galaxy]
+server_list = automation_hub, galaxy  
+[galaxy_server.automation_hub]
+url=https://console.redhat.com/api/automation-hub/  
+auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-
+connect/token 
+token=eyJh...Jf0o 
+[galaxy_server.galaxy]
+url=https://galaxy.ansible.com/
+Enumere todos los repositorios que el comando ansible-galaxy debe usar en orden. Para
+cada nombre que defina, agregue una sección [galaxy_server.name] a este archivo
+que proporciona los parámetros de conexión. Este ejemplo configura el comando ansible-
+galaxy para obtener Ansible Content Collections desde el centro de automatización
+primero ([galaxy_server.automation_hub]). Si una colección no está disponible en
+esa fuente, el comando ansible-galaxy intentará obtener la colección del sitio web de
+Ansible Galaxy ([galaxy_server.galaxy]).
+Proporcione la URL para acceder al repositorio.
+Proporcione la URL para la autenticación.
+Para acceder al centro de automatización, necesita un token de autenticación asociado
+a su cuenta. Use la interfaz de usuario web del centro de automatización en https://
+console.redhat.com/ansible/automation-hub/token/ para generar ese token.
+Para obtener más detalles sobre ese proceso, consulte los enlaces en la sección Referencias.
+En lugar de un token, puede usar los parámetros username y password para proporcionar el
+nombre de usuario y la contraseña del portal de clientes.
+320
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+...output omitted...
+[galaxy_server.automation_hub]
+url=https://cloud.redhat.com/api/automation-hub/
+username=operator1
+password=Sup3r53cR3t
+...output omitted...
+Es posible que no desee exponer sus credenciales en el archivo ansible.cfg porque el archivo
+podría llegar a confirmarse usando el control de versiones.
+Es preferible eliminar los parámetros de autenticación del archivo ansible.cfg y definirlos en las
+variables de entorno, como se muestra en el siguiente ejemplo:
+export ANSIBLE_GALAXY_SERVER_<server_id>_<key>=value
+server_id
+Identificador del servidor en mayúsculas. El identificador del servidor es el
+nombre que se usó en el parámetro server_list y en el nombre de la sección
+[galaxy_server.server_id].
+key
+Nombre del parámetro en mayúsculas.
+En el siguiente ejemplo se proporciona el parámetro token como una variable de entorno:
+[user@controlnode ~]$ cat ansible.cfg
+...output omitted...
+[galaxy_server.automation_hub]
+url=https://cloud.redhat.com/api/automation-hub/
+auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-
+connect/token
+[user@controlnode ~]$ export \
+> ANSIBLE_GALAXY_SERVER_AUTOMATION_HUB_TOKEN='eyJh...Jf0o'
+[user@controlnode ~]$ ansible-galaxy collection install ansible.posix \
+> -p collections
+Uso de recursos de Ansible Content Collections
+Después de instalar una Ansible Content Collection en su proyecto de Ansible, puede usarla con
+los playbooks de Ansible de ese proyecto.
+Puede usar el comando ansible-navigator collections en el directorio de su proyecto
+Ansible para enumerar todas las colecciones que están instaladas en su entorno de ejecución de
+automatización. Esto incluye las Ansible Content Collections en el subdirectorio collections de
+su proyecto.
+Puede seleccionar el número de línea de la colección en el modo interactivo de ansible-
+navigator para ver su contenido. Luego, puede seleccionar el número de línea de un módulo,
+rol u otro complemento (plug-in) para ver su documentación. También puede usar otras
+herramientas, como ansible-navigator doc, con el FQCN de un módulo para ver la
+documentación de ese módulo.
+El siguiente playbook invoca el módulo mysql_user de la colección community.mysql para una
+tarea.
+RH294-RHEL9.0-es-3-20240620
+321
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+- name: Create the operator1 user in the test database
+  hosts: db.example.com
+  tasks:
+    - name: Ensure the operator1 database user is defined
+      community.mysql.mysql_user:
+        name: operator1
+        password: Secret0451
+        priv: '.:ALL'
+        state: present
+El siguiente playbook usa el rol organizations de la colección redhat.satellite.
+---
+- name: Add the test organizations to Red Hat Satellite
+  hosts: localhost
+  tasks:
+    - name: Ensure the organizations exist
+      include_role:
+        name: redhat.satellite.organizations
+      vars:
+        satellite_server_url: https://sat.example.com
+        satellite_username: admin
+        satellite_password: Sup3r53cr3t
+        satellite_organizations:
+          - name: test1
+            label: tst1
+            state: present
+            description: Test organization 1
+          - name: test2
+            label: tst2
+            state: present
+            description: Test organization 2
+Referencias
+Contenido certificado de Ansible Automation Platform
+https://access.redhat.com/articles/3642632
+Preguntas frecuentes sobre el contenido certificado de Ansible
+https://access.redhat.com/articles/4916901
+Uso de colecciones: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/collections_using.html
+Playbook del usuario de Galaxy: documentación de Ansible
+https://docs.ansible.com/ansible/latest/galaxy/user_guide.html
+322
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Obtención de roles y módulos de las
+colecciones de contenido
+Instalar una Ansible Content Collection y usar un rol o módulo de esa colección de contenido
+en un playbook.
+Resultados
+• Use el comando ansible-galaxy para instalar un Ansible Content Collection.
+• Use el archivo requirements.yml para instalar varias Ansible Content Collections.
+• Ejecute playbooks que usen roles y módulos de Ansible Content Collections.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-collections
+Instrucciones
+ 1.
+Instale e inspeccione la colección gls.utils.
+1.1.
+Cambie al directorio /home/student/role-collections.
+[student@workstation ~]$ cd ~/role-collections
+[student@workstation role-collections]$
+1.2.
+Use el archivo de almacenamiento gls-utils-0.0.1.tar.gz en su directorio del
+proyecto para instalar la colección gls.utils en el directorio collections.
+[student@workstation role-collections]$ ansible-galaxy collection \
+> install gls-utils-0.0.1.tar.gz -p collections
+...output omitted...
+gls.utils:0.0.1 was installed successfully
+RH294-RHEL9.0-es-3-20240620
+323
+
+

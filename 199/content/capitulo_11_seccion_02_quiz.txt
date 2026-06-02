@@ -1,0 +1,49 @@
+# Cuestionario: Prueba de identificación de sistemas de archivos y dispositivos de bloque
+# Tipo: quiz
+# Capítulo: Capítulo 8. Acceso a medios extraíbles
+
+8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloques 8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloque Elija las respuestas correctas a las siguientes preguntas: ¿Cuál es el nombre de archivo del dispositivo de un disco duro SATA completo en el directorio /dev? 1. /dev/vda a. /dev/sda1 b. /dev/vg_install/lv_home c. /dev/sda d. ¿Qué comando muestra los sistemas de archivos con los puntos de montaje? 2. du-H a. dfb. duc. lsfs d. ¿Qué comando muestra el informe de uso del disco en formato legible por humanos para el directorio /home? 3.
+
+ls /home
+
+a. dfb. du -h /casa c. du /home d. ¿Cuál es el nombre de archivo de dispositivo correcto para la tercera partición del segundo disco virtio-blk conectado a una máquina virtual? 4. /dev/vdb3 a. /dev/sdb3 b. /dev/sda3 c. /dev/vda3 d. ¿Qué comando proporciona una descripción general de los puntos de montaje del sistema de archivos y el espacio libre disponible en unidades SI? 5. df a. df-hb. gl -Hc. du-h d.
+
+
+
+
+
+8.2. Prueba de identificación de sistemas de archivos y solución de dispositivos de bloque ¿Cuál es el nombre de archivo del dispositivo de un disco duro SATA completo en el directorio /dev? 1. /dev/vda a. /dev/sda1 b. /dev/vg_install/lv_home c. /dev/sda d. ¿Qué comando muestra los sistemas de archivos con los puntos de montaje? 2. du-H a. dfb. duc. lsfs d. ¿Qué comando muestra el informe de uso del disco en formato legible por humanos para el directorio /home? 3.
+
+ls /home
+
+a. dfb. du -h /casa c. du /home d. ¿Cuál es el nombre de archivo de dispositivo correcto para la tercera partición del segundo disco virtio-blk conectado a una máquina virtual? 4. /dev/vdb3 a. /dev/sdb3 b. /dev/sda3 c. /dev/vda3 d. ¿Qué comando proporciona una descripción general de los puntos de montaje del sistema de archivos y el espacio libre disponible en unidades SI? 5. df a. df-hb. gl -Hc. du-h d.
+
+
+
+
+
+8.3. Montaje y desmontaje de sistemas de archivos 8.3. Montaje y desmontaje de sistemas de archivos Objetivos Acceder al contenido de un sistema de archivos en medios extraíbles montándolo en la jerarquía del sistema de archivos y desmontándolo cuando haya terminado. Montaje manual de sistemas de archivos Para acceder al sistema de archivos en un dispositivo de almacenamiento extraíble, debe montar el dispositivo de almacenamiento. Con el comando mount, el usuario root puede montar un sistema de archivos manualmente. El primer argumento del comando de montaje especifica el sistema de archivos a montar. El segundo argumento especifica el directorio como punto de montaje en la jerarquía del sistema de archivos. Puede montar el sistema de archivos de una de las siguientes maneras con el comando mount: Con el nombre del archivo del dispositivo en el directorio /dev. Con el UUID, un identificador universalmente único del dispositivo. Luego, identifique el dispositivo que desea montar, asegúrese de que exista el punto de montaje y monte el dispositivo en el punto de montaje. Nota Si monta un sistema de archivos con el comando mount y luego reinicia su sistema, el sistema de archivos no se vuelve a montar automáticamente. El curso Red Hat System Administration II (RH134) explica cómo gestionar de forma persistente
+
+mount file systems with the /etc/fstab file.
+
+Identificación de un dispositivo de bloque Un dispositivo de almacenamiento conectable en caliente, ya sea una unidad de disco duro (HDD) o un dispositivo de estado sólido (SSD) en un servidor, o alternativamente un dispositivo de almacenamiento USB, se puede conectar a un puerto diferente en un sistema cada vez. Utilice el comando lsblk para enumerar los detalles de un dispositivo de bloque específico o de todos los dispositivos disponibles.
+
+root@host:~# lsblk
+
+NOMBRE MAJ:MIN RM TAMAÑO RO TIPO PUNTOS DE MONTAJE
+
+sda      8:0    0   10G  0 disk
+
+├─sda1 8:1 0 1M 0 parte ├─sda2 8:2 0 200M 0 parte /boot/efi └─sda3 8:3 0 9.8G 0 parte /
+
+sdb      8:16   0    5G  0 disk
+sdc      8:32   0    5G  0 disk
+sdd      8:48   0    5G  0 disk
+sr0     11:0    1  514K  0 rom
+
+El tamaño de la partición ayuda a identificar el dispositivo cuando se desconoce el nombre de la partición. Por ejemplo, considerando el resultado anterior, si el tamaño de la partición identificada es 9,8 GB, monte la partición /dev/sda3. Montaje de un sistema de archivos con el nombre de partición El siguiente ejemplo monta la partición /dev/sda3 en el punto de montaje /mnt/data.
+
+
+
+
+

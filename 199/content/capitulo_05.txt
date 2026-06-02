@@ -1,0 +1,1036 @@
+# Capítulo 2. Administrar archivos desde la línea de comandos
+
+## 2.1. Administrar archivos con herramientas de línea de comandos
+
+2.1. Administrar archivos con herramientas de línea de comandos 2.1. Administrar archivos con herramientas de línea de comandos Objetivos Crear, copiar, mover y eliminar archivos y directorios. Gestión de archivos de línea de comandos Crear, copiar, mover y eliminar archivos y directorios son operaciones comunes para un administrador del sistema. Cuando ejecute un comando para administrar archivos, tenga en cuenta las opciones del comando. Sin opciones, algunos comandos se utilizan para interactuar con archivos. O, con el conjunto de opciones adecuado, algunos comandos pueden manipular directorios. Además, el significado de algunas opciones puede diferir entre los comandos. Creación de archivos En Linux, puede utilizar varias herramientas de línea de comandos para crear archivos. Por ejemplo, puede utilizar los comandos cat y echo para dirigir la salida a un nombre de archivo específico. O puede utilizar editores de texto de línea de comandos, como Vim y nano. En algunos casos, es posible que desee crear un archivo vacío para reservar un nombre de archivo para su uso posterior. En este escenario, puede utilizar el comando táctil. El comando táctil crea un nuevo archivo o, si el nombre del archivo existe, el comando táctil actualiza la marca de tiempo del archivo.
+
+user@host:~$ touch mytasklist.txt
+user@host:~$ ls mytasklist.txt
+
+mytasklist.txt Creación de directorios El comando mkdir crea uno o más directorios o subdirectorios. Toma como argumento una lista de rutas a los directorios que desea crear. En el siguiente ejemplo, los archivos y directorios se organizan bajo el directorio /home/user/Documents. Utilice el
+
+mkdir command and a space-delimited list of the directory names to create multiple directories.
+user@host:~$ cd Documents
+user@host:~/Documents$ mkdir ProjectX ProjectY ProjectZ
+user@host:~/Documents$ ls
+
+ProjectX ProjectY ProjectZ Si el directorio que está intentando crear ya existe, el comando mkdir falla y muestra un error. El comando mkdir también falla si no existe un directorio principal del directorio solicitado. El comando mkdir y la opción -p (principal) crean los directorios principales que faltan para el destino solicitado. En el siguiente ejemplo, el
+
+mkdir command creates three ChapterN subdirectories with one command. The -p option creates the missing
+
+Directorio de padres de tesis.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos
+
+user@host:~/Documents$ mkdir -p Thesis/Chapter1 Thesis/Chapter2 Thesis/Chapter3
+user@host:~/Documents$ ls -R Thesis/
+
+Tesis/: Capítulo1 Capítulo2 Capítulo3 Tesis/Capítulo1: Tesis/Capítulo2: Tesis/Capítulo3: Utilice la opción -p del comando mkdir con precaución, porque los errores ortográficos pueden crear directorios no deseados sin generar mensajes de error. En el siguiente ejemplo, imagine que está intentando crear un subdirectorio supervisado en
+
+the Videos directory, but you accidentally omit the letter "s" in Videos in your mkdir command:
+user@host:~$ mkdir Video/Watched
+mkdir: cannot create directory Video/Watched: No such file or directory
+
+El comando mkdir falla porque el directorio de vídeo no existe. Si hubiera utilizado el comando mkdir con la opción -p, entonces el directorio de vídeo se crearía sin querer. El subdirectorio Vigilado se crearía en ese directorio incorrecto. Copiar archivos y directorios El comando cp copia un archivo y crea un archivo en el directorio actual o en un directorio especificado diferente.
+
+user@host:~$ cd Videos
+user@host:~/Videos$ cp blockbuster1.ogg blockbuster3.ogg
+user@host:~/Videos$ ls -l
+
+total 0 -rw-rw-r--. 1 usuario usuario 0 8 de febrero 16:23 blockbuster1.ogg -rw-rw-r--. 1 usuario usuario 0 8 de febrero 16:24 blockbuster2.ogg -rw-rw-r--. 1 usuario usuario 0 8 de febrero 16:34 blockbuster3.ogg También puede utilizar el comando cp para copiar varios archivos a un directorio. En este escenario, el último argumento debe ser un directorio. Los archivos copiados conservan sus nombres originales en el nuevo directorio. Si existe un archivo con el mismo nombre en el directorio de destino, se sobrescribe el archivo existente. Nota De forma predeterminada, el comando cp no copia directorios; los ignora. En el siguiente ejemplo, se enumeran dos directorios como argumentos, los directorios Thesis y ProjectX. El último argumento, el directorio ProjectX, es el destino y es válido como destino. El argumento de la tesis es ignorado por el
+
+cp command, because it is intended to be copied and it is a directory.
+user@host:~/Documents$ cp thesis_chapter1.txt thesis_chapter2.txt Thesis ProjectX
+cp: -r not specified; omitting directory 'Thesis'
+user@host:~/Documents$ ls Thesis ProjectX
+
+ProyectoX: thesis_chapter1.txt thesis_chapter2.txt Thesis: Chapter1 Chapter2 Chapter3 El directorio Thesis no se pudo copiar, pero la copia de los archivos thesis_chapter1.txt y thesis_chapter2.txt tuvo éxito.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos Puede copiar directorios y su contenido usando el comando cp con la opción -r. Tenga en cuenta que puede utilizar el . y .. directorios especiales en combinaciones de comandos. En el siguiente ejemplo, el directorio Tesis y su contenido
+
+are copied to the ProjectY directory:
+user@host:~/Documents$ cd ProjectY
+user@host:~/ProjectY$ cp -r ../Thesis/ .
+user@host:~/ProjectY$ ls -lR
+
+.: total 0
+
+drwxr-xr-x. 5 user user 54 Mar  7 15:08 Thesis
+
+./Tesis: total 0
+
+drwxr-xr-x. 2 user user 6 Mar  7 15:08 Chapter1
+drwxr-xr-x. 2 user user 6 Mar  7 15:08 Chapter2
+drwxr-xr-x. 2 user user 6 Mar  7 15:08 Chapter3
+
+./Thesis/Chapter1: total 0 ./Thesis/Chapter2: total 0 ./Thesis/Chapter3: total 0 Cambiar el nombre y mover archivos y directorios Si piensa en la ruta absoluta a un archivo como su nombre completo, mover un archivo es efectivamente lo mismo que cambiarle el nombre. El comando mv mueve archivos de una ubicación a otra. El contenido de los archivos que se mueven permanece sin cambios. Puede utilizar el comando mv para cambiar el nombre de un archivo. En el siguiente ejemplo, el comando mv thesis_chapter2.txt cambia el nombre del archivo thesis_chapter2.txt a thesis_chapter2_reviewed.txt en el mismo directorio.
+
+user@host:~/Documents$ ls -l
+
+-rw-r--r--. 1 usuario usuario 7100 7 de marzo 14:37 thesis_chapter1.txt -rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2.txt ...salida omitida...
+
+user@host:~/Documents$ mv thesis_chapter2.txt thesis_chapter2_reviewed.txt
+user@host:~/Documents$ ls -l
+
+-rw-r--r--. 1 usuario usuario 7100 7 de marzo 14:37 thesis_chapter1.txt -rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2_reviewed.txt ... salida omitida... Utilice el comando mv para mover un archivo a un directorio diferente. En el siguiente ejemplo, el archivo thesis_chapter1.txt se mueve del directorio ~/Documents al directorio ~/Documents/Thesis/Chapter1. Puede utilizar el comando mv con la opción -v para mostrar un resultado detallado de las operaciones del comando.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos
+
+user@host:~/Documents$ ls Thesis/Chapter1
+user@host:~/Documents$
+user@host:~/Documents$ mv -v thesis_chapter1.txt Thesis/Chapter1
+
+renombrado 'thesis_chapter1.txt' -> 'Tesis/Capítulo1/thesis_chapter1.txt'
+
+user@host:~/Documents$ ls Thesis/Chapter1
+
+tesis_capítulo1.txt
+
+user@host:~/Documents$ ls -l
+
+-rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2_reviewed.txt ... salida omitida... Eliminación de archivos y directorios El comando rm elimina archivos. De forma predeterminada, rm no elimina directorios. Puede utilizar el comando rm con la opción -r o la opción --recursive para permitir que el comando rm elimine directorios y sus contenidos. El comando rm -r atraviesa cada subdirectorio primero y elimina individualmente sus archivos antes de eliminar cada directorio. En el siguiente ejemplo, el comando rm elimina el archivo thesis_chapter1.txt sin opciones, pero para eliminar el directorio Thesis/Chapter1, debe agregar la opción -r.
+
+user@host:~/Documents$ ls -l Thesis/Chapter1
+
+-rw-r--r--. 1 usuario usuario 7100 7 de marzo 14:37 thesis_chapter1.txt
+
+user@host:~/Documents$ rm Thesis/Chapter1/thesis_chapter1.txt
+user@host:~/Documents$ rm Thesis/Chapter1
+rm: cannot remove 'Thesis/Chapter1': Is a directory
+user@host:~/Documents$ rm -r Thesis/Chapter1
+user@host:~/Documents$ ls -l Thesis
+drwxr-xr-x. 2 user user 6 Mar  7 12:37 Chapter2
+drwxr-xr-x. 2 user user 6 Mar  7 12:37 Chapter3
+
+Importante Red Hat Enterprise Linux no proporciona una forma de deshacer eliminaciones ni una "papelera" desde la cual pueda restaurar archivos retenidos para su eliminación. Una papelera es un componente de un entorno de escritorio como GNOME, pero no la utilizan los comandos que se ejecutan desde un shell. Una buena práctica es verificar su directorio de trabajo actual antes de eliminar un archivo o directorio utilizando rutas relativas.
+
+user@host:~/Documents$ pwd
+
+/home/usuario/Documentos
+
+user@host:~/Documents$ ls -l thesis*
+
+-rw-r--r--. 1 usuario usuario 11431 7 de marzo 14:39 thesis_chapter2_reviewed.txt
+
+user@host:~/Documents$ rm thesis_chapter2_reviewed.txt
+user@host:~/Documents$ ls -l thesis*
+ls: cannot access 'thesis*': No such file or directory
+
+Puede utilizar el comando rm con la opción -i para solicitar confirmación de forma interactiva antes de eliminar. Esta opción es lo opuesto al uso de la opción -f del comando rm, que fuerza la eliminación sin pedir confirmación al usuario.
+
+
+
+
+
+2.1. Administrar archivos con herramientas de línea de comandos
+
+user@host:~/Documents$ rm -ri Thesis
+rm: descend into directory 'Thesis'? y
+rm: descend into directory 'Thesis/Chapter2'? y
+rm: remove regular empty file 'Thesis/Chapter2/thesis_chapter2.txt'? y
+rm: remove directory 'Thesis/Chapter2'? y
+rm: remove directory 'Thesis/Chapter3'? y
+rm: remove directory 'Thesis'? y
+
+Advertencia Si especifica las opciones -i y -f, la opción -f tiene prioridad y no se le solicitará confirmación antes de que el comando rm elimine los archivos. También puede utilizar el comando rmdir para eliminar directorios vacíos. Utilice la opción rm comando -r para eliminar directorios que no estén vacíos.
+
+user@host:~/Documents$ pwd
+
+/home/usuario/Documentos
+
+user@host:~/Documents$ rmdir ProjectZ
+user@host:~/Documents$ rmdir ProjectX
+rmdir: failed to remove 'ProjectX': Directory not empty
+user@host:~/Documents$ rm -r ProjectX
+user@host:~/Documents$
+
+Referencias a las páginas man cp(1), mkdir(1), mv(1), rm(1) y rmdir(1)
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos 2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Cree, copie, mueva y elimine archivos y directorios. Resultados Crear, organizar, copiar y eliminar archivos y directorios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-manage
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante. En el directorio de inicio del usuario estudiante, cree tres
+
+subdirectories: Music, Pictures, and Videos.
+
+1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. En el directorio de inicio del usuario estudiante, use el comando mkdir para crear tres subdirectorios: Música, Imágenes y Videos.
+
+[student@servera ~]$ mkdir Music Pictures Videos
+
+1.2. Utilice el comando táctil para crear conjuntos de archivos de práctica vacíos para usar durante esta actividad. En cada conjunto, reemplace el marcador de posición X en el nombre del archivo con los números 1 y 2. 2. Cree dos archivos con nombres en el siguiente formato: songX.mp3. Cree dos archivos con nombres en el siguiente formato: snapX.jpg. Cree dos archivos con nombres en el siguiente formato: filmX.avi.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar archivos con herramientas de línea de comandos
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos 2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Cree, copie, mueva y elimine archivos y directorios. Resultados Crear, organizar, copiar y eliminar archivos y directorios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-manage
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante. En el directorio de inicio del usuario estudiante, cree tres
+
+subdirectories: Music, Pictures, and Videos.
+
+1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. En el directorio de inicio del usuario estudiante, use el comando mkdir para crear tres subdirectorios: Música, Imágenes y Videos.
+
+[student@servera ~]$ mkdir Music Pictures Videos
+
+1.2. Utilice el comando táctil para crear conjuntos de archivos de práctica vacíos para usar durante esta actividad. En cada conjunto, reemplace el marcador de posición X en el nombre del archivo con los números 1 y 2. 2. Cree dos archivos con nombres en el siguiente formato: songX.mp3. Cree dos archivos con nombres en el siguiente formato: snapX.jpg. Cree dos archivos con nombres en el siguiente formato: filmX.avi.
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos
+
+[student@servera ~]$ touch song1.mp3 song2.mp3
+[student@servera ~]$ touch snap1.jpg snap2.jpg
+[student@servera ~]$ touch film1.avi film2.avi
+[student@servera ~]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 6 Oct  3 20:46 Music
+drwxr-xr-x. 2 student student 6 Oct  3 20:46 Pictures
+drwxr-xr-x. 2 student student 6 Oct  3 20:46 Videos
+
+-rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film1.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film2.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap1.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap2.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song1.mp3 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song2.mp3 Mueva los archivos de canciones (extensión .mp3) al directorio de Música, los archivos de instantáneas (extensión .jpg) al directorio de Imágenes y los archivos de películas (extensión .avi) al directorio de Videos.
+
+[student@servera ~]$ mv song1.mp3 song2.mp3 Music
+[student@servera ~]$ mv snap1.jpg snap2.jpg Pictures
+[student@servera ~]$ mv film1.avi film2.avi Videos
+[student@servera ~]$ ls -l Music Pictures Videos
+
+Música: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song1.mp3 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song2.mp3 Imágenes: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap1.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap2.jpg Vídeos: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film1.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film2.avi 3. Cree tres subdirectorios para organizar sus archivos y asígneles el nombre amigos, familia y trabajo. Utilice un solo comando para crear los tres subdirectorios al mismo tiempo.
+
+[student@servera ~]$ mkdir friends family work
+[student@servera ~]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Music
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Pictures
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Videos
+drwxr-xr-x. 2 student student  6 Oct  3 20:51 family
+drwxr-xr-x. 2 student student  6 Oct  3 20:51 friends
+drwxr-xr-x. 2 student student  6 Oct  3 20:51 work
+
+4. Copie los archivos que contengan el número 1 en sus nombres al directorio de amigos y los archivos que contengan el número 2 al
+
+family directory. Keep in mind that you are making copies; therefore, the original files must remain in their original
+
+ubicaciones después de completar el paso. 5.
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Importante Cuando copia archivos de varias ubicaciones a una sola, Red Hat recomienda que cambie al directorio de destino antes de copiar los archivos. Utilice la sintaxis de ruta más simple, ya sea absoluta o relativa, para llegar al origen de cada tarea de administración de archivos. Copie los archivos que contengan el número 1 en sus nombres al directorio de amigos.
+
+[student@servera ~]$ cd friends
+[student@servera friends]$ cp ~/Music/song1.mp3 ~/Pictures/snap1.jpg ~/Videos/film1.avi .
+[student@servera friends]$ ls -l
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 film1.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 snap1.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 canción1.mp3 5.1. Copie los archivos que contengan el número 2 en sus nombres al directorio familiar.
+
+[student@servera friends]$ cd ../family
+[student@servera family]$ cp ~/Music/song2.mp3 ~/Pictures/snap2.jpg ~/Videos/film2.avi .
+[student@servera family]$ ls -l
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 film2.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 snap2.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 song2.mp3 5.2. Copie los directorios de familiares y amigos y su contenido al directorio de trabajo.
+
+[student@servera family]$ cd ../work
+[student@servera work]$ cp -r ~/family ~/friends .
+[student@servera work]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 57 Oct  3 20:54 family
+drwxr-xr-x. 2 student student 57 Oct  3 20:54 friends
+
+6. Las tareas de su proyecto ya están completas y es hora de limpiar los directorios. 7. Utilice el comando de árbol para verificar el contenido de los directorios antes de eliminarlos. 7.1.
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-manage
+[student@servera work]$ cd ..
+[student@servera ~]$ tree
+
+. ├── Música │   ├── canción1.mp3 │   └── canción2.mp3 ├── Imágenes │   ├── snap1.jpg │   └── snap2.jpg ├── Vídeos │   ├── film1.avi │   └── film2.avi ├── familia │   ├── film2.avi │   ├── snap2.jpg │   └── canción2.mp3 ├── amigos │   ├── film1.avi │   ├── snap1.jpg │   └── song1.mp3 └── trabajo
+
+    ├── family
+    │   ├── film2.avi
+    │   ├── snap2.jpg
+    │   └── song2.mp3
+    └── friends
+        ├── film1.avi
+        ├── snap1.jpg
+        └── song1.mp3
+
+9 directorios, 18 archivos Utilice el comando rm -rf para eliminar de forma recursiva los directorios de familia, amigos y trabajo y sus contenidos.
+
+[student@servera ~]$ rm -rf family/ friends/ work/
+[student@servera ~]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Music
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Pictures
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Videos
+
+7.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+8.
+
+
+
+
+
+2.3. Crear enlaces entre archivos 2.3. Crear vínculos entre archivos Objetivos Crear y comparar el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Administrar vínculos entre archivos Puede crear varios nombres de archivos que apunten al mismo archivo. Estos nombres de archivos se denominan enlaces. Puede crear dos tipos de vínculos: un vínculo físico o un vínculo simbólico (a veces llamado vínculo blando). Cada tipo de enlace es útil para diferentes casos de uso. Enlaces físicos a archivos Cada archivo comienza con un único enlace físico, desde su nombre inicial hasta los datos del sistema de archivos. Cuando crea un vínculo físico a un archivo, crea otro nombre que apunta a esos mismos datos. El nuevo enlace físico actúa exactamente como el nombre del archivo original. Una vez creado el vínculo, no podrá notar la diferencia entre el nuevo vínculo físico y el nombre original del archivo. Puede determinar si un archivo tiene varios enlaces físicos utilizando el comando ls -l. Un elemento en el resultado de este comando es el recuento de enlaces de cada archivo, que es el número de enlaces físicos que tiene el archivo. En el siguiente ejemplo, el recuento de enlaces del archivo newfile.txt es 1. Tiene exactamente una ruta absoluta, que es la ubicación /home/user/newfile.txt.
+
+user@host:~$ pwd
+
+/casa/usuario
+
+user@host:~$ ls -l newfile.txt
+
+-rw-r--r--. 1 usuario usuario 0 30 de mayo 19:19 newfile.txt Puede usar el comando ln para crear un enlace físico (otro nombre de archivo) que apunte a un archivo existente. el comando
+
+needs at least two arguments: a path to the existing file, and the path to the hard link that you want to create.
+
+El siguiente ejemplo crea un vínculo físico llamado newfile-hlink2.txt en el directorio /tmp para el archivo newfile.txt existente.
+
+user@host:~$ ln newfile.txt /tmp/newfile-hlink2.txt
+user@host:~$ ls -l newfile.txt /tmp/newfile-hlink2.txt
+
+-rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 /tmp/newfile-hlink2.txt -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 newfile.txt Para determinar si dos archivos están vinculados de forma física, utilice la opción -i del comando ls para enumerar el número de inodo de cada archivo. Si los archivos están en el mismo sistema de archivos y sus números de inodo son los mismos, entonces los archivos son enlaces físicos que apuntan al mismo contenido del archivo de datos. En el siguiente ejemplo, puede verificar que los archivos newfile.txt y /tmp/newfile-hlink2.txt comparten el número de inodo 8924107 en la primera columna del comando ls -il.
+
+
+
+
+
+
+
+## 2.3. Crear vínculos entre archivos
+
+2.3. Crear enlaces entre archivos 2.3. Crear vínculos entre archivos Objetivos Crear y comparar el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Administrar vínculos entre archivos Puede crear varios nombres de archivos que apunten al mismo archivo. Estos nombres de archivos se denominan enlaces. Puede crear dos tipos de vínculos: un vínculo físico o un vínculo simbólico (a veces llamado vínculo blando). Cada tipo de enlace es útil para diferentes casos de uso. Enlaces físicos a archivos Cada archivo comienza con un único enlace físico, desde su nombre inicial hasta los datos del sistema de archivos. Cuando crea un vínculo físico a un archivo, crea otro nombre que apunta a esos mismos datos. El nuevo enlace físico actúa exactamente como el nombre del archivo original. Una vez creado el vínculo, no podrá notar la diferencia entre el nuevo vínculo físico y el nombre original del archivo. Puede determinar si un archivo tiene varios enlaces físicos utilizando el comando ls -l. Un elemento en el resultado de este comando es el recuento de enlaces de cada archivo, que es el número de enlaces físicos que tiene el archivo. En el siguiente ejemplo, el recuento de enlaces del archivo newfile.txt es 1. Tiene exactamente una ruta absoluta, que es la ubicación /home/user/newfile.txt.
+
+user@host:~$ pwd
+
+/casa/usuario
+
+user@host:~$ ls -l newfile.txt
+
+-rw-r--r--. 1 usuario usuario 0 30 de mayo 19:19 newfile.txt Puede usar el comando ln para crear un enlace físico (otro nombre de archivo) que apunte a un archivo existente. el comando
+
+needs at least two arguments: a path to the existing file, and the path to the hard link that you want to create.
+
+El siguiente ejemplo crea un vínculo físico llamado newfile-hlink2.txt en el directorio /tmp para el archivo newfile.txt existente.
+
+user@host:~$ ln newfile.txt /tmp/newfile-hlink2.txt
+user@host:~$ ls -l newfile.txt /tmp/newfile-hlink2.txt
+
+-rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 /tmp/newfile-hlink2.txt -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 newfile.txt Para determinar si dos archivos están vinculados de forma física, utilice la opción -i del comando ls para enumerar el número de inodo de cada archivo. Si los archivos están en el mismo sistema de archivos y sus números de inodo son los mismos, entonces los archivos son enlaces físicos que apuntan al mismo contenido del archivo de datos. En el siguiente ejemplo, puede verificar que los archivos newfile.txt y /tmp/newfile-hlink2.txt comparten el número de inodo 8924107 en la primera columna del comando ls -il.
+
+
+
+
+
+2.3. Crear vínculos entre archivos
+
+user@host:~$ ls -il newfile.txt /tmp/newfile-hlink2.txt
+
+8924107 -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 /tmp/newfile-hlink2.txt 8924107 -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 newfile.txt Importante Los enlaces físicos que hacen referencia al mismo archivo comparten la estructura de inodos con el recuento de enlaces, permisos de acceso, propiedad de usuarios y grupos, marcas de tiempo y contenido del archivo. Cuando se cambia esa información para un enlace físico, los otros enlaces físicos del mismo archivo también muestran la nueva información. Este comportamiento se debe a que cada enlace físico apunta a los mismos datos en el dispositivo de almacenamiento. Incluso si se elimina el archivo original, aún puede acceder al contenido del archivo siempre que exista al menos otro enlace físico. Los datos se eliminan del almacenamiento solo cuando se elimina el último enlace físico, lo que hace que ningún enlace físico haga referencia al contenido del archivo.
+
+user@host:~$ rm -f newfile.txt
+user@host:~$ ls -l /tmp/newfile-hlink2.txt
+
+-rw-rw-r--. 1 usuario usuario 12 30 de marzo 19:19 /tmp/newfile-hlink2.txt
+
+user@host:~$ cat /tmp/newfile-hlink2.txt
+
+Hola mundo Limitaciones de los enlaces físicos Los enlaces físicos tienen algunas limitaciones. En primer lugar, puede utilizar enlaces físicos sólo con archivos normales. No puede utilizar el comando ln para crear un vínculo físico a un directorio o archivo especial. En segundo lugar, puede utilizar enlaces físicos sólo si ambos archivos están en el mismo sistema de archivos. La jerarquía del sistema de archivos puede incluir múltiples dispositivos de almacenamiento. Dependiendo de la configuración de su sistema, cuando cambia a un nuevo directorio, ese directorio y su contenido pueden almacenarse en un sistema de archivos diferente. Para ver los sistemas de archivos activos en una máquina Linux, use el comando df. Este comando muestra una lista de los sistemas de archivos actualmente montados y sus puntos de montaje correspondientes. La columna Montado en identifica el directorio donde está adjunto cada sistema de archivos.
+
+user@host:~$ df
+
+Sistema de archivos 1K bloques Usado Disponible Uso% Montado en /dev/sda3 20699116 6570308 14128808 32% / devtmpfs 4096 0 4096 0% /dev tmpfs 2899412 84 2899328 1% /dev/shm tmpfs 1159768 17764 1142004 2% /ejecutar tmpfs 1024 0 1024 0% /run/credentials/systemd-journald.service /dev/sda2 204580 8580 196000 5% /boot/efi /dev/sr0 536 536 0 100% /run/media/meta-data tmpfs 579880 2548 577332 1% /run/user/1000 tmpfs 1024 0 1024 0% /run/credentials/serial-getty@ttyS0.service Según el resultado del comando anterior, puede crear el vínculo físico /home/user/mylink que apunte al /var/tmp/myfile porque ambos son subdirectorios del directorio raíz (/) y pertenecen al mismo sistema de archivos. Sin embargo, no puede crear un vínculo físico en el directorio /home/user para apuntar al archivo /boot/efi/EFI/redhat/grub.cfg porque los archivos del directorio /boot/efi residen en un sistema de archivos separado.
+
+
+
+
+
+2.3. Creación de enlaces entre archivos Enlaces simbólicos a archivos La opción -s del comando ln crea un enlace simbólico, que también se denomina enlace suave. Un enlace simbólico no es un archivo normal. Es un tipo especial de archivo que apunta a un archivo o directorio existente. Los enlaces simbólicos tienen algunas ventajas sobre los enlaces físicos: los enlaces simbólicos pueden vincular dos archivos en diferentes sistemas de archivos. Los enlaces simbólicos pueden apuntar a un directorio o un archivo especial, además de un archivo normal. En el siguiente ejemplo, el comando ln -s crea un enlace simbólico para el archivo /home/user/newfile-link2.txt. El nombre del enlace simbólico es /tmp/newfile-symlink.txt.
+
+user@host:~$ ln -s /home/user/newfile-link2.txt /tmp/newfile-symlink.txt
+user@host:~$ ls -l newfile-link2.txt /tmp/newfile-symlink.txt
+
+-rw-rw-r--. 1 usuario usuario 12 30 mayo 19:19 newfile-link2.txt
+
+lrwxrwxrwx. 1 user user 11 May 30 20:59 /tmp/newfile-symlink.txt -> /home/user/newfile-link2.txt
+user@host:~$ cat /tmp/newfile-symlink.txt
+
+Hola mundo simbólico En el ejemplo anterior, el primer carácter de la lista larga del archivo /tmp/newfile-symlink.txt es l (la letra "l") en lugar de un guión (-). Este carácter indica que el archivo es un enlace simbólico y no un archivo normal. Cuando se elimina el archivo normal original, el enlace simbólico todavía apunta al archivo pero el destino desaparece. Un enlace simbólico que apunta a un archivo faltante se denomina enlace simbólico colgante.
+
+user@host:~$ rm -f newfile-link2.txt
+user@host:~$ ls -l /tmp/newfile-symlink.txt
+lrwxrwxrwx. 1 user user 11 May 30 20:59 /tmp/newfile-symlink.txt -> /home/user/newfile-link2.txt
+user@host:~$ cat /tmp/newfile-symlink.txt
+cat: /tmp/newfile-symlink.txt: No such file or directory
+
+Importante Un efecto secundario del enlace simbólico colgante en el ejemplo anterior es que si crea un archivo con el mismo nombre que el archivo eliminado (/home/user/newfile-link2.txt), el enlace simbólico ya no está "colgante" y apunta al nuevo archivo. Los enlaces físicos no funcionan de esta manera. Si elimina un vínculo físico y luego usa otras herramientas (en lugar del comando ln) para crear un archivo con el mismo nombre, entonces el nuevo archivo no está vinculado al archivo eliminado. Considere la siguiente forma de comparar enlaces físicos y enlaces simbólicos para comprender cómo
+
+they work:
+
+Un enlace físico señala un nombre a los datos en un dispositivo de almacenamiento. Un enlace simbólico apunta un nombre a otro nombre, que apunta a datos en un dispositivo de almacenamiento. Un enlace simbólico puede apuntar a un directorio. El enlace simbólico actúa entonces como el directorio. Si utiliza el comando cd para cambiar al enlace simbólico, entonces el directorio de trabajo actual se convierte en el directorio vinculado. Algunas herramientas pueden rastrear que siguió un enlace simbólico. Por ejemplo, de forma predeterminada, el comando cd actualiza su directorio de trabajo actual utilizando el nombre del enlace simbólico en lugar del nombre del directorio real. Si desea actualizar el directorio de trabajo actual utilizando el nombre del directorio real, puede utilizar la opción -P. El siguiente ejemplo crea un enlace simbólico llamado /home/user/configfiles que apunta al directorio /etc.
+
+
+
+
+
+2.3. Crear vínculos entre archivos
+
+user@host:~$ ln -s /etc /home/user/configfiles
+user@host:~$ cd /home/user/configfiles
+user@host:~/configfiles$ pwd
+
+/home/usuario/archivos de configuración
+
+user@host:~/configfiles$ cd -P /home/user/configfiles
+user@host:/etc$ pwd
+
+/etc Referencias info ln (Hacer vínculos entre archivos) páginas man ln(1) y df(1)
+
+
+
+
+
+2.4. Ejercicio guiado Crear vínculos entre archivos 2.4. Ejercicio guiado Crear vínculos entre archivos Cree y compare el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Resultados Crear vínculos físicos y vínculos simbólicos entre archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-make
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Cree el enlace físico /home/student/links/file.hardlink para el archivo /home/student/files/target.file. Verifique el recuento de enlaces para el archivo original y el nuevo archivo vinculado. 2. Vea el recuento de enlaces y el número de índice (inodo) para el archivo /home/student/files/target.file. El número de inodo del archivo puede variar en su entorno.
+
+[student@servera ~]$ ls -li files/target.file
+
+8838187 -rw-r--r--. 1 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file El recuento de enlaces de files/target.file es 1 porque el archivo no tiene enlaces adicionales. 2.1. Cree el enlace físico /home/student/links/file.hardlink. Vincúlelo al archivo /home/student/files/target.file.
+
+[student@servera ~]$ ln files/target.file links/file.hardlink
+
+2.2. Verifique el recuento de enlaces y el número de inodo para el archivo original y el nuevo enlace físico. El recuento de enlaces debe ser 2 y el número de inodo debe ser el mismo para ambos archivos.
+
+[student@servera ~]$ ls -li files/target.file links/file.hardlink
+
+8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file 8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 enlaces/archivo.hardlink El archivo y el enlace tienen el mismo número de inodo porque apuntan a los mismos datos. 2.3. Cree el enlace simbólico /home/student/tempdir que apunte al directorio /tmp en la máquina del servidor. Verifique el enlace simbólico recién creado. 3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Crear vínculos entre archivos
+
+2.4. Ejercicio guiado Crear vínculos entre archivos 2.4. Ejercicio guiado Crear vínculos entre archivos Cree y compare el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Resultados Crear vínculos físicos y vínculos simbólicos entre archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-make
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Cree el enlace físico /home/student/links/file.hardlink para el archivo /home/student/files/target.file. Verifique el recuento de enlaces para el archivo original y el nuevo archivo vinculado. 2. Vea el recuento de enlaces y el número de índice (inodo) para el archivo /home/student/files/target.file. El número de inodo del archivo puede variar en su entorno.
+
+[student@servera ~]$ ls -li files/target.file
+
+8838187 -rw-r--r--. 1 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file El recuento de enlaces de files/target.file es 1 porque el archivo no tiene enlaces adicionales. 2.1. Cree el enlace físico /home/student/links/file.hardlink. Vincúlelo al archivo /home/student/files/target.file.
+
+[student@servera ~]$ ln files/target.file links/file.hardlink
+
+2.2. Verifique el recuento de enlaces y el número de inodo para el archivo original y el nuevo enlace físico. El recuento de enlaces debe ser 2 y el número de inodo debe ser el mismo para ambos archivos.
+
+[student@servera ~]$ ls -li files/target.file links/file.hardlink
+
+8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 archivos/target.file 8838187 -rw-r--r--. 2 estudiante estudiante 11 27 de mayo 13:15 enlaces/archivo.hardlink El archivo y el enlace tienen el mismo número de inodo porque apuntan a los mismos datos. 2.3. Cree el enlace simbólico /home/student/tempdir que apunte al directorio /tmp en la máquina del servidor. Verifique el enlace simbólico recién creado. 3.
+
+
+
+
+
+2.4. Ejercicio guiado Crear vínculos entre archivos Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-make
+
+Cree el enlace simbólico /home/student/tempdir al directorio /tmp.
+
+[student@servera ~]$ ln -s /tmp /home/student/tempdir
+
+3.1. Utilice el comando ls -l para verificar el enlace simbólico recién creado.
+
+[student@servera ~]$ ls -l /home/student/tempdir
+lrwxrwxrwx. 1 student student 4 May 27 13:53 /home/student/tempdir -> /tmp
+
+3.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+4.
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell 2.5. Coincidencia de nombres de archivos con expansiones de Shell Objetivos Ejecutar eficientemente comandos que afectan a muchos archivos mediante el uso de funciones de coincidencia de patrones del Shell Bash. Expansiones de la línea de comandos Cuando escribe un comando en el símbolo del shell Bash, el shell procesa esa línea de comandos a través de múltiples expansiones antes de ejecutarla. Puede utilizar estas expansiones de shell para realizar tareas complejas que de otro modo serían difíciles o imposibles. El shell Bash realiza las siguientes expansiones: Expansión de nombre de ruta, que ayuda a seleccionar uno o más archivos mediante coincidencia de patrones. Expansión de llaves, que puede generar múltiples cadenas de caracteres. Expansión de tilde, que se expande a una ruta al directorio de inicio de un usuario. Expansión de variable, que reemplaza el texto con el valor almacenado en una variable de shell. Sustitución de comandos, que reemplaza el texto con la salida de un comando. Expansión de nombres de rutas y coincidencia de patrones La expansión de nombres de rutas, históricamente llamada globalización, es una de las características más útiles de Bash. La expansión del nombre de ruta utiliza comodines, que son metacaracteres que se expanden para coincidir con los nombres de archivo y ruta que está buscando. Como resultado, los comandos pueden actuar sobre un conjunto específico de archivos durante una única ejecución. Esta característica ayuda a los administradores del sistema a administrar muchos archivos. La expansión del nombre de ruta expande un patrón de caracteres especiales que representan comodines o clases de caracteres en una lista de nombres de archivos que coinciden con el patrón. Antes de que el shell ejecute su comando, reemplaza el patrón con la lista de nombres de archivos que coinciden. Si el patrón no coincide con nada, entonces el shell intenta utilizar el patrón como argumento literal para el comando que ejecuta. La siguiente tabla enumera metacaracteres y clases de patrones comunes que se utilizan para la coincidencia de patrones. Tabla 2. Tabla de metacaracteres y coincidencias * ¿Alguna cadena de cero o más caracteres? Cualquier carácter [abc…​] Cualquier carácter en la clase encerrada (entre corchetes) [!abc…​] Cualquier carácter que no esté en la clase encerrada [^abc…​] Cualquier carácter que no esté en la clase encerrada Coincidencias de patrones
+
+
+
+
+
+
+
+## 2.5. Coincidencia de nombres de archivos con expansiones de Shell
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell 2.5. Coincidencia de nombres de archivos con expansiones de Shell Objetivos Ejecutar eficientemente comandos que afectan a muchos archivos mediante el uso de funciones de coincidencia de patrones del Shell Bash. Expansiones de la línea de comandos Cuando escribe un comando en el símbolo del shell Bash, el shell procesa esa línea de comandos a través de múltiples expansiones antes de ejecutarla. Puede utilizar estas expansiones de shell para realizar tareas complejas que de otro modo serían difíciles o imposibles. El shell Bash realiza las siguientes expansiones: Expansión de nombre de ruta, que ayuda a seleccionar uno o más archivos mediante coincidencia de patrones. Expansión de llaves, que puede generar múltiples cadenas de caracteres. Expansión de tilde, que se expande a una ruta al directorio de inicio de un usuario. Expansión de variable, que reemplaza el texto con el valor almacenado en una variable de shell. Sustitución de comandos, que reemplaza el texto con la salida de un comando. Expansión de nombres de rutas y coincidencia de patrones La expansión de nombres de rutas, históricamente llamada globalización, es una de las características más útiles de Bash. La expansión del nombre de ruta utiliza comodines, que son metacaracteres que se expanden para coincidir con los nombres de archivo y ruta que está buscando. Como resultado, los comandos pueden actuar sobre un conjunto específico de archivos durante una única ejecución. Esta característica ayuda a los administradores del sistema a administrar muchos archivos. La expansión del nombre de ruta expande un patrón de caracteres especiales que representan comodines o clases de caracteres en una lista de nombres de archivos que coinciden con el patrón. Antes de que el shell ejecute su comando, reemplaza el patrón con la lista de nombres de archivos que coinciden. Si el patrón no coincide con nada, entonces el shell intenta utilizar el patrón como argumento literal para el comando que ejecuta. La siguiente tabla enumera metacaracteres y clases de patrones comunes que se utilizan para la coincidencia de patrones. Tabla 2. Tabla de metacaracteres y coincidencias * ¿Alguna cadena de cero o más caracteres? Cualquier carácter [abc…​] Cualquier carácter en la clase encerrada (entre corchetes) [!abc…​] Cualquier carácter que no esté en la clase encerrada [^abc…​] Cualquier carácter que no esté en la clase encerrada Coincidencias de patrones
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell [[:alpha:]] Cualquier carácter alfabético [[:lower:]] Cualquier carácter en minúscula [[:upper:]] Cualquier carácter en mayúscula [[:alnum:]] Cualquier carácter o dígito alfabético [[:punct:]] Cualquier carácter imprimible que no sea un espacio o alfanumérico [[:digit:]] Cualquier dígito del 0 al 9 [[:space:]] Cualquier carácter de espacio en blanco, que puede incluir tabulaciones, nuevas líneas, retornos de carro, cambios de página o espacios. Para el siguiente ejemplo, imagine que ejecuta los siguientes comandos para crear algunos archivos de muestra:
+
+user@host:~$ mkdir glob; cd glob
+user@host:~/glob$ touch alfa bravo charlie delta echo able baker cast dog easy
+user@host:~/glob$ ls
+
+capaz alfa panadero bravo elenco charlie delta perro eco fácil
+
+user@host:~/glob$
+
+En el siguiente ejemplo, los dos primeros comandos utilizan coincidencias de patrones simples con el asterisco (*) para hacer coincidir todos los nombres de archivos que comienzan con a y todos los nombres de archivos que contienen una a, respectivamente. El tercer comando utiliza el asterisco y los corchetes para hacer coincidir todos los nombres de archivos que comienzan con aoc.
+
+user@host:~/glob$ ls a*
+
+alfa capaz
+
+user@host:~/glob$ ls *a*
+
+capaz alfa panadero bravo elenco charlie delta fácil
+
+user@host:~/glob$ ls [ac]*
+
+able alfa cast charlie El siguiente ejemplo utiliza signos de interrogación (?) para hacer coincidir los nombres de los archivos. Los dos comandos solo coinciden con nombres de archivos que tienen cuatro y cinco caracteres, respectivamente.
+
+user@host:~/glob$ ls ????
+
+capaz de emitir eco fácil
+
+user@host:~/glob$ ls ?????
+
+panadero bravo delta Expansión de llave La expansión de llave genera cadenas discrecionales de caracteres. Las llaves contienen una lista de cadenas separadas por comas o una secuencia de expresión. El resultado incluye el texto que precede o sigue a la definición de llave. Las expansiones de llaves pueden estar anidadas, una dentro de otra. También puede utilizar la sintaxis de doble punto (..), que se expande a una secuencia. Coincidencias de patrones
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell Por ejemplo, la sintaxis de doble punto {m..p} dentro de llaves se expande a m n o p.
+
+user@host:~/glob$ echo {Sunday,Monday,Tuesday,Wednesday}.log
+
+Domingo.log Lunes.log Martes.log Miércoles.log
+
+user@host:~/glob$ echo file{1..3}.txt
+
+archivo1.txt archivo2.txt archivo3.txt
+
+user@host:~/glob$ echo file{a..c}.txt
+
+archivoa.txt archivob.txt archivoc.txt
+
+user@host:~/glob$ echo file{a,b}{1,2}.txt
+
+archivoa1.txt archivoa2.txt archivob1.txt archivob2.txt
+
+user@host:~/glob$ echo file{a{1,2},b,c}.txt
+
+filea1.txt filea2.txt fileb.txt filec.txt Un uso práctico de la expansión de llaves es crear múltiples archivos o directorios.
+
+user@host:~/glob$ mkdir ../RHEL{8,9,10}
+user@host:~/glob$ ls ../RHEL*
+
+../RHEL10: ../RHEL8: ../RHEL9: Expansión de tilde En el shell Bash, el carácter de tilde (~) es un acceso directo al directorio de inicio del usuario actual. También puede utilizar una tilde (~) seguida de un nombre de usuario para resolver el directorio de inicio del usuario proporcionado. En el siguiente ejemplo, la tilde es un acceso directo al directorio de inicio del usuario actual y al directorio de inicio de un usuario diferente (devops).
+
+user@host:~/scripts$ echo ~
+
+/casa/usuario
+
+user@host:~/scripts$ echo ~devops
+
+/home/devops Este acceso directo es especialmente útil para hacer referencia a archivos dentro de su directorio de inicio desde otros directorios. Para hacerlo, use el carácter de tilde (~), agregue una barra diagonal (/) y agregue la ruta del archivo o directorio relativa a su directorio de inicio. En el siguiente ejemplo, hace referencia al archivo /home/user/scripts/run-app.sh del archivo /var/log
+
+directory by using the shortcut:
+user@host:/var/log$ ls ~/scripts/run-app.sh
+
+/home/user/scripts/run-app.sh El shell Bash ejecuta la sustitución del directorio de inicio en función de algunos factores. Si la tilde va seguida de una cadena de caracteres distintos de una barra diagonal (/), entonces el shell interpreta la cadena hasta esa barra como un nombre de usuario. Si la subcadena coincide con un nombre de usuario real, entonces el shell reemplaza la cadena con la ruta absoluta al directorio de inicio de ese usuario. Si la subcadena no coincide con un nombre de usuario, entonces el shell usa una tilde real seguida de la cadena de caracteres. En el siguiente ejemplo, el usuario root utiliza el acceso directo para enumerar el archivo scripts/run-app.sh en el directorio de inicio del usuario desde el directorio /var/log. Luego, el usuario root intenta listar el mismo archivo, pero para el usuario dev1 inexistente. En el segundo comando, el shell interpreta la tilde (~) como un carácter normal porque el usuario dev1 no existe.
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell
+
+root@host:/var/log# ls ~user/scripts/run-app.sh
+
+/home/user/scripts/run-app.sh
+
+root@host:/var/log# ls ~dev1/scripts/run-app.sh
+ls: cannot access '~dev1/scripts/run-app.sh': No such file or directory
+
+Expansión de variables Una variable actúa como un contenedor con nombre que almacena un valor en la memoria. Las variables simplifican el acceso y la modificación de los datos almacenados, ya sea desde la línea de comando o dentro de un script de shell. Puede asignar datos como valor a una variable con la siguiente sintaxis.
+
+user@host:~$ VARIABLENAME=value
+
+Puede utilizar la expansión de variables para convertir el nombre de la variable a su valor en la línea de comando. Si una cadena comienza con un signo de dólar ($), entonces el shell intenta usar el resto de esa cadena como nombre de variable y lo reemplaza con el valor de la variable.
+
+user@host:~$ USERNAME=operator
+user@host:~$ echo $USERNAME
+
+operador Para evitar errores debido a otras expansiones del shell, puede poner el nombre de la variable entre llaves, por ejemplo ${VARIABLENAME}.
+
+user@host:~$ USERNAME=operator
+user@host:~$ echo ${USERNAME}
+
+operador Los nombres de las variables solo pueden contener letras (mayúsculas y minúsculas), números y guiones bajos. Los nombres de las variables distinguen entre mayúsculas y minúsculas y no pueden comenzar con un número. Sustitución de comandos La sustitución de comandos permite que la salida de un comando reemplace el comando en sí en la línea de comando. La sustitución de comandos ocurre cuando se incluye un comando entre paréntesis y lo antecede con un signo de dólar ($). El formulario $(comando) puede anidar múltiples expansiones de comando una dentro de otra.
+
+user@host:~/glob$ echo Today is $(date +%A).
+
+Hoy es miércoles.
+
+user@host:~/glob$ echo The time is $(date +%M) minutes past $(date +%l%p).
+
+Son 26 minutos después de las 11 a.m. Nota Una forma anterior de sustitución de comandos utiliza comillas invertidas: `comando`. Aunque el shell Bash todavía acepta este formato, trate de evitarlo porque podría confundir visualmente las comillas invertidas con comillas simples y las comillas invertidas no se pueden anidar. Proteger argumentos de la expansión Muchos caracteres tienen un significado especial en el shell Bash. Para evitar expansiones de shell en partes de su línea de comando, puede citar y escapar caracteres y cadenas. La barra invertida (\) es un carácter de escape en el shell Bash. Protege al siguiente personaje de la expansión.
+
+
+
+
+
+2.5. Coincidencia de nombres de archivos con expansiones de Shell
+
+user@host:~/glob$ echo The value of $HOME is your home directory.
+
+El valor de /home/user es su directorio de inicio.
+
+user@host:~/glob$ echo The value of \$HOME is your home directory.
+
+El valor de $HOME es su directorio de inicio. En el ejemplo anterior, con el signo de dólar protegido de la expansión, Bash lo trata como un carácter normal y no expande la variable $HOME. Para proteger cadenas de caracteres más largas, puede utilizar comillas simples (') o comillas dobles (") para encerrar cadenas. Tienen efectos ligeramente diferentes. Las comillas simples detienen todas las expansiones del shell. Las comillas dobles detienen la mayor parte de las expansiones del shell. Las comillas dobles impiden que los caracteres especiales distintos del signo de dólar ($), la barra invertida (\), la comillas invertida (`) y el signo de exclamación (!) funcionen dentro del texto citado. Las comillas dobles bloquean la expansión del nombre de ruta, pero aún permiten la sustitución de comandos y la expansión de variables.
+
+user@host:~/glob$ myhost=$(hostname -s); echo $myhost
+
+anfitrión
+
+user@host:~/glob$ echo "***** hostname is ${myhost} *****"
+
+***** el nombre de host es host ***** Utilice comillas simples para interpretar literalmente todo el texto entre comillas.
+
+user@host:~/glob$ echo "Will variable $myhost evaluate to $(hostname -s)?"
+
+¿El host variable se evaluará como host?
+
+user@host:~/glob$ echo 'Will variable $myhost evaluate to $(hostname -s)?'
+
+¿La variable $myhost se evaluará como $(hostname -s)? Importante Asegúrese de no confundir las comillas simples ( ' ) y la comilla grave de sustitución de comandos ( ` ), tanto en la pantalla como en el teclado. El uso de un carácter cuando se pretende utilizar el otro conduce a un comportamiento inesperado del shell. Referencias a las páginas man bash(1), cd(1), glob(7), isalpha(3), ls(1), path_solving(7) y pwd(1)
+
+
+
+
+
+2.6. Nombres de archivos de coincidencia de cuestionarios con expansiones de Shell 2.6. Prueba Emparejar nombres de archivos con expansiones de Shell Elija las respuestas correctas a las siguientes preguntas: ¿Qué patrón coincide solo con nombres de archivos que terminan en b? 1. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con b? 2. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos donde el primer carácter no es b? 3. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide con todos los nombres de archivos que contienen una b? 4. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que contienen un número? 5. *#* a. *[[:dígito:]]* b. *[dígito]* c. [0-9] d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con una letra mayúscula? 6. ^?* a. ^* b. [superior]* c. [[:superior:]]* d. [[CAP]]* e.
+
+
+
+
+
+
+
+## Cuestionario: Nombres de archivos de coincidencia de cuestionarios con expansiones de Shell
+
+2.6. Nombres de archivos de coincidencia de cuestionarios con expansiones de Shell 2.6. Prueba Emparejar nombres de archivos con expansiones de Shell Elija las respuestas correctas a las siguientes preguntas: ¿Qué patrón coincide solo con nombres de archivos que terminan en b? 1. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con b? 2. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos donde el primer carácter no es b? 3. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide con todos los nombres de archivos que contienen una b? 4. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que contienen un número? 5. *#* a. *[[:dígito:]]* b. *[dígito]* c. [0-9] d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con una letra mayúscula? 6. ^?* a. ^* b. [superior]* c. [[:superior:]]* d. [[CAP]]* e.
+
+
+
+
+
+2.6. Prueba de coincidencia de nombres de archivos con expansiones de Shell ¿Qué patrón coincide solo con nombres de archivos con al menos tres caracteres? 7. ???* a. ??? b. \3*c. +* d. ...* e.
+
+
+
+
+
+2.6. Prueba Emparejar nombres de archivos con expansiones de Shell Solución ¿Qué patrón coincide solo con nombres de archivos que terminan en b? 1. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con b? 2. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos donde el primer carácter no es b? 3. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide con todos los nombres de archivos que contienen una b? 4. b* a. *b b. *b* c. [!b]* d. ¿Qué patrón coincide sólo con nombres de archivos que contienen un número? 5. *#* a. *[[:dígito:]]* b. *[dígito]* c. [0-9] d. ¿Qué patrón coincide sólo con nombres de archivos que comienzan con una letra mayúscula? 6. ^?* a. ^* b. [superior]* c. [[:superior:]]* d. [[CAP]]* e.
+
+
+
+
+
+2.6. Prueba de coincidencia de nombres de archivos con expansiones de Shell ¿Qué patrón coincide solo con nombres de archivos con al menos tres caracteres? 7. ???* a. ??? b. \3*c. +* d. ...* e.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos 2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Resultados Utilice comodines para localizar y manipular archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-review
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. 1. Cree un directorio llamado planes de proyecto en el directorio Documentos. El directorio de Documentos se coloca en el directorio de inicio del usuario estudiante. Cree dos archivos vacíos en el directorio de planes de proyecto llamados season1-project-plan.odf y season2-project-plan.odf. Sugerencia: si el directorio ~/Documentos no existe, utilice la opción -p del comando mkdir para crearlo. 2. Cree conjuntos de archivos de práctica vacíos para usar en esta práctica de laboratorio. Si no reconoce inmediatamente el acceso directo de expansión de shell previsto, utilice la solución para aprender y practicar. Utilice la función de finalización de tabulación del shell para localizar nombres de rutas de archivos. Cree 12 archivos con nombres tv-seasonX-episodeY.ogg en el directorio /home/student. Reemplace el marcador de posición X con el número de temporada y el marcador de posición Y con el episodio de esa temporada, para dos temporadas de seis episodios cada una. 3. Como autor de una exitosa serie de novelas de misterio, estás editando los capítulos de tu próximo bestseller para su publicación. Cree ocho archivos con nombres de capítulo misteriosoX.odf. Reemplace el marcador de posición X con los números del 1 al 8. 4. Utilice un solo comando para crear los directorios ~/Videos/season1 y ~/Videos/season2 para organizar los episodios de TV. Mueva los episodios de TV apropiados a los subdirectorios de temporada. Utilice sólo dos comandos y especifique destinos con sintaxis relativa. 5. Cree una jerarquía de directorios de dos niveles con un solo comando para organizar los capítulos del libro de misterio. Cree el subdirectorio my-bestseller en el directorio Documentos y cree el subdirectorio de capítulos en el nuevo directorio my-bestseller. Cree tres subdirectorios más directamente en el directorio my-bestseller con un solo comando. Nombra estos subdirectorios como editor, cambios y vacaciones. No es necesario utilizar el
+
+mkdir -p command to create parents because the my-bestseller parent directory exists.
+
+6. Cambie al directorio de capítulos. Utilice el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos de libros al directorio de capítulos, que ahora es su directorio actual. Utilice la sintaxis más simple para especificar el directorio de destino. 7.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos 2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Resultados Utilice comodines para localizar y manipular archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-review
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. 1. Cree un directorio llamado planes de proyecto en el directorio Documentos. El directorio de Documentos se coloca en el directorio de inicio del usuario estudiante. Cree dos archivos vacíos en el directorio de planes de proyecto llamados season1-project-plan.odf y season2-project-plan.odf. Sugerencia: si el directorio ~/Documentos no existe, utilice la opción -p del comando mkdir para crearlo. 2. Cree conjuntos de archivos de práctica vacíos para usar en esta práctica de laboratorio. Si no reconoce inmediatamente el acceso directo de expansión de shell previsto, utilice la solución para aprender y practicar. Utilice la función de finalización de tabulación del shell para localizar nombres de rutas de archivos. Cree 12 archivos con nombres tv-seasonX-episodeY.ogg en el directorio /home/student. Reemplace el marcador de posición X con el número de temporada y el marcador de posición Y con el episodio de esa temporada, para dos temporadas de seis episodios cada una. 3. Como autor de una exitosa serie de novelas de misterio, estás editando los capítulos de tu próximo bestseller para su publicación. Cree ocho archivos con nombres de capítulo misteriosoX.odf. Reemplace el marcador de posición X con los números del 1 al 8. 4. Utilice un solo comando para crear los directorios ~/Videos/season1 y ~/Videos/season2 para organizar los episodios de TV. Mueva los episodios de TV apropiados a los subdirectorios de temporada. Utilice sólo dos comandos y especifique destinos con sintaxis relativa. 5. Cree una jerarquía de directorios de dos niveles con un solo comando para organizar los capítulos del libro de misterio. Cree el subdirectorio my-bestseller en el directorio Documentos y cree el subdirectorio de capítulos en el nuevo directorio my-bestseller. Cree tres subdirectorios más directamente en el directorio my-bestseller con un solo comando. Nombra estos subdirectorios como editor, cambios y vacaciones. No es necesario utilizar el
+
+mkdir -p command to create parents because the my-bestseller parent directory exists.
+
+6. Cambie al directorio de capítulos. Utilice el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos de libros al directorio de capítulos, que ahora es su directorio actual. Utilice la sintaxis más simple para especificar el directorio de destino. 7.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos Quiere enviar los dos primeros capítulos al editor para su revisión. Mueva solo esos dos capítulos al directorio del editor para evitar modificarlos durante la revisión. A partir del subdirectorio de capítulos, utilice la expansión de llaves con un rango para especificar los nombres de los archivos de capítulos que se van a mover y una ruta relativa para el directorio de destino. Mientras está de vacaciones, tiene la intención de escribir los capítulos 7 y 8. Utilice un solo comando para mover los archivos del directorio de capítulos al directorio de vacaciones. Especifique los nombres de los archivos de capítulos utilizando la expansión de llaves con una lista de cadenas y sin utilizar caracteres comodín. Cambie su directorio de trabajo a ~/Videos/season2 y luego copie el primer episodio de la temporada en el directorio de vacaciones. Utilice un único comando cd para cambiar de su directorio de trabajo al directorio ~/Documentos/mi-bestseller/vacaciones. Enumere sus archivos. Utilice el argumento del directorio de trabajo anterior para volver al directorio season2. Este argumento tiene éxito si el último cambio de directorio con el comando cd utilizó solo un comando en lugar de varios comandos cd. Desde el directorio de la temporada 2, copie el archivo del episodio 2 al directorio de vacaciones. Utilice el acceso directo nuevamente para regresar al directorio de vacaciones. 8. Los autores de los capítulos 5 y 6 quieren experimentar con posibles cambios. Copie ambos archivos del directorio ~/Documents/my-bestseller/chapters al directorio ~/Documents/my-bestseller/changes para evitar que estos cambios modifiquen los archivos originales. Vaya al directorio ~/Documentos/mi-bestseller. Utilice la coincidencia de patrones de corchetes para especificar qué números de capítulo deben coincidir en el argumento del nombre de archivo del comando cp. 9. Cambie su directorio actual al directorio de cambios y use el comando fecha +%F con sustitución de comando para copiar el archivo misterio-chapter5.odf a un nuevo archivo que incluya la fecha completa. Utilice el formato de nombre misterio-capítulo5-AAAA-MM-DD.odf. Al utilizar la sustitución de comandos con el comando date +%s, haga otra copia del archivo misterio-capítulo5.odf y agregue la marca de tiempo actual (como el número de segundos desde la época, 1970-01-01 00:00 UTC) para garantizar un nombre de archivo único. 10. Después de una revisión más detallada, decides que no necesitas los cambios en la trama. Elimine el directorio de cambios. Si es necesario, vaya al directorio de cambios y elimine todos los archivos del directorio. No puede eliminar un directorio cuando es el directorio de trabajo actual. Cambie al directorio principal del directorio de cambios. Intente eliminar el directorio vacío utilizando el comando rm sin la opción recursiva -r. Este intento debería fracasar. Finalmente, use el comando rmdir para eliminar el directorio vacío, lo cual se realiza correctamente. Cuando terminen las vacaciones, ya no necesitará el directorio de vacaciones. Elimínelo usando el comando rm con la opción recursiva. Cuando termine, regrese al directorio de inicio del usuario estudiante. 11. Cree un vínculo físico al archivo ~/Documents/project-plans/season2-project-plan.odf y asigne al vínculo el nombre ~/Documents/links/season2-project-plan.odf.link. Sugerencia: si el directorio ~/Documentos/links no existe, utilice el comando mkdir para crearlo. 12. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 13.
+
+
+
+
+
+2.7. Lab Administrar archivos desde la línea de comandos Evaluación Como usuario estudiante en la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade files-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-review
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la solución de línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Resultados Utilice comodines para localizar y manipular archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-review
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@serverb
+
+...resultado omitido... 1. Cree un directorio llamado project-plans en el directorio Documentos. El directorio de Documentos se coloca en el directorio de inicio del usuario estudiante. Cree dos archivos vacíos en el directorio de planes de proyecto llamados season1-project-plan.odf y season2-project-plan.odf. Sugerencia: si el directorio ~/Documentos no existe, utilice la opción -p del comando mkdir para crearlo.
+
+[student@serverb ~]$ mkdir -p ~/Documents/project-plans
+[student@serverb ~]$ touch ~/Documents/project-plans/season{1,2}-project-plan.odf
+[student@serverb ~]$ ls -lR Documents/
+
+Documentos/: total 0
+
+drwxr-xr-x. 2 student student 70 Jun  3 09:03 project-plans
+
+Documentos/planes de proyecto: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:02 season1-project-plan.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:02 season2-project-plan.odf 2. Cree conjuntos de archivos de práctica vacíos para usar en esta práctica de laboratorio. Si no reconoce inmediatamente el acceso directo de expansión de shell previsto, utilice la solución para aprender y practicar. Utilice la función de finalización de tabulación del shell para localizar nombres de rutas de archivos. Cree 12 archivos con nombres tv-seasonX-episodeY.ogg en el directorio /home/student. Reemplace el marcador de posición X con el número de temporada y el marcador de posición Y con el episodio de esa temporada, para dos temporadas de seis episodios cada una. 3.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb ~]$ touch tv-season{1..2}-episode{1..6}.ogg
+[student@serverb ~]$ ls tv*
+
+tv-temporada1-episodio1.ogg tv-temporada1-episodio5.ogg tv-temporada2-episodio3.ogg tv-temporada1-episodio2.ogg tv-temporada1-episodio6.ogg tv-temporada2-episodio4.ogg tv-temporada1-episodio3.ogg tv-temporada2-episodio1.ogg tv-temporada2-episodio5.ogg tv-season1-episode4.ogg tv-season2-episode2.ogg tv-season2-episode6.ogg Como autor de una exitosa serie de novelas de misterio, estás editando los capítulos de tu próximo bestseller para su publicación. Cree ocho archivos con nombres de capítulo misteriosoX.odf. Reemplace el marcador de posición X con los números del 1 al 8.
+
+[student@serverb ~]$ touch mystery-chapter{1..8}.odf
+[student@serverb ~]$ ls mys*
+
+misterio-chapter1.odf misterio-chapter4.odf misterio-chapter7.odf misterio-chapter2.odf misterio-chapter5.odf misterio-chapter8.odf misterio-chapter3.odf misterio-chapter6.odf 4. Utilice un solo comando para crear los directorios ~/Videos/season1 y ~/Videos/season2 para organizar los episodios de TV. Mueva los episodios de TV apropiados a los subdirectorios de temporada. Utilice sólo dos comandos y especifique destinos con sintaxis relativa. 5. Cree dos subdirectorios denominados temporada1 y temporada2 en el directorio Videos usando un solo comando.
+
+[student@serverb ~]$ mkdir -p Videos/season{1..2}
+[student@serverb ~]$ ls Videos
+
+temporada1 temporada2 5.1. Mueva los episodios de TV apropiados a los subdirectorios de temporada usando solo dos comandos.
+
+[student@serverb ~]$ mv tv-season1* Videos/season1
+[student@serverb ~]$ mv tv-season2* Videos/season2
+[student@serverb ~]$ ls -R Videos
+
+Videos: temporada1 temporada2 Videos/temporada1: tv-temporada1-episodio1.ogg tv-temporada1-episodio3.ogg tv-temporada1-episodio5.ogg tv-temporada1-episodio2.ogg tv-temporada1-episodio4.ogg tv-temporada1-episodio6.ogg Videos/temporada2: tv-temporada2-episodio1.ogg tv-temporada2-episodio3.ogg tv-temporada2-episodio5.ogg tv-temporada2-episodio2.ogg tv-temporada2-episodio4.ogg tv-temporada2-episodio6.ogg 5.2. Cree una jerarquía de directorios de dos niveles con un solo comando para organizar los capítulos del libro de misterio. Cree el subdirectorio my-bestseller en el directorio Documentos y cree el subdirectorio de capítulos en el nuevo directorio my-bestseller. Cree tres subdirectorios más directamente en el directorio my-bestseller con un solo comando. Nombra estos subdirectorios como editor, cambios y vacaciones. No es necesario utilizar el
+
+mkdir -p command to create parents because the my-bestseller parent directory exists.
+
+6. Cree el directorio my-bestseller en el directorio Documentos. Cree el directorio de capítulos en el directorio my-bestseller. 6.1.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb ~]$ mkdir -p Documents/my-bestseller/chapters
+[student@serverb ~]$ ls -R Documents
+
+Documentos: mis-bestseller planes-de-proyectos Documentos/mi-bestseller: capítulos Documentos/mi-bestseller/capítulos: Documentos/planes-de-proyectos: temporada1-plan-proyecto.odf temporada2-plan-proyecto.odf Cree tres directorios llamados editor, cambios y vacaciones, en el directorio mi-bestseller usando un solo comando.
+
+[student@serverb ~]$ mkdir Documents/my-bestseller/{editor,changes,vacation}
+[student@serverb ~]$ ls -R Documents
+
+Documentos: mi-bestseller planes-proyecto Documentos/mi-bestseller: cambios editor de capítulos vacaciones Documentos/mi-bestseller/cambios: Documentos/mi-bestseller/capítulos: Documentos/mi-bestseller/editor: Documentos/mi-bestseller/vacaciones: Documentos/planes-de-proyecto: temporada1-plan-proyecto.odf temporada2-plan-proyecto.odf 6.2. Cambie al directorio de capítulos. Utilice el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos de libros al directorio de capítulos, que ahora es su directorio actual. Utilice la sintaxis más simple para especificar el directorio de destino. Quiere enviar los dos primeros capítulos al editor para su revisión. Mueva solo esos dos capítulos al directorio del editor para evitar modificarlos durante la revisión. A partir del subdirectorio de capítulos, utilice la expansión de llaves con un rango para especificar los nombres de los archivos de capítulos que se van a mover y una ruta relativa para el directorio de destino. Mientras está de vacaciones, tiene la intención de escribir los capítulos 7 y 8. Utilice un solo comando para mover los archivos del directorio de capítulos al directorio de vacaciones. Especifique los nombres de los archivos de capítulos utilizando la expansión de llaves con una lista de cadenas y sin utilizar caracteres comodín. 7. Cambie al directorio de capítulos y use el acceso directo del directorio de inicio con tilde (~) para mover todos los capítulos del libro al directorio de capítulos.
+
+[student@serverb ~]$ cd Documents/my-bestseller/chapters
+[student@serverb chapters]$ mv ~/mystery-chapter* .
+[student@serverb chapters]$ ls
+
+misterio-capítulo1.odf misterio-capítulo4.odf misterio-capítulo7.odf misterio-capítulo2.odf misterio-capítulo5.odf misterio-capítulo8.odf misterio-capítulo3.odf misterio-capítulo6.odf 7.1. Mueva los dos primeros capítulos al directorio del editor. Utilice la expansión de llaves con un rango para especificar los nombres de los archivos de capítulos que se van a mover y una ruta relativa para el directorio de destino. 7.2.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb chapters]$ mv mystery-chapter{1..2}.odf ../editor
+[student@serverb chapters]$ ls
+
+misterio-capítulo3.odf misterio-capítulo5.odf misterio-capítulo7.odf misterio-capítulo4.odf misterio-capítulo6.odf misterio-capítulo8.odf
+
+[student@serverb chapters]$ ls ../editor
+
+misterio-chapter1.odf misterio-chapter2.odf Utilice un solo comando para mover los capítulos 7 y 8 del directorio de capítulos al directorio de vacaciones. Especifique los nombres de los archivos de capítulos utilizando la expansión de llaves con una lista de cadenas y sin utilizar caracteres comodín.
+
+[student@serverb chapters]$ mv mystery-chapter{7,8}.odf ../vacation
+[student@serverb chapters]$ ls
+
+misterio-capítulo3.odf misterio-capítulo5.odf misterio-capítulo4.odf misterio-capítulo6.odf
+
+[student@serverb chapters]$ ls ../vacation
+
+misterio-capítulo7.odf misterio-capítulo8.odf 7.3. Cambie su directorio de trabajo a ~/Videos/season2 y luego copie el primer episodio de la temporada en el directorio de vacaciones. Utilice un único comando cd para cambiar de su directorio de trabajo al directorio ~/Documentos/mi-bestseller/vacaciones. Enumere sus archivos. Utilice el argumento del directorio de trabajo anterior para volver al directorio season2. Este argumento tiene éxito si el último cambio de directorio con el comando cd utilizó solo un comando en lugar de varios comandos cd. Desde el directorio de la temporada 2, copie el archivo del episodio 2 al directorio de vacaciones. Utilice el acceso directo nuevamente para regresar al directorio de vacaciones. 8. Cambie su directorio de trabajo a ~/Videos/season2 y luego copie el primer episodio de la temporada en el directorio de vacaciones.
+
+[student@serverb chapters]$ cd ~/Videos/season2
+[student@serverb season2]$ cp *episode1.ogg ~/Documents/my-bestseller/vacation
+
+8.1. Utilice un único comando cd para cambiar de su directorio de trabajo al directorio ~/Documentos/mi-bestseller/vacaciones, enumere sus archivos y utilice el argumento - para volver al directorio anterior. Copie el archivo del episodio 2 en el directorio de vacaciones. Utilice el comando cd con el argumento - para regresar al directorio de vacaciones.
+
+[student@serverb season2]$ cd ~/Documents/my-bestseller/vacation
+[student@serverb vacation]$ ls
+
+misterio-capítulo7.odf misterio-capítulo8.odf tv-temporada2-episodio1.ogg
+
+[student@serverb vacation]$ cd -
+
+/inicio/estudiante/Videos/temporada2
+
+[student@serverb season2]$ cp *episode2.ogg ~/Documents/my-bestseller/vacation
+[student@serverb season2]$ cd -
+
+/inicio/estudiante/Documentos/mi-bestseller/vacaciones
+
+[student@serverb vacation]$ ls
+
+misterio-capítulo7.odf tv-temporada2-episodio1.ogg misterio-chapter8.odf tv-temporada2-episodio2.ogg 8.2. Los autores de los capítulos 5 y 6 quieren experimentar con posibles cambios. Copie ambos archivos del directorio ~/Documents/my-bestseller/chapters al directorio ~/Documents/my-bestseller/changes para evitar que estos cambios modifiquen los archivos originales. Vaya al directorio ~/Documentos/mi-bestseller. Utilice la coincidencia de patrones de corchetes para especificar qué números de capítulo deben coincidir en el argumento del nombre de archivo del comando cp. 9.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+[student@serverb vacation]$ cd ~/Documents/my-bestseller
+[student@serverb my-bestseller]$ cp chapters/mystery-chapter[56].odf changes
+[student@serverb my-bestseller]$ ls chapters
+
+misterio-capítulo3.odf misterio-capítulo5.odf misterio-capítulo4.odf misterio-capítulo6.odf
+
+[student@serverb my-bestseller]$ ls changes
+
+misterio-chapter5.odf misterio-chapter6.odf Cambie su directorio actual al directorio de cambios y use el comando fecha +%F con sustitución de comando para copiar el archivo misterio-chapter5.odf a un nuevo archivo que incluya la fecha completa. Utilice el formato de nombre misterio-capítulo5-AAAA-MM-DD.odf. Al utilizar la sustitución de comandos con el comando date +%s, haga otra copia del archivo misterio-capítulo5.odf y agregue la marca de tiempo actual (como el número de segundos desde la época, 1970-01-01 00:00 UTC) para garantizar un nombre de archivo único.
+
+[student@serverb my-bestseller]$ cd changes
+[student@serverb changes]$ cp mystery-chapter5.odf \
+
+misterio-capítulo5-$(fecha +%F).odf
+
+[student@serverb changes]$ cp mystery-chapter5.odf \
+
+misterio-capítulo5-$(fecha +%s).odf
+
+[student@serverb changes]$ ls
+
+misterio-chapter5-1748944514.odf misterio-chapter5.odf misterio-chapter5-2025-06-03.odf misterio-chapter6.odf 10. Después de una revisión adicional, decide que no necesita los cambios en la trama. Elimine el directorio de cambios. Si es necesario, vaya al directorio de cambios y elimine todos los archivos del directorio. No puede eliminar un directorio cuando es el directorio de trabajo actual. Cambie al directorio principal del directorio de cambios. Intente eliminar el directorio vacío utilizando el comando rm sin la opción recursiva -r. Este intento debería fracasar. Finalmente, use el comando rmdir para eliminar el directorio vacío, lo cual se realiza correctamente. Cuando terminen las vacaciones, ya no necesitará el directorio de vacaciones. Elimínelo usando el comando rm con la opción recursiva. Cuando termine, regrese al directorio de inicio del usuario estudiante. 11. Elimine el directorio de cambios. Cambie al directorio principal del directorio de cambios e intente eliminar el directorio vacío utilizando el comando rm sin la opción recursiva -r, lo que debería fallar. Utilice el comando rmdir para eliminar el directorio vacío.
+
+[student@serverb changes]$ rm mystery*
+[student@serverb changes]$ cd ..
+[student@serverb my-bestseller]$ rm changes
+rm: cannot remove 'changes': Is a directory
+[student@serverb my-bestseller]$ rmdir changes
+[student@serverb my-bestseller]$ ls
+
+Editor de capítulos vacaciones 11.1. Elimine el directorio de vacaciones usando el comando rm con la opción -r. Regrese al directorio de inicio del usuario estudiante. 11.2.
+
+
+
+
+
+2.7. Práctica de laboratorio Administrar archivos desde la evaluación de la línea de comandos
+
+[student@serverb my-bestseller]$ rm -r vacation
+[student@serverb my-bestseller]$ ls
+
+editor de capítulos
+
+[student@serverb my-bestseller]$ cd
+
+[student@serverb ~]$ Cree un enlace físico al archivo ~/Documents/project-plans/season2-project-plan.odf y asigne al enlace el nombre ~/Documents/links/season2-project-plan.odf.link. Sugerencia: si el directorio ~/Documentos/links no existe, utilice el comando mkdir para crearlo. 12. Cree el enlace físico ~/Documents/links/season2-project-plan.odf.link que apunta al archivo ~/Documents/project-plans/season2-project-plan.odf.
+
+[student@serverb ~]$ mkdir ~/Documents/links
+[student@serverb ~]$ ln ~/Documents/project-plans/season2-project-plan.odf \
+
+~/Documentos/enlaces/season2-project-plan.odf.link
+
+[student@serverb ~]$ ls -lR ~/Documents/
+/home/student/Documents/:
+
+total 0
+
+drwxr-xr-x. 2 student student 43 Jun  3 10:01 links
+drwxr-xr-x. 4 student student 36 Jun  3 09:58 my-bestseller
+drwxr-xr-x. 2 student student 70 Jun  3 09:03 project-plans
+/home/student/Documents/links:
+
+total 0 -rw-r--r--. 2 estudiante estudiante 0 3 de junio 09:02 season2-project-plan.odf.link
+
+/home/student/Documents/my-bestseller:
+
+total 0
+
+drwxr-xr-x. 2 student student 118 Jun  3 09:20 chapters
+drwxr-xr-x. 2 student student  62 Jun  3 09:19 editor
+/home/student/Documents/my-bestseller/chapters:
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter3.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter4.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter5.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter6.odf
+
+/home/student/Documents/my-bestseller/editor:
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter1.odf -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:08 misterio-chapter2.odf
+
+/home/student/Documents/project-plans:
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de junio 09:02 season1-project-plan.odf -rw-r--r--. 2 estudiante estudiante 0 3 de junio 09:02 season2-project-plan.odf Observe que el recuento de enlaces es 2 para los archivos season2-project-plan.odf.link y season2-project-plan.odf. 12.1. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+13.
+
+
+
+
+
+2.7. Lab Administrar archivos desde la línea de comandos Como usuario estudiante en la estación de trabajo, use el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade files-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-review
+
+
+
+
+
+2.8. Resumen 2.8. Resumen En esta lección, aprendió a administrar y organizar archivos dentro de la jerarquía del sistema de archivos mediante la línea de comandos. Para señalar varios nombres de archivos a los mismos datos, puede crear enlaces físicos y enlaces simbólicos. Aprendió a hacer referencia a archivos utilizando sus rutas absolutas, que comienzan con una barra diagonal (/), y a hacer referencia a archivos utilizando sus rutas relativas, que no comienzan con una barra diagonal. Puede utilizar comandos en combinación con los caracteres especiales punto (.), doble punto (..) y tilde (~) para hacer referencia a la ruta relativa de un archivo en el sistema de archivos. También aprendió que el shell Bash proporciona funciones de coincidencia, expansión y sustitución de patrones para ayudarlo a ejecutar comandos de manera eficiente.
+
+
+
+
+
+
+
+## Resumen
+
+2.8. Resumen 2.8. Resumen En esta lección, aprendió a administrar y organizar archivos dentro de la jerarquía del sistema de archivos mediante la línea de comandos. Para señalar varios nombres de archivos a los mismos datos, puede crear enlaces físicos y enlaces simbólicos. Aprendió a hacer referencia a archivos utilizando sus rutas absolutas, que comienzan con una barra diagonal (/), y a hacer referencia a archivos utilizando sus rutas relativas, que no comienzan con una barra diagonal. Puede utilizar comandos en combinación con los caracteres especiales punto (.), doble punto (..) y tilde (~) para hacer referencia a la ruta relativa de un archivo en el sistema de archivos. También aprendió que el shell Bash proporciona funciones de coincidencia, expansión y sustitución de patrones para ayudarlo a ejecutar comandos de manera eficiente.
+
+
+
+
+
+Capítulo 3. Edición de archivos de texto Objetivo Crear, ver y editar archivos de texto desde la línea de comandos. Secciones Edición de archivos de texto desde la línea de comandos (y ejercicio guiado)
+
+
+
+
+

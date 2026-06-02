@@ -1,0 +1,220 @@
+# 14.3. Controlar los contextos de archivos SELinux
+# Tipo: theory
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.3. Controlar los contextos de archivos SELinux 14.3. Control de contextos de archivos SELinux Objetivos Controlar los contextos de archivos SELinux en la política del sistema para cambiar los contextos de los archivos según la configuración de la política y establecer manualmente contextos no estándar. Contexto SELinux inicial Todos los recursos, como procesos, archivos y puertos, están etiquetados con un contexto SELinux. SELinux mantiene una base de datos basada en archivos de políticas de etiquetado de archivos en el directorio /etc/selinux/targeted/contexts/files. Los archivos nuevos obtienen una etiqueta predeterminada cuando su nombre de archivo coincide con una política de etiquetado existente. Cuando el nombre de un archivo nuevo no coincide con una política de etiquetado existente, el archivo hereda la misma etiqueta que el directorio principal. Con la herencia de etiquetado, todos los archivos siempre se etiquetan cuando se crean, independientemente de si existe una política explícita para un archivo. Cuando los archivos se crean en ubicaciones predeterminadas que tienen una política de etiquetado existente, o cuando existe una política para una ubicación personalizada, los archivos nuevos se etiquetan con un contexto SELinux correcto. Sin embargo, si un archivo se crea en una ubicación inesperada sin una política de etiquetado existente, es posible que la etiqueta heredada no sea correcta para el propósito previsto del nuevo archivo. Además, copiar un archivo a una nueva ubicación puede hacer que el contexto SELinux de ese archivo cambie, donde el nuevo contexto está determinado por la política de etiquetado de la nueva ubicación, o por la herencia del directorio principal si no existe ninguna política. El contexto SELinux de un archivo se puede conservar durante la copia para conservar la etiqueta de contexto que se determinó para la ubicación original del archivo. Por ejemplo, el comando cp -p conserva todos los atributos del archivo durante la copia cuando sea posible, y el comando cp --
+
+preserve=context command preserves only SELinux contexts.
+
+El comando ls -Z muestra el contexto SELinux de un archivo o directorio. Nota Copiar un archivo siempre crea un inodo de archivo, y los atributos de ese inodo, incluido el contexto SELinux, deben configurarse inicialmente, como se analizó anteriormente. Sin embargo, mover un archivo normalmente no crea un inodo si el movimiento ocurre dentro del mismo sistema de archivos, sino que mueve el nombre del archivo del inodo existente a una nueva ubicación. Debido a que no es necesario inicializar los atributos del inodo existente, un archivo que se mueve con el comando mv conserva su contexto SELinux a menos que establezca un nuevo contexto en el archivo con la opción -Z. Después de copiar o mover un archivo, verifique que tenga el contexto SELinux apropiado y configúrelo correctamente si es necesario. El siguiente ejemplo demuestra cómo funciona este proceso. Cree dos archivos en el directorio /tmp.
+
+root@host:~# touch /tmp/file1 /tmp/file2
+
+Ambos archivos reciben el tipo de contexto user_tmp_t debido a la herencia del contexto del directorio principal.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+root@host:~# ls -Z /tmp/file*
+unconfined_u:object_r:user_tmp_t:s0 /tmp/file1
+unconfined_u:object_r:user_tmp_t:s0 /tmp/file2
+
+El directorio /var/www/html tiene el contexto httpd_sys_content_t.
+
+root@host:~# ls -Zd /var/www/html/
+system_u:object_r:httpd_sys_content_t:s0 /var/www/html/
+
+Mueva un archivo del directorio /tmp al directorio /var/www/html.
+
+root@host:~# mv /tmp/file1 /var/www/html/
+
+Copie el otro archivo al mismo directorio.
+
+root@host:~# cp /tmp/file2 /var/www/html/
+
+El archivo movido conservó su etiqueta original y el archivo copiado heredó la etiqueta del directorio de destino. La función de usuario de SELinux es unconfined_u, la función de SELinux es object_r y el nivel de sensibilidad (el más bajo posible) es s0. Las configuraciones y funciones avanzadas de SELinux utilizan estos valores.
+
+root@host:~# ls -Z /var/www/html/file*
+unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+
+Cambiar el contexto de SELinux Puede administrar el contexto de SELinux en los archivos utilizando los comandos semanage fcontext, recoverycon y chcon. El método recomendado para cambiar el contexto de un archivo es crear una política de contexto de archivo mediante el comando semanage fcontext y luego aplicar el contexto especificado en la política al archivo mediante el comando restaurarcon. Este método garantiza que pueda volver a etiquetar el archivo en su contexto correcto con el comando restaurarcon siempre que sea necesario. La ventaja de este método es que no necesita recordar cuál se supone que es el contexto y puede corregir el contexto en un conjunto de archivos. El comando chcon cambia el contexto SELinux directamente en los archivos, sin hacer referencia a la política SELinux del sistema. El comando chcon es útil para probar y depurar; sin embargo, cambiar contextos manualmente con este método es temporal. Aunque los contextos de archivos que puede cambiar manualmente sobreviven al reinicio, es posible que se reemplacen si ejecuta el
+
+restorecon command to relabel the contents of the file system.
+
+Importante Cuando se produce un cambio de etiqueta del sistema SELinux, todos los archivos de un sistema se etiquetan con sus valores predeterminados de política. Cuando utiliza el comando restaurarcon en un archivo, cualquier contexto que cambie manualmente en el archivo se reemplaza si no coincide con las reglas de la política SELinux. El siguiente ejemplo crea un directorio con el contexto SELinux default_t, que heredó del directorio /parent. Crea el directorio /virtual
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+root@host:~# mkdir /virtual
+
+Vea el contexto del archivo del directorio /virtual.
+
+root@host:~# ls -Zd /virtual
+unconfined_u:object_r:default_t:s0 /virtual
+
+El comando chcon establece el contexto del archivo del directorio /virtual al tipo httpd_sys_content_t.
+
+root@host:~# chcon -t httpd_sys_content_t /virtual
+
+Vea el contexto del archivo actualizado del directorio /virtual.
+
+root@host:~# ls -Zd /virtual
+unconfined_u:object_r:httpd_sys_content_t:s0 /virtual
+
+El comando restaurarcon restablece el contexto al valor predeterminado de default_t. Tenga en cuenta el mensaje reetiquetado.
+
+root@host:~# restorecon -v /virtual
+
+Reetiquetado /virtual de unconfined_u:object_r:httpd_sys_content_t:s0 a unconfined_u:object_r:default_t:s0 Ver el contexto del archivo actualizado del directorio /virtual.
+
+root@host:~# ls -Zd /virtual
+unconfined_u:object_r:default_t:s0 /virtual
+
+Definir políticas de contexto de archivos predeterminado de SELinux El comando semanage fcontext muestra y modifica las políticas que determinan los contextos de archivos predeterminados. Puede enumerar todas las reglas de política de contexto de archivos ejecutando el comando semanage fcontext -l. Estas reglas utilizan una sintaxis de expresión regular extendida para especificar la ruta y los nombres de los archivos. Al visualizar políticas, la expresión regular extendida más común es (/.*)?, que generalmente se agrega al nombre de un directorio. Esta notación recibe el nombre humorístico de pirata, porque parece una cara con un parche en el ojo y una mano en forma de gancho al lado. Esta sintaxis se describe como "un conjunto de caracteres que comienzan con una barra diagonal y siguen cualquier número de caracteres, donde el conjunto puede existir o no existir". La expresión coincide con el directorio en sí, incluso cuando está vacío, y también coincide con casi cualquier nombre de archivo creado dentro de ese directorio. Por ejemplo, la siguiente regla especifica que el directorio /var/www/cgi-bin y cualquier archivo en él o en sus subdirectorios (y en sus subdirectorios, etc.) tienen la
+
+system_u:object_r:httpd_sys_script_exec_t:s0 SELinux context, unless a more specific rule overrides this
+
+uno.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+/var/www/cgi-bin(/.*)?  all files  system_u:object_r:httpd_sys_script_exec_t:s0
+
+Nota La opción de campo Todos los archivos del ejemplo anterior es el tipo de archivo predeterminado que utiliza el comando semanage cuando no especifica uno. Esta opción se aplica a todos los tipos de archivos que puedes usar con el comando semanage; son los mismos que los tipos de archivos estándar que se muestran en la lección Control del acceso a archivos (RH0020L). Puede obtener más información en la página del manual semanage-fcontext(8). Operaciones básicas de contexto de archivos La siguiente tabla es una referencia para las opciones del comando semanage fcontext para agregar, eliminar o enumerar archivos SELinux.
+
+context policies:
+
+Tabla 20. El comando semanage fcontext -a, --add Agrega un registro del tipo de objeto especificado. -d, --delete Elimina un registro del tipo de objeto especificado. -l, --list Listar registros del tipo de objeto especificado. Para administrar contextos SELinux, instale los paquetes Policycoreutils y Policycoreutils-python-utils, que contienen los comandos restaurarcon y semanage. Para restablecer todos los archivos en un directorio al contexto de política predeterminado, primero use el comando semanage fcontext -l para ubicar y verificar que exista la política correcta con el contexto de archivo deseado. Luego, use el comando recoverycon en el nombre del directorio con comodín para restablecer todos los archivos de forma recursiva. En el siguiente ejemplo, vea los contextos de los archivos antes y después de usar los comandos semanage y recoverycon. Primero, verifique el contexto SELinux para los archivos:
+
+root@host:~# ls -Z /var/www/html/file*
+unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+
+Luego, use el comando semanage fcontext -l para enumerar los contextos de archivos SELinux predeterminados:
+
+root@host:~# semanage fcontext -l
+
+...salida omitida...
+
+/var/www(/.*)?       all files    system_u:object_r:httpd_sys_content_t:s0
+
+...salida omitida... La salida del comando semanage indica que todos los archivos y subdirectorios en el directorio /var/www tienen el contexto httpd_sys_content_t de forma predeterminada. Al ejecutar el comando restaurarcon en el directorio comodín se restaura la opción Descripción
+
+
+
+
+
+14.3. Control de contextos de archivos SELinux Contexto predeterminado en todos los archivos y subdirectorios.
+
+root@host:~# restorecon -Rv /var/www/
+
+Se volvió a etiquetar /var/www/html/file1 de unconfined_u:object_r:user_tmp_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Vea el contexto del archivo de los archivos /var/www/html/file*.
+
+root@host:~# ls -Z /var/www/html/file*
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file1
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+
+El siguiente ejemplo utiliza el comando semanage para agregar una política de contexto para un nuevo directorio. Primero, cree el directorio /virtual.
+
+root@host:~# mkdir /virtual
+
+Cree el archivo /virtual/index.html.
+
+root@host:~# touch /virtual/index.html
+
+Vea el contexto SELinux para el directorio /virtual.
+
+root@host:~# ls -Zd /virtual/
+unconfined_u:object_r:default_t:s0 /virtual
+
+Vea el contexto SELinux para el archivo /virtual/index.html.
+
+root@host:~# ls -Z /virtual/
+unconfined_u:object_r:default_t:s0 index.html
+
+Utilice el comando semanage fcontext para agregar una política de contexto de archivo SELinux para el directorio.
+
+root@host:~# semanage fcontext -a -t httpd_sys_content_t '/virtual(/.*)?'
+
+Utilice el comando recoverycon en el directorio comodín para establecer el contexto predeterminado en el directorio y todos los archivos que contiene.
+
+root@host:~# restorecon -RFvv /virtual
+
+Reetiquetado /virtual de unconfined_u:object_r:default_t:s0 a system_u:object_r:httpd_sys_content_t:s0 Reetiquetado /virtual/index.html de unconfined_u:object_r:default_t:s0 a
+
+system_u:object_r:httpd_sys_content_t:s0
+
+Vea el contexto SELinux para el directorio /virtual.
+
+root@host:~# ls -Zd /virtual/
+drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 /virtual/
+
+Vea el contexto SELinux para el archivo /virtual/index.html.
+
+root@host:~# ls -Z /virtual/
+
+-rw-r--r--. root root system_u:object_r:httpd_sys_content_t:s0 index.html Utilice el comando semanage fcontext con la opción -C para ver cualquier personalización local de la política predeterminada.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+root@host:~# semanage fcontext -l -C
+
+Contexto de tipo fcontext de SELinux
+
+/virtual(/.*)?       all files    system_u:object_r:httpd_sys_content_t:s0
+
+Referencias
+
+chcon(1), restorecon(8), semanage(8), and semanage-fcontext(8) man pages
+
+
+
+
+
+14.4. Ejercicio guiado de control de contextos de archivos SELinux 14.4. Ejercicio guiado Control de contextos de archivos SELinux Vea y establezca contextos de archivos SELinux en archivos según la configuración de políticas. Resultados Configure el servidor HTTP Apache para publicar contenido web desde una raíz de documento no estándar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-filecontexts
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servidor HTTP Apache para usar un directorio de documentos en una ubicación no estándar. 2. Cree el directorio /personalizado.
+
+[root@servera ~]# mkdir /custom
+
+2.1. Cree el archivo /custom/index.html que contiene This is SERVERA. texto.
+
+[root@servera ~]# echo 'This is SERVERA.' > /custom/index.html
+
+2.2. Configure Apache para utilizar la nueva ubicación del directorio. Edite el archivo de configuración de Apache /etc/httpd/conf/httpd.conf y reemplace las dos apariciones del directorio /var/www/html con el directorio /custom. ...salida omitida... DocumentRoot "/custom" ...salida omitida... <Directorio "/custom"> ...salida omitida... 2.3. Inicie y habilite el servicio web Apache y luego confirme que el servicio se esté ejecutando. 3. Inicie y habilite el servicio web Apache mediante el comando systemctl. 3.1.
+
+
+
+
+

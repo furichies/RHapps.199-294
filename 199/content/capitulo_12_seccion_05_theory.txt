@@ -1,0 +1,195 @@
+# 9.5. Envío de señales a procesos
+# Tipo: theory
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.5. Envío de Señales a Procesos 9.5. Envío de señales a procesos Objetivos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Control de procesos con señales Una señal es una interrupción de software que se entrega a un proceso. Las señales informan eventos a un programa en ejecución. Los eventos que generan una señal pueden ser un error, un evento externo (una solicitud de E/S o un temporizador expirado) o mediante el uso explícito de un comando de envío de señal o una secuencia de teclado. La siguiente tabla enumera las señales fundamentales que los administradores de sistemas utilizan para la gestión de procesos de rutina. Consulte las señales por su nombre corto (HUP) o propio (SIGHUP). Tabla 11. Señales fundamentales de gestión de procesos 1 HUP Hangup: Informa la terminación del proceso de control de una terminal. También solicita la reinicialización del proceso (recarga de configuración) sin terminación. 2 INT Interrupción del teclado: provoca la terminación del programa. Se puede bloquear o manipular. Enviado presionando la secuencia de teclas INTR (Interrupción) ( Ctrl+C ). 3 SALIR Salir del teclado: similar a SIGINT; agrega un volcado de proceso al finalizar. Enviado presionando la secuencia de teclas SALIR ( Ctrl+\ ). 9 KILL Matar, imbloqueable: Provoca la terminación abrupta del programa. No se puede bloquear, ignorar,
+
+or handled; consistently fatal.
+
+15 predeterminado TERM Terminar: Provoca la terminación del programa. A diferencia de SIGKILL, se puede bloquear, ignorar o manejar. Permite que el programa complete operaciones esenciales y se autolimpie antes de su finalización. 18 CONT Continuar: enviado a un proceso para reanudarlo si se detiene. No se puede bloquear. Incluso si se maneja, siempre reanuda el proceso. 19 STOP Parada, imbloqueable: Suspende el proceso. No se puede bloquear ni manipular. 20 Detención del teclado TSTP: a diferencia de SIGSTOP, se puede bloquear, ignorar o manejar. Enviado presionando la secuencia de teclas suspender ( Ctrl+Z ). Definición del nombre de la señal
+
+
+
+
+
+9.5. Envío de señales a procesos Nota Los números de señales varían entre las plataformas de hardware de Linux, pero los nombres y significados de las señales son estándar. La práctica recomendada es utilizar nombres de señales en lugar de números al realizar señales. Los números que se analizan en esta sección son para sistemas de arquitectura x86_64. Cada señal tiene una acción predeterminada, que suele ser una de las siguientes acciones: Término: Terminar un programa (salir) inmediatamente. Núcleo: guarda la imagen de memoria de un programa (volcado de núcleo) y luego finaliza. Detener: Detiene un programa en ejecución (suspender) y espera para continuar (reanudar). Los programas reaccionan a las señales de eventos esperadas implementando rutinas de manejo para ignorar, reemplazar o extender la acción predeterminada de una señal. Importante Red Hat recomienda enviar primero la señal SIGTERM y luego probar SIGINT. Si ambas señales fallan, intente nuevamente con SIGKILL. Los administradores suelen utilizar SIGKILL primero porque esta señal fuerza la finalización del proceso sin importar el estado del proceso y no se puede ignorar. Sin embargo, con la señal SIGKILL, el proceso no puede ejecutar ninguna rutina de autolimpieza. Envío de señales mediante solicitud explícita Puede señalar el proceso en primer plano actual presionando una secuencia de control del teclado para suspender ( Ctrl+Z ), finalizar ( Ctrl+C ) o volcar el núcleo ( Ctrl+\ ) el proceso. Sin embargo, puede utilizar comandos de envío de señales para enviar señales a procesos en segundo plano en una sesión diferente. Puede especificar señales por nombre (por ejemplo, con las opciones -HUP o -SIGHUP) o por número (con la opción -1 relacionada). Los usuarios pueden finalizar sus procesos, pero se requiere privilegios de root para finalizar procesos que pertenecen a otros usuarios. El comando kill utiliza un número de ID de proceso (PID) para enviar una señal a un proceso. A pesar de su nombre, puede utilizar el comando kill para enviar cualquier señal, no sólo aquellas señales para finalizar programas. Puede utilizar la opción Kill Command -l para enumerar los nombres y números de todas las señales disponibles.
+
+user@host:~$ kill -l
+
+1) SIGHUP 2) SIGINT 3) SIGQUIT 4) SIGILL 5) SIGTRAP 6) SIGABRT 7) SIGBUS 8) SIGFPE 9) SIGKILL 10) SIGUSR1 11) SIGSEGV 12) SIGUSR2 13) SIGPIPE 14) SIGALRM 15) SIGTERM 16) SIGSTKFLT 17) SIGCHLD 18) SIGCONT 19) SIGSTOP 20) SIGTSTP ...salida omitida... Para encontrar el PID del proceso que desea terminar, puede usar el comando ps aux y filtrar por el nombre del proceso. En el siguiente ejemplo, busca todos los procesos que contienen tarea en su nombre y luego finaliza el proceso tarea1 utilizando la señal SIGTERM predeterminada. La señal SIGTERM permite que el proceso complete tareas y realice rutinas de limpieza.
+
+
+
+
+
+9.5. Envío de señales a procesos
+
+user@host:~$ ps aux | grep task
+user 6564 0.0 0.0 228796 3264 pts/0  S  17:22 0:00 /bin/bash ~/bin/task1
+user 6566 0.0 0.0 228796 3244 pts/0  S  17:22 0:00 /bin/bash ~/bin/task2
+user 6568 0.0 0.0 228796 3220 pts/0  S  17:22 0:00 /bin/bash ~/bin/task3
+
+...salida omitida...
+
+user@host:~$ kill 6564
+
+[1] Tarea 1 terminada Continuando con el ejemplo de procesos de tarea, luego finaliza los procesos de tarea 2 y tarea 3 utilizando la señal SIGKILL. Utilice el valor numérico de la señal para finalizar el proceso de tarea2 y utilice el nombre de la señal para finalizar el proceso de tarea3. La señal SIGKILL finaliza el proceso abruptamente.
+
+user@host:~$ kill -9 6566
+
+[2]- Tarea eliminada2
+
+user@host:~$ ps aux | grep task3
+user 6568 0.0 0.0 228796 3220 pts/0  S  17:22 0:00 /bin/bash ~/bin/task3
+
+...salida omitida...
+
+user@host:~$ kill -SIGKILL 6568
+
+[3]+ Tarea eliminada3 Control de procesos específicos Utilice el comando pkill para señalar uno o más procesos que coincidan con los criterios de selección. Los criterios de selección pueden ser un nombre de comando, un proceso que posee un usuario específico o todos los procesos de todo el sistema. Los procesos y sesiones pueden señalizarse de forma individual o colectiva. Debido a que el proceso inicial en una sesión de inicio de sesión (líder de sesión) está diseñado para manejar solicitudes de terminación de sesión e ignorar señales de teclado no deseadas, eliminar todos los procesos y shells de inicio de sesión para un solo usuario requiere la señal SIGKILL. Cuando un proceso está en el estado T (detenido/rastreado), como después de recibir una señal SIGSTOP, el proceso no puede responder a señales como SIGTERM, que es lo que envían los comandos pkill y killall de forma predeterminada. Como resultado, el proceso permanece en el estado T y se muestra en la salida de los comandos top y ps, incluso después de usar el comando pkill. Utilice el comando pgrep para identificar los números PID que desea eliminar. Este comando funciona de manera similar al comando pkill, incluyendo la mayoría de las mismas opciones, excepto que el comando pgrep enumera los procesos en lugar de eliminarlos. Utilice el comando pgrep con la opción -l para enumerar los nombres e ID de los procesos. Utilice cualquiera de los comandos con la opción -u para especificar el ID del usuario propietario de los procesos. El siguiente ejemplo enumera los procesos para el usuario bob y luego envía la señal SIGKILL a todos los procesos de ese usuario.
+
+root@host:~# pgrep -l -u bob
+
+6964 bash 6998 dormir 6999 dormir 7000 dormir
+
+root@host:~# pkill -SIGKILL -u bob
+root@host:~# pgrep -l -u bob
+
+Cuando los procesos de destino están en la misma sesión de inicio de sesión, es posible que no sea necesario eliminar todos los procesos de un usuario. En este escenario, puede identificar el terminal de usuario para la sesión y luego eliminar solo los procesos que hacen referencia al mismo ID de terminal. Puede determinar el terminal para la sesión utilizando el comando w -u nombre de usuario. Luego puede usar el comando pkill -t ttyN, donde N es el número del terminal de destino.
+
+
+
+
+
+9.5. Envío de señales a procesos Nota A menos que se especifique SIGKILL, el líder de la sesión (aquí, el shell de inicio de sesión de Bash) maneja y sobrevive exitosamente a la solicitud de terminación, pero finaliza todos los demás procesos de la sesión. En el siguiente ejemplo, enumera todos los procesos que pertenecen al usuario bob, determina el terminal para la sesión y luego envía la señal de terminación predeterminada (SIGTERM). Tenga en cuenta que todos los procesos que pertenecen al usuario bob finalizan, excepto el líder de la sesión, el proceso bash. Los comandos se ejecutan como usuario root para que pueda observar la diferencia entre enviar señales SIGTERM y SIGKILL.
+
+root@host:~# pgrep -l -u bob
+
+7391 bash 7426 dormir 7427 dormir 7428 dormir
+
+root@host:~# w -u bob
+
+USUARIO TTY DE LOGIN@ IDLE JCPU PCPU QUÉ
+
+bob      tty3                      18:37    5:04   0.03s  0.03s -bash
+root@host:~# pkill -t tty3
+root@host:~# pgrep -l -u bob
+
+7391 bash Al enviar la señal SIGKILL, también finaliza el líder de sesión, como se muestra en el siguiente ejemplo.
+
+root@host:~# pkill -SIGKILL -t tty3
+root@host:~# pgrep -l -u bob
+
+Puede aplicar la misma terminación selectiva del proceso con relaciones de proceso padre e hijo. Utilice el comando pstree para ver un árbol de procesos para el sistema o para un solo usuario. Utilice el PID del proceso principal para eliminar todos los procesos secundarios que creó. El shell de inicio de sesión de Bash principal sobrevive esta vez, porque la señal se dirige solo a sus procesos secundarios.
+
+root@host:~# pstree -p bob
+
+bash(8391)─┬─dormir(8425)
+
+           ├─sleep(8426)
+           └─sleep(8427)
+root@host:~# pkill -P 8391
+root@host:~# pgrep -l -u bob
+
+fiesta (8391)
+
+root@host:~# pkill -SIGKILL -P 8391
+root@host:~# pgrep -l -u bob
+
+bash(8391) Envío de una señal a múltiples procesos El comando killall puede señalar múltiples procesos, según su nombre de comando. En el siguiente ejemplo, primero enumera todos los procesos que contienen trabajo en su nombre y luego finaliza todos esos procesos.
+
+user@host:~$ ps aux | grep job
+user 9259 0.0 0.0 228796 3236 pts/0  S  20:05 0:00 /bin/bash ~/bin/control job1
+user 9261 0.0 0.0 228796 3232 pts/0  S  20:05 0:00 /bin/bash ~/bin/control job2
+user 9270 0.0 0.0 228796 3240 pts/0  S  20:06 0:00 /bin/bash ~/bin/control job3
+
+...salida omitida...
+
+user@host:~$ killall job
+
+[1] Trabajo de control terminado 1 [2] Trabajo de control terminado 2 [3]- Trabajo de control terminado 3
+
+
+
+
+
+9.5. Envío de señales a procesos Terminación de trabajos en segundo plano Para finalizar trabajos en segundo plano, utilice el comando kill y especifique el número de trabajo. Utilice el comando jobs para encontrar el número de trabajo del proceso a finalizar.
+
+user@host:~$ jobs
+
+[1] - Ejecutar suspensión 500 y [2]+ Ejecutar suspensión 1000 y finalizar un trabajo específico usando el comando matar. Anteponga el número de trabajo con un signo de porcentaje (%).
+
+user@host:~$ kill -SIGTERM %1
+user@host:~$ jobs
+
+[2]+ Ejecución de Sleep 1000 y cierre de sesión administrativa de los usuarios Es posible que necesite cerrar la sesión de otros usuarios por varias razones: El usuario cometió una violación de seguridad. El usuario abusó de los recursos. El usuario tiene un sistema que no responde. El usuario tiene acceso inadecuado a los materiales. En estos casos, deberá finalizar su sesión mediante el uso de señales administrativamente. Para cerrar la sesión de un usuario, primero identifique la sesión de inicio de sesión que desea finalizar. El comando w enumera los inicios de sesión de los usuarios y los procesos en ejecución actualmente. Tenga en cuenta las columnas TTY y FROM para determinar las sesiones de cierre.
+
+user@host:~$ w -f
+
+12:43:06 hasta 27 min, 5 usuarios, promedio de carga: 0.03, 0.17, 0.66 TTY DE USUARIO DESDE LOGIN@ IDLE JCPU PCPU QUÉ
+
+root  tty2                      12:26   14:58   0.04s  0.04s -bash
+bob   tty3                      12:28   14:42   0.02s  0.02s -bash
+user  pts/1 desktop.example.com 12:41    2.00s  0.03s  0.03s w
+user@host:~$
+
+Todas las sesiones de inicio de sesión de usuario están asociadas con un dispositivo terminal (TTY). Si el nombre del dispositivo es pts/N, entonces es un pseudoterminal asociado con una ventana de terminal gráfica o una sesión de inicio de sesión remota. Si el nombre del dispositivo es ttyN, entonces el usuario está en una consola del sistema, una consola alternativa u otro dispositivo terminal conectado directamente. Descubra cuánto tiempo ha estado un usuario en el sistema viendo el tiempo de inicio de sesión. Los recursos de CPU que consumen los trabajos actuales, incluidas las tareas en segundo plano y los procesos secundarios, se encuentran en la columna JCPU de cada sesión. El consumo actual de CPU del proceso en primer plano se encuentra en la columna PCPU. El comando w muestra quién ha iniciado sesión y qué está haciendo cada usuario. Por el contrario, el comando who proporciona sólo información básica sobre los usuarios que han iniciado sesión.
+
+user@host:~$ who
+root     tty2         2025-06-09 12:26 (tty2)
+bob      tty3         2025-06-09 12:28 (tty3)
+user     pts/1        2025-06-09 12:41 (desktop.example.com)
+
+Después de identificar la sesión que desea finalizar, use el comando pkill -t para finalizarla.
+
+
+
+
+
+9.5. Envío de señales a procesos Sólo el usuario root o un usuario con privilegios elevados (a través de Sudo) puede finalizar procesos que pertenecen a otros usuarios. Los usuarios habituales sólo pueden eliminar sus propios procesos. Si intenta ejecutar el comando pkill -t para finalizar la sesión de otro usuario sin los privilegios adecuados, el sistema devuelve un error de Operación no permitida.
+
+user@host:~$ sudo pkill -t tty3
+user@host:~$ who
+root     tty2         2025-06-09 12:26 (tty2)
+user     pts/1        2025-06-09 12:41 (desktop.example.com)
+
+La sesión tty3 para el usuario bob finaliza y el usuario ahora cierra la sesión. Referencias info libc signal (Manual de referencia de la biblioteca GNU C) Sección 24: Manejo de señales procesos info libc (Manual de referencia de la biblioteca GNU C) Sección 26: Procesos páginas man kill(1), killall(1), pgrep(1), pkill(1), pstree(1), signal(7) y w(1)
+
+
+
+
+
+9.6. Ejercicio guiado Envío de señales a procesos 9.6. Ejercicio Guiado Enviar Señales a Procesos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Resultados Iniciar y detener múltiples procesos de shell. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-kill
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, inicie tres procesos en segundo plano con el archivo de script de la instancia, pasando los argumentos de red, interfaz y conexión. El script de instancia agrega argumentos de línea de comandos al archivo ~/instance_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso.
+
+[student@servera ~]$ instance network &
+
+[1] 19851
+
+[student@servera ~]$ instance interface &
+
+[2] 19857
+
+[student@servera ~]$ instance connection &
+
+[3] 19864 2. En el shell del terminal derecho, verifique que los tres procesos estén agregando contenido al archivo /home/student/instance_outfile. Mantenga el comando tail ejecutándose para verificar los estados de salida en los pasos siguientes.
+
+[student@servera ~]$ tail -f ~/instance_outfile
+
+conexión de interfaz de red conexión de interfaz de red interfaz de red ...salida omitida... 3. En el shell del terminal izquierdo, enumere los trabajos existentes.
+
+[student@servera ~]$ jobs
+
+[1] Red de instancia en ejecución y [2] - Interfaz de instancia en ejecución y [3]+ Conexión de instancia en ejecución y 4. Utilice señales para suspender el proceso de red de instancia y verifique que el proceso esté detenido. 5.
+
+
+
+
+

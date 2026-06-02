@@ -1,0 +1,330 @@
+# Implementación de roles desde fuentes externas de contenido
+# Tipo: theory
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Implementación de roles desde fuentes
+externas de contenido
+Objetivos
+• Seleccionar y recuperar roles de fuentes externas, como repositorios de Git o Ansible Galaxy, y
+usarlos en sus playbooks.
+Fuentes de contenido externo
+Si está usando roles en sus playbooks de Ansible, debe obtener esos roles de alguna fuente
+administrada centralmente. Esta práctica garantiza que todos sus proyectos tengan la versión
+actual del rol y que cada proyecto pueda beneficiarse de las correcciones de errores descubiertas
+por otros proyectos con los que comparten el rol.
+Por ejemplo, si el rol es contenido privado creado y coordinado por su organización, podría
+almacenarse en un repositorio de Git administrado por su organización. Alternativamente, podría
+distribuirse como un archivo de almacenamiento tar desde un sitio web o por otros medios.
+Además, la comunidad de código abierto mantiene algunos roles a través del sitio web de Ansible
+Galaxy. Red Hat no son revisa ni respalda oficialmente estos roles, pero pueden contener código
+que su organización considere útil.
+Importante
+Es cada vez más común que los roles se empaqueten como Ansible Content
+Collections y que sus autores los ofrezcan a través de distintos métodos:
+• En Ansible Content Collections certificadas por Red Hat desde el centro de
+automatización alojado de Red Hat en https://console.redhat.com o a
+través de un centro de automatización privado
+• Como contenido privado empaquetado desde un centro de automatización
+privado
+• Por la comunidad de Ansible Galaxy en https://galaxy.ansible.com
+Esta sección solo cubre cómo obtener roles que no están empaquetados en Ansible
+Content Collections.
+Lo ideal sería poder descargar la última versión del rol en el directorio roles de su proyecto de
+forma sencilla, siempre que sea necesario.
+Presentación de Ansible Galaxy
+Una librería pública de contenido de Ansible programada por una variedad de administradores y
+usuarios de Ansible se encuentra disponible en Ansible Galaxy [https://galaxy.ansible.com]. Esta
+librería contiene miles de roles de Ansible y cuenta con una base de datos de búsqueda que lo
+ayuda a identificar roles que podrían ayudarlos a realizar una tarea administrativa.
+El comando ansible-galaxy que usa para descargar y gestionar roles de Ansible Galaxy
+también se puede usar para descargar y gestionar roles de sus propios repositorios de Git.
+RH294-RHEL9.0-es-3-20240620
+301
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Herramienta de línea de comando de Ansible Galaxy
+Puede usar la herramienta de línea de comandos ansible-galaxy con el argumento role para
+buscar, instalar, enumerar, eliminar, iniciar o mostrar información acerca de roles.
+[user@host project]$ ansible-galaxy role -h
+usage: ansible-galaxy role [-h] ROLE_ACTION ...
+positional arguments:
+  ROLE_ACTION
+    init      Initialize new role with the base structure of a role.
+    remove    Delete roles from roles_path.
+    delete    Removes the role from Galaxy. It does not remove or alter the actual
+ GitHub repository.
+    list      Show the name and version of each role installed in the roles_path.
+    search    Search the Galaxy database by tags, platforms, author and multiple
+ keywords.
+    import    Import a role into a galaxy server
+    setup     Manage the integration between Galaxy and the given source.
+    info      View more details about a specific role.
+    install   Install role(s) from file(s), URL(s) or Ansible Galaxy
+optional arguments:
+  -h, --help   show this help message and exit
+Instalación de roles con un archivo de requisitos
+Si tiene un playbook en el que se deben instalar roles específicos, puede crear un archivo roles/
+requirements.yml en el directorio del proyecto que especifica los roles que son necesarios.
+Este archivo actúa como manifiesto de dependencias para el proyecto de playbook, lo que
+permite desarrollar y probar playbooks por separado desde cualquier rol de soporte.
+Luego, antes de ejecutar ansible-navigator run, puede usar el comando ansible-galaxy
+role para instalar esos roles en el directorio roles de su proyecto.
+nota
+Si usa el controlador de automatización, descarga automáticamente los roles
+especificados en su archivo roles/requirements.yml cuando ejecuta su
+playbook.
+Por ejemplo, podría tener un rol en un repositorio público en un servidor Git en https://
+git.example.com/someuser/someuser.myrole. Un requirements.yml sencillo para
+instalar someuser.myrole puede incluir el siguiente contenido:
+- src: https://git.example.com/someuser/someuser.myrole
+  scm: git
+  version: "1.5.0"
+El atributo src especifica la fuente del rol, en este caso la URL del repositorio del rol en su
+servidor Git. También puede usar la autenticación basada en claves SSH especificando algo como
+git@git.example.com:someuser/someuser.myrole según lo provisto por su repositorio
+de Git.
+302
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+El atributo scm indica que este rol es de un repositorio de Git.
+El atributo version es opcional y especifica la versión del rol que se instalará, en este caso,
+1.5.0. En el caso de un rol almacenado en Git, la versión puede ser el nombre de una rama, una
+etiqueta o un hash de confirmación de Git. Si no especifica una versión, el comando usa la última
+confirmación en la rama predeterminada.
+Importante
+Especifique la versión del rol en su archivo requirements.yml, en especial para
+los playbooks en producción.
+Si no especifica una versión, obtendrá la última versión del rol.
+Si el autor upstream realiza cambios en el rol que son incompatibles con su
+playbook, puede causar una falla de automatización u otros problemas.
+Para instalar roles usando un archivo de requisitos de roles, ejecute el comando ansible-galaxy
+role install desde el directorio de su proyecto. Incluya las siguientes opciones:
+• -r roles/requirements.yml para especificar la ubicación de su archivo de requisitos
+• -p roles para instalar el rol en un subdirectorio del directorio roles
+[user@host project]$ ansible-galaxy role install -r roles/requirements.yml \
+> -p roles
+Starting galaxy role install process
+- downloading role from https://git.example.com/someuser/someuser.myrole
+- extracting myrole to /home/user/project/roles/someuser.myrole
+- someuser.myrole (1.5.0) was installed successfully
+Importante
+Si no especifica la opción -p roles, ansible-galaxy role install
+usa el primer directorio en la configuración predeterminada roles_path para
+determinar dónde instalar el rol. Se establece de forma predeterminada el directorio
+~/.ansible/roles del usuario, que está fuera del directorio del proyecto y no
+está disponible para el entorno de ejecución si usa ansible-navigator para
+ejecutar sus playbooks.
+Una forma de evitar la necesidad de especificar -p roles es aplicar la siguiente
+configuración en la sección ansible.cfg del archivo defaults de su proyecto:
+roles_path = roles
+Si tiene un archivo de almacenamiento tar que contiene un rol, puede usar roles/
+requirements.yml para instalar ese archivo desde una URL:
+RH294-RHEL9.0-es-3-20240620
+303
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+# from a role tar ball, given a URL;
+#   supports 'http', 'https', or 'file' protocols
+- src: file:///opt/local/roles/tarrole.tar
+  name: tarrole
+- src: https://www.example.com/role-archive/someuser.otherrole.tar
+  name: someuser.otherrole
+nota
+Red Hat recomienda que use el control de versiones con roles, almacenándolos en
+un sistema de control de versiones como Git. Si un cambio reciente en un rol causa
+problemas, usar el control de versiones para desarrollar el rol permite revertirlo a
+una versión anterior y estable.
+Encontrar roles administrados por la comunidad en
+Ansible Galaxy
+La comunidad de código abierto de Ansible opera un servidor público, https://
+galaxy.ansible.com, que contiene roles y Ansible Content Collections compartidos por otros
+usuarios de Ansible.
+Advertencia
+Estos roles pueden ser útiles, pero Red Hat no los admite, ni audita ni revisa este
+código. Los voluntarios de la comunidad de Ansible mantienen este sitio. Use estos
+roles bajo su propio riesgo.
+Exploración de roles en Ansible Galaxy
+La pestaña Search del lado izquierdo de la página de inicio del sitio web Ansible Galaxy le da a los
+usuarios acceso a información acerca de los roles publicados en Ansible Galaxy. Puede buscar un
+rol de Ansible por nombre, con etiquetas o por otros atributos de roles.
+Los resultados se presentan en orden descendente de la puntuación Best Match, que es una
+puntuación calculada basada en la calidad del rol, la popularidad del rol y los criterios de búsqueda.
+(Content Scoring [https://galaxy.ansible.com/docs/contributing/content_scoring.html] en la
+documentación de Ansible Galaxy tiene más información sobre cómo Ansible Galaxy califica los
+roles).
+304
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Figura 7.1: Pantalla de búsqueda de Ansible Galaxy
+Ansible Galaxy informa la cantidad de veces que se ha descargado cada rol de Ansible Galaxy.
+Además, Ansible Galaxy también informa la cantidad de visualizaciones, bifurcaciones y estrellas
+que tiene el repositorio de GitHub del rol. Los usuarios pueden usar esta información para ayudar
+a determinar qué tan activo es el desarrollo para un rol y qué tan popular es en la comunidad.
+En la siguiente figura, se muestran los resultados de la búsqueda que Ansible Galaxy mostró
+después de buscar la palabra clave redis.
+Figura 7.2: Ejemplo de resultados de búsqueda de Ansible Galaxy
+El menú Filters a la derecha del cuadro de búsqueda permite búsquedas por tipo, tipo de
+colaborador, colaborador, plataforma en la nube, obsoleta, plataforma y etiquetas.
+Los posibles valores de la plataforma incluyen EL para Red Hat Enterprise Linux (y distribuciones
+estrechamente relacionadas como CentOS) y Fedora, entre otros.
+Las etiquetas son cadenas arbitrarias de una palabra establecidas por el autor del rol que
+describen y categorizan el rol. Puede usar etiquetas para encontrar roles relevantes. Los posibles
+valores de etiqueta incluyen system, development, web, monitoring y otros. Un rol puede
+tener hasta 20 etiquetas en Ansible Galaxy.
+RH294-RHEL9.0-es-3-20240620
+305
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+En la interfaz de búsqueda de Ansible Galaxy, las búsquedas por palabra clave
+coinciden con las palabras o frases del archivo README, el nombre del contenido o la
+descripción del contenido. Las búsquedas por etiqueta, por el contrario, coinciden
+específicamente con los valores de las etiquetas que el autor estableció para el rol.
+Búsqueda de roles desde la línea de comando
+El comando ansible-galaxy role search busca roles en Ansible Galaxy.
+Si especifica una cadena como argumento, se usa para buscar roles en Ansible Galaxy por palabra
+clave. Puede usar las opciones --author, --platforms y --galaxy-tags para acotar los
+resultados de la búsqueda. También puede usar esas opciones como término de búsqueda
+principal.
+Por ejemplo, el comando ansible-galaxy role search --author geerlingguy muestra
+todos los roles enviados por el usuario geerlingguy. Los resultados se muestran en orden
+alfabético, no en orden descendente por Best Match.
+En el ejemplo siguiente, se muestran los nombres de los roles que incluyen redis y están
+disponibles para la plataforma Enterprise Linux (EL).
+[user@host ~]$ ansible-galaxy role search 'redis' --platforms EL
+Found 232 roles matching your search:
+ Name                                Description
+ ----                                -----------
+ ...output omitted...
+ aboveops.ct_redis                   Ansible role for creating Redis container
+ adfinis-sygroup.redis               Ansible role for Redis
+ adriano-di-giovanni.redis           Ansible role for Redis
+ AerisCloud.redis                    Installs redis on a server
+ alainvanhoof.alpine_redis           Redis for Alpine Linux
+ ...output omitted...
+El comando ansible-galaxy role info muestra información más detallada acerca de un rol.
+Ansible Galaxy obtiene esta información de varios lugares, incluido el archivo meta/main.yml del
+rol y su repositorio de GitHub.
+El siguiente comando muestra información acerca del rol geerlingguy.redis, disponible desde
+Ansible Galaxy.
+[user@host ~]$ ansible-galaxy role info geerlingguy.redis
+Role: geerlingguy.redis
+        description: Redis for Linux
+...output omitted...
+        created: 2023-05-08T20:50:00.204075Z
+        download_count: 1306420
+        github_branch: master
+        github_repo: ansible-role-redis
+        github_user: geerlingguy
+306
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        id: 10990
+        imported: 2022-09-26T12:10:34.707632-04:00
+        modified: 2023-10-29T18:44:43.771821Z
+        path: ('/home/student/.ansible/roles', '/usr/share/ansible/roles', '/etc/
+ansible/roles')
+        upstream_id: 468
+        username: geerlingguy
+Descargar roles desde Ansible Galaxy
+En el siguiente ejemplo, se muestra cómo configurar un archivo de requisitos con una variedad de
+fuentes remotas.
+[user@host project]$ cat roles/requirements.yml
+# from Ansible Galaxy, using the latest version
+- src: geerlingguy.redis 
+# from Ansible Galaxy, overriding the name and using a specific version
+- src: geerlingguy.redis
+  version: "1.5.0" 
+  name: redis_prod
+# from any Git based repository, using HTTPS
+- src: https://github.com/geerlingguy/ansible-role-nginx.git
+  scm: git 
+  version: master
+  name: nginx
+# from a role tar ball, given a URL;
+#   supports 'http', 'https', or 'file' protocols
+- src: file:///opt/local/roles/myrole.tar 
+  name: myrole 
+La palabra clave src especifica el nombre de rol de Ansible Galaxy. Si el rol no está alojado
+en Ansible Galaxy, la palabra clave src indica la URL del rol.
+La palabra clave version se usa para especificar la versión de un rol. La palabra clave
+version puede tener cualquier valor que corresponda a una bifurcación, etiqueta o hash de
+confirmación del repositorio de software del rol.
+Si el rol está alojado en un repositorio de control de origen, se necesita el atributo scm.
+Si el rol está alojado en Ansible Galaxy o como una colección de archivos tar en un servidor
+web, se omite la palabra clave scm.
+La palabra clave name se usa para anular el nombre local del rol.
+Gestión de roles descargados
+El comando ansible-galaxy role también puede administrar roles locales, como aquellos que
+se encuentran en el directorio roles de un proyecto de playbook. El comando ansible-galaxy
+role list enumera los roles locales.
+RH294-RHEL9.0-es-3-20240620
+307
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[user@host project]$ ansible-galaxy role list
+# /home/user/project/roles
+- geerlingguy.redis, 1.7.0
+- redis_prod, 1.5.0
+- nginx, master
+- myrole, (unknown version)
+...output omitted...
+Puede eliminar un rol con el comando ansible-galaxy role remove.
+[user@host ~]$ ansible-galaxy role remove nginx
+- successfully removed nginx
+Referencias
+ansible-galaxy: documentación Ansible
+https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html
+Red Hat Hybrid Cloud Console | Ansible Automation Platform Dashboard
+https://console.redhat.com/ansible/ansible-dashboard
+308
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Implementación de roles desde fuentes
+externas de contenido
+Usar el comando ansible-galaxy para descargar e instalar un rol de Ansible.
+Resultados
+• Crear un archivo de roles para especificar las dependencias de roles para un playbook.
+• Instalar roles especificados en un archivo de requisitos.
+• Enumerar los roles descargados mediante el comando ansible-galaxy.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-galaxy
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-galaxy.
+[student@workstation ~]$ cd ~/role-galaxy
+[student@workstation role-galaxy]$
+ 2.
+Crear un archivo de requisitos de rol en el directorio de su proyecto que descargue el rol
+student.bash_env. Este rol configura los archivos de inicialización predeterminados para
+la shell Bash usada para los usuarios recién creados, el prompt predeterminado para las
+cuentas de estos usuarios y el color del prompt que se usará.
+Cree un archivo denominado requirements.yml en el subdirectorio roles. La URL
+del repositorio de Git del rol es: git@workstation.lab.example.com:student/
+bash_env.
+Para ver cómo el rol afecta el comportamiento de los hosts de producción, use la rama
+main del repositorio. Establezca el nombre local del rol en student.bash_env.
+Asegúrese de que el archivo roles/requirements.yml contenga el siguiente
+contenido:
+RH294-RHEL9.0-es-3-20240620
+309
+
+

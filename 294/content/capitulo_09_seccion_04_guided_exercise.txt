@@ -1,0 +1,387 @@
+# Ejercicio Guiado: Administración de usuarios y autenticación
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración de usuarios y
+autenticación
+Administrar usuarios y grupos, ajustar la configuración Sudo y configurar SSH en sus hosts
+gestionados.
+Resultados
+• Crear un nuevo grupo de usuarios.
+• Administrar usuarios mediante el módulo ansible.builtin.user.
+• Completar claves SSH autorizadas con el módulo ansible.posix.authorized_key.
+• Modificar el archivo /etc/ssh/sshd_config y un archivo de configuración en /etc/
+sudoers.d usando el módulo ansible.builtin.lineinfile.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-users
+Instrucciones
+Su organización requiere que todos los hosts tengan los mismos usuarios locales disponibles.
+Estos usuarios deben pertenecer al grupo de usuarios webadmin, que tiene la capacidad de usar
+el comando sudo sin especificar una contraseña. Además, las claves públicas SSH de los usuarios
+deben distribuirse en el entorno para sus archivos ~/.ssh/authorized_keys para permitir la
+autenticación basada en claves y no debe permitirse al usuario root iniciar sesión usando SSH
+directamente.
+Escriba un playbook para asegurarse de que los usuarios especificados en el archivo /home/
+student/system-users/vars/users_vars.yml y el grupo de usuarios webadmin estén
+presentes en los hosts gestionados y cumplan con los criterios anteriores.
+ 1.
+Cambie al directorio /home/student/system-users.
+[student@workstation ~]$ cd ~/system-users
+[student@workstation system-users]$
+ 2.
+Examine el archivo de variable vars/users_vars.yml existente.
+432
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+---
+users:
+  - username: user1
+    groups: webadmin
+  - username: user2
+    groups: webadmin
+  - username: user3
+    groups: webadmin
+  - username: user4
+    groups: webadmin
+  - username: user5
+    groups: webadmin
+Usa el nombre de variable username para establecer el nombre de usuario correcto y la
+variable groups para definir grupos complementarios a los que el usuario debe pertenecer.
+ 3.
+Empiece a escribir el playbook /home/student/system-users/users.yml. Defina un
+solo play en el playbook que se dirija al grupo de hosts webservers.
+Agregue una cláusula vars_files que cargue las variables en el archivo vars/
+users_vars.yml, que se ha creado para usted y que contiene todos los nombres de
+usuario necesarios para este ejercicio.
+Agregue la cláusula tasks al playbook.
+El playbook users.yml debería incluir el siguiente contenido:
+---
+- name: Create multiple local users
+  hosts: webservers
+  vars_files:
+    - vars/users_vars.yml
+  tasks:
+ 4.
+Agregue dos tareas al play.
+Cree el grupo de usuarios webadmin en los hosts gestionados mediante el módulo
+ansible.builtin.group en la primera tarea.
+Cree los usuarios especificados en el archivo vars/users_vars.yml usando el módulo
+ansible.builtin.user para recorrer esas variables en la segunda tarea.
+Ejecute el playbook users.yml.
+4.1.
+Agregue la primera tarea al play para asegurarse de que el grupo webadmin exista en
+sus hosts gestionados.
+La primera tarea debe contar con el siguiente contenido:
+    - name: Add webadmin group
+      ansible.builtin.group:
+        name: webadmin
+        state: present
+4.2.
+Agregue una segunda tarea al play que use el módulo ansible.builtin.user
+para asegurarse de que los usuarios existan en sus hosts gestionados.
+RH294-RHEL9.0-es-3-20240620
+433
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Agregue una cláusula loop: "{{ users }}" a la tarea para iterar sobre cada
+usuario encontrado en el archivo vars/users_vars.yml.
+Para el parámetro name para los usuarios, use item['username'], no item. Esto
+permite que cada ítem de la lista en el archivo de variables se estructure como un
+diccionario de múltiples variables que incluye información adicional sobre cada
+usuario en la lista, específicamente de qué grupos complementarios el usuario debe
+ser miembro.
+El playbook completo debería incluir el siguiente contenido:
+---
+- name: Create multiple local users
+  hosts: webservers
+  vars_files:
+    - vars/users_vars.yml
+  tasks:
+    - name: Add webadmin group
+      ansible.builtin.group:
+        name: webadmin
+        state: present
+    - name: Create user accounts
+      ansible.builtin.user:
+        name: "{{ item['username'] }}"
+        groups: "{{ item['groups'] }}"
+      loop: "{{ users }}"
+4.3.
+Ejecute el playbook users.yml:
+[student@workstation system-users]$ ansible-navigator run \
+> -m stdout users.yml
+PLAY [Create multiple local users] *******************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Add webadmin group] ****************************************************
+changed: [servera.lab.example.com]
+TASK [Create user accounts] **************************************************
+changed: [servera.lab.example.com] => (item={'username': 'user1', 'groups':
+ 'webadmin'})
+changed: [servera.lab.example.com] => (item={'username': 'user2', 'groups':
+ 'webadmin'})
+changed: [servera.lab.example.com] => (item={'username': 'user3', 'groups':
+ 'webadmin'})
+changed: [servera.lab.example.com] => (item={'username': 'user4', 'groups':
+ 'webadmin'})
+changed: [servera.lab.example.com] => (item={'username': 'user5', 'groups':
+ 'webadmin'})
+434
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=3    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 5.
+Asegúrese de que las claves públicas SSH se hayan distribuido correctamente
+en el host remoto agregando una tercera tarea al play que use el módulo
+ansible.posix.authorized_key.
+En el directorio files, cada usuario tiene un único archivo de clave pública SSH. El
+módulo recorre en bucle la lista de usuarios, encuentra la clave apropiada usando la variable
+username y envía la clave al host gestionado.
+Para el parámetro key, use la siguiente expresión Jinja2 para su valor para evaluar el
+contenido del archivo de clave pública apropiado. Se usa una función de búsqueda con
+el complemento (plug-in) file para leer el archivo y su nombre de archivo se construye
+usando operaciones de cadena.
+"{{ lookup('file', 'files/'+ item['username'] + '.key.pub') }}"
+La tercera tarea debe contar con el siguiente contenido:
+    - name: Add authorized keys
+      ansible.posix.authorized_key:
+        user: "{{ item['username'] }}"
+        key: "{{ lookup('file', 'files/'+ item['username'] + '.key.pub') }}"
+      loop: "{{ users }}"
+ 6.
+Agregue una cuarta tarea al play que use el módulo ansible.builtin.lineinfile
+para modificar el archivo de configuración sudo y permitir a los miembros del grupo
+webadmin usar sudo sin una contraseña en el host gestionado. Use el parámetro
+validate para validar la nueva entrada de configuración.
+La cuarta tarea debe contar con el siguiente contenido:
+    - name: Modify sudo config to allow webadmin users sudo without a password
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/webadmin
+        state: present
+        create: true
+        mode: 0440
+        line: "%webadmin ALL=(ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s
+RH294-RHEL9.0-es-3-20240620
+435
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+ 7.
+Agregue una quinta tarea para asegurarse de que el usuario root no tenga permitido
+iniciar sesión usando SSH directamente. Use notify: Restart sshd para
+desencadenar un manejador para reiniciar SSH.
+La quinta tarea debe contar con el siguiente contenido:
+    - name: Disable root login via SSH
+      ansible.builtin.lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "^PermitRootLogin"
+        line: "PermitRootLogin no"
+      notify: Restart sshd
+ 8.
+En la primera línea después de la ubicación del archivo de variables, agregue una nueva
+definición de manejador denominado Restart sshd.
+8.1.
+Defina el manejador Restart sshd de la siguiente manera.
+...output omitted...
+    - vars/users_vars.yml
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+8.2.
+El playbook users.yml debería incluir el siguiente contenido:
+---
+- name: Create multiple local users
+  hosts: webservers
+  vars_files:
+    - vars/users_vars.yml
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+  tasks:
+    - name: Add webadmin group
+      ansible.builtin.group:
+        name: webadmin
+        state: present
+    - name: Create user accounts
+      ansible.builtin.user:
+        name: "{{ item['username'] }}"
+        groups: "{{ item['groups'] }}"
+      loop: "{{ users }}"
+    - name: Add authorized keys
+      ansible.posix.authorized_key:
+        user: "{{ item['username'] }}"
+436
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+        key: "{{ lookup('file', 'files/'+ item['username'] + '.key.pub') }}"
+      loop: "{{ users }}"
+    - name: Modify sudo config to allow webadmin users sudo without a password
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/webadmin
+        state: present
+        create: true
+        mode: 0440
+        line: "%webadmin ALL=(ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s
+    - name: Disable root login via SSH
+      ansible.builtin.lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "^PermitRootLogin"
+        line: "PermitRootLogin no"
+      notify: Restart sshd
+8.3.
+Ejecute el playbook users.yml.
+[student@workstation system-users]$ ansible-navigator run \
+> -m stdout users.yml
+PLAY [Create multiple local users] *******************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Add webadmin group] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Create user accounts] **************************************************
+ok: [servera.lab.example.com] => (item={'username': 'user1', 'groups':
+ 'webadmin'})
+ok: [servera.lab.example.com] => (item={'username': 'user2', 'groups':
+ 'webadmin'})
+ok: [servera.lab.example.com] => (item={'username': 'user3', 'groups':
+ 'webadmin'})
+ok: [servera.lab.example.com] => (item={'username': 'user4', 'groups':
+ 'webadmin'})
+ok: [servera.lab.example.com] => (item={'username': 'user5', 'groups':
+ 'webadmin'})
+TASK [Add authorized keys] ***************************************************
+changed: [servera.lab.example.com] => (item={'username': 'user1', 'groups':
+ 'webadmin'})
+changed: [servera.lab.example.com] => (item={'username': 'user2', 'groups':
+ 'webadmin'})
+changed: [servera.lab.example.com] => (item={'username': 'user3', 'groups':
+ 'webadmin'})
+changed: [servera.lab.example.com] => (item={'username': 'user4', 'groups':
+ 'webadmin'})
+RH294-RHEL9.0-es-3-20240620
+437
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+changed: [servera.lab.example.com] => (item={'username': 'user5', 'groups':
+ 'webadmin'})
+TASK [Modify sudo config to allow webadmin users sudo without a password] ***
+changed: [servera.lab.example.com]
+TASK [Disable root login via SSH] *******************************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [Restart sshd] **********************************************
+changed: [servera.lab.example.com]
+PLAY RECAP ******************************************************************
+servera.lab.example.com    : ok=7    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 9.
+Use SSH como usuario user1 e inicie sesión en el servidor servera. Después de iniciar
+sesión, use el comando sudo -i para cambiar al usuario root.
+9.1.
+Use SSH como usuario user1 e inicie sesión en el servidor servera.
+[student@workstation system-users]$ ssh user1@servera
+Register this system with Red Hat Insights: insights-client --register
+Create an account or view all your systems at https://red.ht/insights-dashboard
+[user1@servera ~]$
+9.2.
+Cambie al usuario root.
+[user1@servera ~]$ sudo -i
+[root@servera ~]#
+9.3.
+Cierre sesión en servera.
+[root@servera ~]# exit
+logout
+[user1@servera ~]$ exit
+logout
+Connection to servera closed.
+[student@workstation system-users]$
+ 10. Intente iniciar sesión en servera con el usuario root directamente. Este paso debería
+fallar, ya que la configuración del daemon SSH se modificó para no permitir inicios de
+sesión directos del usuario root.
+10.1.
+Desde la máquina workstation, use SSH como usuario root e inicie sesión en el
+servidor servera.
+[student@workstation system-users]$ ssh root@servera
+root@servera's password: redhat
+Permission denied, please try again.
+root@servera's password:
+438
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Esto confirma que la configuración SSH denegó el acceso directo al sistema para el
+usuario root.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish system-users
+RH294-RHEL9.0-es-3-20240620
+439
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Administración del proceso de arranque y
+procesos programados
+Objetivos
+• Administrar el inicio del servicio, programar procesos con at, cron y systemd, reiniciar los
+hosts gestionados con reboot y controlar el destino de inicio predeterminado en los hosts
+gestionados.
+Programación de trabajos para la futura ejecución
+Red Hat Enterprise Linux proporciona varios mecanismos que puede usar para programar
+comandos a fin de que se ejecuten en algún momento en el futuro. El comando at programa
+trabajos que se ejecutan una vez en un momento específico. El subsistema Cron programa
+trabajos para que se ejecuten en un programa recurrente, ya sea en el archivo personal crontab
+de un usuario, en la configuración Cron del sistema en /etc/crontab o como un archivo en
+/etc/cron.d. El subsistema systemd también proporciona unidades de temporizador que
+pueden iniciar unidades de servicio en un horario establecido.
+Programación de trabajos que se ejecutan una sola vez
+La programación rápida y de una vez se realiza con el módulo ansible.posix.at. Se crea la
+tarea para que se ejecute en una hora futura y se la retiene hasta el momento de ejecutarse.
+Opciones para el módulo ansible.posix.at
+Opción
+Comentarios
+command
+El comando para programar la ejecución en el futuro.
+count
+El número entero de unidades a partir de ahora que se debe
+ejecutar el trabajo. (Debe usarse con units).
+units
+Especifica si count se mide en minutos, horas, días o
+semanas.
+script_file
+Un archivo de script existente programado para que se ejecute
+en el futuro.
+state
+El valor predeterminado (present) agrega un trabajo;
+absent elimina un trabajo coincidente si está presente.
+unique
+Si se establece en true, si un trabajo coincidente ya está
+presente, no se agrega un nuevo trabajo.
+En el siguiente ejemplo, la tarea que se muestra usa at para programar el comando userdel -r
+tempuser para que se ejecute en 20 minutos.
+440
+RH294-RHEL9.0-es-3-20240620
+
+

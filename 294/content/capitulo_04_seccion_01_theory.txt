@@ -1,0 +1,591 @@
+# Escritura de bucles y tareas condicionales
+# Tipo: theory
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Escritura de bucles y tareas condicionales
+Objetivos
+• Usar bucles para escribir tareas eficientes y condiciones para controlar cuándo ejecutar tareas.
+Iteración de tareas con bucles
+El uso de bucles permite evitar escribir varias tareas que usan el mismo módulo. Por ejemplo, en
+lugar de escribir cinco tareas para garantizar que existan cinco usuarios, puede escribir una tarea
+que itere sobre una lista de cinco usuarios para garantizar que existan todos.
+Para iterar una tarea sobre un conjunto de ítems, puede usar la palabra clave loop. Puede
+configurar los bucles para que repitan una tarea con cada ítem en una lista, el contenido de cada
+uno de los archivos en una lista, una secuencia de números generada o con estructuras más
+complicadas.
+En esta sección, se cubren bucles simples que iteran sobre una lista de ítems. Consulte la
+documentación para ver escenarios de bucle más avanzados.
+Bucles simples
+Un bucle simple itera una tarea sobre una lista de ítems. Se agrega la palabra clave loop a la tarea,
+y esta toma como valor la lista de ítems sobre los cuales se debería iterar la tarea. La variable de
+bucle item contiene el valor usado durante cada iteración.
+Considere el siguiente fragmento que usa el módulo ansible.builtin.service dos veces
+para garantizar que se estén ejecutando dos servicios de red:
+- name: Postfix is running
+  ansible.builtin.service:
+    name: postfix
+    state: started
+- name: Dovecot is running
+  ansible.builtin.service:
+    name: dovecot
+    state: started
+Estas dos tareas pueden reescribirse para usar un bucle simple, de modo que se necesita solo una
+tarea para garantizar que se ejecuten ambos servicios:
+- name: Postfix and Dovecot are running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - postfix
+    - dovecot
+142
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+El bucle puede usar una lista provista por una variable.
+En el siguiente ejemplo, la variable mail_services contiene la lista de servicios que se deben
+ejecutar.
+vars:
+  mail_services:
+    - postfix
+    - dovecot
+tasks:
+  - name: Postfix and Dovecot are running
+    ansible.builtin.service:
+      name: "{{ item }}"
+      state: started
+    loop: "{{ mail_services }}"
+Bucles sobre una lista de diccionarios
+La lista loop no necesita ser una lista de valores simples.
+En el siguiente ejemplo, cada ítem en la lista es en realidad un diccionario. Cada diccionario del
+ejemplo tiene dos claves, name y groups, y el valor de cada clave en la variable de bucle item
+actual puede obtenerse con las variables item['name'] y item['groups'], respectivamente.
+- name: Users exist and are in the correct groups
+  user:
+    name: "{{ item['name'] }}"
+    state: present
+    groups: "{{ item['groups'] }}"
+  loop:
+    - name: jane
+      groups: wheel
+    - name: joe
+      groups: root
+El resultado de la tarea anterior es que el usuario jane está presente y es un miembro del grupo
+wheel, y el usuario joe está presente y es un miembro del grupo root.
+Palabras clave de bucle del estilo anterior
+Antes de Ansible 2.5, la mayoría de los playbooks usaban una sintaxis diferente para los bucles. Se
+proporcionaron varias palabras clave de bucle, que usaban el prefijo with_, seguido del nombre
+de un complemento (plug-in) de búsqueda Ansible (una característica avanzada que no se trata
+en detalle en este curso). Esta sintaxis para el bucle es muy común en los playbooks existentes,
+pero es probable que se considere obsoleta en el futuro.
+En la siguiente tabla se enumeran algunos ejemplos:
+RH294-RHEL9.0-es-3-20240620
+143
+
+
+capítulo 4 |  Implementación del control de tareas
+Bucles Ansible del estilo anterior
+Palabra clave del bucle
+Descripción
+with_items
+Se comporta igual que la palabra clave loop para listas simples,
+como una lista de cadenas o una lista de diccionarios. A diferencia
+de loop, si se proporcionan listas de listas a with_items, se
+aplanan en una lista de nivel simple. La variable de bucle item
+contiene el ítem de lista usado durante cada iteración.
+with_file
+Requiere una lista de nombres de archivo de nodo de control.
+La variable de bucle item incluye el contenido de un archivo
+correspondiente de la lista de archivos durante cada iteración.
+with_sequence
+Requiere parámetros para generar una lista de valores basada en
+una secuencia numérica. La variable de bucle item incluye el valor
+de uno de los ítems generados en la secuencia generada durante
+cada iteración.
+En el siguiente playbook se muestra un ejemplo de la palabra clave with_items:
+  vars:
+    data:
+      - user0
+      - user1
+      - user2
+  tasks:
+    - name: "with_items"
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      with_items: "{{ data }}"
+Importante
+Desde Ansible 2.5, la forma recomendada de escribir bucles es usar la palabra clave
+loop.
+Sin embargo, todavía debe entender la sintaxis antigua, especialmente
+with_items, porque es ampliamente usada en playbooks existentes. Es probable
+que encuentre playbooks y roles que continúen usando palabras clave with_* para
+el bucle.
+Cualquier tarea que use la sintaxis anterior se puede convertir para usar loop conjuntamente con
+filtros Ansible. No necesita saber cómo usar los filtros Ansible para hacer esto. La documentación
+de Ansible contiene una buena referencia sobre cómo convertir los bucles anteriores en la nueva
+sintaxis, así como ejemplos de cómo realizar un bucle sobre los ítems que no son listas simples.
+Consulte la sección "Migrating from with_X to loop" [https://docs.ansible.com/ansible/latest/
+user_guide/playbooks_loops.html#migrating-from-with-x-to-loop] de la Guía del usuario de
+Ansible.
+Es probable que encuentre tareas de playbooks anteriores que contienen palabras clave with_*.
+Las técnicas avanzadas de bucle están fuera del alcance de este curso. Todas las tareas de
+iteración en este curso se pueden implementar ya sea con la palabra clave with_items o loop.
+144
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Uso de variables de registro con bucles
+La palabra clave register también puede capturar la salida de una tarea que realiza un bucle. En
+el siguiente fragmento de código se muestra la estructura de la variable register de una tarea
+que realiza un bucle:
+[student@workstation loopdemo]$ cat loop_register.yml
+---
+- name: Loop Register Test
+  gather_facts: false
+  hosts: localhost
+  tasks:
+    - name: Looping Echo Task
+      ansible.builtin.shell: "echo This is my item: {{ item }}"
+      loop:
+        - one
+        - two
+      register: echo_results
+    - name: Show echo_results variable
+      ansible.builtin.debug:
+        var: echo_results
+La variable echo_results está registrada.
+El contenido de la variable echo_results se muestra en pantalla.
+Al ejecutar el playbook anterior, se obtiene la siguiente salida:
+[student@workstation loopdemo]$ ansible-navigator run -m stdout loop_register.yml
+PLAY [Loop Register Test] ******************************************************
+TASK [Looping Echo Task] *******************************************************
+changed: [localhost] => (item=one)
+changed: [localhost] => (item=two)
+TASK [Show echo_results variable] **********************************************
+ok: [localhost] => {
+    "echo_results": {
+        "changed": true,
+        "msg": "All items completed",
+        "results": [
+            {
+                "ansible_loop_var": "item",
+                "changed": true,
+                "cmd": "echo This is my item: one",
+                "delta": "0:00:00.004519",
+                "end": "2022-06-29 17:32:54.065165",
+                "failed": false,
+                ...output omitted...
+                "item": "one",
+                "msg": "",
+                "rc": 0,
+RH294-RHEL9.0-es-3-20240620
+145
+
+
+capítulo 4 |  Implementación del control de tareas
+                "start": "2022-06-29 17:32:54.060646",
+                "stderr": "",
+                "stderr_lines": [],
+                "stdout": "This is my item: one",
+                "stdout_lines": [
+                    "This is my item: one"
+                ]
+            },
+            {
+                "ansible_loop_var": "item",
+                "changed": true,
+                "cmd": "echo This is my item: two",
+                "delta": "0:00:00.004175",
+                "end": "2022-06-29 17:32:54.296940",
+                "failed": false,
+                ...output omitted...
+                "item": "two",
+                "msg": "",
+                "rc": 0,
+                "start": "2022-06-29 17:32:54.292765",
+                "stderr": "",
+                "stderr_lines": [],
+                "stdout": "This is my item: two",
+                "stdout_lines": [
+                    "This is my item: two"
+                ]
+            }
+        ],
+        "skipped": false
+    }
+}
+...output omitted...
+El carácter { indica que el inicio de la variable echo_results se compone de pares de
+clave-valor.
+La clave results contiene los resultados de la tarea anterior. El carácter [ indica el inicio de
+una lista.
+El inicio de los metadatos de la tarea para el primer ítem (indicado por la clave item). La
+salida del comando echo se encuentra en la clave stdout.
+El inicio de los metadatos del resultado de la tarea para el segundo ítem.
+El carácter ] indica el final de la lista results.
+En el ejemplo anterior, la clave results contiene una lista. En el siguiente ejemplo, el playbook se
+modifica de modo que la segunda tarea itera en esta lista:
+[student@workstation loopdemo]$ cat new_loop_register.yml
+---
+- name: Loop Register Test
+  gather_facts: false
+  hosts: localhost
+  tasks:
+146
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+    - name: Looping Echo Task
+      ansible.builtin.shell: "echo This is my item: {{ item }}"
+      loop:
+        - one
+        - two
+      register: echo_results
+    - name: Show stdout from the previous task.
+      ansible.builtin.debug:
+        msg: "STDOUT from previous task: {{ item['stdout'] }}"
+      loop: "{{ echo_results['results'] }}"
+Después de ejecutar el playbook anterior, verá la siguiente salida:
+PLAY [Loop Register Test] ******************************************************
+TASK [Looping Echo Task] *******************************************************
+changed: [localhost] => (item=one)
+changed: [localhost] => (item=two)
+TASK [Show stdout from the previous task.] *************************************
+ok: [localhost] => (item={'changed': True, 'stdout': 'This is my item: one',
+ 'stderr': '', 'rc': 0, 'cmd': 'echo This is my item: one', 'start': '2022-06-29
+ 17:41:15.558529', 'end': '2022-06-29 17:41:15.563615', 'delta': '0:00:00.005086',
+ 'msg': '', 'invocation': {'module_args': {'_raw_params': 'echo This is my
+ item: one', '_uses_shell': True, 'warn': False, 'stdin_add_newline': True,
+ 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None,
+ 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['This
+ is my item: one'], 'stderr_lines': [], 'failed': False, 'item': 'one',
+ 'ansible_loop_var': 'item'}) => {
+    "msg": "STDOUT from previous task: This is my item: one"
+}
+ok: [localhost] => (item={'changed': True, 'stdout': 'This is my item: two',
+ 'stderr': '', 'rc': 0, 'cmd': 'echo This is my item: two', 'start': '2022-06-29
+ 17:41:15.810566', 'end': '2022-06-29 17:41:15.814932', 'delta': '0:00:00.004366',
+ 'msg': '', 'invocation': {'module_args': {'_raw_params': 'echo This is my
+ item: two', '_uses_shell': True, 'warn': False, 'stdin_add_newline': True,
+ 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None,
+ 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['This
+ is my item: two'], 'stderr_lines': [], 'failed': False, 'item': 'two',
+ 'ansible_loop_var': 'item'}) => {
+    "msg": "STDOUT from previous task: This is my item: two"
+}
+...output omitted...
+Ejecución de tareas de forma condicional
+Ansible puede usar condicionales para ejecutar tareas o plays cuando se cumplen ciertas
+condiciones. Por ejemplo, puede usar un condicional para determinar la memoria disponible en un
+host gestionado antes de que Ansible instale o configure un servicio.
+Los condicionales permiten que los administradores diferencien entre hosts gestionados y les
+asignen roles funcionales según las condiciones que cumplen. Las variables del playbook, las
+RH294-RHEL9.0-es-3-20240620
+147
+
+
+capítulo 4 |  Implementación del control de tareas
+variables registradas y los datos de Ansible se pueden probar con condicionales. Los operadores
+para comparar cadenas, datos numéricos y valores booleanos están disponibles.
+Los siguientes escenarios ilustran el uso de condicionales en Ansible.
+• Defina un límite de hardware en una variable (por ejemplo, min_memory) y compárelo con la
+memoria disponible en un host gestionado.
+• Capture la salida de un comando y evalúela para determinar si se completó una tarea antes de
+tomar otras medidas. Por ejemplo, si falla un programa, se omite un lote.
+• Use los datos de Ansible para determinar la configuración de la red del host gestionado y decida
+qué archivo de plantilla enviar (por ejemplo, unificación o enlace troncal de red).
+• Evalúe el número de CPU para determinar cómo ajustar adecuadamente un servidor web.
+• Compare una variable registrada con una variable predefinida para determinar si un servicio
+cambió. Por ejemplo, pruebe la suma de comprobación MD5 de un archivo de configuración de
+servicio para ver si se modifica el servicio.
+Sintaxis condicional de tareas
+El enunciado when se usa para ejecutar una tarea de forma condicional. Toma como valor la
+condición para realizar pruebas. Si se cumple la condición, se ejecuta la tarea. Si no se cumple la
+condición, se omite la tarea.
+Una de las condiciones más simples que pueden probarse es si una variable booleana es
+verdadera o falsa. El enunciado when en el siguiente ejemplo hace que la tarea se ejecute solo si
+run_my_task es verdadero.
+---
+- name: Simple Boolean Task Demo
+  hosts: all
+  vars:
+    run_my_task: true
+  tasks:
+    - name: httpd package is installed
+      ansible.builtin.dnf:
+        name: httpd
+      when: run_my_task
+148
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+nota
+Las variables booleanas pueden tener el valor true o false.
+En el contenido de Ansible, puede expresar esos valores de otras formas: True,
+yes o 1 también se aceptan para true; y False, no o 0 también se aceptan para
+false. Es posible que vea true y yes, o false y no usados indistintamente para
+expresar valores booleanos en el contenido de Ansible existente.
+Los archivos YAML de Ansible se basan en el estándar YAML 1.1, pero el estándar
+YAML 1.2 especifica que solo puede usar true o false para establecer valores
+booleanos. Por esta razón, es posible que vea una estandarización gradual hacia el
+uso solo de true o false para los valores booleanos en playbooks y otros archivos
+de Ansible, aunque las formas equivalentes de expresar esos valores siguen siendo
+válidas. Si Ansible eventualmente debiera usar solo esas formas de expresar los
+valores booleanos es una pregunta abierta y una discusión en curso en la comunidad
+de Ansible.
+Importante
+Al usar condiciones de verdadero/falso, como en el ejemplo anterior, debe tener
+mucho cuidado de asegurarse de que Ansible trate su variable como un booleano y
+no como una cadena.
+A partir de Ansible Core 2.12, los condicionales when siempre tratan las cadenas
+como booleanos true si incluyen algún contenido. (El entorno de ejecución de
+automatización predeterminado en Ansible Automation Platform 2.2 usa Ansible
+Core 2.13).
+Por lo tanto, si la variable run_my_task en el ejemplo anterior se escribiera como
+se muestra en el siguiente ejemplo, se trataría como una cadena con contenido y
+tendría el valor booleano true, y la tarea se ejecutaría. Probablemente este no sea
+el comportamiento que desea.
+  run_my_task: "false"
+Sin embargo, si se hubiera escrito como se muestra en el siguiente ejemplo, se
+trataría como el valor booleano false y la tarea no se ejecutaría:
+  run_my_task: false
+Para asegurarse de que este sea el caso, puede reescribir la condición when
+anterior para convertir un valor de cadena accidental en un booleano y pasar valores
+booleanos sin cambios:
+      when: run_my_task | bool
+El siguiente ejemplo es un poco más sofisticado y prueba si la variable my_service tiene un valor.
+Si lo hace, el valor de my_service se usa como nombre del paquete para instalar. Si la variable
+my_service no está definida, la tarea se omite sin errores.
+RH294-RHEL9.0-es-3-20240620
+149
+
+
+capítulo 4 |  Implementación del control de tareas
+---
+- name: Test Variable is Defined Demo
+  hosts: all
+  vars:
+    my_service: httpd
+  tasks:
+    - name: "{{ my_service }} package is installed"
+      ansible.builtin.dnf:
+        name: "{{ my_service }}"
+      when: my_service is defined
+En la siguiente tabla, se muestran algunas operaciones que puede usar al trabajar con
+condicionales:
+Ejemplos de condicionales
+Operación
+Ejemplo
+Igual (el valor es una cadena)
+ansible_facts['machine'] == "x86_64"
+Igual (el valor es numérico)
+max_memory == 512
+Menor que
+min_memory < 128
+Mayor que
+min_memory > 256
+Menor que o igual que
+min_memory <= 256
+Mayor que o igual que
+min_memory >= 512
+No es igual a
+min_memory != 512
+La variable existe
+min_memory is defined
+La variable no existe
+min_memory is not defined
+La variable booleana es
+true. Los valores de 1, True
+o yes se evalúan como true.
+memory_available
+La variable booleana es
+false. Los valores de 0,
+False o no se evalúan como
+false.
+not memory_available
+El valor de la primera variable
+está presente como valor en
+la lista de la segunda variable
+ansible_facts['distribution'] in
+supported_distros
+La última entrada en la tabla anterior puede ser confusa al principio. El siguiente ejemplo ilustra
+cómo funciona.
+En el ejemplo, la variable ansible_facts['distribution'] es un dato determinado
+durante la tarea Gathering Facts e identifica la distribución del sistema operativo del
+150
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+host gestionado. El autor del playbook creó la variable supported_distros y contiene
+una lista de las distribuciones de sistemas operativos que soporta el playbook. Si el valor de
+ansible_facts['distribution'] se encuentra en la lista supported_distros, pasa el
+condicional y se ejecuta la tarea.
+---
+- name: Demonstrate the "in" keyword
+  hosts: all
+  gather_facts: true
+  vars:
+    supported_distros:
+      - RedHat
+      - Fedora
+  tasks:
+    - name: Install httpd using dnf, where supported
+      ansible.builtin.dnf:
+        name: http
+        state: present
+      when: ansible_facts['distribution'] in supported_distros
+Importante
+Observe la sangría de la declaración when. Debido a que la declaración when no es
+una variable de módulo, se la debe colocar fuera del módulo con sangría en el nivel
+superior de la tarea.
+Una tarea es un diccionario YAML, y la declaración when es simplemente una clave
+más en la tarea, como el nombre de la tarea y el módulo que usa. Una convención
+común coloca cualquier palabra clave when que pueda estar presente después del
+nombre de la tarea y del módulo (y los argumentos del módulo).
+Realización de pruebas de varias condiciones
+Una declaración when se puede usar para evaluar condicionales múltiples. Para ello, los
+condicionales se pueden combinar con las palabras clave and u or y se pueden agrupar con
+paréntesis.
+En los siguientes fragmentos, se muestran algunos ejemplos de cómo expresar condiciones
+múltiples.
+• Si una declaración condicional se debe cumplir cuando ambas condiciones son verdaderas,
+debe usar la declaración or. Por ejemplo, la siguiente condición se cumple si la máquina ejecuta
+Red Hat Enterprise Linux o Fedora:
+when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution']
+ == "Fedora"
+• Con la operación and, ambas condiciones deben ser verdaderas para que se cumpla con toda
+la declaración condicional. Por ejemplo, la siguiente condición se cumple si el host remoto es un
+host Red Hat Enterprise Linux 9.0 y el kernel instalado es la versión especificada:
+when: ansible_facts['distribution_version'] == "9.0" and ansible_facts['kernel']
+ == "5.14.0-70.13.1.el9_0.x86_64"
+RH294-RHEL9.0-es-3-20240620
+151
+
+
+capítulo 4 |  Implementación del control de tareas
+La palabra clave when también soporta el uso de una lista para describir una lista de
+condiciones. Cuando se proporciona una lista a la palabra clave when, todos los condicionales se
+combinan usando la operación and. En el siguiente ejemplo, se muestra otra forma de combinar
+varias declaraciones condicionales usando el operador and:
+when:
+  - ansible_facts['distribution_version'] == "9.0"
+  - ansible_facts['kernel'] == "5.14.0-70.13.1.el9_0.x86_64"
+Este formato mejora la legibilidad, un objetivo clave de los playbooks de Ansible bien escritos.
+• Puede expresar declaraciones condicionales más complejas agrupando las condiciones con
+paréntesis. Esto asegura que se interpreten correctamente.
+Por ejemplo, la siguiente declaración condicional se cumple si la máquina ejecuta Red Hat
+Enterprise Linux 9 o Fedora 34. Este ejemplo usa el carácter mayor que (>) para que el
+condicional largo se pueda dividir en varias líneas en el playbook, a fin de que sea más fácil de
+leer.
+when: >
+    ( ansible_facts['distribution'] == "RedHat" and
+      ansible_facts['distribution_major_version'] == "9" )
+    or
+    ( ansible_facts['distribution'] == "Fedora" and
+    ansible_facts['distribution_major_version'] == "34" )
+Combinación de bucles y tareas condicionales
+Puede combinar los bucles y los condicionales.
+En el siguiente ejemplo, el módulo ansible.builtin.dnf se instala en el paquete mariadb-
+server si hay un sistema de archivos montado en / con más de 300 MiB libres. El dato
+ansible_facts['mounts'] es una lista de diccionarios, cada uno de los cuales representa
+información acerca de un sistema de archivos instalado. El bucle realiza la iteración de cada
+diccionario en la lista, y la declaración condicional no se cumple, a menos que se determine que
+un diccionario representa un sistema de archivos montado en donde ambas condiciones son
+verdaderas.
+- name: install mariadb-server if enough space on root
+  ansible.builtin.dnf:
+    name: mariadb-server
+    state: latest
+  loop: "{{ ansible_facts['mounts'] }}"
+  when: item['mount'] == "/" and item['size_available'] > 300000000
+Importante
+Cuando usa when con loop para una tarea, se verifica la declaración when de cada
+ítem.
+El siguiente ejemplo también combina condicionales y variables register. Este playbook reinicia
+el servicio httpd únicamente si se ejecuta el servicio postfix:
+152
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+---
+- name: Restart HTTPD if Postfix is Running
+  hosts: all
+  tasks:
+    - name: Get Postfix server status
+      ansible.builtin.command: /usr/bin/systemctl is-active postfix 
+      register: result
+    - name: Restart Apache HTTPD based on Postfix status
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+      when: result.rc == 0
+¿Se está ejecutando Postfix?
+Guarda información en el resultado del módulo en una variable denominada result.
+Evalúe la salida de la tarea Postfix. Si el código de salida del comando systemctl es 0,
+Postfix está activo y esta tarea reinicia el servicio httpd.
+Referencias
+Bucles: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_loops.html
+Pruebas: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_tests.html
+Condicionales: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_conditionals.html
+Qué implica un nombre de variable válido - Variables: documentación de
+Ansible
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_variables.html#what-makes-a-valid-variable-name
+Para obtener más información sobre el cambio al manejo booleano en los
+condicionales en la Ansible comunitario 5 (y Ansible Core 2.12) y versiones
+posteriores, consulte
+https://docs.ansible.com/ansible/latest/porting_guides/
+porting_guide_5.html#deprecated
+RH294-RHEL9.0-es-3-20240620
+153
+
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Escritura de bucles y tareas condicionales
+Escribir un playbook que contenga tareas con condicionales y bucles.
+Resultados
+• Implementar condicionales Ansible usando la palabra clave when.
+• Implementar la iteración de tareas usando la palabra clave loop junto con condicionales.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-flow
+Instrucciones
+ 1.
+En la máquina workstation, cambie al directorio /home/student/control-flow.
+[student@workstation ~]$ cd ~/control-flow
+[student@workstation control-flow]$
+ 2.
+El comando lab creó un archivo de configuración Ansible, así como un archivo de
+inventario. El archivo de inventario contiene el servidor servera.lab.example.com en el
+grupo de hosts database_dev y el servidor serverb.lab.example.com en el grupo de
+hosts database_prod. Revise el contenido del archivo antes de continuar.
+[student@workstation control-flow]$ cat inventory
+[database_dev]
+servera.lab.example.com
+[database_prod]
+serverb.lab.example.com
+ 3.
+Cree el playbook playbook.yml, que contiene un play con dos tareas. Use el grupo de
+hosts database_dev. La primera tarea instala los paquetes requeridos MariaDB y la
+segunda tarea garantiza que el servicio MariaDB se está ejecutando.
+3.1.
+Cree el playbook playbook.yml y defina la variable mariadb_packages con dos
+valores: mariadb-server y python3-PyMySQL.
+154
+RH294-RHEL9.0-es-3-20240620
+
+

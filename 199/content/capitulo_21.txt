@@ -1,0 +1,134 @@
+# Capítulo 18. Recuperar el acceso de superusuario
+
+## 18.1. Recuperar el acceso de superusuario y restablecer la contraseña raíz
+
+18.1. Recuperar el acceso de superusuario y restablecer la contraseña raíz 18.1. Recuperar el acceso de superusuario y restablecer la contraseña raíz Objetivos Obtener acceso administrativo a un sistema cuando la contraseña de superusuario es desconocida o está bloqueada. Restablecer la contraseña raíz desde el cargador de arranque Una tarea que todo administrador del sistema debería poder realizar es restablecer la contraseña perdida de un usuario raíz. Esta tarea es trivial si el administrador todavía está conectado, ya sea como usuario root o como usuario sin privilegios con acceso completo a Sudo. Sin embargo, esta tarea es un poco más compleja cuando el administrador no ha iniciado sesión porque requiere reiniciar el sistema en un estado especial conocido como entorno de rescate o modo de rescate. En Red Hat Enterprise Linux 10, puede ingresar al modo de rescate para cambiar una contraseña de root olvidada usando uno de dos
+
+methods:
+
+Con medios de rescate (recomendado) Sin medios de rescate Con medios de rescate El enfoque recomendado es utilizar medios de rescate, que le permiten iniciar un pequeño entorno Red Hat Enterprise Linux desde medios de instalación, como un CD-ROM o un archivo ISO, en lugar de desde el disco duro del sistema. Para iniciar en modo de rescate, debe poder utilizar uno de los siguientes dispositivos o archivos de medios de instalación para iniciar el
+
+system:
+
+Para una máquina física, utilice medios de instalación como un CD-ROM o un dispositivo flash USB. Para una máquina virtual, utilice archivos ISO. Cuando utilice medios de rescate, asegúrese de que la imagen sea la misma que la del sistema. Por ejemplo, para un sistema RHEL 10, debe utilizar una imagen RHEL 10. Como parte de los medios de instalación de red, Red Hat proporciona una imagen de instalación mínima: Red Hat Enterprise Linux 10.0 Boot ISO. Puede utilizar esta imagen ISO de arranque como medio de rescate para reiniciar el sistema y restablecer la contraseña de root. Para utilizar esta imagen como medio de rescate, siga estos pasos: Reinicie el sistema. 1. Durante el reinicio del sistema, seleccione la imagen boot.iso desde la que iniciar. El proceso para seleccionar medios alternativos desde los que iniciar varía según su entorno. 2. En el menú GRUB2, vaya a Solución de problemas › Rescatar un sistema Red Hat Enterprise Linux. 3.
+
+
+
+
+
+18.1. Recuperación del acceso de superusuario y restablecimiento de la contraseña raíz Figura 25. El menú de GRUB2 Figura 26. Selección del modo de rescate En el menú del entorno de rescate, seleccione Continuar presionando 1 y luego presione Entrar para montar el sistema normalmente. 4.
+
+
+
+
+
+18.1. Recuperación del acceso de superusuario y restablecimiento de la contraseña raíz En este punto, el sistema continúa iniciando, realiza un nuevo etiquetado SELinux completo y luego se reinicia nuevamente. Figura 27. Ingreso al modo de rescate En el símbolo del shell, cambie el directorio raíz al directorio /mnt/sysroot. bash-5.2# chroot /mnt/sysroot 5. Cambie la contraseña de root a la contraseña deseada. bash-5.2# passwd root Nueva contraseña: proporcionar_contraseña Vuelva a escribir la nueva contraseña: proporcionar_contraseña
+
+passwd: password updated successfully
+
+6. Asegúrese de que todos los archivos sin etiquetar, incluido el archivo /etc/shadow en este momento, se vuelvan a etiquetar durante el arranque. Importante Debido a que el sistema aún no ha habilitado SELinux, cualquier archivo que cree no está etiquetado con un contexto SELinux. Algunas herramientas, como el comando passwd, primero crean un archivo temporal y luego lo reemplazan con el archivo que se desea editar, lo que efectivamente crea un archivo sin un contexto SELinux. Por este motivo, cuando utiliza el comando passwd en modo de rescate, el archivo /etc/shadow no está etiquetado con un contexto SELinux. bash-5.2# touch /.autorelabel 7. Escriba el comando de salida dos veces para reiniciar su sistema. El primer comando sale del comando chroot y el segundo sale del modo de rescate y reinicia el sistema. bash-5.2# salir salir bash-5.2# salir 8.
+
+
+
+
+
+18.1. Recuperar el acceso de superusuario y restablecer la contraseña raíz sin medios de rescate Como alternativa al uso de medios de rescate, también puede acceder al entorno de rescate configurando el sistema para emular el modo de rescate. Para lograr este estado del sistema, pase la opción init /bin/bash al kernel y luego vuelva a montar el sistema de archivos raíz en modo lectura/escritura. Advertencia Este método es riesgoso y debe realizarse con precaución. El sistema continúa iniciando, realiza un reetiquetado completo de SELinux y luego se reinicia nuevamente. Referencias
+
+dracut.cmdline(7) man page.
+
+¿Cómo cambiar una contraseña de root olvidada o perdida? Reinicie el sistema. 1. Interrumpa la cuenta regresiva del cargador de arranque presionando Esc. 2. Inicie con el argumento init=/bin/bash. 3. En el menú GRUB2, mueva el cursor a la entrada del kernel para iniciar. a. Presione E para editar la entrada seleccionada. b. Mueva el cursor a la línea de comando del kernel (la línea que comienza con el texto de Linux). do. Elimine cualquier opción de console= de la línea. d. Vaya al final de la línea presionando Ctrl+E. mi. Agregue la cadena init=/bin/bash al final después del espacio. F. Presione Ctrl+X para iniciar con los cambios. gramo. Espere a que el sistema termine de iniciarse. 4. El sistema de archivos raíz (/) se monta como de solo lectura. Cambiar la contraseña raíz requiere que el sistema de archivos raíz
+
+be mounted as read/write. Remount the root file system in read/write mode:
+
+bash-5.2# mount -o remount,rw / 5. Establezca una nueva contraseña de root. bash-5.2# passwd 6. Cree el archivo .autorelabel oculto para volver a etiquetar el contexto SELinux en todos los archivos en el siguiente inicio del sistema. bash-5.2# touch /.autorelabel 7. Reinicie el sistema. bash-5.2# ejecutivo /sbin/init 8.
+
+
+
+
+
+18.2. Ejercicio guiado Recuperar el acceso de superusuario y restablecer la contraseña raíz 18.2. Ejercicio guiado Recuperar el acceso de superusuario y restablecer la contraseña raíz Obtenga acceso administrativo a un sistema cuando la contraseña de superusuario es desconocida o está bloqueada. Resultados Restablecer la contraseña del usuario root. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start rootpw-recover
+
+Instrucciones La contraseña para el usuario root en la máquina del servidor debe ser redhat. Localice la consola de la máquina del servidor e intente iniciar sesión como usuario root. Utilice redhat como contraseña.
+
+servera login: root
+
+Contraseña: redhat Inicio de sesión incorrecto 1. Restablezca la contraseña del usuario root a redhat sin utilizar medios de rescate. Primero, reinicie la máquina del servidor e interrumpa la cuenta regresiva en el menú del cargador de arranque. 2. Ubique la consola del servidor, según corresponda para el entorno de su salón de clases, y luego abra la consola. Envíe Ctrl+Alt+Supr a su sistema utilizando el botón o entrada de menú correspondiente. 2.1. Cuando aparezca el menú del cargador de arranque, presione Esc para interrumpir la cuenta regresiva. 2.2. Edite la entrada resaltada del cargador de arranque del kernel para detener el proceso de arranque justo después de que el kernel monte todos los sistemas de archivos, pero antes de pasar el control a la unidad systemd. 3. Utilice las teclas del cursor para seleccionar la entrada del kernel. 3.1. Presione E para editar la entrada actual. 3.2. Mueva el cursor a la línea que comienza con el texto de Linux. 3.3. Elimine cualquier opción console= de la línea. Importante Si no elimina las opciones console= de la entrada GRUB2 para el kernel de rescate, es posible que el indicador de raíz se inicie en la consola incorrecta y que no pueda acceder a ella. 3.4. Presione Ctrl+E para mover el cursor al final de la línea. 3.5.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado para recuperar el acceso de superusuario y restablecer la contraseña raíz
+
+18.2. Ejercicio guiado Recuperar el acceso de superusuario y restablecer la contraseña raíz 18.2. Ejercicio guiado Recuperar el acceso de superusuario y restablecer la contraseña raíz Obtenga acceso administrativo a un sistema cuando la contraseña de superusuario es desconocida o está bloqueada. Resultados Restablecer la contraseña del usuario root. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start rootpw-recover
+
+Instrucciones La contraseña para el usuario root en la máquina del servidor debe ser redhat. Localice la consola de la máquina del servidor e intente iniciar sesión como usuario root. Utilice redhat como contraseña.
+
+servera login: root
+
+Contraseña: redhat Inicio de sesión incorrecto 1. Restablezca la contraseña del usuario root a redhat sin utilizar medios de rescate. Primero, reinicie la máquina del servidor e interrumpa la cuenta regresiva en el menú del cargador de arranque. 2. Ubique la consola del servidor, según corresponda para el entorno de su salón de clases, y luego abra la consola. Envíe Ctrl+Alt+Supr a su sistema utilizando el botón o entrada de menú correspondiente. 2.1. Cuando aparezca el menú del cargador de arranque, presione Esc para interrumpir la cuenta regresiva. 2.2. Edite la entrada resaltada del cargador de arranque del kernel para detener el proceso de arranque justo después de que el kernel monte todos los sistemas de archivos, pero antes de pasar el control a la unidad systemd. 3. Utilice las teclas del cursor para seleccionar la entrada del kernel. 3.1. Presione E para editar la entrada actual. 3.2. Mueva el cursor a la línea que comienza con el texto de Linux. 3.3. Elimine cualquier opción console= de la línea. Importante Si no elimina las opciones console= de la entrada GRUB2 para el kernel de rescate, es posible que el indicador de raíz se inicie en la consola incorrecta y que no pueda acceder a ella. 3.4. Presione Ctrl+E para mover el cursor al final de la línea. 3.5.
+
+
+
+
+
+18.2. Ejercicio guiado Recuperar el acceso de superusuario y restablecer la contraseña raíz Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish rootpw-recover
+
+Agregue un espacio seguido de la opción init=/bin/bash al final de la línea. Nota Si el texto en la consola es difícil de ver, considere cambiar la resolución al editar la línea del kernel en la entrada del cargador de arranque. Para cambiar la resolución de la consola, agregue el parámetro video=640x480 o vga=ask en la línea que comienza con la palabra linux, después del parámetro rd.break. Para la mayoría de las consolas, un
+
+resolution of 640x480 is enough. By using the vga=ask parameter, you can choose a more suitable
+
+resolución para su entorno. 3.6. Presione Ctrl+X para iniciar usando la configuración modificada. 3.7. Espere a que el sistema termine de iniciarse. En el indicador bash-5.2#, vuelva a montar el sistema de archivos raíz (/) como lectura/escritura. bash-5.2# mount -o remount,rw / 4. Cambie la contraseña de root a redhat. bash-5.2# passwd Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+5. Configure el sistema para realizar automáticamente un reetiquetado completo de SELinux después del inicio. Este paso es necesario porque el comando passwd recrea el archivo /etc/shadow sin un contexto SELinux. bash-5.2# touch /.autorelabel 6. Reinicie la máquina del servidor. El sistema ejecuta una operación de cambio de etiqueta de SELinux y luego se reinicia automáticamente. Espere a que se inicie la máquina del servidor. bash-5.2# exec /sbin/init 7. Cuando el sistema esté listo, verifique que puede iniciar sesión como usuario root con redhat como contraseña.
+
+servera login: root
+
+Contraseña: redhat ...salida omitida... [root@servera ~]# 8. Cierre la consola del servera. 9.
+
+
+
+
+
+18.3. Resumen 18.3. Resumen En esta lección, aprendió a recuperar o restablecer la contraseña del usuario root. Puede utilizar la imagen boot.iso como medio de rescate para restablecer la contraseña de root. Inicie en modo de rescate y luego
+
+mount the system in read/write mode. At the shell prompt, change the root directory to the /mnt/sysroot directory
+
+y establezca la contraseña del usuario root. También puede recuperar o restablecer la contraseña de root sin utilizar medios de rescate. Pase la opción init=/bin/bash al kernel y luego vuelva a montar el sistema de archivos raíz en modo lectura/escritura para cambiar la contraseña de raíz. Vuelva a etiquetar todos los archivos en el próximo reinicio para establecer el contexto SELinux correcto.
+
+
+
+
+
+
+
+## Resumen
+
+18.3. Resumen 18.3. Resumen En esta lección, aprendió a recuperar o restablecer la contraseña del usuario root. Puede utilizar la imagen boot.iso como medio de rescate para restablecer la contraseña de root. Inicie en modo de rescate y luego
+
+mount the system in read/write mode. At the shell prompt, change the root directory to the /mnt/sysroot directory
+
+y establezca la contraseña del usuario root. También puede recuperar o restablecer la contraseña de root sin utilizar medios de rescate. Pase la opción init=/bin/bash al kernel y luego vuelva a montar el sistema de archivos raíz en modo lectura/escritura para cambiar la contraseña de raíz. Vuelva a etiquetar todos los archivos en el próximo reinicio para establecer el contexto SELinux correcto.
+
+
+
+
+
+Capítulo 19. Gestión de la seguridad de la red Objetivo Controlar las conexiones de red a los servicios mediante el firewall del sistema y los servicios de red que pueden vincularse a puertos particulares mediante SELinux. Secciones Administración de firewalls de servidores (y ejercicio guiado) Etiquetado de puertos SELinux (y ejercicio guiado) Práctica de laboratorio Administración de seguridad de red
+
+
+
+
+

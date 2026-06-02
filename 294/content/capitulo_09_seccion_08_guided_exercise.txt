@@ -1,0 +1,271 @@
+# Ejercicio Guiado: Administración del almacenamiento
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración del almacenamiento
+Asignar un nuevo disco como un volumen físico LVM para un grupo de volúmenes, crea
+volúmenes lógicos, los formatea con sistemas de archivos XFS y los monta de forma
+inmediata y automática en el momento del arranque en sus hosts gestionados.
+Resultados
+• Usar el rol redhat.rhel_system_roles.storage para gestionar volúmenes y grupos
+de volúmenes de LVM.
+• Usar el rol redhat.rhel_system_roles.storage para crear sistemas de archivos.
+• Usar el rol redhat.rhel_system_roles.storage para controlar y configurar puntos
+de montaje en /etc/fstab.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-storage
+Instrucciones
+Usted es responsable de administrar un conjunto de servidores web. Debe configurarlos
+para almacenar los datos del sitio web en un sistema de archivos separado de los archivos de
+configuración y de registro para los servidores web. Esta es una práctica recomendada.
+Escriba un playbook para lo siguiente:
+• Use el dispositivo /dev/vdb como volumen físico LVM, contribuyendo con espacio al grupo de
+volúmenes apache-vg.
+• Cree dos volúmenes lógicos denominados content-lv (de 64 ) y logs-lv (de 128 MB),
+ambos respaldados por el grupo de volúmenes apache-vg.
+• Crear un sistema de archivos XFS en ambos volúmenes lógicos.
+• Monte el volumen lógico content-lv en el directorio /var/www.
+• Monte el volumen lógico logs-lv en el directorio /var/log/httpd.
+ 1.
+Cambie al directorio del proyecto /home/student/system-storage.
+[student@workstation ~]$ cd ~/system-storage
+[student@workstation system-storage]$
+RH294-RHEL9.0-es-3-20240620
+465
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+ 2.
+Instale la colección rhel_system_roles desde el archivo redhat-
+rhel_system_roles-1.19.3.tar.gz en el directorio collections del directorio del
+proyecto.
+2.1.
+Use el comando ansible-galaxy para instalar la colección rhel_system_roles
+desde el archivo redhat-rhel_system_roles-1.19.3.tar.gz en el directorio
+collections.
+[student@workstation system-storage]$ ansible-galaxy collection install \
+> ./redhat-rhel_system_roles-1.19.3.tar.gz -p collections
+...output omitted...
+redhat.rhel_system_roles:1.19.3 was installed successfully
+ 3.
+Cree el playbook storage.yml. Escriba un play en ese playbook que ejecute el rol del
+sistema redhat.rhel_system_roles.storage en los hosts gestionados en el grupo
+webservers. Ese play debe configurar el volumen físico de LVM, el grupo de volúmenes y
+los volúmenes lógicos para los servidores web.
+3.1.
+Cree el playbook storage.yml dirigida al grupo webservers y aplica el rol
+redhat.rhel_system_roles.storage.
+---
+- name: Configure storage on webservers
+  hosts: webservers
+  roles:
+    - name: redhat.rhel_system_roles.storage
+3.2.
+Defina la variable de rol storage_pools para el rol
+redhat.rhel_system_roles.storage. Úselo para establecer el nombre del
+grupo de volúmenes en apache-vg, el tipo en lvm y especificar que los discos usen
+el dispositivo /dev/vdb.
+      storage_pools:
+        - name: apache-vg
+          type: lvm
+          disks:
+            - /dev/vdb
+3.3.
+Defina la variable volumes en la variable del rol storage_pools.
+          volumes:
+3.4.
+Cree un volumen lógico dentro de volumes con el nombre content-lv, un tamaño
+de 64 MB, un tipo de sistema de archivos de xfs y un punto de montaje de /var/
+www.
+            - name: content-lv
+              size: 64m
+              mount_point: "/var/www"
+              fs_type: xfs
+              state: present
+466
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+3.5.
+Cree otro volumen lógico dentro de volumes con el nombre logs-lv, un tamaño de
+128 MB, un tipo de sistema de archivos de xfs y un punto de montaje de /var/log/
+httpd.
+            - name: logs-lv
+              size: 128m
+              mount_point: "/var/log/httpd"
+              fs_type: xfs
+              state: present
+El playbook final debería incluir el siguiente contenido:
+---
+- name: Configure storage on webservers
+  hosts: webservers
+  roles:
+    - name: redhat.rhel_system_roles.storage
+      storage_pools:
+        - name: apache-vg
+          type: lvm
+          disks:
+            - /dev/vdb
+          volumes:
+            - name: content-lv
+              size: 64m
+              mount_point: "/var/www"
+              fs_type: xfs
+              state: present
+            - name: logs-lv
+              size: 128m
+              mount_point: "/var/log/httpd"
+              fs_type: xfs
+              state: present
+ 4.
+Ejecute el playbook storage.yml.
+[student@workstation system-storage]$ ansible-navigator run \
+> -m stdout storage.yml
+PLAY [Configure storage on webservers] *****************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+...output omitted...
+TASK [rhel-system-roles.storage : make sure blivet is available] ***************
+changed: [servera.lab.example.com]
+...output omitted...
+TASK [rhel-system-roles.storage : set up new/current mounts] *******************
+RH294-RHEL9.0-es-3-20240620
+467
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+changed: [servera.lab.example.com] => (item={'src': '/dev/mapper/apache--vg-
+content--lv', 'path': '/var/www', 'fstype': 'xfs', 'opts': 'defaults', 'dump': 0,
+ 'passno': 0, 'state': 'mounted'})
+changed: [servera.lab.example.com] => (item={'src': '/dev/mapper/apache--vg-logs--
+lv', 'path': '/var/log/httpd', 'fstype': 'xfs', 'opts': 'defaults', 'dump': 0,
+ 'passno': 0, 'state': 'mounted'})
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=21   changed=3    unreachable=0    failed=0   
+ skipped=12   rescued=0    ignored=0
+ 5.
+Ejecute el playbook get-storage.yml proporcionado en el directorio del proyecto
+para verificar que el almacenamiento se haya configurado correctamente en los hosts
+gestionados en el grupo webservers. Si es así, la información sobre el almacenamiento
+aparece en la salida del playbook como se resalta en el siguiente ejemplo:
+[student@workstation system-storage]$ ansible-navigator run \
+> -m stdout get-storage.yml
+PLAY [View storage configuration] **********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Retrieve physical volumes] ***********************************************
+changed: [servera.lab.example.com]
+TASK [Display physical volumes] ************************************************
+ok: [servera.lab.example.com] => {
+    "msg": [
+        "  PV         VG        Fmt  Attr PSize    PFree  ",
+        "  /dev/vdb   apache-vg lvm2 a--  1020.00m 828.00m"
+    ]
+}
+TASK [Retrieve volume groups] **************************************************
+changed: [servera.lab.example.com]
+TASK [Display volume groups] ***************************************************
+ok: [servera.lab.example.com] => {
+    "msg": [
+        "  VG        #PV #LV #SN Attr   VSize    VFree  ",
+        "  apache-vg   1   2   0 wz--n- 1020.00m 828.00m"
+    ]
+}
+TASK [Retrieve logical volumes] ************************************************
+changed: [servera.lab.example.com]
+TASK [Display logical volumes] *************************************************
+ok: [servera.lab.example.com] => {
+    "msg": [
+468
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+        "  LV         VG        Attr       LSize   Pool Origin Data%  Meta%  Move
+ Log Cpy%Sync Convert",
+        "  content-lv apache-vg -wi-ao----  64.00m                                
+                    ",
+        "  logs-lv    apache-vg -wi-ao---- 128.00m                                
+                    "
+    ]
+}
+TASK [Retrieve mounted logical volumes] ****************************************
+changed: [servera.lab.example.com]
+TASK [Display mounted logical volumes] *****************************************
+ok: [servera.lab.example.com] => {
+    "msg": [
+        "/dev/mapper/apache--vg-content--lv on /var/www type xfs
+ (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)",
+        "/dev/mapper/apache--vg-logs--lv on /var/log/httpd type xfs
+ (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)"
+    ]
+}
+TASK [Retrieve /etc/fstab contents] ********************************************
+changed: [servera.lab.example.com]
+TASK [Display /etc/fstab contents] *********************************************
+ok: [servera.lab.example.com] => {
+    "msg": [
+        "UUID=5e75a2b9-1367-4cc8-bb38-4d6abc3964b8\t/boot\txfs\tdefaults\t0\t0",
+        "UUID=fb535add-9799-4a27-b8bc-e8259f39a767\t/\txfs\tdefaults\t0\t0",
+        "UUID=7B77-95E7\t/boot/efi\tvfat
+\tdefaults,uid=0,gid=0,umask=077,shortname=winnt\t0\t2",
+        "/dev/mapper/apache--vg-content--lv /var/www xfs defaults 0 0",
+        "/dev/mapper/apache--vg-logs--lv /var/log/httpd xfs defaults 0 0"
+    ]
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=11   changed=5    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish system-storage
+RH294-RHEL9.0-es-3-20240620
+469
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Administración de la configuración de red
+Objetivos
+• Configurar los ajustes de red y la resolución de nombres en los hosts gestionados y recopilar
+datos de Ansible relacionados con la red.
+Configuración de redes con el rol de sistema de red
+El rol del sistema redhat.rhel_system_roles.network proporciona una manera de
+automatizar la configuración de las interfaces de red y las configuraciones relacionadas con la red
+en los hosts gestionados de Red Hat Enterprise Linux.
+Este rol soporta la configuración de interfaces Ethernet, interfaces de puente, interfaces
+enlazadas, interfaces VLAN, interfaces MACVLAN e interfaces Infiniband e interfaces
+inalámbricas.
+El rol se configura mediante el uso de dos variables: network_provider y
+network_connections.
+---
+network_provider: nm
+network_connections:
+  - name: ens4
+    type: ethernet
+    ip:
+      address:
+        - 172.25.250.30/24
+La variable network_provider configura el proveedor de back end, ya sea nm
+(NetworkManager) o initscripts. En Red Hat Enterprise Linux 7 y versiones posteriores, use
+nm como proveedor de red predeterminado.
+Si aún tiene sistemas Red Hat Enterprise Linux 6 en Extended Lifecycle Support (ELS), debe usar
+el proveedor initscripts para esos hosts gestionados. Ese proveedor requiere que el servicio
+heredado network esté disponible en los hosts gestionados.
+La variable network_connections configura las diferentes conexiones. Toma como valor
+una lista de diccionarios, cada uno de los cuales representa configuraciones para una conexión
+específica. Use el nombre de la interfaz como nombre de la conexión.
+En la siguiente tabla, se enumeran las opciones para la variable network_connections.
+470
+RH294-RHEL9.0-es-3-20240620
+
+

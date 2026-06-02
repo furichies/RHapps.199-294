@@ -1,0 +1,57 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Resumen
+• Los roles de Ansible lo ayudan a volver a usar y compartir el código de Ansible.
+• Ansible Content Collections_ distribuye roles, módulos y otros complementos (plug-ins) de
+Ansible relacionados que puede usar en proyectos de Ansible y entornos de ejecución de
+automatización.
+• Use el comando ansible-galaxy para gestionar los roles de Ansible y Ansible Content
+Collections.
+• Red Hat proporciona Ansible Content Collections certificadas por Red Hat a través de un
+centro de automatización de servicios basados en la nube. Red Hat y sus partners admiten estas
+Ansible Content Collections.
+• Puede distribuir Ansible Content Collections certificadas por Red Hat o sus propias Ansible
+Content Collections desde un centro de automatización privado en las instalaciones.
+• Ansible Galaxy proporciona una librería de roles de Ansible de terceros y Ansible Content
+Collections que son gestionadas por la comunidad y no son admitidas por Red Hat.
+• Los roles del sistema (redhat.rhel_system_roles) se proporcionan como un paquete
+RPM o como una Ansible Content Collection que consta de varios roles destinados a ayudarlo a
+configurar subsistemas de hosts gestionados en varias versiones de Red Hat Enterprise Linux.
+• Los roles y Ansible Content Collections que necesita un proyecto se pueden especificar
+mediante archivos requirements.yml y se pueden instalar en su proyecto de Ansible
+manualmente mediante ansible-galaxy.
+360
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8
+Solución de problemas de
+Ansible
+Meta
+Solucionar problemas de playbooks y hosts
+gestionados.
+Objetivos
+•
+Solucionar problemas genéricos con un nuevo
+playbook y repararlos.
+•
+Solucionar fallas en hosts gestionados cuando
+se ejecuta un playbook.
+Secciones
+•
+Solución de problemas de playbooks (y
+ejercicio guiado)
+•
+Solución de problemas en hosts gestionados de
+Ansible (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Solución de problemas de Ansible
+RH294-RHEL9.0-es-3-20240620
+361
+
+

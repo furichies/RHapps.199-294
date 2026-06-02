@@ -1,0 +1,370 @@
+# Trabajo de laboratorio: Implementación de archivos en hosts gestionados
+# Tipo: lab
+# Capítulo: Capítulo 5. Implementación de archivos en hosts gestionados
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Trabajo de laboratorio
+Implementación de archivos en hosts
+gestionados
+Ejecutar un playbook que cree un archivo personalizado en sus hosts gestionados mediante
+el uso de una plantilla Jinja2.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-review
+nota
+Todos los archivos usados en este ejercicio están disponibles en
+workstation en el directorio /home/student/file-review/files.
+Instrucciones
+1.
+Revise el archivo inventory generado en el directorio /home/student/file-review.
+Este archivo de inventario define el grupo servers, el cual tiene asociado el host gestionado
+serverb.lab.example.com.
+2.
+Identifique los datos en serverb.lab.example.com, que muestran la cantidad total de
+memoria del sistema y la cantidad de procesadores que tiene.
+3.
+En el directorio /home/student/file-review, cree el archivo de plantillas Jinja2
+templates/motd.j2. Después de implementar esta plantilla, los usuarios que inicien
+sesión en serverb.lab.example.com deberían ver un mensaje que muestre el recuento
+total de procesadores y memoria del sistema.
+El mensaje puede usar el texto que desee, pero la plantilla debe usar los datos
+ansible_facts['memtotal_mb'] y ansible_facts['processor_count'] para
+proporcionar la información de recursos del sistema para el mensaje.
+4.
+En el directorio /home/student/file-review, cree un archivo de playbook denominado
+motd.yml que contenga un nuevo play que se ejecuta en todos los hosts del inventario.
+Debe iniciar sesión con el usuario devops en el host remoto y usar become para habilitar el
+aumento de privilegios para todo el play.
+RH294-RHEL9.0-es-3-20240620
+217
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+El play debe tener una tarea que use el módulo ansible.builtin.template para
+implementar el archivo de plantilla motd.j2 Jinja2 en el archivo /etc/motd en los hosts
+gestionados. El archivo resultante debe tener el usuario root como su usuario y grupo
+propietario, y sus permisos deben ser 0644.
+Agregue una tarea adicional que use el módulo ansible.builtin.stat para verificar
+que /etc/motd exista en los hosts gestionados y registre sus resultados en una variable.
+Esa tarea debe ir seguida de una tarea que use ansible.builtin.debug para mostrar la
+información en esa variable registrada.
+Agregue una tarea que use el módulo ansible.builtin.copy para colocar files/
+issue en el directorio /etc/ del host gestionado; use la misma propiedad y los mismos
+permisos que /etc/motd.
+Por último, agregue una tarea que use el módulo ansible.builtin.file para asegurarse
+de que /etc/issue.net sea un enlace simbólico a /etc/issue en el host gestionado.
+5.
+Verifique que su playbook no contenga errores de sintaxis.
+6.
+Ejecute el playbook de Ansible motd.yml.
+7.
+Confirme que el playbook motd.yml se haya ejecutado correctamente.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade file-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-review
+218
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Solución
+Implementación de archivos en hosts
+gestionados
+Ejecutar un playbook que cree un archivo personalizado en sus hosts gestionados mediante
+el uso de una plantilla Jinja2.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-review
+nota
+Todos los archivos usados en este ejercicio están disponibles en
+workstation en el directorio /home/student/file-review/files.
+Instrucciones
+1.
+Revise el archivo inventory generado en el directorio /home/student/file-review.
+Este archivo de inventario define el grupo servers, el cual tiene asociado el host gestionado
+serverb.lab.example.com.
+1.1.
+En workstation, cambie al directorio /home/student/file-review.
+[student@workstation ~]$ cd ~/file-review/
+[student@workstation file-review]$
+1.2.
+Muestre el contenido del archivo inventory.
+[servers]
+serverb.lab.example.com
+2.
+Identifique los datos en serverb.lab.example.com, que muestran la cantidad total de
+memoria del sistema y la cantidad de procesadores que tiene.
+RH294-RHEL9.0-es-3-20240620
+219
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Cree un playbook denominado serverb_facts.yml en el directorio /
+home/student/file-review. Edítelo para que contenga un play que
+use el módulo ansible.builtin.debug para mostrar una lista de todos
+los datos para el host gestionado serverb.lab.example.com. Los datos
+ansible_facts['processor_count'] y ansible_facts['memtotal_mb']
+proporcionan información sobre los límites de recursos del host gestionado.
+[student@workstation file-review]$ cat serverb_facts.yml
+---
+- name: Display ansible_facts
+  hosts: serverb.lab.example.com
+  tasks:
+    - name: Display facts
+      ansible.builtin.debug:
+        var: ansible_facts
+[student@workstation file-review]$ ansible-navigator run \
+> -m stdout serverb_facts.yml
+PLAY [Display ansible_facts] ***********************************************
+TASK [Gathering Facts] *****************************************************
+ok: [serverb.lab.example.com]
+TASK [Display facts] *******************************************************
+ok: [serverb.lab.example.com] => {
+    "ansible_facts": {
+...output omitted...
+        "memtotal_mb": 960,
+...output omitted...
+        "processor_count": 1,
+...output omitted...
+    }
+}
+PLAY RECAP *****************************************************************
+serverb.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+3.
+En el directorio /home/student/file-review, cree el archivo de plantillas Jinja2
+templates/motd.j2. Después de implementar esta plantilla, los usuarios que inicien
+sesión en serverb.lab.example.com deberían ver un mensaje que muestre el recuento
+total de procesadores y memoria del sistema.
+El mensaje puede usar el texto que desee, pero la plantilla debe usar los datos
+ansible_facts['memtotal_mb'] y ansible_facts['processor_count'] para
+proporcionar la información de recursos del sistema para el mensaje.
+3.1.
+Cree el archivo templates/motd.j2. El archivo debe usar el siguiente contenido:
+System total memory: {{ ansible_facts['memtotal_mb'] }} MiB.
+System processor count: {{ ansible_facts['processor_count'] }}
+4.
+En el directorio /home/student/file-review, cree un archivo de playbook denominado
+motd.yml que contenga un nuevo play que se ejecuta en todos los hosts del inventario.
+220
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Debe iniciar sesión con el usuario devops en el host remoto y usar become para habilitar el
+aumento de privilegios para todo el play.
+El play debe tener una tarea que use el módulo ansible.builtin.template para
+implementar el archivo de plantilla motd.j2 Jinja2 en el archivo /etc/motd en los hosts
+gestionados. El archivo resultante debe tener el usuario root como su usuario y grupo
+propietario, y sus permisos deben ser 0644.
+Agregue una tarea adicional que use el módulo ansible.builtin.stat para verificar
+que /etc/motd exista en los hosts gestionados y registre sus resultados en una variable.
+Esa tarea debe ir seguida de una tarea que use ansible.builtin.debug para mostrar la
+información en esa variable registrada.
+Agregue una tarea que use el módulo ansible.builtin.copy para colocar files/
+issue en el directorio /etc/ del host gestionado; use la misma propiedad y los mismos
+permisos que /etc/motd.
+Por último, agregue una tarea que use el módulo ansible.builtin.file para asegurarse
+de que /etc/issue.net sea un enlace simbólico a /etc/issue en el host gestionado.
+4.1.
+Cree el playbook y configure las directivas remote_user y become.
+---
+- name: Configure system
+  hosts: all
+  remote_user: devops
+  become: true
+  tasks:
+4.2.
+Cree una tarea con el módulo ansible.builtin.template para implementar el
+archivo de plantilla Jinja2 motd.j2 en el archivo /etc/motd
+    - name: Configure a custom /etc/motd
+      ansible.builtin.template:
+        src: templates/motd.j2
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+4.3.
+Cree una tarea que use el módulo ansible.builtin.stat para verificar que /
+etc/motd existe y registre los resultados. Agregue otra tarea usando el módulo
+ansible.builtin.debug para mostrar la variable registrada.
+    - name: Check file exists
+      ansible.builtin.stat:
+        path: /etc/motd
+      register: motd
+    - name: Display stat results
+      ansible.builtin.debug:
+        var: motd
+4.4.
+Agregue una tarea que use el módulo ansible.builtin.copy para colocar files/
+issue en el directorio /etc/.
+RH294-RHEL9.0-es-3-20240620
+221
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+    - name: Copy custom /etc/issue file
+      ansible.builtin.copy:
+        src: files/issue
+        dest: /etc/issue
+        owner: root
+        group: root
+        mode: 0644
+4.5.
+Agregue una tarea que use el módulo ansible.builtin.file para asegurarse de
+que /etc/issue.net sea un enlace simbólico a /etc/issue.
+    - name: Ensure /etc/issue.net is a symlink to /etc/issue
+      ansible.builtin.file:
+        src: /etc/issue
+        dest: /etc/issue.net
+        state: link
+        owner: root
+        group: root
+        force: true
+4.6.
+El playbook completo debe verse de la siguiente manera.
+---
+- name: Configure system
+  hosts: all
+  remote_user: devops
+  become: true
+  tasks:
+    - name: Configure a custom /etc/motd
+      ansible.builtin.template:
+        src: templates/motd.j2
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+    - name: Check file exists
+      ansible.builtin.stat:
+        path: /etc/motd
+      register: motd
+    - name: Display stat results
+      ansible.builtin.debug:
+        var: motd
+    - name: Copy custom /etc/issue file
+      ansible.builtin.copy:
+        src: files/issue
+        dest: /etc/issue
+        owner: root
+        group: root
+        mode: 0644
+222
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+    - name: Ensure /etc/issue.net is a symlink to /etc/issue
+      ansible.builtin.file:
+        src: /etc/issue
+        dest: /etc/issue.net
+        state: link
+        owner: root
+        group: root
+        force: true
+5.
+Verifique que su playbook no contenga errores de sintaxis.
+Antes de ejecutar el playbook, use el comando ansible-navigator run --syntax-
+check para validar su sintaxis. Si informa errores, corríjalos antes de pasar al siguiente paso.
+Debe ver una salida similar a la siguiente:
+[student@workstation file-review]$ ansible-navigator run \
+> -m stdout motd.yml --syntax-check
+playbook: /home/student/file-review/motd.yml
+6.
+Ejecute el playbook de Ansible motd.yml.
+[student@workstation file-review]$ ansible-navigator run \
+> -m stdout motd.yml
+PLAY [Configure system] ****************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [serverb.lab.example.com]
+TASK [Configure a custom /etc/motd] ****************************************
+changed: [serverb.lab.example.com]
+TASK [Check file exists] ***************************************************
+ok: [serverb.lab.example.com]
+TASK [Display stat results] ************************************************
+ok: [serverb.lab.example.com] => {
+    "motd": {
+        "changed": false,
+        "failed": false,
+...output omitted...
+TASK [Copy custom /etc/issue file] *****************************************
+changed: [serverb.lab.example.com]
+TASK [Ensure /etc/issue.net is a symlink to /etc/issue] ********************
+changed: [serverb.lab.example.com]
+PLAY RECAP *****************************************************************
+serverb.lab.example.com    : ok=6    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.
+Confirme que el playbook motd.yml se haya ejecutado correctamente.
+RH294-RHEL9.0-es-3-20240620
+223
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Use ssh para iniciar sesión en serverb.lab.example.com con el usuario devops y
+verifique que el contenido de /etc/motd y /etc/issue aparezca al iniciar sesión. Finalice
+la sesión cuando haya terminado.
+[student@workstation file-review]$ ssh devops@serverb.lab.example.com
+------------------------------- PRIVATE SYSTEM -----------------------------
+*   Access to this computer system is restricted to authorized users only.   *
+*                                                                            *
+*      Customer information is confidential and must not be disclosed.       *
+----------------------------------------------------------------------------
+System total memory: 960 MiB.
+System processor count: 1
+Register this system with Red Hat Insights: insights-client --register
+Create an account or view all your systems at https://red.ht/insights-dashboard
+Last login: Thu Jul  7 14:34:04 2022 from 172.25.250.9
+[devops@serverb ~]$ logout
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade file-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-review
+224
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Resumen
+• Los módulos de gestión de archivos en Ansible Content Collections ansible.builtin y
+ansible.posix le permiten realizar la mayoría de las tareas relacionadas con la administración
+de archivos, como crear, copiar, editar y modificar permisos y otros atributos de archivos.
+• Varios módulos de administración de archivos pueden establecer el modo de permisos y el
+contexto de SELinux para los archivos.
+• Puede usar plantillas Jinja2 para crear archivos dinámicamente para la implementación.
+• Por lo general, una plantilla Jinja2 se compone de dos elementos: variables y expresiones. Estas
+variables y expresiones se reemplazan con valores cuando se entrega la plantilla Jinja2.
+• Use el módulo ansible.builtin.template para implementar plantillas Jinja2 en hosts
+gestionados.
+• Los filtros en Jinja2 transforman las expresiones de las plantillas de un tipo o formato de datos a
+otro.
+RH294-RHEL9.0-es-3-20240620
+225
+
+

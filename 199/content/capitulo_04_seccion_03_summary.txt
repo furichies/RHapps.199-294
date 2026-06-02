@@ -1,0 +1,20 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 1. Registro de sistemas para soporte de Red Hat
+
+1.3. Resumen 1.3. Resumen En esta lección, aprendió sobre el modelo de suscripción de Red Hat, que brinda acceso a contenido en Red Hat Content Delivery Network (CDN), como actualizaciones de software, parches de seguridad y recursos técnicos. El modelo Simple Content Access agiliza la gestión de suscripciones a nivel organizacional y centraliza los servicios en Hybrid Cloud Console. Puede utilizar las herramientas de línea de comandos de configuración de host remoto (rhc) o del administrador de suscripciones (subscription-manager) para registrar sus sistemas. Las herramientas de línea de comandos rhc y de administrador de suscripciones registran sistemas para
+
+content access; the rhc tool can additionally activate Red Hat Insights.
+
+Alternativamente, puede utilizar la consola web de RHEL para registrar su sistema. Los sistemas registrados reciben certificados de identificación y autenticación.
+
+
+
+
+
+Capítulo 2. Administrar archivos desde la línea de comandos Objetivo Copiar, mover, crear, eliminar y organizar archivos desde la línea de comandos. Secciones Administrar archivos con herramientas de línea de comandos (y ejercicio guiado) Crear vínculos entre archivos (y ejercicio guiado) Hacer coincidir nombres de archivos con expansiones de Shell (y cuestionario) Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+
+
+
+

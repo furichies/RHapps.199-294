@@ -1,0 +1,130 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar permisos de archivos desde la línea de comandos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos 5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos Cambie los permisos y la propiedad de los archivos con herramientas de línea de comandos. Resultados Crear un directorio al que puedan acceder todos los miembros de un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-cli
+
+Instrucciones El comando de inicio de laboratorio prepara el entorno creando un grupo denominado consultores y creando dos usuarios, consultor1 y consultor2, que son miembros de este grupo. Cree el directorio /home/consultants en la máquina del servidor y cambie el grupo propietario al grupo de consultores. 1. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice redhat como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el directorio /home/consultants.
+
+[root@servera ~]# mkdir /home/consultants
+
+1.2. Cambie la propiedad del grupo del directorio /home/consultants al grupo de consultores.
+
+[root@servera ~]# chown :consultants /home/consultants
+
+1.3. Modifique los permisos del grupo de consultores para permitir que los miembros de su grupo creen archivos y eliminen archivos del directorio /home/consultants. También configure el directorio para prohibir que otros accedan a los archivos. 2. Verifique que los permisos del grupo de consultores permitan a los miembros de su grupo crear y eliminar archivos en el directorio /home/consultants. Tenga en cuenta que el grupo de consultores actualmente no tiene permiso de escritura. 2.1.
+
+
+
+
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos
+
+[root@servera ~]# ls -ld /home/consultants
+drwxr-xr-x. 2 root consultants 6 May 28 21:16 /home/consultants
+
+Agregue permiso de escritura para el grupo de consultores. Utilice el método simbólico para configurar los permisos adecuados.
+
+[root@servera ~]# chmod g+w /home/consultants
+[root@servera ~]# ls -ld /home/consultants
+drwxrwxr-x. 2 root consultants 6 May 28 21:16 /home/consultants
+
+El nuevo conjunto de permisos para el grupo de consultores (rwx) incluye lectura, escritura y ejecución. 2.2. Prohibir que otros accedan a archivos en el directorio /home/consultants. Utilice el método octal para configurar los permisos adecuados.
+
+[root@servera ~]# chmod 770 /home/consultants
+[root@servera ~]# ls -ld /home/consultants
+drwxrwx---. 2 root consultants 6 May 28 21:16 /home/consultants
+
+El nuevo conjunto de permisos para otros (---) les restringe todo acceso al directorio. 2.3. Salga del shell raíz y cambie al usuario consultor1. Utilice redhat como contraseña.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ su - consultant1
+
+Contraseña: redhat [consultor1@servera ~]$ 3. Vaya al directorio /home/consultants y cree un archivo llamado consultor1.txt. Dado que el usuario consultor1 forma parte del grupo de consultores, este usuario tiene permiso de escritura para el directorio. 4. Cambie al directorio /home/consultants.
+
+[consultant1@servera ~]$ cd /home/consultants
+
+4.1. Cree un archivo vacío llamado consultor1.txt.
+
+[consultant1@servera consultants]$ touch consultant1.txt
+
+4.2. Enumere el contenido del directorio /home/consultants.
+
+[consultant1@servera consultants]$ ls
+
+consultor1.txt 4.3. Salga del shell y cambie al usuario consultor2. Utilice redhat como contraseña.
+
+[consultant1@servera consultants]$ exit
+
+cerrar sesión
+
+[student@servera ~]$ su - consultant2
+
+Contraseña: redhat [consultor2@servera ~]$ 5. Vaya al directorio /home/consultants. Asegúrese de que el usuario consultor2 pueda agregar archivos al directorio /home/consultants/. Dado que el usuario consultor2 forma parte del grupo de consultores, este usuario tiene permiso de escritura para el directorio. 6.
+
+
+
+
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish perms-cli
+
+Cambie al directorio /home/consultants. Cree un archivo vacío llamado consultor2.txt.
+
+[consultant2@servera ~]$ cd /home/consultants/
+[consultant2@servera consultants]$ touch consultant2.txt
+
+6.1. Enumere el contenido del directorio /home/consultants.
+
+[consultant2@servera consultants]$ ls
+
+consultor1.txt consultor2.txt 6.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[consultant2@servera consultants]$ exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales 5.5. Administrar permisos predeterminados y permisos especiales Objetivos Controlar los permisos predeterminados de los archivos creados por el usuario y explicar los permisos especiales de los archivos. Permisos especiales Los permisos especiales son un cuarto tipo de permiso, además de los de usuario, grupo y otros. Como su nombre lo indica, los permisos especiales brindan funciones adicionales relacionadas con el acceso más allá de lo que permiten los tipos de permisos básicos. Los permisos especiales setuid, setgid y sticky brindan control adicional sobre el comportamiento de archivos y directorios. Esta sección describe el impacto de los permisos especiales, que se resumen en la siguiente tabla. Tabla 5. Efectos de los permisos especiales en archivos y directorios u+s (suid) El archivo se ejecuta como el usuario propietario del archivo, no como el usuario que ejecutó el archivo. Ningún efecto. g+s (sgid) El archivo se ejecuta como el grupo propietario del archivo. Los archivos que se crean en el directorio tienen un propietario de grupo que coincide con el propietario del grupo del directorio. o+t (pegajoso) Sin efecto. Los usuarios con acceso de escritura al directorio no pueden eliminar ni cambiar el nombre de archivos que no sean de su propiedad. El permiso setuid en un archivo ejecutable significa que los comandos se ejecutan como el usuario propietario de ese archivo, en lugar de como el
+
+user that ran the command. One example is the passwd command:
+user@host:~$ ls -l /usr/bin/passwd
+
+-rwsr-xr-x. 1 root root 91584 4 de noviembre de 2024 /usr/bin/passwd En una lista larga, puede identificar los permisos setuid mediante un carácter s minúsculo en el lugar donde normalmente esperaría el carácter x (permisos de ejecución del propietario). Si el propietario no tiene permisos de ejecución, este carácter se reemplaza por un carácter S mayúscula. El permiso especial setgid en un directorio significa que los archivos creados en el directorio heredan la propiedad del grupo del directorio, en lugar de heredar la propiedad del grupo del usuario creador. Esta característica se usa comúnmente en directorios colaborativos para cambiar automáticamente un archivo del grupo privado predeterminado al grupo compartido, o en casos donde un grupo específico siempre debe poseer archivos en un directorio. Un ejemplo de este comportamiento es el archivo /run/log/journal
+
+directory:
+user@host:~$ ls -ld /run/log/journal
+drwxr-sr-x+ 4 root systemd-journal 80 May 29 16:55 /run/log/journal
+
+Si setgid está configurado en un archivo ejecutable, los comandos se ejecutan como el grupo propietario de ese archivo, en lugar de como el grupo principal del usuario que ejecutó el comando. Este comportamiento es similar a cómo funciona setuid. Permiso Efecto en archivos Efecto en directorios
+
+
+
+
+

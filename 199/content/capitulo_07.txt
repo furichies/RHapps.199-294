@@ -1,0 +1,1452 @@
+# Capítulo 4. Gestión de usuarios y grupos locales
+
+## 4.1. Usuarios y grupos de Linux
+
+4.1. Usuarios y grupos de Linux 4.1. Objetivos de usuarios y grupos de Linux Describir el propósito de los usuarios y grupos en un sistema Linux. Usuarios de Linux Una cuenta de usuario proporciona límites de seguridad entre personas y programas que pueden ejecutar comandos. Los usuarios tienen nombres de usuario para identificarlos ante los usuarios humanos y para facilitar el trabajo. Internamente, el sistema distingue las cuentas de usuario por el número de identificación único, el ID de usuario (UID), que se les asigna. En la mayoría de los escenarios, si un humano usa una cuenta de usuario, el sistema asigna una contraseña secreta al usuario para demostrar que es el usuario autorizado para iniciar sesión. Las cuentas de usuario son fundamentales para la seguridad del sistema. Cada proceso (programa en ejecución) en el sistema se ejecuta como un usuario específico. Cada archivo tiene un usuario específico como propietario. Con la propiedad de los archivos, el sistema aplica el control de acceso a los usuarios de los archivos. El usuario asociado con un proceso en ejecución determina los archivos y directorios a los que puede acceder ese proceso. Tipos de usuarios en sistemas Linux Los tres tipos principales de cuentas de usuario son el superusuario, los usuarios del sistema y los usuarios normales. Superusuario La cuenta de superusuario administra el sistema. El nombre del superusuario es root y el UID de la cuenta es 0. El superusuario tiene acceso total al sistema. Usuario del sistema Las cuentas de usuario del sistema son utilizadas por procesos que proporcionan servicios de soporte. Estos procesos, o demonios, normalmente no necesitan ejecutarse como superusuario y no tienen una sesión de terminal de control. A menudo se les asignan cuentas de usuario del sistema sin privilegios para proteger sus archivos y otros recursos entre sí y de los usuarios habituales del sistema. Los usuarios no inician sesión interactivamente con una cuenta de usuario del sistema. Usuario habitual La mayoría de los usuarios tienen cuentas de usuario habituales para su trabajo diario. Al igual que los usuarios del sistema, los usuarios habituales tienen acceso limitado al sistema. Utilice el comando id para mostrar información sobre el usuario que ha iniciado sesión actualmente:
+
+user01@host:~$ id
+uid=1000(user01) gid=1000(user01) groups=1000(user01) context=unconfined_u:unconfined_r:unconfined_t:s0-
+s0:c0.c1023
+
+Para ver información sobre otro usuario (usuario02 en el siguiente ejemplo), pase el nombre de usuario al comando id como
+
+an argument:
+
+
+
+
+
+4.1. Usuarios y grupos de Linux
+
+user01@host:~$ id user02
+uid=1002(user02) gid=1001(user02) groups=1001(user02) context=unconfined_u:unconfined_r:unconfined_t:s0-
+s0:c0.c1023
+
+Comandos de ejemplo que muestran información del usuario Utilice el comando ls -l para mostrar el usuario propietario de un archivo. Utilice el comando ls -ld para mostrar al usuario propietario de un directorio, en lugar del contenido de ese directorio. En el siguiente resultado, la tercera columna muestra el nombre de usuario del propietario.
+
+user01@host:~$ ls -l mytextfile.txt
+
+-rw-rw-r--. 1 usuario01 usuario01 0 5 de febrero 11:10 mytextfile.txt
+
+user01@host:~$ ls -ld Documents
+drwxrwxr-x. 2 user01 user01 6 Feb  5 11:10 Documents
+
+Utilice el comando ps para ver la información del proceso. De forma predeterminada, el comando ps solo muestra los procesos que se ejecutan con el mismo UID que el usuario actual y que están asociados con el terminal en el que se ejecutó el comando ps. Puede agregar diferentes opciones para cambiar este comportamiento. Si usa las opciones awwu juntas, entonces el comando ps enumera los procesos que son propiedad de cualquier usuario asociado con una terminal (a), proporciona más información orientada al usuario para cada proceso (u) y no trunca cada línea de salida (ww). En el siguiente resultado, la primera columna muestra el nombre de usuario del usuario propietario de cada proceso.
+
+user01@host:~$ ps awwu
+
+USUARIO PID %CPU %MEM VSZ RSS TTY STAT COMANDO DE HORA DE INICIO
+
+root    1690  0.0  0.0 220984  1052 ttyS0  Ss+  22:43  0:00 /sbin/agetty -o -- \u --noreset --noclear --
+
+mantener baudios 115200,57600,38400,9600 - vt220
+
+user01  1769  0.0  0.1 454012  5556 tty2   Ssl+ 22:45  0:00 /usr/libexec/gdm-wayland-session /usr/bin/gnome-
+
+sesión
+
+user01  1800  0.0  0.3 521412 19824 tty2   Sl+  22:45  0:00 /usr/libexec/gnome-session-binary
+user01  3072  0.0  0.0 224152  5756 pts/1  Ss   22:48  0:00 /usr/bin/bash
+user01  3122  0.0  0.0 225556  3652 pts/1  R+   22:49  0:00 ps awwu
+
+Nota El comando ps tiene dos conjuntos de opciones similares: opciones de estilo UNIX que comienzan con un guión inicial y opciones de estilo BSD que no lo hacen. Cada conjunto de comandos se comporta de forma ligeramente diferente. Consulte la página del manual de ps(1) para
+
+more details.
+
+Cuentas de usuarios locales La salida de la mayoría de los comandos muestra a los usuarios por nombre, pero internamente, el sistema operativo utiliza UID para rastrear a los usuarios. Las asignaciones de nombres de usuario a UID se definen en bases de datos de información de cuentas. De forma predeterminada, los sistemas utilizan el archivo /etc/passwd para almacenar información sobre los usuarios locales. Cada línea del archivo /etc/passwd contiene información sobre un usuario. El archivo está dividido en siete campos separados por dos puntos. Una línea de ejemplo del archivo /etc/passwd proporciona información sobre el usuario user01:
+
+
+
+
+
+4.1. Usuarios y grupos de Linux
+
+user01@host:~$ cat /etc/passwd
+
+...salida omitida...
+
+user01:x:1000:1000:User One:/home/user01:/bin/bash
+
+Considere cada parte del bloque de código, separada por dos puntos:
+
+user01 : The username for this user.
+x : The user's encrypted password was historically stored here; it is now a placeholder.
+
+1000: el número UID de esta cuenta de usuario. 1000: el número GID para el grupo principal de esta cuenta de usuario. Los grupos se analizan más adelante en esta sección. Usuario uno: un breve comentario, descripción o el nombre real de este usuario.
+
+/home/user01: The user's home directory, and the initial working directory when the login shell starts.
+/bin/bash : The default shell program for this user that runs at login. Some accounts use the /sbin/nologin
+
+shell para no permitir inicios de sesión interactivos con esa cuenta. Grupos de Linux Un grupo es una colección de usuarios que deben compartir el acceso a archivos y otros recursos del sistema. Al utilizar grupos, puede otorgar acceso a archivos a un conjunto de usuarios en lugar de a un solo usuario. Al igual que los usuarios, los grupos tienen nombres de grupo para un reconocimiento más sencillo. Internamente, el sistema distingue los grupos por el número de identificación único, el ID de grupo (GID), que se les asigna. La asignación de nombres de grupos a GID se define en las bases de datos de gestión de identidades de información de cuentas de grupos. De forma predeterminada, los sistemas utilizan el archivo /etc/group para almacenar información sobre grupos locales. Cada línea del archivo /etc/group contiene información sobre un grupo. Cada entrada de grupo se divide en cuatro campos separados por dos puntos. Una línea de ejemplo del archivo /etc/group proporciona información sobre el grupo group01:
+
+user01@host:~$ cat /etc/group
+
+...salida omitida...
+
+group01:x:10000:user01,user02,user03
+
+Considere cada parte del bloque de código, separada por dos puntos:
+
+group01 : The name for this group.
+x : Obsolete group password field; it is now a placeholder.
+
+10000: el número GID para este grupo (10000).
+
+user01,user02,user03 : A list of users that are members of this group as one of their supplementary groups.
+
+Grupos primarios y grupos suplementarios Cada usuario tiene exactamente un grupo primario. Para los usuarios locales, este grupo aparece listado por GID en el archivo /etc/passwd. El grupo principal posee los archivos que crea el usuario. Cuando se crea un usuario normal, se crea un grupo con el mismo nombre que el usuario, que será el grupo principal del usuario. El usuario es el único miembro de este Grupo Privado de Usuarios. Este diseño de pertenencia a grupos simplifica la gestión de permisos de archivos al separar los grupos de usuarios de forma predeterminada. Los usuarios también pueden tener grupos suplementarios. La membresía en grupos suplementarios se almacena en el archivo /etc/group. A los usuarios se les concede acceso a los archivos en función de si alguno de sus grupos tiene acceso, independientemente de si los grupos
+
+
+
+
+
+4.1. Los usuarios y grupos de Linux son primarios o complementarios. Por ejemplo, si el usuario user01 tiene un grupo primario user01 y grupos suplementarios wheel y webadmin, entonces ese usuario puede leer archivos que cualquiera de esos tres grupos puede leer. El comando id puede mostrar la pertenencia a un grupo de un usuario. En el siguiente ejemplo, el usuario usuario01 tiene el grupo usuario01 como su grupo principal (gid). El elemento de grupos enumera todas las membresías de grupo para este usuario, y el usuario también tiene los grupos rueda y grupo01 como grupos suplementarios.
+
+user01@host:~$ id
+uid=1001(user01) gid=1003(user01) groups=1003(user01),10(wheel),10000(group01) 
+context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+
+Referencias a las páginas man id(1), passwd(5), group(5), ls(1) y ps(1) info libc usuarios (Manual de referencia de la biblioteca GNU C, "Usuarios y grupos") (El paquete glibc-devel debe estar instalado para que este nodo de información esté disponible).
+
+
+
+
+
+4.2. Quiz Usuarios y Grupos de Linux 4.2. Prueba Usuarios y grupos de Linux Elija la respuesta correcta a las siguientes preguntas: ¿Qué elemento utiliza Linux para identificar internamente a un usuario? 1. Usuario principal a. UID b. DIG c. Nombre de usuario d. ¿Qué elemento o archivo almacena información del grupo local? 2. Directorio de inicio a. /etc/contraseña b. /etc/GID c. /etc/grupo d. ¿Qué elemento o archivo almacena los archivos personales del usuario? 3. Directorio de inicio a. Shell de inicio de sesión b. /etc/contraseña c. /etc/grupo d. ¿Qué elemento utiliza Linux para identificar grupos internamente? 4. Grupo primario a. UID b. DIG c. Clave de grupo d. ¿Qué elemento o archivo almacena información de la cuenta de usuario local? 5. Directorio de inicio a. /etc/contraseña b. /etc/UID c. /etc/grupo d. ¿Cuál es el cuarto campo en una entrada de usuario en el archivo /etc/passwd? 6. Directorio de inicio a. UID b. Shell de inicio de sesión c. GID del grupo primario d.
+
+
+
+
+
+
+
+## Cuestionario: Usuarios y grupos de Linux
+
+4.2. Quiz Usuarios y Grupos de Linux 4.2. Prueba Usuarios y grupos de Linux Elija la respuesta correcta a las siguientes preguntas: ¿Qué elemento utiliza Linux para identificar internamente a un usuario? 1. Usuario principal a. UID b. DIG c. Nombre de usuario d. ¿Qué elemento o archivo almacena información del grupo local? 2. Directorio de inicio a. /etc/contraseña b. /etc/GID c. /etc/grupo d. ¿Qué elemento o archivo almacena los archivos personales del usuario? 3. Directorio de inicio a. Shell de inicio de sesión b. /etc/contraseña c. /etc/grupo d. ¿Qué elemento utiliza Linux para identificar grupos internamente? 4. Grupo primario a. UID b. DIG c. Clave de grupo d. ¿Qué elemento o archivo almacena información de la cuenta de usuario local? 5. Directorio de inicio a. /etc/contraseña b. /etc/UID c. /etc/grupo d. ¿Cuál es el cuarto campo en una entrada de usuario en el archivo /etc/passwd? 6. Directorio de inicio a. UID b. Shell de inicio de sesión c. GID del grupo primario d.
+
+
+
+
+
+4.2. Prueba de usuarios y grupos de Linux ¿Qué elemento representa el programa que proporciona la línea de comandos inicial del usuario? 7. Mensaje principal a. Directorio de inicio b. Shell predeterminado c. Nombre del comando d.
+
+
+
+
+
+4.2. Quiz Solución de usuarios y grupos de Linux ¿Qué elemento utiliza Linux para identificar internamente a un usuario? 1. Usuario principal a. UID b. DIG c. Nombre de usuario d. ¿Qué elemento o archivo almacena información del grupo local? 2. Directorio de inicio a. /etc/contraseña b. /etc/GID c. /etc/grupo d. ¿Qué elemento o archivo almacena los archivos personales del usuario? 3. Directorio de inicio a. Shell de inicio de sesión b. /etc/contraseña c. /etc/grupo d. ¿Qué elemento utiliza Linux para identificar grupos internamente? 4. Grupo primario a. UID b. DIG c. Clave de grupo d. ¿Qué elemento o archivo almacena información de la cuenta de usuario local? 5. Directorio de inicio a. /etc/contraseña b. /etc/UID c. /etc/grupo d. ¿Cuál es el cuarto campo en una entrada de usuario en el archivo /etc/passwd? 6. Directorio de inicio a. UID b. Shell de inicio de sesión c. GID del grupo primario d. ¿Qué elemento representa el programa que proporciona la línea de comandos inicial del usuario? 7. Mensaje principal a. Directorio de inicio b. Shell predeterminado c. Nombre del comando d.
+
+
+
+
+
+4.3. Obtener acceso de superusuario 4.3. Obtención de acceso de superusuario Objetivos Cambie a la cuenta de superusuario para administrar un sistema Linux y conceda acceso de superusuario a otros usuarios mediante Sudo. El superusuario La mayoría de los sistemas operativos tienen un superusuario que tiene todo el poder sobre el sistema. En Red Hat Enterprise Linux, el superusuario es el usuario root. Este usuario tiene el poder de anular los privilegios regulares en el sistema de archivos y usted puede usarlo para gestionar y administrar el sistema. Para tareas como instalar o eliminar software y administrar archivos y directorios del sistema, los usuarios deben escalar sus privilegios al usuario raíz. Por lo general, sólo el usuario root puede controlar la mayoría de los dispositivos, pero se aplican algunas excepciones. Por ejemplo, los usuarios habituales pueden controlar dispositivos extraíbles, como dispositivos USB. Por lo tanto, los usuarios normales pueden agregar y eliminar archivos y administrar un dispositivo extraíble, pero solo el usuario raíz puede administrar los discos duros de forma predeterminada. Este privilegio ilimitado, sin embargo, conlleva responsabilidad. El usuario root tiene poder ilimitado para dañar el sistema: puede eliminar archivos y directorios, eliminar cuentas de usuario, agregar puertas traseras, etc. Si la cuenta de usuario root se ve comprometida, entonces el sistema está en peligro y usted podría perder el control administrativo. Red Hat anima a los administradores de sistemas a iniciar sesión siempre como usuarios normales y a escalar privilegios a root solo cuando sea necesario. Importante En RHEL 10, la cuenta raíz no tiene una contraseña válida de forma predeterminada, por lo que no puede iniciar sesión directamente como usuario raíz con una contraseña. La cuenta raíz en Linux es similar a la cuenta de administrador local en Microsoft Windows. En Linux, la mayoría de los administradores de sistemas inician sesión en el sistema como usuarios sin privilegios y utilizan varias herramientas para obtener privilegios de root temporalmente. Advertencia Los usuarios de Microsoft Windows pueden estar familiarizados con la práctica de iniciar sesión como usuario administrador local.
+
+to perform system administrator duties. Today, this practice is not recommended; users obtain privileges to
+
+realizar la administración por membresía en el grupo de Administradores. De manera similar, en RHEL, Red Hat recomienda que los administradores del sistema nunca inicien sesión directamente como root. En cambio, los administradores del sistema inician sesión como un usuario normal y utilizan mecanismos para obtener temporalmente privilegios de superusuario (su, sudo o PolicyKit, por ejemplo). Cuando se inicia sesión como root, todo el entorno de escritorio se ejecuta innecesariamente con privilegios administrativos. Una vulnerabilidad de seguridad que normalmente podría comprometer sólo una cuenta de usuario normal puede potencialmente comprometer todo el sistema. Cambio de cuentas de usuario Con el comando su, los usuarios pueden cambiar a una cuenta de usuario diferente. Si ejecuta el comando su desde una cuenta de usuario normal con otra cuenta de usuario como parámetro, debe proporcionar la contraseña de la cuenta a la que cambiar.
+
+
+
+
+
+
+
+## 4.3. Obtener acceso de superusuario
+
+4.3. Obtener acceso de superusuario 4.3. Obtención de acceso de superusuario Objetivos Cambie a la cuenta de superusuario para administrar un sistema Linux y conceda acceso de superusuario a otros usuarios mediante Sudo. El superusuario La mayoría de los sistemas operativos tienen un superusuario que tiene todo el poder sobre el sistema. En Red Hat Enterprise Linux, el superusuario es el usuario root. Este usuario tiene el poder de anular los privilegios regulares en el sistema de archivos y usted puede usarlo para gestionar y administrar el sistema. Para tareas como instalar o eliminar software y administrar archivos y directorios del sistema, los usuarios deben escalar sus privilegios al usuario raíz. Por lo general, sólo el usuario root puede controlar la mayoría de los dispositivos, pero se aplican algunas excepciones. Por ejemplo, los usuarios habituales pueden controlar dispositivos extraíbles, como dispositivos USB. Por lo tanto, los usuarios normales pueden agregar y eliminar archivos y administrar un dispositivo extraíble, pero solo el usuario raíz puede administrar los discos duros de forma predeterminada. Este privilegio ilimitado, sin embargo, conlleva responsabilidad. El usuario root tiene poder ilimitado para dañar el sistema: puede eliminar archivos y directorios, eliminar cuentas de usuario, agregar puertas traseras, etc. Si la cuenta de usuario root se ve comprometida, entonces el sistema está en peligro y usted podría perder el control administrativo. Red Hat anima a los administradores de sistemas a iniciar sesión siempre como usuarios normales y a escalar privilegios a root solo cuando sea necesario. Importante En RHEL 10, la cuenta raíz no tiene una contraseña válida de forma predeterminada, por lo que no puede iniciar sesión directamente como usuario raíz con una contraseña. La cuenta raíz en Linux es similar a la cuenta de administrador local en Microsoft Windows. En Linux, la mayoría de los administradores de sistemas inician sesión en el sistema como usuarios sin privilegios y utilizan varias herramientas para obtener privilegios de root temporalmente. Advertencia Los usuarios de Microsoft Windows pueden estar familiarizados con la práctica de iniciar sesión como usuario administrador local.
+
+to perform system administrator duties. Today, this practice is not recommended; users obtain privileges to
+
+realizar la administración por membresía en el grupo de Administradores. De manera similar, en RHEL, Red Hat recomienda que los administradores del sistema nunca inicien sesión directamente como root. En cambio, los administradores del sistema inician sesión como un usuario normal y utilizan mecanismos para obtener temporalmente privilegios de superusuario (su, sudo o PolicyKit, por ejemplo). Cuando se inicia sesión como root, todo el entorno de escritorio se ejecuta innecesariamente con privilegios administrativos. Una vulnerabilidad de seguridad que normalmente podría comprometer sólo una cuenta de usuario normal puede potencialmente comprometer todo el sistema. Cambio de cuentas de usuario Con el comando su, los usuarios pueden cambiar a una cuenta de usuario diferente. Si ejecuta el comando su desde una cuenta de usuario normal con otra cuenta de usuario como parámetro, debe proporcionar la contraseña de la cuenta a la que cambiar.
+
+
+
+
+
+4.3. Obtención de acceso de superusuario Cuando el usuario root ejecuta el comando su, no es necesario ingresar la contraseña del usuario. Este ejemplo utiliza el comando su de la cuenta usuario01 para cambiar a la cuenta usuario02:
+
+user01@host:~$ su - user02
+
+Contraseña: usuario02_contraseña
+
+user02@host:~$
+
+Si omite el nombre de usuario, entonces el comando su o su - intenta cambiar a root de forma predeterminada.
+
+user01@host:~$ su -
+
+Contraseña: contraseña_raíz
+
+root@host:~#
+
+El comando su inicia un shell interactivo sin inicio de sesión, pero el comando su - (con la opción de guión) inicia un shell de inicio de sesión interactivo. La diferencia entre los dos comandos es que el shell se inicializa de maneras ligeramente diferentes cuando se inicia, dependiendo de si se trata de un shell de inicio de sesión o de un shell sin inicio de sesión.
+
+su -
+
+Inicia una nueva sesión de inicio de sesión interactiva como el usuario al que está cambiando y utiliza la configuración del entorno del usuario de destino. su Inicia un shell interactivo como el usuario al que está cambiando, pero utiliza parcialmente la configuración del entorno del usuario original. Generalmente, los administradores deben ejecutar el comando su - para obtener un shell con la configuración del entorno del usuario de destino. Este enfoque garantiza que el shell resultante se inicialice de la misma manera que lo haría si ese usuario iniciara sesión como de costumbre. Para
+
+more information, refer to the bash(1) man page.
+
+Ejecutar comandos con Sudo En RHEL 10, la cuenta raíz no tiene una contraseña válida de forma predeterminada. En otras palabras, no existe una contraseña que permita a un usuario autenticarse y acceder a la cuenta raíz, ya sea intentando iniciar sesión directamente como raíz o intentando utilizar el comando su. Importante El administrador del sistema podría establecer una contraseña para la cuenta raíz, lo que le permitiría convertirse en usuario raíz con el comando su si conoce esa contraseña. Por razones de seguridad, los administradores del sistema normalmente no establecen una contraseña válida para la cuenta raíz. En ese caso, para obtener acceso a la cuenta raíz, los usuarios deben usar una contraseña normal para iniciar sesión en una cuenta de usuario normal y luego usar la
+
+sudo command to become the root user or to run commands as the root user.
+
+A diferencia del comando su, el comando sudo normalmente requiere que los usuarios ingresen su propia contraseña para la autenticación, no la contraseña de la cuenta de usuario a la que intentan acceder. Es decir, los usuarios que utilizan el comando sudo para ejecutar comandos como usuario root no necesitan conocer la contraseña de root. En cambio, utilizan sus propias contraseñas para autenticar el acceso.
+
+
+
+
+
+4.3. Obtener acceso de superusuario Importante De forma predeterminada, el comando sudo almacena en caché su contraseña durante cinco minutos después de una autenticación exitosa. Como resultado, no necesita ingresar su contraseña varias veces si ejecuta una serie rápida de comandos sudo. Puede ejecutar el comando sudo -k para eliminar inmediatamente su contraseña del caché. Además, puede configurar el comando sudo para permitir que usuarios específicos ejecuten cualquier comando como otro usuario, o solo algunos comandos como ese usuario. Por ejemplo, si configura el comando sudo para permitir que el usuario user01 ejecute
+
+the usermod command as root, then you can run the following command to lock or unlock a user account:
+user01@host:~$ sudo usermod -L user02
+
+[sudo] contraseña para usuario01: usuario01_contraseña
+
+user01@host:~$ su - user02
+
+Contraseña: usuario02_contraseña
+
+su: Authentication failure
+user01@host:~$
+
+Si un usuario intenta ejecutar un comando como otro usuario y la configuración de Sudo no lo permite, Sudo bloquea el comando, registra el intento y envía un correo electrónico al usuario raíz de forma predeterminada.
+
+user02@host:~$ sudo tail /var/log/secure
+
+[sudo] contraseña para usuario02: usuario02_contraseña usuario02 no está en el archivo sudoers.  Este incidente será reportado.
+
+user02@host:~$
+
+Otro beneficio del comando sudo es que registra de forma predeterminada todos los comandos ejecutados en el archivo /var/log/secure.
+
+user01@host:~$ sudo tail /var/log/secure
+
+... salida omitida... 9 de marzo 20:45:46 host sudo[2577]: usuario01: TTY=pts/0; PWD=/casa/usuario01; USUARIO=raíz; COMMAND=/sbin/usermod -L user02 ...salida omitida... En Red Hat Enterprise Linux 7 y versiones posteriores, todos los miembros del grupo wheel pueden usar sudo para ejecutar comandos como cualquier usuario, incluido root, usando su propia contraseña. Advertencia Históricamente, los sistemas UNIX utilizan la membresía del grupo de ruedas para otorgar o controlar el acceso de superusuario. RHEL 6 y versiones anteriores no otorgan al grupo de ruedas ningún privilegio especial de forma predeterminada. Los administradores del sistema que anteriormente utilizaron este grupo para un propósito no estándar deben actualizar su configuración anterior para evitar que usuarios inesperados y no autorizados obtengan acceso administrativo en sistemas RHEL 7 y posteriores. Obtener un Shell raíz interactivo con Sudo Para acceder a la cuenta raíz con el comando sudo, utilice el comando sudo -i. Este comando cambia a la cuenta raíz y ejecuta el shell predeterminado de ese usuario (generalmente bash) y los scripts de inicio de sesión interactivos asociados. Para ejecutar el shell sin los scripts interactivos, utilice el comando sudo -s. Por ejemplo, un administrador puede obtener un shell interactivo como raíz en una instancia de AWS Elastic Cloud Computing (EC2) mediante la autenticación de clave pública SSH para iniciar sesión como usuario normal de ec2. Luego, ejecute el comando sudo -i para
+
+
+
+
+
+4.3. Al obtener acceso de superusuario, acceda al shell del usuario root.
+
+ec2-user@host:~$ sudo -i
+
+[sudo] contraseña para ec2-user: ec2-user_password
+
+root@host:~#
+
+Nota Por razones de seguridad, el comando sudo modifica el entorno de shell que configura antes de ejecutar comandos o iniciar sesiones interactivas, según la configuración de sus archivos de configuración. Con la configuración predeterminada, el entorno resultante es similar al que obtendría si iniciara sesión como ese usuario para iniciar una nueva sesión. Configurar Sudo El archivo /etc/sudoers es el archivo de configuración principal para el comando sudo. Para evitar problemas si varios administradores intentan editar el archivo al mismo tiempo, puede editarlo sólo con el comando especial visudo. El editor visudo también valida el archivo para garantizar que no haya errores de sintaxis. Por ejemplo, la siguiente línea del archivo /etc/sudoers habilita el acceso sudo para los miembros del grupo wheel: %wheel ALL=(ALL:ALL) ALL La cadena %wheel es el usuario o grupo al que se aplica la regla. El signo de porcentaje (%) antes de la palabra rueda especifica un grupo. El comando ALL=(ALL:ALL) especifica que en cualquier host con este archivo (el primer ALL), los usuarios del grupo de rueda pueden ejecutar comandos como cualquier otro usuario (el segundo ALL) y como cualquier otro grupo (el tercer ALL) en el sistema. El comando ALL final especifica que los usuarios del grupo de ruedas pueden ejecutar cualquier comando. De forma predeterminada, el archivo /etc/sudoers también incluye el contenido de cualquier archivo en el directorio /etc/sudoers.d como parte del archivo de configuración. Con esta jerarquía, puede agregar acceso sudo para un usuario colocando un archivo apropiado en ese directorio. Importante Puede habilitar o deshabilitar el acceso a sudo copiando un archivo en el directorio o eliminándolo del directorio. En este curso, creará y eliminará archivos en el directorio /etc/sudoers.d para configurar el acceso a sudo para usuarios y grupos. Para habilitar el acceso completo a sudo para el usuario user01, puede crear el archivo /etc/sudoers.d/user01 con lo siguiente
+
+content:
+user01        ALL=(ALL)       ALL
+
+Para habilitar el acceso completo a sudo para el grupo group01, puede crear el archivo /etc/sudoers.d/group01 con el
+
+following content:
+
+%group01 ALL=(ALL) ALL Para permitir que los usuarios del grupo de juegos ejecuten el comando id como usuario operador, puede crear el
+
+/etc/sudoers.d/games file with the following content:
+
+
+
+
+
+4.3. Obtención de acceso de superusuario %games ALL=(operator) /bin/id También puede configurar sudo para permitir que un usuario ejecute comandos como otro usuario sin ingresar su contraseña, usando el comando NOPASSWD: ALL:
+
+ansible        ALL=(ALL)       NOPASSWD: ALL
+
+Aunque se aplican riesgos de seguridad obvios al otorgar este nivel de acceso a un usuario o grupo, los administradores de sistemas suelen utilizar este enfoque con instancias en la nube, máquinas virtuales y sistemas de aprovisionamiento para configurar servidores. Debe proteger la cuenta con este acceso y requerir autenticación de clave pública SSH para que un usuario en un sistema remoto pueda acceder a ella. Por ejemplo, la imagen de máquina de Amazon (AMI) oficial para Red Hat Enterprise Linux en Amazon Web Services Marketplace se envía con las contraseñas de usuario raíz y ec2 bloqueadas. La cuenta de usuario de ec2 está configurada para permitir el acceso interactivo remoto a través de la autenticación de clave pública SSH. El usuario ec2-user también puede ejecutar cualquier comando como
+
+root without a password, because the last line of the AMI's /etc/sudoers file is set up as follows:
+ec2-user        ALL=(ALL)       NOPASSWD: ALL
+
+Puede volver a habilitar el requisito de ingresar una contraseña para sudo o introducir otros cambios para reforzar la seguridad como parte de la configuración del sistema. Referencias info libc persona (Manual de referencia de la biblioteca GNU C) Sección 30.2: La persona de un proceso (El paquete glibc-doc debe estar instalado para que este nodo de información esté disponible). Páginas man su(1), sudo(8), visudo(8), sudoers(5) y bash(1)
+
+
+
+
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario 4.4. Ejercicio guiado Obtenga acceso de superusuario Cambie a la cuenta de superusuario para administrar un sistema Linux y otorgue acceso de superusuario a otros usuarios mediante Sudo. Resultados Utilice Sudo para cambiar al usuario raíz y acceder al shell interactivo como usuario raíz sin conocer la contraseña del superusuario. Verifique el comportamiento del comando su cambiando de usuario directamente y abriendo un shell de inicio de sesión. Utilice privilegios de Sudo como usuario normal para administrar un archivo restringido. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-superuser
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Explore el entorno de shell del usuario estudiante. Ver la información actual del usuario y grupo y mostrar el directorio de trabajo actual. Vea también las variables de entorno que especifican el directorio de inicio del usuario y las ubicaciones de los archivos ejecutables del usuario. 2. Ver la información actual del usuario y del grupo.
+
+[student@servera ~]$ id
+uid=1000(student) gid=1000(student) groups=1000(student),10(wheel) 
+context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+
+2.1. Muestra el directorio de trabajo actual.
+
+[student@servera ~]$ pwd
+
+/casa/estudiante 2.2. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[student@servera ~]$ echo $HOME
+
+/casa/estudiante
+
+[student@servera ~]$ echo $PATH
+/home/student/.local/bin:/home/student/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+2.3. Cambie al usuario root en un shell sin inicio de sesión y explore el nuevo entorno del shell. 3. Conviértase en usuario root utilizando el comando sudo su. Utilice estudiante como contraseña. 3.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Obtenga acceso de superusuario
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario 4.4. Ejercicio guiado Obtenga acceso de superusuario Cambie a la cuenta de superusuario para administrar un sistema Linux y otorgue acceso de superusuario a otros usuarios mediante Sudo. Resultados Utilice Sudo para cambiar al usuario raíz y acceder al shell interactivo como usuario raíz sin conocer la contraseña del superusuario. Verifique el comportamiento del comando su cambiando de usuario directamente y abriendo un shell de inicio de sesión. Utilice privilegios de Sudo como usuario normal para administrar un archivo restringido. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-superuser
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Explore el entorno de shell del usuario estudiante. Ver la información actual del usuario y grupo y mostrar el directorio de trabajo actual. Vea también las variables de entorno que especifican el directorio de inicio del usuario y las ubicaciones de los archivos ejecutables del usuario. 2. Ver la información actual del usuario y del grupo.
+
+[student@servera ~]$ id
+uid=1000(student) gid=1000(student) groups=1000(student),10(wheel) 
+context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+
+2.1. Muestra el directorio de trabajo actual.
+
+[student@servera ~]$ pwd
+
+/casa/estudiante 2.2. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[student@servera ~]$ echo $HOME
+
+/casa/estudiante
+
+[student@servera ~]$ echo $PATH
+/home/student/.local/bin:/home/student/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+2.3. Cambie al usuario root en un shell sin inicio de sesión y explore el nuevo entorno del shell. 3. Conviértase en usuario root utilizando el comando sudo su. Utilice estudiante como contraseña. 3.1.
+
+
+
+
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario
+
+[student@servera ~]$ sudo su
+
+[sudo] contraseña para estudiante: estudiante [root@servera estudiante]# Ver la información actual del usuario y del grupo.
+
+[root@servera student]# id
+uid=0(root) gid=0(root) groups=0(root) context=unconfined_u:unconfined_r:unconfined_t:s0-
+s0:c0.c1023
+
+Ahora está ejecutando comandos como usuario root. 3.2. Muestra el directorio de trabajo actual.
+
+[root@servera student]# pwd
+
+/home/student Su directorio de trabajo actual permanece igual después de convertirse en usuario root usando el comando sudo su. 3.3. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[root@servera student]# echo $HOME
+
+/raíz
+
+[root@servera student]# echo $PATH
+/root/.local/bin:/root/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
+
+Cuando utiliza el comando su para convertirse en usuario root, no conserva la ruta actual del usuario estudiante. Como puede ver en el siguiente paso, la ruta tampoco es la ruta del usuario raíz. ¿Qué pasó? La diferencia es que no ejecuta su directamente. En su lugar, ejecuta el comando su como usuario root mediante Sudo porque no tiene la contraseña del superusuario. El comando sudo anula la variable PATH del entorno por razones de seguridad. Cualquier comando que se ejecute después de la anulación inicial aún puede actualizar la variable PATH, como puede ver en los siguientes pasos. 3.4. Salga del shell del usuario root.
+
+[root@servera student]# exit
+
+salida [estudiante@servera ~]$ 3.5. Cambie al usuario root en un shell de inicio de sesión y explore el nuevo entorno del shell. El comando sudo puede solicitarle la contraseña del estudiante, según el período de tiempo de espera de Sudo. El período de tiempo de espera predeterminado es de cinco minutos. Si se autenticó en Sudo en los últimos cinco minutos, el comando sudo no le solicitará la contraseña. Si han transcurrido más de cinco minutos desde que se autenticó, deberá ingresar estudiante como contraseña para la autenticación. 4. Utilice el comando sudo su - para convertirse en usuario root.
+
+[student@servera ~]$ sudo su -
+
+[root@servera ~]# Observe la diferencia en el indicador de shell en comparación con el de sudo su en el paso anterior. 4.1.
+
+
+
+
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario Vea la información actual del usuario y del grupo.
+
+[root@servera ~]# id
+uid=0(root) gid=0(root) groups=0(root) context=unconfined_u:unconfined_r:unconfined_t:s0-
+s0:c0.c1023
+
+4.2. Muestra el directorio de trabajo actual.
+
+[root@servera ~]# pwd
+
+/raíz 4.3. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[root@servera ~]# echo $HOME
+
+/raíz
+
+[root@servera ~]# echo $PATH
+/root/.local/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+
+Como en el paso anterior, después de que el comando sudo restablece la variable PATH de la configuración en el entorno de shell del usuario estudiante, el comando su - ejecuta los scripts de inicio de sesión del shell para el usuario raíz y establece la variable PATH en otro valor más. El comando su sin la opción guión (-) no tiene el mismo comportamiento. 4.4. Salga del shell del usuario raíz para regresar al shell del usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión [estudiante@servera ~]$ 4.5. Revise la definición de Sudo del usuario operador1 en el directorio /etc/sudoers.d/.
+
+[student@servera ~]$ sudo cat /etc/sudoers.d/operator1
+operator1 ALL=(ALL) ALL
+
+El usuario operador1 puede ejecutar cualquier comando como cualquier usuario utilizando el comando sudo. 5. Conviértase en el usuario operador1 y vea el contenido del archivo /var/log/messages. Como estas operaciones requieren privilegios administrativos, utilice Sudo para ejecutar comandos como superusuario. No cambie al usuario root utilizando los comandos sudo su o sudo su -. 6. Cambie al usuario operador1. Utilice redhat como contraseña del usuario operador1.
+
+[student@servera ~]$ su - operator1
+
+Contraseña: redhat [operador1@servera ~]$ 6.1. Enumere el archivo /var/log/messages. Revise la propiedad y los permisos del usuario.
+
+[operator1@servera ~]$ ls -l /var/log/messages
+
+-rw-------. 1 root root 1399281 14 de mayo 13:00 /var/log/messages El usuario root es propietario de este archivo y solo el usuario root tiene permisos de lectura/escritura. 6.2. Sin utilizar Sudo, intente ver las últimas cinco líneas del archivo /var/log/messages. El comando debería fallar porque solo el usuario root puede ver o escribir en el archivo /var/log/messages. 6.3.
+
+
+
+
+
+4.4. Ejercicio guiado Obtener acceso de superusuario Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-superuser
+[operator1@servera ~]$ tail -5 /var/log/messages
+tail: cannot open '/var/log/messages' for reading: Permission denied
+
+Utilice Sudo para ver las últimas cinco líneas del archivo /var/log/messages. El resultado puede variar en su entorno.
+
+[operator1@servera ~]$ sudo tail -5 /var/log/messages
+
+[sudo] contraseña para operador1: redhat 14 de mayo 13:03:11 servera systemd[1]: Iniciando cockpit-wsinstance-https@e3b0...b855.socket - Socket para Cockpit Web Service https instancia e3b0...b855... 14 de mayo 13:03:11 servera systemd[1]: Escuchando en cockpit-wsinstance-https@e3b0...b855.socket - Socket para la instancia https del Cockpit Web Service e3b0...b855. 14 de mayo 13:03:11 servera systemd[1]: Se inició cockpit-wsinstance-https@e3b0...b855.service - Cockpit Web Service https instancia e3b0...b855. 14 de mayo 13:03:11 servera systemd[1]: cockpit-wsinstance-https-factory@30-1077-61789.service: Desactivado correctamente. 14 de mayo 13:03:36 servera systemd[1]: systemd-hostnamed.service: Desactivado correctamente. 6.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[operator1@servera ~]$ exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+4.5. Gestión de cuentas de usuarios locales 4.5. Gestión de cuentas de usuarios locales Objetivos Crear, modificar y eliminar cuentas de usuarios locales. Administrar usuarios locales desde la línea de comandos Puede utilizar herramientas de línea de comandos para administrar cuentas de usuarios locales. Esta sección revisa algunas herramientas importantes para crear y eliminar cuentas de usuario y para configurar contraseñas para los usuarios. Creación de usuarios El comando useradd nombre de usuario crea una cuenta de usuario llamada nombre de usuario. Este comando completa lo siguiente
+
+tasks to set up and configure the new account:
+
+Ejecute el comando useradd como superusuario. El comando useradd lee la configuración para la creación de usuarios del archivo /etc/login.defs. El comando useradd escribe una entrada en los archivos /etc/group, /etc/passwd y /etc/shadow con la información asignada al nombre de usuario (ID de usuario e ID de grupo). El comando useradd crea el directorio de inicio del usuario nombre de usuario en la ruta /home/nombredeusuario. El comando useradd copia los archivos de perfil de usuario en el directorio /etc/skel al directorio de inicio del usuario del nombre de usuario (bajo /home/nombredeusuario). Además, el comando useradd realiza las siguientes acciones: Hace referencia al archivo de configuración /etc/default/useradd para determinar los valores predeterminados para nuevas cuentas de usuario. Agrega una entrada al archivo /etc/gshadow cuando se crea un nuevo usuario. Crea un buzón para el nuevo usuario en el archivo /var/spool/mail/username. Actualiza los archivos /etc/subuid y /etc/subgid para asignar rangos de ID subordinados para el nuevo usuario. En este punto, no se establece una contraseña válida para la cuenta y el usuario no puede iniciar sesión hasta que se establezca una contraseña.
+
+
+
+
+
+
+
+## 4.5. Administrar cuentas de usuarios locales
+
+4.5. Gestión de cuentas de usuarios locales 4.5. Gestión de cuentas de usuarios locales Objetivos Crear, modificar y eliminar cuentas de usuarios locales. Administrar usuarios locales desde la línea de comandos Puede utilizar herramientas de línea de comandos para administrar cuentas de usuarios locales. Esta sección revisa algunas herramientas importantes para crear y eliminar cuentas de usuario y para configurar contraseñas para los usuarios. Creación de usuarios El comando useradd nombre de usuario crea una cuenta de usuario llamada nombre de usuario. Este comando completa lo siguiente
+
+tasks to set up and configure the new account:
+
+Ejecute el comando useradd como superusuario. El comando useradd lee la configuración para la creación de usuarios del archivo /etc/login.defs. El comando useradd escribe una entrada en los archivos /etc/group, /etc/passwd y /etc/shadow con la información asignada al nombre de usuario (ID de usuario e ID de grupo). El comando useradd crea el directorio de inicio del usuario nombre de usuario en la ruta /home/nombredeusuario. El comando useradd copia los archivos de perfil de usuario en el directorio /etc/skel al directorio de inicio del usuario del nombre de usuario (bajo /home/nombredeusuario). Además, el comando useradd realiza las siguientes acciones: Hace referencia al archivo de configuración /etc/default/useradd para determinar los valores predeterminados para nuevas cuentas de usuario. Agrega una entrada al archivo /etc/gshadow cuando se crea un nuevo usuario. Crea un buzón para el nuevo usuario en el archivo /var/spool/mail/username. Actualiza los archivos /etc/subuid y /etc/subgid para asignar rangos de ID subordinados para el nuevo usuario. En este punto, no se establece una contraseña válida para la cuenta y el usuario no puede iniciar sesión hasta que se establezca una contraseña.
+
+
+
+
+
+4.5. Administrar cuentas de usuarios locales El comando useradd --help muestra las opciones básicas para anular los valores predeterminados. Normalmente, puede utilizar las mismas opciones con el comando usermod para modificar un usuario existente. De forma predeterminada, el comando useradd asigna a los nuevos usuarios el primer UID libre que sea mayor o igual a 1000, a menos que especifique explícitamente un UID mediante la opción -u. Modificación de usuarios existentes El comando usermod --help muestra las opciones para modificar una cuenta. La siguiente tabla muestra algunas opciones comunes para administrar cuentas de usuario. Tabla 3. Opciones del comando usermod para modificar usuarios -a, --append Úselo con la opción -G para agregar los grupos suplementarios al conjunto actual de membresías de grupo del usuario en lugar de reemplazar el conjunto de grupos suplementarios con un nuevo conjunto. -c, --comment COMENTARIO Añade el texto COMENTARIO al campo de comentario. -d, --home HOME-DIR Especifica un directorio de inicio para la cuenta de usuario. -g, --gid GROUP Especifica el grupo principal de la cuenta de usuario. -G, --groups GRUPOS Especifique una lista separada por comas de grupos suplementarios para la cuenta de usuario. -L, --lock Bloquea la cuenta de usuario. -m, --move-home Mueve el directorio de inicio del usuario a una nueva ubicación. Debes usarlo con la opción -d. -s, --shell SHELL Especifica un shell de inicio de sesión particular para la cuenta de usuario. -U, --unlock Desbloquea la cuenta de usuario. Eliminación de usuarios El comando userdel nombre de usuario elimina el nombre de usuario del archivo /etc/passwd, pero deja intacto el directorio de inicio del usuario. El comando userdel -r nombre de usuario elimina al usuario del archivo /etc/passwd y elimina el directorio de inicio del usuario y el archivo de cola de correo correspondiente en el directorio /var/spool/mail/.
+
+usermod option
+
+Uso
+
+
+
+
+
+4.5. Administración de cuentas de usuarios locales Advertencia Cuando elimina un usuario sin especificar la opción userdel -r, un UID no asignado ahora posee los archivos del usuario. Si crea un usuario y a ese usuario se le asigna el UID del usuario eliminado, entonces la nueva cuenta posee esos archivos, lo cual es un riesgo para la seguridad. Normalmente, las políticas de seguridad de la organización no permiten la eliminación de cuentas de usuario y, en su lugar, bloquean su uso para evitar este escenario. El siguiente ejemplo demuestra cómo este escenario puede provocar una fuga de información:
+
+root@host:~# useradd user01
+root@host:~# ls -l /home
+drwx------.  4 user01     user01       93 May  9 17:40 user01
+root@host:~# userdel user01
+root@host ~# ls -l /home
+drwx------.  4       1000       1000   93 May  9 17:40 user01
+root@host:~# useradd -u 1000 user02
+root@host:~# ls -l /home
+drwx------.  4 user02     user02       93 May  9 17:40 user01
+drwx------.  4 user02     user02       93 May  9 17:41 user02
+
+Observe que el usuario usuario02 ahora posee todos los archivos que anteriormente poseía el usuario usuario01. El usuario root puede utilizar el comando find / -nouser -o -nogroup para buscar todos los archivos y directorios sin propietario. Configuración de contraseñas El comando passwd nombre de usuario establece la contraseña inicial o cambia la contraseña existente para el usuario nombre de usuario. El usuario root puede establecer una contraseña con cualquier valor. Si la contraseña no cumple con los criterios mínimos recomendados, el terminal muestra un mensaje. Puede volver a escribir la misma contraseña y el comando passwd la actualizará correctamente.
+
+root@host:~# passwd user01
+
+Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+root@host:~#
+
+Un usuario normal debe elegir una contraseña de al menos ocho caracteres. No utilice una palabra del diccionario, el nombre de usuario o la contraseña anterior. Rangos UID Red Hat Enterprise Linux utiliza números UID específicos y rangos de números para propósitos específicos. UID 0 El UID de la cuenta de superusuario (raíz). UID 1-200 UID de cuenta del sistema que se asignan estáticamente a procesos del sistema. UID 201-999 UID que se asignan a procesos del sistema que no poseen archivos en este sistema. Al software que requiere un UID sin privilegios se le asigna dinámicamente un UID de este grupo disponible. UID 1000+ El rango de UID para asignar a usuarios habituales sin privilegios.
+
+
+
+
+
+4.5. Administrar cuentas de usuarios locales Nota Puede cambiar los rangos de UID predeterminados para el comando useradd en el archivo /etc/login.defs. Referencias
+
+useradd(8), usermod(8), userdel(8), login.defs(5), passwd(1), passwd(5), shadow(5), and group(5)
+
+paginas man
+
+
+
+
+
+4.6. Ejercicio guiado Administrar cuentas de usuarios locales 4.6. Ejercicio guiado Administrar cuentas de usuarios locales Cree, modifique y elimine cuentas de usuarios locales. Resultados Configurar un sistema Linux con cuentas de usuario adicionales. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-user
+
+Instrucciones Cree el usuario operador1 en la máquina del servidor y establezca la contraseña del nuevo usuario en redhat. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el usuario operador1 y confirme que existe en el sistema.
+
+[root@servera ~]# useradd operator1
+[root@servera ~]# tail /etc/passwd
+
+...salida omitida...
+
+operator1:x:1003:1003::/home/operator1:/bin/bash
+
+1.2. Establezca la contraseña para el usuario operador1 en redhat.
+
+[root@servera ~]# passwd operator1
+
+Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+1.3. Cree dos usuarios adicionales: operador2 y operador3. Establezca sus contraseñas para redhat. 2. Agregue el usuario operador2. Establezca la contraseña para el usuario operador2 en redhat. 2.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar cuentas de usuarios locales
+
+4.6. Ejercicio guiado Administrar cuentas de usuarios locales 4.6. Ejercicio guiado Administrar cuentas de usuarios locales Cree, modifique y elimine cuentas de usuarios locales. Resultados Configurar un sistema Linux con cuentas de usuario adicionales. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-user
+
+Instrucciones Cree el usuario operador1 en la máquina del servidor y establezca la contraseña del nuevo usuario en redhat. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el usuario operador1 y confirme que existe en el sistema.
+
+[root@servera ~]# useradd operator1
+[root@servera ~]# tail /etc/passwd
+
+...salida omitida...
+
+operator1:x:1003:1003::/home/operator1:/bin/bash
+
+1.2. Establezca la contraseña para el usuario operador1 en redhat.
+
+[root@servera ~]# passwd operator1
+
+Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+1.3. Cree dos usuarios adicionales: operador2 y operador3. Establezca sus contraseñas para redhat. 2. Agregue el usuario operador2. Establezca la contraseña para el usuario operador2 en redhat. 2.1.
+
+
+
+
+
+4.6. Ejercicio guiado Administrar cuentas de usuarios locales
+
+[root@servera ~]# useradd operator2
+[root@servera ~]# passwd operator2
+
+Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+Agregue el usuario operador3. Establezca la contraseña para el usuario operador3 en redhat.
+
+[root@servera ~]# useradd operator3
+[root@servera ~]# passwd operator3
+
+Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+2.2. Actualice las cuentas de usuario del operador1 y del operador2 para incluir los comentarios del Operador Uno y del Operador Dos, respectivamente. Verifique que existan los comentarios para las cuentas de usuario. 3. Ejecute el comando usermod -c para actualizar los comentarios de la cuenta de usuario operador1.
+
+[root@servera ~]# usermod -c "Operator One" operator1
+
+3.1. Ejecute el comando usermod -c para actualizar los comentarios de la cuenta de usuario operator2.
+
+[root@servera ~]# usermod -c "Operator Two" operator2
+
+3.2. Vea el archivo /etc/passwd para confirmar que existen los comentarios para los usuarios operador1 y operador2.
+
+[root@servera ~]# tail /etc/passwd
+
+...salida omitida...
+
+operator1:x:1003:1003:`Operator One`:/home/operator1:/bin/bash
+operator2:x:1004:1004:`Operator Two`:/home/operator2:/bin/bash
+operator3:x:1005:1005::/home/operator3:/bin/bash
+
+3.3. Eliminar el usuario operador3 junto con los datos personales del usuario. Confirme que el operador3 no existe. 4. Retire el usuario operador3 del sistema.
+
+[root@servera ~]# userdel -r operator3
+
+4.1. Confirme que el usuario operador3 no existe.
+
+[root@servera ~]# tail /etc/passwd
+
+...salida omitida...
+
+operator1:x:1003:1003:Operator One:/home/operator1:/bin/bash
+operator2:x:1004:1004:Operator Two:/home/operator2:/bin/bash
+
+Observe que el resultado anterior no muestra la información de la cuenta de usuario para el usuario operador3. 4.2. Confirme que el directorio de inicio del usuario operator3 no existe. 4.3.
+
+
+
+
+
+4.6. Ejercicio guiado Administrar cuentas de usuarios locales Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-user
+[root@servera ~]# ls -l /home
+
+total 0
+
+drwx------. 3 cloud-user cloud-user 74 May  9 17:17 cloud-user
+drwx------. 4 devops     devops     90 Mar  6 16:24 devops
+drwx------. 2 operator1  operator1  62 May  9 22:35 operator1
+drwx------. 2 operator2  operator2  62 May  9 22:35 operator2
+drwx------. 3 student    student    74 Mar  6 16:23 student
+
+Salga del shell del usuario raíz para regresar al shell del usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión [estudiante@servera ~]$ 4.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+4.5.
+
+
+
+
+
+4.7. Gestión de cuentas de grupos locales 4.7. Administrar cuentas de grupos locales Objetivos Crear, modificar y eliminar cuentas de grupos locales. Administrar grupos locales Puede administrar grupos usando el menú Cuentas en la consola web de RHEL (si está habilitado) o usando herramientas de línea de comandos. Esta sección se centra en las herramientas de línea de comandos que puede usar desde un símbolo del shell, ya sea localmente, a través de una conexión SSH o en la consola web de RHEL. Crear grupos desde la línea de comando El comando groupadd crea grupos. Sin opciones, el comando groupadd utiliza el siguiente número de ID de grupo (GID) disponible del rango que las variables GID_MIN y GID_MAX especifican en el archivo /etc/login.defs. De forma predeterminada, el comando asigna un valor de GID que es mayor que cualquier otro GID existente, incluso si hay disponible un valor inferior. La opción -g del comando groupadd especifica un GID que utilizará el grupo.
+
+root@host:~# groupadd -g 10000 group01
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group01:x:10000:
+
+Nota Debido a que el comando useradd crea automáticamente grupos privados de usuarios con números GID asignados desde 1000 en adelante, algunos administradores reservan un rango especial de números GID altos para usar cuando crean grupos suplementarios para otros fines. Sin embargo, esta administración adicional es innecesaria porque no es necesario que el UID y el GID principal de un usuario sean el mismo número. La opción groupadd comando -r crea grupos de sistemas. Al igual que con los grupos normales, los grupos del sistema utilizan un GID del rango de GID del sistema válidos enumerados en el archivo /etc/login.defs. Los elementos de configuración SYS_GID_MIN y SYS_GID_MAX en el archivo /etc/login.defs definen el rango de GID del sistema.
+
+root@host:~# groupadd -r group02
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group01:x:10000:
+group02:x:988:
+
+Modificación de grupos existentes desde la línea de comando El comando groupmod cambia las propiedades de un grupo existente. La opción -n del comando groupmod especifica un nuevo nombre para el grupo.
+
+
+
+
+
+
+
+## 4.7. Administrar cuentas de grupos locales
+
+4.7. Gestión de cuentas de grupos locales 4.7. Administrar cuentas de grupos locales Objetivos Crear, modificar y eliminar cuentas de grupos locales. Administrar grupos locales Puede administrar grupos usando el menú Cuentas en la consola web de RHEL (si está habilitado) o usando herramientas de línea de comandos. Esta sección se centra en las herramientas de línea de comandos que puede usar desde un símbolo del shell, ya sea localmente, a través de una conexión SSH o en la consola web de RHEL. Crear grupos desde la línea de comando El comando groupadd crea grupos. Sin opciones, el comando groupadd utiliza el siguiente número de ID de grupo (GID) disponible del rango que las variables GID_MIN y GID_MAX especifican en el archivo /etc/login.defs. De forma predeterminada, el comando asigna un valor de GID que es mayor que cualquier otro GID existente, incluso si hay disponible un valor inferior. La opción -g del comando groupadd especifica un GID que utilizará el grupo.
+
+root@host:~# groupadd -g 10000 group01
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group01:x:10000:
+
+Nota Debido a que el comando useradd crea automáticamente grupos privados de usuarios con números GID asignados desde 1000 en adelante, algunos administradores reservan un rango especial de números GID altos para usar cuando crean grupos suplementarios para otros fines. Sin embargo, esta administración adicional es innecesaria porque no es necesario que el UID y el GID principal de un usuario sean el mismo número. La opción groupadd comando -r crea grupos de sistemas. Al igual que con los grupos normales, los grupos del sistema utilizan un GID del rango de GID del sistema válidos enumerados en el archivo /etc/login.defs. Los elementos de configuración SYS_GID_MIN y SYS_GID_MAX en el archivo /etc/login.defs definen el rango de GID del sistema.
+
+root@host:~# groupadd -r group02
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group01:x:10000:
+group02:x:988:
+
+Modificación de grupos existentes desde la línea de comando El comando groupmod cambia las propiedades de un grupo existente. La opción -n del comando groupmod especifica un nuevo nombre para el grupo.
+
+
+
+
+
+4.7. Administrar cuentas de grupos locales
+
+root@host:~# groupmod -n group0022 group02
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group0022:x:988:
+
+Observe que el nombre del grupo se actualiza de grupo02 a grupo0022. La opción -g del comando groupmod reasigna el nombre del grupo a un nuevo GID.
+
+root@host:~# groupmod -g 20000 group0022
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group0022:x:20000:
+
+Observe que el GID cambia de 988 a 20000. Eliminación de grupos desde la línea de comando El comando groupdel elimina grupos.
+
+root@host:~# groupdel group0022
+
+Importante No puede eliminar un grupo si es el grupo principal predeterminado de un usuario existente. De manera similar a usar el comando userdel, asegúrese de ubicar primero los archivos que posee el grupo para evitar posibles riesgos de seguridad. Pertenencia a grupos primarios y suplementarios El grupo primario predeterminado de un usuario es el grupo que aparece en la línea que define la cuenta del usuario en el archivo /etc/passwd. Un usuario sólo puede pertenecer a un grupo principal a la vez. Los grupos suplementarios de un usuario son los grupos adicionales que están configurados para el usuario en el archivo /etc/group. Un usuario puede pertenecer a muchos grupos complementarios. Para configurar permisos de archivos basados ​​en grupos, no existe ninguna diferencia entre los grupos primarios y suplementarios de un usuario. Si el usuario pertenece a algún grupo al que se le asigna acceso a archivos específicos, entonces ese usuario tiene acceso a esos archivos. La única distinción entre las membresías principal y complementaria de un usuario es cuando un usuario crea un archivo. Los archivos nuevos deben tener un propietario de usuario y un propietario de grupo, que se asigna cuando se crea el archivo. El grupo principal actual del usuario se utiliza para la propiedad del grupo del nuevo archivo, a menos que las opciones del comando lo anulen. Cambiar la membresía del grupo desde la línea de comando Utilice el comando usermod -g para cambiar el grupo principal predeterminado de un usuario.
+
+
+
+
+
+4.7. Administrar cuentas de grupos locales
+
+root@host:~# id user02
+uid=1006(user02) gid=1008(user02) groups=1008(user02)
+root@host:~# usermod -g group01 user02
+root@host:~# id user02
+uid=1006(user02) gid=10000(group01) groups=10000(group01)
+
+Importante El uso de la opción -g para cambiar el grupo principal predeterminado de un usuario no agrega automáticamente el grupo principal antiguo a la lista de grupos suplementarios del usuario. Puede ver este comportamiento en el ejemplo anterior. Además, el uso de esta opción no cambia la propiedad del grupo de ningún archivo existente en el directorio de inicio del usuario ni en ninguna otra parte del sistema. Utilice el comando groupmod -aU para agregar una lista de uno o más usuarios a un grupo suplementario. El nombre del grupo es el argumento final del comando.
+
+root@host:~# id user03
+uid=1007(user03) gid=1009(user03) groups=1009(user03)
+root@host:~# groupmod -aU user03 group01
+root@host:~# id user03
+uid=1007(user03) gid=1009(user03) groups=1009(user03),10000(group01)
+
+Advertencia La opción -a del comando groupmod habilita el modo de agregar. Sin la opción -a, el comando reemplaza el conjunto existente de usuarios que son miembros del grupo por aquellos que están incluidos en la lista de la opción -U. También puede usar el comando usermod -aG para agregar un usuario a uno o más grupos existentes sin eliminarlo de sus grupos primarios o secundarios actuales. La opción -a agrega el usuario al nuevo grupo sin eliminarlo del grupo existente. La opción -G especifica una lista de grupos suplementarios a los que se debe agregar el usuario.
+
+root@host:~# usermod -aG group01 user03
+
+Cambiar temporalmente su grupo principal El grupo principal actual de un usuario determina el grupo propietario de los archivos recién creados. Sin embargo, puedes cambiar temporalmente tu grupo principal actual a uno de los grupos suplementarios al que perteneces. Puede hacer esto inmediatamente antes de crear un conjunto de archivos que desea que ese grupo posea, en lugar de su grupo principal habitual. Utilice el comando newgrp para cambiar su grupo principal para el símbolo del shell actual. Este cambio temporal no afecta a otros indicadores del shell en el mismo sistema. Puede cambiar su grupo principal actual a cualquiera de los grupos suplementarios a los que pertenece o volver a su grupo principal predeterminado. Sólo un grupo a la vez puede ser su grupo principal actual. Si cierra sesión y vuelve a iniciarla, su grupo principal predeterminado en ese indicador de shell volverá a ser el actual. En este ejemplo, el grupo group01 se convierte temporalmente en el grupo principal de este usuario.
+
+
+
+
+
+4.7. Administrar cuentas de grupos locales
+
+user03@host:~$ id
+uid=1007(user03) gid=1009(user03) groups=1009(user03),10000(group01)
+user03@host:~$ newgrp group01
+user03@host:~$ id
+uid=1007(user03) gid=10000(group01) groups=1009(user03),10000(group01)
+
+Referencias
+
+groupadd(8), groupmod(8), groupdel(8), usermod(8), login.defs(5), group(5), passwd(5), and
+
+páginas man de newgrp(1)
+
+
+
+
+
+4.8. Ejercicio guiado Administrar cuentas de grupos locales 4.8. Ejercicio guiado Administrar cuentas de grupos locales Cree, modifique y elimine cuentas de grupos locales. Resultados Crear y gestionar grupos complementarios. Configure el acceso a Sudo para un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-group
+
+Instrucciones Como usuario raíz en la máquina del servidor, cree los grupos suplementarios de operadores y administradores. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el grupo suplementario de operadores con un GID de 30000.
+
+[root@servera ~]# groupadd -g 30000 operators
+
+1.2. Cree el grupo complementario de administración sin especificar un GID.
+
+[root@servera ~]# groupadd admin
+
+1.3. Verifique que existan los grupos suplementarios de operadores y administradores.
+
+[root@servera ~]# tail /etc/group
+
+...salida omitida...
+
+operators:x:30000:
+admin:x:30001:
+
+1.4. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores y verifique la membresía del grupo. 2. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores. 2.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar cuentas de grupos locales
+
+4.8. Ejercicio guiado Administrar cuentas de grupos locales 4.8. Ejercicio guiado Administrar cuentas de grupos locales Cree, modifique y elimine cuentas de grupos locales. Resultados Crear y gestionar grupos complementarios. Configure el acceso a Sudo para un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-group
+
+Instrucciones Como usuario raíz en la máquina del servidor, cree los grupos suplementarios de operadores y administradores. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el grupo suplementario de operadores con un GID de 30000.
+
+[root@servera ~]# groupadd -g 30000 operators
+
+1.2. Cree el grupo complementario de administración sin especificar un GID.
+
+[root@servera ~]# groupadd admin
+
+1.3. Verifique que existan los grupos suplementarios de operadores y administradores.
+
+[root@servera ~]# tail /etc/group
+
+...salida omitida...
+
+operators:x:30000:
+admin:x:30001:
+
+1.4. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores y verifique la membresía del grupo. 2. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores. 2.1.
+
+
+
+
+
+4.8. Ejercicio guiado Administrar cuentas de grupos locales
+
+[root@servera ~]# usermod -aG operators operator1
+[root@servera ~]# usermod -aG operators operator2
+[root@servera ~]# usermod -aG operators operator3
+
+Confirme que los usuarios estén en el grupo.
+
+[root@servera ~]# id operator1
+uid=1003(operator1) gid=1003(operator1) groups=1003(operator1),30000(operators)
+[root@servera ~]# id operator2
+uid=1004(operator2) gid=1004(operator2) groups=1004(operator2),30000(operators)
+[root@servera ~]# id operator3
+uid=1005(operator3) gid=1005(operator3) groups=1005(operator3),30000(operators)
+
+2.2. Agregue los usuarios sysadmin1, sysadmin2 y sysadmin3 al grupo de administración y verifique la pertenencia al grupo. 3. Agregue los usuarios sysadmin1, sysadmin2 y sysadmin3 al grupo de administración.
+
+[root@servera ~]# usermod -aG admin sysadmin1
+[root@servera ~]# usermod -aG admin sysadmin2
+[root@servera ~]# usermod -aG admin sysadmin3
+
+3.1. Confirme que los usuarios estén en el grupo.
+
+[root@servera ~]# id sysadmin1
+uid=1006(sysadmin1) gid=1006(sysadmin1) groups=1006(sysadmin1),30001(admin)
+[root@servera ~]# id sysadmin2
+uid=1007(sysadmin2) gid=1007(sysadmin2) groups=1007(sysadmin2),30001(admin)
+[root@servera ~]# id sysadmin3
+uid=1008(sysadmin3) gid=1008(sysadmin3) groups=1008(sysadmin3),30001(admin)
+
+3.2. Examine el archivo /etc/group para verificar las membresías de grupos suplementarios.
+
+[root@servera ~]# tail /etc/group
+
+...salida omitida...
+
+operators:x:30000:operator1,operator2,operator3
+admin:x:30001:sysadmin1,sysadmin2,sysadmin3
+
+3.3. Habilite los derechos administrativos para todos los miembros del grupo de administradores. Verifique que cualquier miembro del grupo de administradores pueda ejecutar comandos administrativos. 4. Otorgue al grupo de administradores privilegios administrativos completos creando el archivo /etc/sudoers.d/admin con los permisos adecuados. La cadena %admin ALL=(ALL) ALL significa que los miembros del grupo de administración pueden ejecutar cualquier comando como cualquier usuario, incluido el usuario root.
+
+[root@servera ~]# echo "%admin ALL=(ALL) ALL" > /etc/sudoers.d/admin
+
+4.1. Cambie al usuario sysadmin1 (un miembro del grupo de administración).
+
+[root@servera ~]# su - sysadmin1
+
+4.2. Sin usar Sudo, intente leer las últimas entradas del archivo /var/log/messages. El comando debería fallar porque el usuario sysadmin1 no tiene permiso para leer el archivo. 4.3.
+
+
+
+
+
+4.8. Ejercicio guiado Administrar cuentas de grupo local Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-group
+[sysadmin1@servera ~]$ tail /var/log/messages
+tail: cannot open '/var/log/messages' for reading: Permission denied
+
+Utilice Sudo para leer las últimas entradas del archivo /var/log/messages. Utilice redhat como contraseña para el usuario sysadmin1. El comando debería tener éxito porque el usuario sysadmin1 puede usar los privilegios Sudo otorgados al grupo de administradores.
+
+[sysadmin1@servera ~]$ sudo tail /var/log/messages
+
+[sudo] contraseña para sysadmin1: redhat...salida omitida... 18 de mayo 04:59:40 servera su[8080]: (a root) sysadmin1 en pts/2 18 de mayo 04:59:40 servera systemd[1]: iniciando systemd-hostnamed.service - Servicio de nombre de host... 18 de mayo 04:59:40 servera systemd[1]: iniciado systemd-hostnamed.service - Servicio de nombre de host. 4.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[sysadmin1@servera ~]$ exit
+
+cerrar sesión
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+4.9. Gestión de contraseñas de usuarios 4.9. Administración de contraseñas de usuarios Objetivos Establecer una política de administración de contraseñas para los usuarios y bloquear y desbloquear manualmente las cuentas de usuario. Contraseñas ocultas y política de contraseñas Originalmente, las contraseñas cifradas se almacenaban en el archivo /etc/passwd, legible en todo el mundo. Estas contraseñas se consideraron adecuadas hasta que los ataques de diccionario a contraseñas cifradas se volvieron comunes. Las contraseñas cifradas criptográficamente se movieron al archivo /etc/shadow, que solo el usuario root puede leer. Al igual que el archivo /etc/passwd, cada usuario tiene una entrada en el archivo /etc/shadow. Una entrada de ejemplo de /etc/shadow
+
+file has nine colon-separated fields:
+root@host:~# cat /etc/shadow
+
+...salida omitida...
+
+user03:$y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC:20222:0:99999:7:2:20282::
+
+Cada campo de la entrada está separado por dos puntos:
+
+user03 : Name of the user account.
+
+$y$j…​.ziHC: La contraseña criptográficamente hash del usuario. 20222: Los días desde la época en la que se cambió la contraseña por última vez, donde la época es 1970-01-01 en la zona horaria UTC. 0: Los días mínimos desde el último cambio de contraseña antes de que el usuario pueda cambiarla nuevamente. 99999: El máximo de días sin cambio de contraseña antes de que caduque. Un campo vacío significa que la contraseña nunca caduca. 7: La cantidad de días de anticipación para advertir al usuario que su contraseña caducará. 2: La cantidad de días sin actividad, comenzando con el día en que expiró la contraseña, antes de que la cuenta se bloquee automáticamente. 20282: el día en que la cuenta vence en días desde la época. Un campo vacío significa que la cuenta nunca caduca. El último campo suele estar vacío y reservado para uso futuro. Formato de una contraseña con hash criptográfico El campo de contraseña con hash criptográfico almacena tres piezas clave de información: el algoritmo de hash en uso, el salt y el hash criptográfico. Salt agrega datos aleatorios a la contraseña para crear un hash único para fortalecer la contraseña criptográficamente hash. Cada dato está delimitado por el signo de dólar ($). $y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC
+
+y : The hashing algorithm in use for this password. A y indicates a yescrypt hash; a 6 indicates a SHA-512 hash;
+
+y un 5 indica SHA-256. El formato del resto de la contraseña depende del algoritmo.
+
+j9T : Parameters that tune the behavior of how yescrypt hashes. These options are standardized by the tools
+
+que establecen contraseñas para garantizar un ajuste seguro. Es posible que otros algoritmos no tengan este campo.
+
+qybndwEWzHhr0uTGAwO4Q0 : The salt in use to cryptographically hash the password; it is originally chosen at
+
+aleatorio.
+
+
+
+
+
+
+
+## 4.9. Administrar contraseñas de usuario
+
+4.9. Gestión de contraseñas de usuarios 4.9. Administración de contraseñas de usuarios Objetivos Establecer una política de administración de contraseñas para los usuarios y bloquear y desbloquear manualmente las cuentas de usuario. Contraseñas ocultas y política de contraseñas Originalmente, las contraseñas cifradas se almacenaban en el archivo /etc/passwd, legible en todo el mundo. Estas contraseñas se consideraron adecuadas hasta que los ataques de diccionario a contraseñas cifradas se volvieron comunes. Las contraseñas cifradas criptográficamente se movieron al archivo /etc/shadow, que solo el usuario root puede leer. Al igual que el archivo /etc/passwd, cada usuario tiene una entrada en el archivo /etc/shadow. Una entrada de ejemplo de /etc/shadow
+
+file has nine colon-separated fields:
+root@host:~# cat /etc/shadow
+
+...salida omitida...
+
+user03:$y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC:20222:0:99999:7:2:20282::
+
+Cada campo de la entrada está separado por dos puntos:
+
+user03 : Name of the user account.
+
+$y$j…​.ziHC: La contraseña criptográficamente hash del usuario. 20222: Los días desde la época en la que se cambió la contraseña por última vez, donde la época es 1970-01-01 en la zona horaria UTC. 0: Los días mínimos desde el último cambio de contraseña antes de que el usuario pueda cambiarla nuevamente. 99999: El máximo de días sin cambio de contraseña antes de que caduque. Un campo vacío significa que la contraseña nunca caduca. 7: La cantidad de días de anticipación para advertir al usuario que su contraseña caducará. 2: La cantidad de días sin actividad, comenzando con el día en que expiró la contraseña, antes de que la cuenta se bloquee automáticamente. 20282: el día en que la cuenta vence en días desde la época. Un campo vacío significa que la cuenta nunca caduca. El último campo suele estar vacío y reservado para uso futuro. Formato de una contraseña con hash criptográfico El campo de contraseña con hash criptográfico almacena tres piezas clave de información: el algoritmo de hash en uso, el salt y el hash criptográfico. Salt agrega datos aleatorios a la contraseña para crear un hash único para fortalecer la contraseña criptográficamente hash. Cada dato está delimitado por el signo de dólar ($). $y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC
+
+y : The hashing algorithm in use for this password. A y indicates a yescrypt hash; a 6 indicates a SHA-512 hash;
+
+y un 5 indica SHA-256. El formato del resto de la contraseña depende del algoritmo.
+
+j9T : Parameters that tune the behavior of how yescrypt hashes. These options are standardized by the tools
+
+que establecen contraseñas para garantizar un ajuste seguro. Es posible que otros algoritmos no tengan este campo.
+
+qybndwEWzHhr0uTGAwO4Q0 : The salt in use to cryptographically hash the password; it is originally chosen at
+
+aleatorio.
+
+
+
+
+
+4.9. Gestión de contraseñas de usuario OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC: el hash criptográfico de la contraseña del usuario. Este segmento es el resultado de combinar la contraseña salt y de texto sin formato, y luego usar el algoritmo hash criptográfico para generar el hash de la contraseña. La razón principal para combinar un salt con la contraseña es defenderse contra ataques que utilizan listas precalculadas de hashes de contraseñas. Agregar sales amplía la cantidad de posibles hashes que deben verificarse para cada palabra que podría ser una posible contraseña, lo que hace que sea mucho más difícil usar una lista precalculada debido a su tamaño. Si un atacante obtiene una copia de un archivo /etc/shadow que usa sales, entonces necesita adivinar las contraseñas con fuerza bruta, lo que requiere más tiempo y esfuerzo. Nota El algoritmo de hash predeterminado en RHEL 10 es yescrypt, una función de derivación de clave basada en contraseña (KDF) y un esquema de hash de contraseña basado en primitivas criptográficas aprobadas por NIST, desarrollado por Solar Designer. Este algoritmo hash predeterminado es un cambio con respecto a RHEL 9, que utilizaba el algoritmo hash SHA-512 de Ulrich Drepper de forma predeterminada. RHEL 10 todavía reconoce los hash de contraseña SHA-512 ($6$) que pueden estar en el archivo /etc/shadow, pero las contraseñas nuevas y actualizadas se crean usando yescrypt, que Red Hat considera más seguro. Para obtener más información sobre los algoritmos de hash de contraseñas de usuarios locales en RHEL, consulte la página del manual de crypt(5) y el artículo Acerca de los algoritmos de hash de contraseñas de usuarios locales en RHEL. Verificación de contraseña Cuando un usuario intenta iniciar sesión, el sistema busca la entrada del usuario en el archivo /etc/shadow y combina el salt del usuario con la contraseña escrita en texto sin formato. Luego, el sistema codifica criptográficamente la combinación de la contraseña salt y de texto sin formato con el algoritmo de hash especificado. Si el resultado coincide con el hash criptográfico, entonces el usuario escribió la contraseña correcta. Si el resultado no coincide con el hash criptográfico, entonces el usuario escribió la contraseña incorrecta y el intento de inicio de sesión falla. Este método permite que el sistema determine si el usuario escribió la contraseña correcta sin almacenarla en un formato utilizable para iniciar sesión. Configuración de la caducidad de la contraseña El siguiente diagrama muestra los parámetros de caducidad de la contraseña relevantes, que se pueden ajustar usando el comando chage para implementar una política de caducidad de la contraseña. Observe que el nombre del comando es chage, que significa "cambiar edad". No confunda el comando con la palabra "cambiar".
+
+
+
+
+
+4.9. Administración de contraseñas de usuarios Figura 7. Parámetros de caducidad de contraseñas El siguiente ejemplo demuestra el uso del comando chage para cambiar la política de contraseñas del usuario sysadmin05. El comando define una edad mínima (-m) de 0 días, una edad máxima (-M) de 90 días, un período de advertencia (-W) de 7 días y un período de inactividad (-I) de 14 días.
+
+root@host:~# chage -m 0 -M 90 -W 7 -I 14 sysadmin05
+
+Supongamos que administra las políticas de contraseñas de usuario en un servidor Red Hat. El usuario cloudadmin10 es nuevo en el sistema y desea establecer una política de caducidad de contraseña personalizada. Desea establecer el vencimiento de la cuenta en 30 días a partir de
+
+today, so you use the following commands:
+root@host:~# date +%F 
+
+2025-05-14
+
+root@host:~# date -d "+30 days" +%F 
+
+2025-06-13
+
+root@host:~# chage -E $(date -d "+30 days" +%F) cloudadmin10 
+root@host:~# chage -l cloudadmin10 | grep "Account expires" 
+
+La cuenta vence: 13 de junio de 2025 Utilice el comando de fecha para obtener la fecha actual. Utilice el comando de fecha para obtener la fecha dentro de 30 días. Utilice la opción chage del comando -E para cambiar la fecha de vencimiento del usuario cloudadmin10. Utilice la opción chage del comando -l para mostrar la política de caducidad de contraseña para el usuario cloudadmin10. Nota El comando de fecha puede calcular una fecha futura. La opción -u informa la hora en UTC.
+
+user@host:~$ date -d "+45 days" -u
+
+Sábado 28 de junio 03:46:10 UTC 2025 Después de unos días, el archivo de registro /var/log/secure muestra un comportamiento inesperado por parte del usuario cloudadmin10. El usuario intentó utilizar el comando sudo para interactuar con archivos que pertenecen a otros usuarios. Sospechas que el usuario pudo haber dejado abierta una sesión ssh mientras trabajaba en otra máquina. Quiere que el usuario cloudadmin10 cambie el
+
+password on the next login, so you use the following command:
+root@host:~# chage -d 0 cloudadmin10
+
+La próxima vez que el usuario cloudadmin10 inicie sesión, se le solicitará que cambie la contraseña.
+
+
+
+
+
+4.9. Administrar contraseñas de usuario Ajustar la caducidad de contraseñas para nuevos usuarios Para cambiar la configuración de caducidad de contraseña predeterminada en todo el sistema, puede modificar el archivo /etc/login.defs. este archivo
+
+contains several key parameters:
+
+PASS_MAX_DAYS Establece el número máximo de días que una contraseña es válida antes de que un usuario deba cambiarla. PASS_MIN_DAYS Especifica el número mínimo de días que deben pasar antes de que se pueda cambiar una contraseña. PASS_WARN_AGE Determina con cuántos días de antelación un usuario recibe una advertencia sobre la caducidad de su contraseña. Para cuentas de usuario nuevas, el comando useradd también extrae valores predeterminados del archivo /etc/default/useradd. Aquí es donde puede establecer el período de inactividad predeterminado y la fecha de vencimiento de la cuenta si desea que estas configuraciones se apliquen automáticamente a todos los usuarios nuevos creados con el comando useradd.
+
+[root@host ~]# cat /etc/default/useradd
+
+...salida omitida... INACTIVE=21 EXPIRE=2025-12-31 ...salida omitida... Cualquier cambio realizado en esta configuración predeterminada solo afecta a los nuevos usuarios creados después de guardar los cambios. Los usuarios existentes continúan regidos por las políticas de caducidad de contraseñas que estaban vigentes en el momento en que se crearon sus cuentas. Para ajustar la configuración de caducidad de contraseña para usuarios individuales, debe usar el comando chage. Restricción del acceso de usuarios Puede restringir el acceso de un usuario a un sistema Linux utilizando el comando usermod. Por ejemplo, el mod de usuario
+
+command -L option locks a user account by invalidating the user's password:
+root@host:~# usermod -L sysadmin03
+user01@host:~$ su - sysadmin03
+
+Contraseña: sombrero rojo
+
+su: Authentication failure
+
+Una limitación crucial de usar solo la opción -L es que no afecta la autenticación basada en claves SSH. Si se configura una clave SSH válida para el usuario, el usuario aún puede iniciar sesión de forma remota sin ingresar una contraseña. Esta limitación plantea un riesgo potencial para la seguridad. Un enfoque más completo es hacer caducar la cuenta, lo que impide todos los inicios de sesión, incluidos los inicios de sesión con claves SSH. El
+
+usermod command -e option sets an account's expiration date. The expiration date can be set by using an integer to
+
+especifique el número de días desde el 1 de enero de 1970 o utilice el formato AAAA-MM-DD. Puede bloquear la cuenta y establecer una fecha de vencimiento usando un único comando de usuario con las opciones apropiadas. En el siguiente ejemplo, el comando usermod bloquea y caduca la cuenta de usuario cloudadmin10 el 1 de junio de 2025.
+
+root@host:~# usermod -L -e 2025-06-01 cloudadmin10
+
+Este método es muy recomendable para desactivar las cuentas de ex empleados.
+
+
+
+
+
+4.9. Administrar contraseñas de usuario Para restaurar el acceso de un usuario, puede usar la opción -U para desbloquear su contraseña. Para eliminar la fecha de vencimiento, use la opción -e con un valor nulo. El siguiente ejemplo desbloquea la contraseña y elimina la fecha de vencimiento del usuario cloudadmin10:
+
+root@host:~# usermod -U -e '' cloudadmin10
+
+El shell nologin El shell nologin actúa como un shell de reemplazo para las cuentas de usuario que no están destinadas a iniciar sesión interactivamente en el sistema. Una buena práctica de seguridad es desactivar una cuenta para que no pueda iniciar sesión en el sistema cuando la cuenta no lo requiera. Por ejemplo, un servidor de correo puede requerir una cuenta para almacenar el correo y una contraseña para que el usuario se autentique con un cliente de correo para recuperar el correo. Ese usuario no necesita iniciar sesión directamente en el sistema. Una solución común a esta situación es configurar el shell de inicio de sesión del usuario en /sbin/nologin. Si el usuario intenta iniciar sesión en el sistema directamente, el shell nologin cierra la conexión.
+
+root@host:~# usermod -s /sbin/nologin newapp
+root@host:~# su - newapp
+
+Último inicio de sesión: miércoles 14 de mayo a las 03:49:38 UTC de 2025 en pts/0 Esta cuenta no está disponible actualmente. Importante El shell nologin impide el uso interactivo del sistema, pero no impide todo acceso. Los usuarios pueden autenticarse y cargar o recuperar archivos a través de aplicaciones como aplicaciones web, programas de transferencia de archivos o lectores de correo si usan la contraseña del usuario para la autenticación y no requieren un shell. Referencias a las páginas man chage(1), usermod(8), passwd(1), passwd(5), shadow(5), crypt(3), crypt(5), login.defs(5) y nologin(8) Acerca de los algoritmos de hash de contraseñas de usuarios locales en RHEL
+
+
+
+
+
+4.10. Ejercicio guiado Administrar contraseñas de usuarios 4.10. Ejercicio guiado Administrar contraseñas de usuarios Establezca una política de administración de contraseñas para los usuarios y bloquee y desbloquee manualmente las cuentas de usuario. Resultados Forzar un cambio de contraseña cuando el usuario inicia sesión en el sistema por primera vez. Forzar un cambio de contraseña cada 90 días. Configure una cuenta de usuario y contraseñas para que caduquen 180 días a partir del día actual. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-password
+
+Instrucciones En la máquina del servidor, bloquee al usuario operador1 e intente cambiar a ese usuario. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1.1. Como usuario estudiante, utilice los derechos administrativos para bloquear y caducar la cuenta del operador1. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo usermod -L -e 1 operator1
+
+[sudo] contraseña para estudiante: estudiante 1.2. Intente iniciar sesión como usuario operador1. Utilice redhat como contraseña. Este comando debería fallar porque el usuario operador1 está bloqueado.
+
+[student@servera ~]$ su - operator1
+
+Contraseña: sombrero rojo
+
+su: Authentication failure
+
+1.3. Desbloquee la cuenta del operador1 y elimine la fecha de vencimiento.
+
+[student@servera ~]$ sudo usermod -U -e '' operator1
+
+1.4. Intente iniciar sesión nuevamente como usuario operador1. Utilice redhat como contraseña. Esta vez, el comando debería tener éxito. 1.5.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar contraseñas de usuarios
+
+4.10. Ejercicio guiado Administrar contraseñas de usuarios 4.10. Ejercicio guiado Administrar contraseñas de usuarios Establezca una política de administración de contraseñas para los usuarios y bloquee y desbloquee manualmente las cuentas de usuario. Resultados Forzar un cambio de contraseña cuando el usuario inicia sesión en el sistema por primera vez. Forzar un cambio de contraseña cada 90 días. Configure una cuenta de usuario y contraseñas para que caduquen 180 días a partir del día actual. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-password
+
+Instrucciones En la máquina del servidor, bloquee al usuario operador1 e intente cambiar a ese usuario. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1.1. Como usuario estudiante, utilice los derechos administrativos para bloquear y caducar la cuenta del operador1. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo usermod -L -e 1 operator1
+
+[sudo] contraseña para estudiante: estudiante 1.2. Intente iniciar sesión como usuario operador1. Utilice redhat como contraseña. Este comando debería fallar porque el usuario operador1 está bloqueado.
+
+[student@servera ~]$ su - operator1
+
+Contraseña: sombrero rojo
+
+su: Authentication failure
+
+1.3. Desbloquee la cuenta del operador1 y elimine la fecha de vencimiento.
+
+[student@servera ~]$ sudo usermod -U -e '' operator1
+
+1.4. Intente iniciar sesión nuevamente como usuario operador1. Utilice redhat como contraseña. Esta vez, el comando debería tener éxito. 1.5.
+
+
+
+
+
+4.10. Ejercicio guiado Administrar contraseñas de usuarios
+
+[student@servera ~]$ su - operator1
+
+Contraseña: redhat ...salida omitida... [operator1@servera ~]$ Cierre sesión en el shell de usuario operador1 para regresar al shell de usuario estudiante.
+
+[operator1@servera ~]$ exit
+
+cerrar sesión 1.6. Cambie la política de contraseñas para que el usuario operador1 requiera una nueva contraseña cada 90 días. Confirme que la edad de la contraseña se haya establecido correctamente. 2. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 2.1. Establezca la antigüedad máxima de la contraseña del usuario operador1 en 90 días.
+
+[root@servera ~]# chage -M 90 operator1
+
+2.2. Verifique que la contraseña del usuario operador1 caduque 90 días después de su cambio.
+
+[root@servera ~]# chage -l operator1
+
+Último cambio de contraseña: 14 de mayo de 2025 La contraseña caduca: 12 de agosto de 2025 Contraseña inactiva: nunca La cuenta caduca: nunca Número mínimo de días entre cambios de contraseña: 0 Número máximo de días entre cambios de contraseña: 90 Número de días de advertencia antes de que caduque la contraseña: 7 2.3. Fuerce un cambio de contraseña cuando el usuario operador1 inicie sesión por primera vez. Después de configurar el cambio de contraseña, regrese al shell del usuario estudiante. 3. Fuerce un cambio de contraseña en el primer inicio de sesión para la cuenta del operador1.
+
+[root@servera ~]# chage -d 0 operator1
+
+3.1. Salga del shell del usuario root de la máquina del servidor.
+
+[root@servera ~]# exit
+
+cerrar sesión [estudiante@servera ~]$ 3.2. Inicie sesión como usuario operador1 y cambie la contraseña a forsooth123. Después de configurar la contraseña, regrese al shell del usuario estudiante. 4. Inicie sesión como usuario operador1 y cambie la contraseña a forsooth123 cuando se le solicite. 4.1.
+
+
+
+
+
+4.10. Ejercicio guiado Administrar contraseñas de usuarios
+
+[student@servera ~]$ su - operator1
+
+Contraseña: redhat Debe cambiar su contraseña inmediatamente (aplicada por el administrador). Contraseña actual: redhat Nueva contraseña: forsooth123 Vuelva a escribir la nueva contraseña: forsooth123 ... salida omitida... [operator1@servera ~]$ Salga del shell del usuario operador1 para regresar al usuario estudiante.
+
+[operator1@servera ~]$ exit
+
+cerrar sesión [estudiante@servera ~]$ 4.2. Configure la cuenta del operador1 para que caduque 180 días a partir del día actual. 5. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 5.1. Determine la fecha 180 días en el futuro. Utilice el formato %F con el comando de fecha para obtener el valor exacto.
+
+[root@servera ~]# date -d "+180 days" +%F
+
+2025-11-10 Importante Esta fecha de devolución es un ejemplo; use el valor en su sistema para los siguientes pasos. 5.2. Configure la cuenta para que caduque en la fecha que se muestra en el paso anterior.
+
+[root@servera ~]# chage -E 2025-11-10 operator1
+
+5.3. Verifique que la fecha de vencimiento de la cuenta esté configurada correctamente.
+
+[root@servera ~]# chage -l operator1
+
+Último cambio de contraseña: 14 de mayo de 2025 La contraseña vence: 12 de agosto de 2025 Contraseña inactiva: nunca La cuenta vence: 10 de noviembre de 2025 Número mínimo de días entre cambios de contraseña: 0 Número máximo de días entre cambios de contraseña: 90 Número de días de advertencia antes de que caduque la contraseña: 7 5.4. Configure las contraseñas para que caduquen 180 días a partir de la fecha actual para todos los usuarios nuevos. 6. En el archivo /etc/login.defs, establezca el parámetro PASS_MAX_DAYS en 180. Utilice derechos administrativos cuando abra el archivo con el editor de texto. Puede utilizar el comando vim /etc/login.defs para realizar este paso. 6.1.
+
+
+
+
+
+4.10. Ejercicio guiado Administrar contraseñas de usuarios Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-password
+
+...salida omitida...
+
+# Password aging controls:
+
+#
+
+#       PASS_MAX_DAYS   Maximum number of days a password may be
+#       used.
+#       PASS_MIN_DAYS   Minimum number of days allowed between
+#       password changes.
+#       PASS_MIN_LEN    Minimum acceptable password length.
+#       PASS_WARN_AGE   Number of days warning given before a
+#       password expires.
+
+# PASS_MAX_DAYS 180 PASS_MIN_DAYS 0 PASS_MIN_LEN 8 PASS_WARN_AGE 7 ... salida omitida... Importante La contraseña predeterminada y la configuración de vencimiento de la cuenta se aplican a los nuevos usuarios, pero no a los usuarios existentes. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+4.11. Laboratorio Administrar usuarios y grupos locales 4.11. Práctica de laboratorio Administrar usuarios y grupos locales Utilice el acceso de superusuario para administrar usuarios y grupos locales y para administrar políticas de contraseñas locales. Resultados Establecer una política de caducidad de contraseña predeterminada para la contraseña del usuario local. Cree y utilice un grupo complementario para nuevos usuarios. Cree tres usuarios con el nuevo grupo suplementario. Establezca una contraseña inicial para los usuarios creados. Configure los miembros del grupo suplementario para usar el comando sudo para ejecutar cualquier comando como cualquier usuario. Establezca una política de caducidad de contraseña específica del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. 1. En la máquina del servidor, asegúrese de que los usuarios recién creados deban cambiar sus contraseñas cada 30 días. 2. Cree el grupo de consultores con un GID de 35000. 3. Configure los derechos administrativos para permitir que todos los miembros del grupo de consultores ejecuten cualquier comando como cualquier usuario. Evite utilizar la herramienta de línea de comandos visudo para editar el archivo /etc/sudoers. En su lugar, coloque el archivo de configuración en el directorio /etc/sudoers.d. 4. Cree los usuarios consultor1, consultor2 y consultor3 con el grupo de consultores como grupo complementario. 5. Configure las contraseñas de consultor1, consultor2 y consultor3 en redhat. 6. Configure las cuentas de consultor1, consultor2 y consultor3 para que caduquen a los 90 días a partir del día actual. 7. Cambie la política de contraseñas de la cuenta de consultor2 para requerir una nueva contraseña cada 15 días. 8. Además, obligue a los usuarios consultor1, consultor2 y consultor3 a cambiar sus contraseñas en el primer inicio de sesión. 9. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 10.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: oratorio Administrar usuarios y grupos locales
+
+4.11. Laboratorio Administrar usuarios y grupos locales 4.11. Práctica de laboratorio Administrar usuarios y grupos locales Utilice el acceso de superusuario para administrar usuarios y grupos locales y para administrar políticas de contraseñas locales. Resultados Establecer una política de caducidad de contraseña predeterminada para la contraseña del usuario local. Cree y utilice un grupo complementario para nuevos usuarios. Cree tres usuarios con el nuevo grupo suplementario. Establezca una contraseña inicial para los usuarios creados. Configure los miembros del grupo suplementario para usar el comando sudo para ejecutar cualquier comando como cualquier usuario. Establezca una política de caducidad de contraseña específica del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. 1. En la máquina del servidor, asegúrese de que los usuarios recién creados deban cambiar sus contraseñas cada 30 días. 2. Cree el grupo de consultores con un GID de 35000. 3. Configure los derechos administrativos para permitir que todos los miembros del grupo de consultores ejecuten cualquier comando como cualquier usuario. Evite utilizar la herramienta de línea de comandos visudo para editar el archivo /etc/sudoers. En su lugar, coloque el archivo de configuración en el directorio /etc/sudoers.d. 4. Cree los usuarios consultor1, consultor2 y consultor3 con el grupo de consultores como grupo complementario. 5. Configure las contraseñas de consultor1, consultor2 y consultor3 en redhat. 6. Configure las cuentas de consultor1, consultor2 y consultor3 para que caduquen a los 90 días a partir del día actual. 7. Cambie la política de contraseñas de la cuenta de consultor2 para requerir una nueva contraseña cada 15 días. 8. Además, obligue a los usuarios consultor1, consultor2 y consultor3 a cambiar sus contraseñas en el primer inicio de sesión. 9. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 10.
+
+
+
+
+
+4.11. Laboratorio Administrar usuarios y grupos locales
+
+student@workstation:~$ lab grade users-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-review
+
+
+
+
+
+4.11. Práctica de laboratorio: Solución para administrar usuarios y grupos locales Utilice el acceso de superusuario para administrar usuarios y grupos locales y para administrar políticas de contraseñas locales. Resultados Establecer una política de caducidad de contraseña predeterminada para la contraseña del usuario local. Cree y utilice un grupo complementario para nuevos usuarios. Cree tres usuarios con el nuevo grupo suplementario. Establezca una contraseña inicial para los usuarios creados. Configure los miembros del grupo suplementario para usar el comando sudo para ejecutar cualquier comando como cualquier usuario. Establezca una política de caducidad de contraseña específica del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-review
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1. En la máquina del servidor, asegúrese de que los usuarios recién creados deban cambiar sus contraseñas cada 30 días. 2. Establezca el parámetro PASS_MAX_DAYS en 30 en el archivo /etc/login.defs. Utilice derechos administrativos al abrir el archivo con el editor de texto. Puede utilizar el comando vim /etc/login.defs para este paso. 2.1.
+
+
+
+
+
+4.11. Práctica de laboratorio Administrar usuarios y grupos locales...resultado omitido...
+
+# Password aging controls:
+
+#
+
+#       PASS_MAX_DAYS   Maximum number of days a password may be
+#       used.
+#       PASS_MIN_DAYS   Minimum number of days allowed between
+#       password changes.
+#       PASS_MIN_LEN    Minimum acceptable password length.
+#       PASS_WARN_AGE   Number of days warning given before a
+#       password expires.
+
+# PASS_MAX_DAYS 30 PASS_MIN_DAYS 0 PASS_MIN_LEN 8 PASS_WARN_AGE 7 ... salida omitida... Cree el grupo de consultores con un GID de 35000.
+
+[root@serverb ~]# groupadd -g 35000 consultants
+
+3. Configure los derechos administrativos para permitir que todos los miembros del grupo de consultores ejecuten cualquier comando como cualquier usuario. Evite utilizar la herramienta de línea de comandos visudo para editar el archivo /etc/sudoers. En su lugar, coloque el archivo de configuración en el directorio /etc/sudoers.d. 4. Cree el archivo /etc/sudoers.d/consultants y agréguele el siguiente contenido. Puede utilizar el comando vim /etc/sudoers.d/consultants para este paso. %consultores TODOS=(TODOS) TODOS 4.1. Cree los usuarios consultor1, consultor2 y consultor3 con el grupo de consultores como grupo complementario.
+
+[root@serverb ~]# useradd -G consultants consultant1
+[root@serverb ~]# useradd -G consultants consultant2
+[root@serverb ~]# useradd -G consultants consultant3
+
+5. Configure las contraseñas de consultor1, consultor2 y consultor3 en redhat.
+
+[root@serverb ~]# passwd consultant1
+
+Cambio de contraseña para consultor de usuario1. Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+[root@serverb ~]# passwd consultant2
+
+Cambio de contraseña para consultor de usuario2. Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+[root@serverb ~]# passwd consultant3
+
+Cambio de contraseña para consultor de usuario3. Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+6. Configure las cuentas de consultor1, consultor2 y consultor3 para que caduquen a los 90 días a partir del día actual. 7.
+
+
+
+
+
+4.11. Lab Administrar evaluación de usuarios y grupos locales Como usuario estudiante en la máquina de la estación de trabajo, use el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade users-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-review
+
+Determine la fecha 90 días en el futuro. Esta fecha de regreso es un ejemplo; use el valor en su sistema para los siguientes pasos.
+
+[root@serverb ~]# date -d "+90 days" +%F
+
+2025-08-12 7.1. Configure las cuentas de consultor1, consultor2 y consultor3 para que caduquen en la fecha que se muestra en el paso anterior.
+
+[root@serverb ~]# chage -E 2025-08-12 consultant1
+[root@serverb ~]# chage -E 2025-08-12 consultant2
+[root@serverb ~]# chage -E 2025-08-12 consultant3
+
+7.2. Cambie la política de contraseñas de la cuenta de consultor2 para solicitar una nueva contraseña cada 15 días.
+
+[root@serverb ~]# chage -M 15 consultant2
+
+8. Además, obligue a los usuarios consultor1, consultor2 y consultor3 a cambiar sus contraseñas en el primer inicio de sesión. 9. Establezca el último día del cambio de contraseña en 0 para que los usuarios deban cambiar la contraseña cuando inicien sesión por primera vez en el sistema.
+
+[root@serverb ~]# chage -d 0 consultant1
+[root@serverb ~]# chage -d 0 consultant2
+[root@serverb ~]# chage -d 0 consultant3
+
+9.1. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 10. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+10.1.
+
+
+
+
+
+4.12. Resumen 4.12. Resumen En esta lección, aprendió sobre los diferentes tipos de cuentas de usuario de Linux y cómo administrarlas. En Linux, los tipos de cuentas de usuario son superusuario (el usuario raíz), usuarios del sistema y usuarios normales. Los usuarios y grupos se utilizan para proteger y restringir el acceso a archivos, procesos y otros recursos del sistema. Cada usuario tiene un grupo primario y puede pertenecer a uno o más grupos suplementarios. La información de usuarios y grupos está contenida en los archivos /etc/passwd, /etc/group y /etc/shadow. Para administrar cuentas de usuario desde la línea de comando, normalmente se utiliza la cuenta de superusuario del sistema. Puede ejecutar comandos como superusuario con los comandos su y sudo. El superusuario puede configurar una política de administración de contraseñas que requiera que un usuario cambie su contraseña periódicamente. El superusuario también puede bloquear el acceso a una cuenta de usuario en una fecha determinada y puede desactivar el programa shell de una cuenta de usuario para evitar inicios de sesión interactivos. Un usuario del sistema o un usuario normal puede realizar algunos cambios menores en su propia cuenta de usuario, como cambiar la contraseña.
+
+
+
+
+
+
+
+## Resumen
+
+4.12. Resumen 4.12. Resumen En esta lección, aprendió sobre los diferentes tipos de cuentas de usuario de Linux y cómo administrarlas. En Linux, los tipos de cuentas de usuario son superusuario (el usuario raíz), usuarios del sistema y usuarios normales. Los usuarios y grupos se utilizan para proteger y restringir el acceso a archivos, procesos y otros recursos del sistema. Cada usuario tiene un grupo primario y puede pertenecer a uno o más grupos suplementarios. La información de usuarios y grupos está contenida en los archivos /etc/passwd, /etc/group y /etc/shadow. Para administrar cuentas de usuario desde la línea de comando, normalmente se utiliza la cuenta de superusuario del sistema. Puede ejecutar comandos como superusuario con los comandos su y sudo. El superusuario puede configurar una política de administración de contraseñas que requiera que un usuario cambie su contraseña periódicamente. El superusuario también puede bloquear el acceso a una cuenta de usuario en una fecha determinada y puede desactivar el programa shell de una cuenta de usuario para evitar inicios de sesión interactivos. Un usuario del sistema o un usuario normal puede realizar algunos cambios menores en su propia cuenta de usuario, como cambiar la contraseña.
+
+
+
+
+
+Capítulo 5. Control del acceso a archivos Objetivo Establecer permisos estándar sobre archivos e interpretar los efectos de seguridad de diferentes configuraciones de permisos. Secciones Interpretación de los permisos de archivos de Linux (y cuestionario) Administración de permisos de archivos desde la línea de comandos (y ejercicio guiado) Administración de permisos predeterminados y permisos especiales (y ejercicio guiado) Práctica de laboratorio Control de acceso a archivos
+
+
+
+
+

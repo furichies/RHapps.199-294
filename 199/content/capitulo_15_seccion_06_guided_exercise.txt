@@ -1,0 +1,75 @@
+# Ejercicio Guiado: Ejercicio guiado Programar una tarea recurrente del sistema con Cron
+# Tipo: guided_exercise
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron 12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron Programe una tarea recurrente del sistema utilizando el archivo crontab del sistema en el directorio Cron. Resultados Programe un trabajo recurrente del sistema para contar la cantidad de usuarios activos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-syscron
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree un archivo crontab llamado usercount en el directorio /etc/cron.d que genere un mensaje de registro para indicar la cantidad de usuarios activos en el sistema. Configure el archivo crontab para que se ejecute como usuario root cada tres minutos. Utilice el comando del registrador "Hay usuarios activos `w -h | wc -l`" para generar el mensaje de registro. Confirme que el mensaje se está registrando utilizando tail -f /var/log/messages | grep --line- comando "Hay" almacenado en búfer. 2. Cree el archivo crontab /etc/cron.d/usercount con el siguiente contenido. El `w -h | El comando wc -l` recupera una lista de usuarios activos en el sistema y luego los cuenta.
+
+# Log the number of active users
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root */3 * * * * registrador raíz "Hay usuarios activos `w -h | wc -l`" 2.1. Espere al menos tres minutos y confirme que el mensaje se esté registrando. Utilice la cola -f /var/log/messages | grep --line-buffered comando "Hay". La cantidad de usuarios activos puede diferir en su sistema.
+
+[root@servera ~]# tail -f /var/log/messages |\
+grep --line-buffered "There are"
+
+30 de mayo 17:39:01 raíz de la estación de trabajo [5750]: Hay 4 usuarios activos 2.2. Regrese a la máquina de la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+
+12.6. Ejercicio guiado Programar una tarea recurrente del sistema con finalización cron En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish systasks-syscron
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+12.7. Programación de pruebas de tareas de usuario 12.7. Prueba de programación de tareas de usuario Elija las respuestas correctas a las siguientes preguntas: ¿Qué directorio se utiliza para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor para el servicio systemd-tmpfiles-clean? 1. /usr/lib/tmpfiles.d/ a. /var/tmpfiles.d/ b. /etc/tmpfiles.d/ c. /run/tmpfiles.d/ d. ¿Qué archivo de configuración define las configuraciones para los trabajos del sistema que se ejecutan diariamente, semanalmente y mensualmente? 2. /etc/crontab a. /etc/anacrontab b. /etc/inittab c. /etc/sysconfig/crond d. ¿Qué unidad systemd activa periódicamente la limpieza de archivos temporales? 3. systemd-tmpfiles-clean.timer a. systemd-tmpfiles-clean.servicio b.
+
+dnf-makecache.timer
+
+do. temporizador-anclaje-independiente d. ¿Qué comando habilita e inicia una unidad systemd en un solo paso? 4. systemd --enable --start a.
+
+systemctl --now
+
+b.
+
+systemctl enable --now
+
+do. system.d habilitar --start d. ¿Qué comando garantiza que el demonio systemd cargue una nueva configuración? 5. recarga de sysctl a.
+
+systemctl daemon --reload
+
+b. demonio de recarga systemd c.
+
+systemctl daemon-reload
+
+d. ¿En qué directorio se colocan los archivos crontab personalizados? 6. /etc/crontab.d a. /etc/cron.db. /etc/cron.personalizado c. /etc/crontab d.
+
+
+
+
+

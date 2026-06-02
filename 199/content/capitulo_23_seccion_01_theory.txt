@@ -1,0 +1,108 @@
+# 20.1. Montaje de sistemas de archivos NFS
+# Tipo: theory
+# Capítulo: Capítulo 20. Acceso al almacenamiento conectado a la red
+
+20.1. Montaje de sistemas de archivos NFS 20.1. Montaje de sistemas de archivos NFS Objetivos Buscar, montar y desmontar exportaciones NFS remotas. Acceso a directorios NFS exportados El sistema de archivos de red es un protocolo estándar de Internet que Linux, UNIX y sistemas operativos similares utilizan como su sistema de archivos de red nativo. NFS es un estándar abierto que admite permisos nativos de Linux y atributos del sistema de archivos. De forma predeterminada, Red Hat Enterprise Linux 10 usa NFS versión 4.2. RHEL 10 es totalmente compatible con los protocolos NFSv3 y NFSv4. NFSv3 puede utilizar un protocolo de transporte TCP o UDP. NFSv4 solo admite conexiones TCP. Los servidores NFS exportan directorios. Los clientes NFS montan directorios exportados en un directorio de punto de montaje local existente. Los clientes NFS pueden montar directorios exportados utilizando uno de los siguientes métodos: Monte manualmente el directorio exportado utilizando el comando mount. Monte persistentemente el directorio en el arranque utilizando el archivo /etc/fstab. Montaje automático del directorio estáticamente bajo demanda mediante el servicio autofs. El comando mount no monta el directorio exportado para que persista después de un reinicio. El archivo /etc/fstab monta el directorio exportado de forma persistente para permanecer montado después de un reinicio. Al montar
+
+exported directories by using the /etc/fstab file, the following issues might occur, for example:
+
+Los tiempos de espera de almacenamiento pueden aumentar si ocurren problemas de red. Los tiempos de espera también aumentan cuando los sistemas de archivos NFS afectados no están en uso. Es posible que se produzcan problemas con el tiempo de arranque si la red no funciona o no se puede acceder a ella. El montaje automático del directorio exportado se analiza en la siguiente sección de este capítulo. Debe instalar el paquete nfs-utils para el montaje manual o el montaje automático de los directorios NFS exportados.
+
+root@host:~# dnf install nfs-utils
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! RHEL 10 también admite el montaje de directorios compartidos desde sistemas Microsoft Windows utilizando los mismos métodos que el protocolo NFS, utilizando los protocolos Server Message Block (SMB) o Common Internet File System (CIFS). Las opciones de montaje son específicas del protocolo y dependen de la configuración de su servidor Windows o Samba. El montaje de directorios compartidos desde sistemas Microsoft Windows está fuera del alcance de este curso. Consultar directorios NFS exportados El protocolo NFS cambió significativamente entre NFSv3 y NFSv4. El método para consultar un servidor para ver las exportaciones disponibles es diferente para cada versión del protocolo.
+
+
+
+
+
+20.1. Montaje de sistemas de archivos NFS NFSv3 utiliza el protocolo de llamada a procedimiento remoto (RPC), que requiere un servidor de archivos que admita conexiones NFSv3 para ejecutar el servicio rpcbind. Un cliente NFSv3 se conecta al servicio rpcbind a través del puerto 111 en el servidor NFS. El servidor responde con el puerto actual para el servicio NFS. Utilice el comando showmount para consultar las exportaciones disponibles en un servidor NFSv3 basado en RPC.
+
+root@host:~# showmount --exports server
+
+Lista de exportación para el servidor /shares/test1 /shares/test2 El protocolo NFSv4 elimina el uso del protocolo RPC heredado para transacciones NFS. NFSv4 introduce un árbol de exportación que contiene todas las rutas de los directorios exportados del servidor. Para ver todos los directorios exportados, monte la raíz (/) del árbol de exportación del servidor.
+
+root@host:~# mount server:/export mountpoint
+
+Montar el árbol de exportación proporciona rutas de navegación para todos los directorios exportados, pero no monta ninguno de los directorios exportados.
+
+root@host:~# ls mountpoint
+
+Para montar una exportación NFSv4 al explorar el árbol de exportación montado, cambie el directorio actual a una ruta de directorio exportada. Alternativamente, use el comando de montaje con el nombre de ruta completo de un directorio exportado para montar un único directorio exportado. Los directorios exportados que utilizan seguridad Kerberos no permiten montar ni acceder a un directorio al explorar un árbol de exportación, aunque puede ver el nombre de la ruta de exportación. El montaje de recursos compartidos protegidos por Kerberos requiere una configuración adicional del servidor y el uso de credenciales de usuario de Kerberos, que se analizan en el curso de capacitación Red Hat Security: gestión de identidades e integración de Active Directory (RH362). Montar manualmente directorios NFS exportados Después de identificar la exportación NFS para montar, cree un punto de montaje local si aún no existe. Aunque el directorio /mnt está disponible para su uso como punto de montaje temporal, la práctica recomendada es no utilizar /mnt para montaje persistente o a largo plazo.
+
+root@host:~# mkdir mountpoint
+
+Al igual que con los sistemas de archivos de volumen local, monte la exportación NFS para acceder a su contenido. Los recursos compartidos NFS pueden montarse de forma temporal o permanente, y sólo por un usuario privilegiado.
+
+root@host:~# mount -t nfs -o rw,sync server:/export mountpoint
+
+La opción -t nfs especifica el tipo de sistema de archivos NFS. Sin embargo, cuando el comando mount detecta la sintaxis server:/export, el comando utiliza de forma predeterminada el tipo NFS. Con la opción -o, puede agregar una lista de opciones separadas por comas al comando de montaje. En el ejemplo, la opción rw especifica que el sistema de archivos exportado está montado con acceso de lectura/escritura. La opción de sincronización especifica transacciones sincrónicas con el sistema de archivos exportado. Este método se recomienda encarecidamente para todos los montajes de redes de producción donde las transacciones deben completarse o regresar como fallidas. Los montajes manuales son útiles para proporcionar acceso temporal a un directorio exportado o para probar la exportación NFS antes de montarlo de forma persistente.
+
+
+
+
+
+20.1. Montaje de sistemas de archivos NFS Montaje persistente de directorios NFS exportados Utilice el archivo /etc/fstab para montar persistentemente una exportación NFS. Este archivo utiliza una sintaxis similar al montaje manual. ...salida omitida...
+
+server:/export  mountpoint  nfs  rw,sync  0 0
+
+El comando mount obtiene el servidor NFS y las opciones de montaje del archivo /etc/fstab.
+
+root@host:~# mount mountpoint
+
+Desmontar directorios NFS exportados Como usuario privilegiado, desmonte una exportación NFS con el comando umount.
+
+root@host:~# umount mountpoint
+
+Desmontar un recurso compartido no elimina la entrada de exportación NFS del archivo /etc/fstab. Las entradas en el archivo /etc/fstab son persistentes y se vuelven a montar durante el arranque. En ocasiones, un directorio montado puede no poder desmontarse y devolver un error de que el dispositivo está ocupado. El dispositivo puede estar ocupado porque una aplicación tiene un archivo abierto o un shell tiene un directorio de trabajo en el sistema de archivos montado. Para resolver el error, cierre la aplicación que tiene un archivo abierto o verifique las ventanas de shell activas y use el comando cd para salir del sistema de archivos montado. Si los intentos posteriores de desmontar el sistema de archivos aún fallan, utilice el comando lsof para consultar el punto de montaje. El comando lsof devuelve una lista de nombres de archivos abiertos y el proceso que impide desmontar el directorio exportado.
+
+root@host:~# lsof mountpoint
+
+COMANDO PID USUARIO TIPO FD TAMAÑO DEL DISPOSITIVO/OFF NOMBRE DEL NODO programa 5534 txt de usuario REG 252.4 910704 128 /home/user/program Con esta información, cierre elegantemente cualquier proceso que esté usando archivos en este sistema de archivos y vuelva a intentar el desmontaje. Sólo en escenarios críticos, cuando una aplicación no se puede cerrar correctamente, finalice el proceso para cerrar el archivo. Alternativamente, use la opción -f del comando umount para forzar el desmontaje, lo que puede causar la pérdida de datos no escritos para todos los archivos abiertos. Referencias
+
+mount(8), umount(8), showmount(8), fstab(5), mount.nfs(8), nfsconf(8), and rpcbind(8) man pages
+
+
+
+
+
+20.2. Ejercicio guiado Montaje de sistemas de archivos NFS 20.2. Ejercicio guiado Montar sistemas de archivos NFS Busque, monte y desmonte exportaciones NFS remotas. Resultados Montar manualmente el directorio de exportación NFS. Monte el directorio de exportación NFS de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-nfs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. En la máquina servera, monte manualmente el servidor NFS serverb:/shares/public en el directorio /public y luego desmóntelo. 2. Cree el punto de montaje /public en la máquina del servidor.
+
+[root@servera ~]# mkdir /public
+
+2.1. Monte manualmente la exportación NFS /shares/public desde la máquina serverb en el directorio /public.
+
+[root@servera ~]# mount -t nfs serverb:/shares/public /public
+
+2.2. Enumere el contenido de la exportación NFS montada.
+
+[root@servera ~]# ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 2.3. Muestre las opciones del comando de montaje para la exportación NFS montada.
+
+[root@servera ~]# mount | grep public
+serverb:/shares/public on /public type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+2.4. Desmonte la exportación NFS. 2.5.
+
+
+
+
+

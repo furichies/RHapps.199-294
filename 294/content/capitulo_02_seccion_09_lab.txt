@@ -1,0 +1,311 @@
+# Trabajo de laboratorio: Implementación de un playbook de Ansible
+# Tipo: lab
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Trabajo de laboratorio
+Implementación de un playbook de
+Ansible
+Configurar y realizar tareas administrativas en hosts gestionados usando un playbook.
+Resultados
+• Usted debe ser capaz de construir y ejecutar un playbook de Ansible para instalar,
+configurar y verificar el estado de los servicios web y de bases de datos en un host
+gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-review
+El directorio de trabajo /home/student/playbook-review se ha creado en la
+máquina workstation para su proyecto de Ansible. El directorio ya se completó con un
+archivo de configuración ansible.cfg y un archivo inventory. El host gestionado,
+serverb.lab.example.com, ya está definido en este archivo de inventario.
+Instrucciones
+1.
+Cambie al directorio /home/student/playbook-review y cree un nuevo playbook
+denominado internet.yml. Agregue las entradas necesarias para iniciar un primer play
+denominado Enable internet services y especifique su host gestionado previsto,
+serverb.lab.example.com. Agregue la entrada necesaria para permitir el aumento de
+privilegios y otra para iniciar una lista de tareas.
+2.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir una tarea que instale las últimas versiones de los paquetes
+firewalld, httpd, mariadb-server, php y php-mysqlnd. Aplique una sangría al
+comienzo de la entrada con cuatro espacios.
+3.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir las tareas de configuración del firewall. Deben asegurarse de
+que el servicio firewalld esté habilitado y en ejecución, y que se permita el acceso al
+servicio http. Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+4.
+Agregue las entradas necesarias para asegurar que los servicios httpd y mariadb estén
+habilitados y en ejecución. Aplique una sangría al comienzo de estas entradas con cuatro
+espacios.
+5.
+Agregue la entrada necesaria que usa el módulo ansible.builtin.copy para copiar el
+archivo /home/student/playbook-review/index.php al directorio /var/www/html/
+RH294-RHEL9.0-es-3-20240620
+75
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+en el host gestionado. Asegúrese de que el modo de archivo esté configurado en 0644.
+Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+6.
+Defina otro play en el archivo /home/student/playbook-review/internet.yml
+para que la tarea se realice en el nodo de control. Este play probará el acceso al servidor
+web que debería estar ejecutándose en el host gestionado serverb.lab.example.com.
+Este play no requiere aumento de privilegios y se ejecutará en el host gestionado
+workstation.lab.example.com.
+7.
+Agregue la entrada necesaria que pruebe el servicio web que se ejecuta en serverb desde
+el nodo de control usando el módulo ansible.builtin.uri. Compruebe si existe un
+código de estado de retorno de 200. Aplique una sangría al comienzo de la entrada con
+cuatro espacios.
+8.
+Valide la sintaxis del playbook internet.yml.
+9.
+Use el comando ansible-navigator run para ejecutar el playbook. Lea la salida
+generada para garantizar que todas las tareas se hayan completado satisfactoriamente.
+Evaluación
+Ejecute el comando lab grade playbook-review desde su máquina workstation para
+evaluar su trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un
+resultado satisfactorio.
+[student@workstation ~]$ lab grade playbook-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-review
+76
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Solución
+Implementación de un playbook de
+Ansible
+Configurar y realizar tareas administrativas en hosts gestionados usando un playbook.
+Resultados
+• Usted debe ser capaz de construir y ejecutar un playbook de Ansible para instalar,
+configurar y verificar el estado de los servicios web y de bases de datos en un host
+gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-review
+El directorio de trabajo /home/student/playbook-review se ha creado en la
+máquina workstation para su proyecto de Ansible. El directorio ya se completó con un
+archivo de configuración ansible.cfg y un archivo inventory. El host gestionado,
+serverb.lab.example.com, ya está definido en este archivo de inventario.
+Instrucciones
+1.
+Cambie al directorio /home/student/playbook-review y cree un nuevo playbook
+denominado internet.yml. Agregue las entradas necesarias para iniciar un primer play
+denominado Enable internet services y especifique su host gestionado previsto,
+serverb.lab.example.com. Agregue la entrada necesaria para permitir el aumento de
+privilegios y otra para iniciar una lista de tareas.
+1.1.
+Agregue la siguiente entrada al comienzo del archivo /home/student/playbook-
+review/internet.yml para comenzar con el formato YAML.
+---
+1.2.
+Agregue la siguiente entrada para denotar el comienzo de un play denominado Enable
+internet services.
+- name: Enable internet services
+1.3.
+Agregue la siguiente entrada para indicar que el play se aplica al host gestionado
+serverb.lab.example.com. Asegúrese de que el comienzo de la entrada tenga una
+sangría de dos espacios.
+RH294-RHEL9.0-es-3-20240620
+77
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+  hosts: serverb.lab.example.com
+1.4.
+Agregue la siguiente entrada para permitir el aumento de privilegios. Aplique una
+sangría al comienzo de la entrada con dos espacios.
+  become: true
+1.5.
+Agregue la siguiente entrada para definir el comienzo de la lista tasks. Aplique una
+sangría al comienzo de la entrada con dos espacios.
+  tasks:
+2.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir una tarea que instale las últimas versiones de los paquetes
+firewalld, httpd, mariadb-server, php y php-mysqlnd. Aplique una sangría al
+comienzo de la entrada con cuatro espacios.
+    - name: Latest version of all required packages installed
+      ansible.builtin.dnf:
+        name:
+          - firewalld
+          - httpd
+          - mariadb-server
+          - php
+          - php-mysqlnd
+        state: latest
+3.
+Agregue las entradas necesarias al archivo /home/student/playbook-review/
+internet.yml para definir las tareas de configuración del firewall. Deben asegurarse de
+que el servicio firewalld esté habilitado y en ejecución, y que se permita el acceso al
+servicio http. Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+    - name: firewalld enabled and running
+      ansible.builtin.service:
+        name: firewalld
+        enabled: true
+        state: started
+    - name: firewalld permits http service
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+4.
+Agregue las entradas necesarias para asegurar que los servicios httpd y mariadb estén
+habilitados y en ejecución. Aplique una sangría al comienzo de estas entradas con cuatro
+espacios.
+78
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    - name: httpd enabled and running
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+    - name: mariadb enabled and running
+      ansible.builtin.service:
+        name: mariadb
+        enabled: true
+        state: started
+5.
+Agregue la entrada necesaria que usa el módulo ansible.builtin.copy para copiar el
+archivo /home/student/playbook-review/index.php al directorio /var/www/html/
+en el host gestionado. Asegúrese de que el modo de archivo esté configurado en 0644.
+Aplique una sangría al comienzo de estas entradas con cuatro espacios.
+    - name: Test php page is installed
+      ansible.builtin.copy:
+        src: index.php
+        dest: /var/www/html/index.php
+        mode: 0644
+6.
+Defina otro play en el archivo /home/student/playbook-review/internet.yml
+para que la tarea se realice en el nodo de control. Este play probará el acceso al servidor
+web que debería estar ejecutándose en el host gestionado serverb.lab.example.com.
+Este play no requiere aumento de privilegios y se ejecutará en el host gestionado
+workstation.lab.example.com.
+6.1.
+Agregue la siguiente entrada para denotar el comienzo de un segundo play
+denominado Test internet web server.
+- name: Test internet web server
+6.2.
+Agregue la siguiente entrada para indicar que el play se aplica al host gestionado
+workstation. Aplique una sangría al comienzo de la entrada con dos espacios.
+  hosts: workstation
+6.3.
+Agregue la siguiente entrada después de la palabra clave hosts para deshabilitar el
+aumento de privilegios para el segundo play. Aplique una sangría al comienzo de la
+entrada con dos espacios.
+  become: false
+6.4.
+Agregue la siguiente entrada al archivo /home/student/playbook-review/
+internet.yml para definir el comienzo de la lista tasks. Aplique una sangría al
+comienzo de la entrada con dos espacios.
+  tasks:
+RH294-RHEL9.0-es-3-20240620
+79
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+7.
+Agregue la entrada necesaria que pruebe el servicio web que se ejecuta en serverb desde
+el nodo de control usando el módulo ansible.builtin.uri. Compruebe si existe un
+código de estado de retorno de 200. Aplique una sangría al comienzo de la entrada con
+cuatro espacios.
+    - name: Connect to internet web server
+      ansible.builtin.uri:
+        url: http://serverb.lab.example.com
+        status_code: 200
+8.
+Valide la sintaxis del playbook internet.yml.
+[student@workstation playbook-review]$ ansible-navigator run \
+> -m stdout internet.yml --syntax-check
+playbook: /home/student/playbook-review/internet.yml
+9.
+Use el comando ansible-navigator run para ejecutar el playbook. Lea la salida
+generada para garantizar que todas las tareas se hayan completado satisfactoriamente.
+[student@workstation playbook-review]$ ansible-navigator run \
+> -m stdout internet.yml
+PLAY [Enable internet services] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [Latest version of all required packages installed] ***********************
+changed: [serverb.lab.example.com]
+TASK [firewalld enabled and running] *******************************************
+ok: [serverb.lab.example.com]
+TASK [firewalld permits http service] ******************************************
+changed: [serverb.lab.example.com]
+TASK [httpd enabled and running] ***********************************************
+changed: [serverb.lab.example.com]
+TASK [mariadb enabled and running] *********************************************
+changed: [serverb.lab.example.com]
+TASK [Test php page is installed] **********************************************
+changed: [serverb.lab.example.com]
+PLAY [Test internet web server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [workstation]
+TASK [Connect to internet web server] ******************************************
+ok: [workstation]
+80
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=7    changed=5    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Evaluación
+Ejecute el comando lab grade playbook-review desde su máquina workstation para
+evaluar su trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un
+resultado satisfactorio.
+[student@workstation ~]$ lab grade playbook-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-review
+RH294-RHEL9.0-es-3-20240620
+81
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Resumen
+• Un play es una lista ordenada de tareas que se ejecutan respecto de hosts seleccionados del
+inventario.
+• Un playbook es un archivo de texto que contiene una lista de uno o más plays para ejecutar en
+orden.
+• Los playbooks de Ansible se escriben en formato YAML.
+• Los plays de Ansible son idempotentes, lo que significa que evitan realizar cambios si detectan
+que el estado actual coincide con el estado final deseado.
+• Los archivos YAML están estructurados mediante la sangría de espacio para representar la
+jerarquía de datos.
+• Las tareas se implementan mediante el código estandarizado incluido como módulos Ansible.
+• Los módulos de Ansible se empaquetan en Ansible Content Collections, que son un formato
+de distribución para el contenido de Ansible que puede incluir playbooks, roles, módulos y
+complementos (plug-ins).
+• El comando ansible-navigator doc puede enumerar módulos en sus entornos de
+ejecución de automatización y brindar documentación y fragmentos de códigos a modo de
+ejemplo de cómo usarlos en playbooks.
+• El comando ansible-navigator run se usa para ejecutar playbooks y validar la sintaxis del
+playbook.
+82
+RH294-RHEL9.0-es-3-20240620
+
+

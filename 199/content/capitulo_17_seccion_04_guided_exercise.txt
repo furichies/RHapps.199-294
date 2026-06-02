@@ -1,0 +1,126 @@
+# Ejercicio Guiado: Control de ejercicios guiados Contextos de archivos SELinux
+# Tipo: guided_exercise
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.4. Ejercicio guiado de control de contextos de archivos SELinux 14.4. Ejercicio guiado Control de contextos de archivos SELinux Vea y establezca contextos de archivos SELinux en archivos según la configuración de políticas. Resultados Configure el servidor HTTP Apache para publicar contenido web desde una raíz de documento no estándar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-filecontexts
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servidor HTTP Apache para usar un directorio de documentos en una ubicación no estándar. 2. Cree el directorio /personalizado.
+
+[root@servera ~]# mkdir /custom
+
+2.1. Cree el archivo /custom/index.html que contiene This is SERVERA. texto.
+
+[root@servera ~]# echo 'This is SERVERA.' > /custom/index.html
+
+2.2. Configure Apache para utilizar la nueva ubicación del directorio. Edite el archivo de configuración de Apache /etc/httpd/conf/httpd.conf y reemplace las dos apariciones del directorio /var/www/html con el directorio /custom. ...salida omitida... DocumentRoot "/custom" ...salida omitida... <Directorio "/custom"> ...salida omitida... 2.3. Inicie y habilite el servicio web Apache y luego confirme que el servicio se esté ejecutando. 3. Inicie y habilite el servicio web Apache mediante el comando systemctl. 3.1.
+
+
+
+
+
+14.4. Control de ejercicios guiados Contextos de archivos SELinux
+
+[root@servera ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. Verifique que el servicio se esté ejecutando.
+
+[root@servera ~]# systemctl status httpd
+
+● httpd.service: el servidor HTTP Apache
+
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; preset: disabled)
+     Active: active (running) since Fri 2025-06-06 13:42:54 UTC; 55s ago
+
+Invocación: 68210ceb6dd649d3b87f633c1a980775
+
+       Docs: man:httpd.service(8)
+   Main PID: 2104 (httpd)
+
+...salida omitida... 06 de junio 13:42:54 servera systemd[1]: Iniciando httpd.service - El servidor HTTP Apache... 06 de junio 13:42:54 servera (httpd)[2104]: httpd.service: referenciado pero sin configurar... 06 de junio 13:42:54 servera httpd[2104]: Servidor configurado, escuchando en: puerto 80 06 de junio 13:42:54 servera systemd[1]: httpd.service iniciado: el servidor HTTP Apache. 3.2. Abra una nueva terminal en la máquina de la estación de trabajo y use el comando curl para intentar ver el
+
+http://servera/index.html web page. You get an error message that you do not have permission to access
+
+el archivo.
+
+student@workstation:~$ curl http://servera/index.html
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"> <html><head> <title>403 Prohibido</title> </head><body> <h1>Prohibido</h1> <p>No tienes permiso para acceder a este recurso.</p> </body></html> 4. En la máquina del servidor, inspecciona la causa raíz del problema y establece la httpd_sys_content_t Contexto SELinux para el archivo /custom/index.html. 5. Compare los contextos SELinux de los directorios /custom/ y /var/www/html.
+
+[root@servera ~]# ls -ldZ /custom /var/www/html
+drwxr-xr-x. 2 root root unconfined_u:object_r:default_t:s0       24 Jul  3 19:46 /custom
+drwxr-xr-x. 2 root root system_u:object_r:httpd_sys_content_t:s0  6 Jan 27 00:00 /var/www/html
+
+5.1. Defina una regla de contexto de archivo SELinux que establezca el contexto httpd_sys_content_t para el directorio /custom y todos los archivos que contiene.
+
+[root@servera ~]# semanage fcontext -a -t httpd_sys_content_t '/custom(/.*)?'
+
+5.2. Aplique los contextos del archivo SELinux para el directorio /custom.
+
+[root@servera ~]# restorecon -Rv /custom
+
+Reetiquetado /personalizado de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Se volvió a etiquetar /custom/index.html de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+5.3. Intente ver http://servera/index.html nuevamente en la máquina de la estación de trabajo con el comando curl. Deberías ver Esto es SERVERA. mensaje. 6.
+
+
+
+
+
+14.4. Ejercicio guiado Control de contextos de archivos SELinux Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-filecontexts
+student@workstation:~$ curl http://servera/index.html
+
+Este es SERVERA. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+14.5. Ajuste de la política SELinux ajustando valores booleanos 14.5. Ajuste de la política de SELinux ajustando los objetivos booleanos Ajuste el sistema cambiando el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. SELinux Booleanos Un desarrollador de aplicaciones o servicios escribe una política específica de SELinux para definir el comportamiento permitido de la aplicación específica. Un desarrollador puede incluir un comportamiento de aplicación opcional en la política de SELinux que se puede habilitar cuando el comportamiento está permitido en un sistema específico. Los booleanos de SELinux habilitan o deshabilitan el comportamiento opcional de la política de SELinux. Con los booleanos, puedes ajustar selectivamente el comportamiento de una aplicación. Estos comportamientos opcionales son específicos de la aplicación y deben descubrirse y seleccionarse para cada aplicación de destino. Los valores booleanos específicos del servicio están documentados en la página de manual de SELinux de ese servicio. Por ejemplo, el servicio httpd del servidor web tiene su página de manual httpd(8) y una página de manual httpd_selinux(8) para documentar su política SELinux, incluidos los tipos de procesos admitidos, contextos de archivos y los comportamientos booleanos disponibles. Las páginas de manual de SELinux las proporciona el paquete selinux-policy-doc. Utilice el comando getsebool para enumerar los booleanos disponibles para las políticas específicas en este sistema y el estado booleano actual. Utilice el comando setsebool para habilitar o deshabilitar el estado de ejecución de estos comportamientos. El
+
+setsebool -P command makes the setting persistent by writing to the policy file. Only privileged users can set
+
+Booleanos de SELinux. En el siguiente ejemplo, utilice el comando getsebool para enumerar todos los booleanos disponibles junto con el estado:
+
+root@host:~# getsebool -a
+
+abrt_anon_write --> desactivado abrt_handle_event --> desactivado abrt_upload_watch_anon_write --> activado ... salida omitida... Ejemplo de política Httpd booleana La política de servicio httpd incluye el booleano httpd_enable_homedirs, que permite compartir directorios personales con el servicio httpd. Normalmente, el usuario solo puede acceder al directorio de inicio local de un usuario cuando inicia sesión en el sistema local. Alternativamente, los directorios principales se comparten y se accede a ellos mediante un protocolo de intercambio remoto de archivos, como NFS. En ambos escenarios, los directorios principales no se comparten mediante el servicio httpd de forma predeterminada y no están disponibles para el usuario a través de un navegador. En el siguiente ejemplo, enumere el estado del booleano httpd_enable_homedirs:
+
+root@host:~# getsebool httpd_enable_homedirs
+
+httpd_enable_homedirs --> off Puede habilitar el uso compartido y permitir que los usuarios accedan a sus directorios de inicio con un navegador. Cuando está habilitado, el servicio httpd comparte directorios de inicio que están etiquetados con el contexto del archivo user_home_dir_t. Luego, los usuarios pueden acceder y administrar los archivos de su directorio de inicio desde un navegador.
+
+
+
+
+

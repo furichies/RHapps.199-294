@@ -1,0 +1,241 @@
+# Manejo de fallas de tareas
+# Tipo: theory
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Manejo de fallas de tareas
+Objetivos
+• Controlar lo que sucede cuando falla una tarea y qué condiciones hacen que falle una tarea.
+Gestión de errores de tareas en plays
+Ansible evalúa los códigos de retorno de cada tarea para determinar si una tarea se realizó
+satisfactoriamente o con errores. Generalmente, cuando una tarea falla, Ansible omite
+inmediatamente todas las tareas posteriores.
+No obstante, algunas veces puede desear continuar la ejecución del play, aunque una tarea falle.
+Por ejemplo, puede esperar que una tarea específica falle y tal vez desee recuperarla ejecutando
+otra tarea de forma condicional. Pueden usarse varias características de Ansible para gestionar los
+errores de tareas.
+Fallas de tareas ignoradas
+De forma predeterminada, si una tarea falla, se cancela el play. Sin embargo, el comportamiento
+puede anularse si se ignoran las tareas fallidas. Puede usar la palabra clave ignore_errors en
+una tarea para lograr esto.
+En el siguiente fragmento, se muestra cómo usar ignore_errors en una tarea para continuar la
+ejecución de un playbook en el host, aun si la tarea falla. Por ejemplo, si el paquete notapkg no
+existe, el módulo ansible.builtin.dnf falla, pero si se tiene ignore_errors establecido
+como true, la ejecución continuará.
+- name: Latest version of notapkg is installed
+  ansible.builtin.dnf:
+    name: notapkg
+    state: latest
+  ignore_errors: true
+Forzado de la ejecución de manejadores después de la falla de
+una tarea
+En general, cuando falla una tarea y se cancela el play en ese host, no se ejecutan los manejadores
+informados por las tareas anteriores en el play. Si establece la palabra clave force_handlers:
+true en el play, se llama a los manejadores notificados incluso si se canceló el play porque falló
+una tarea posterior.
+Importante
+Si ha establecido ignore_errors: true en una tarea o para el play de la tarea,
+si esa tarea falla, se ignora la falla. En ese caso, el play continúa ejecutándose y los
+manejadores aún se ejecutan, incluso si ha establecido force_handlers: false,
+a menos que algún otro error haga que el play falle.
+168
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+En el siguiente fragmento se muestra cómo usar la palabra clave force_handlers en un play
+para forzar la ejecución del manejador notificado, incluso si falla una tarea:
+---
+- hosts: all
+  force_handlers: true
+  tasks:
+    - name: a task which always notifies its handler
+      ansible.builtin.command: /bin/true
+      notify: restart the database
+    - name: a task which fails because the package doesn't exist
+      ansible.builtin.dnf:
+        name: notapkg
+        state: latest
+  handlers:
+    - name: restart the database
+      ansible.builtin.service:
+        name: mariadb
+        state: restarted
+Importante
+Recuerde que se notifica a los manejadores cuando una tarea informa un resultado
+changed, pero no se notifican cuando informa un resultado ok o failed.
+Si establece force_handlers: true en el play, todos los manejadores que hayan
+sido notificados se ejecutarán incluso si una falla posterior de la tarea hace que el
+play falle. De lo contrario, los manejadores no se ejecutan en absoluto cuando falla
+un play.
+Establecer force_handlers: true en un play no hace que los manejadores sean
+notificados para tareas que reportan ok o failed; solo hace que se ejecuten los
+manejadores que ya han sido notificados antes del punto en el que falló el play.
+Especificación de las condiciones de falla de tareas
+Puede usar la palabra clave failed_when en una tarea para especificar las condiciones que
+indican que la tarea falló. A menudo, esto se usa con los módulos de comando que pueden
+ejecutar un comando correctamente, pero la salida del comando indica una falla.
+Por ejemplo, puede ejecutar un script que presenta un mensaje de error y usar ese mensaje para
+definir el estado fallido para la tarea. En el siguiente ejemplo se muestra una forma en que puede
+usar la palabra clave failed_when en una tarea:
+tasks:
+  - name: Run user creation script
+    ansible.builtin.shell: /usr/local/bin/create_users.sh
+    register: command_result
+    failed_when: "'Password missing' in command_result.stdout"
+RH294-RHEL9.0-es-3-20240620
+169
+
+
+capítulo 4 |  Implementación del control de tareas
+El módulo ansible.builtin.fail también se puede usar para forzar la falla de una tarea. En
+su lugar, podría escribir ese ejemplo como dos tareas:
+tasks:
+  - name: Run user creation script
+    ansible.builtin.shell: /usr/local/bin/create_users.sh
+    register: command_result
+    ignore_errors: true
+  - name: Report script failure
+    ansible.builtin.fail:
+      msg: "The password is missing in the output"
+    when: "'Password missing' in command_result.stdout"
+Puede usar el módulo ansible.builtin.fail para proporcionar un mensaje de error claro
+para la tarea. Este enfoque también permite la falla retrasada, lo que significa que puede ejecutar
+tareas intermedias para completar o revertir otros cambios.
+Especificación cuando una tarea informa resultados
+"changed"
+Cuando una tarea realiza un cambio a un host gestionado, informa el estado changed y notifica a
+los manejadores. Cuando una tarea no necesita realizar un cambio, informa ok y no notifica a los
+manejadores.
+Use la palabra clave changed_when para controlar cómo una tarea informa que ha cambiado
+algo en el host gestionado. Por ejemplo, el módulo ansible.builtin.command en el siguiente
+ejemplo valida la configuración httpd en un host gestionado.
+Esta tarea valida la sintaxis de configuración, pero no se cambia nada en el host gestionado. Las
+tareas posteriores pueden usar el valor de la variable httpd_config_status.
+En general, informaría siempre changed cuando se ejecuta. Para eliminar ese informe de
+modificación, changed_when: false se establece de modo que solo informa ok o failed.
+  - name: Validate httpd configuration
+    ansible.builtin.command: httpd -t
+    changed_when: false
+    register: httpd_config_status
+En el siguiente ejemplo se usa el módulo ansible.builtin.shell y solo se informa changed
+si se encuentra la cadena "Success" en la salida de la variable registrada. Si informa changed,
+entonces notifica al manejador.
+tasks:
+  - ansible.builtin.shell:
+      cmd: /usr/local/bin/upgrade-database
+    register: command_result
+    changed_when: "'Success' in command_result.stdout"
+    notify:
+      - restart_database
+handlers:
+  - name: restart_database
+170
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+     ansible.builtin.service:
+       name: mariadb
+       state: restarted
+Bloques Ansible y control de errores
+En los playbooks, los blocks (bloques) son cláusulas que agrupan tareas de forma lógica y se
+pueden usar para controlar cómo se ejecutan las tareas. Por ejemplo, un bloque de tareas puede
+tener una palabra clave when para aplicar un condicional a varias tareas:
+- name: block example
+  hosts: all
+  tasks:
+    - name: installing and configuring DNF versionlock plugin
+      block:
+      - name: package needed by dnf
+        ansible.builtin.dnf:
+          name: python3-dnf-plugin-versionlock
+          state: present
+      - name: lock version of tzdata
+        ansible.builtin.lineinfile:
+          dest: /etc/yum/pluginconf.d/versionlock.list
+          line: tzdata-2016j-1
+          state: present
+      when: ansible_distribution == "RedHat"
+Los bloques también permiten el control de errores junto con los enunciados rescue y always. Si
+falla alguna de las tareas de block, se ejecutan las tareas rescue para recuperarse.
+Después de que se ejecuten las tareas en la cláusula block, así como las tareas en la cláusula
+rescue si hubo una falla, se ejecutan las tareas en la cláusula always.
+Para resumir:
+• block: define las tareas principales para ejecutar.
+• rescue: define las tareas que se ejecutarán si fallan las tareas definidas en la cláusula block.
+• always: define las tareas que se ejecutarán siempre, independientemente del éxito o de la falla
+de las tareas definidas en las cláusulas block y rescue.
+En el siguiente ejemplo, se muestra cómo implementar un bloque en un playbook.
+  tasks:
+    - name: Upgrade DB
+      block:
+        - name: upgrade the database
+          ansible.builtin.shell:
+            cmd: /usr/local/lib/upgrade-database
+      rescue:
+        - name: revert the database upgrade
+          ansible.builtin.shell:
+            cmd: /usr/local/lib/revert-database
+      always:
+        - name: always restart the database
+RH294-RHEL9.0-es-3-20240620
+171
+
+
+capítulo 4 |  Implementación del control de tareas
+          ansible.builtin.service:
+            name: mariadb
+            state: restarted
+La condición when en una cláusula block también se aplica a sus cláusulas rescue y always si
+están presentes.
+Referencias
+Control de errores en playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_error_handling.html
+Control de errores - Bloques: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html#blocks-
+error-handling
+172
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Manejo de fallas de tareas
+Explorar diferentes formas de manejar la falla de una tarea en un playbook de Ansible.
+Resultados
+• Ignorar los comandos fallidos durante la ejecución de playbooks.
+• Forzar la ejecución de los manejadores.
+• Reemplazar lo que constituye una falla en las tareas.
+• Reemplazar el estado changed para las tareas.
+• Implementar block, rescue y always en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-errors
+Instrucciones
+ 1.
+En la máquina workstation, cambie al directorio /home/student/control-errors.
+[student@workstation ~]$ cd ~/control-errors
+[student@workstation control-errors]$
+ 2.
+El comando lab creó un archivo de configuración Ansible, así como un archivo de
+inventario, que contiene el servidor servera.lab.example.com en el grupo
+databases. Revise el archivo antes de continuar.
+[student@workstation control-errors]$ cat inventory
+[databases]
+servera.lab.example.com
+ 3.
+Cree un playbook denominado playbook.yml que contiene un play con dos tareas.
+Escriba la primera tarea con un error deliberado para que falle.
+3.1.
+Abra el playbook en un editor de texto. Defina tres variables: web_package con un
+valor de http, db_package con un valor de mariadb-server y db_service con
+un valor de mariadb. Estas variables se usarán para instalar los paquetes requeridos
+e iniciar el servidor.
+RH294-RHEL9.0-es-3-20240620
+173
+
+

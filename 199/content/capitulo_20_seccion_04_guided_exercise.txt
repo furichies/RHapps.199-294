@@ -1,0 +1,98 @@
+# Ejercicio Guiado: Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio
+# Tipo: guided_exercise
+# Capítulo: Capítulo 17. Control y solución de problemas del proceso de arranque
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio 17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Cambie el destino de inicio predeterminado e inicie manualmente el sistema en un destino distinto al predeterminado. Resultados Actualice el destino predeterminado del sistema y utilice un destino temporal desde el cargador de arranque. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-selecting
+
+Instrucciones Abra la consola de la máquina de la estación de trabajo y confirme que el destino gráfico es el destino de inicio predeterminado.
+
+student@workstation:~$ systemctl get-default
+
+Graphical.target 1. Cambie manualmente al destino multiusuario sin reiniciar. Utilice el comando sudo para escalar los privilegios. Utilice estudiante como contraseña.
+
+student@workstation:~$ sudo systemctl isolate multi-user.target
+
+[sudo] contraseña para estudiante: estudiante 2. El sistema ahora presenta una consola basada en texto en lugar de una interfaz gráfica. Inicie sesión como usuario root. Utilice redhat como contraseña.
+
+workstation login: root
+
+Contraseña: sombrero rojo
+
+root@workstation:~#
+
+3. Configure la máquina de la estación de trabajo para que inicie automáticamente en el destino multiusuario y luego reinicie la máquina de la estación de trabajo para verificar la configuración. Cuando termine, cambie el objetivo de la unidad systemd nuevamente al objetivo gráfico. 4. Establezca el objetivo predeterminado en el objetivo multiusuario.
+
+root@workstation:~# systemctl set-default multi-user.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/multi-user.target'. 4.1. Reinicie la máquina de la estación de trabajo.
+
+root@workstation:~# systemctl reboot
+
+4.2. Después de que el sistema se reinicie, espere a que expire el tiempo de espera del menú GRUB2 o presione Entrar para omitir la cuenta regresiva. El sistema presenta una consola basada en texto y no una pantalla de inicio de sesión gráfica. 4.3.
+
+
+
+
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Inicie sesión como usuario raíz. Utilice redhat como contraseña.
+
+workstation login: root
+
+Contraseña: sombrero rojo
+
+root@workstation:~#
+
+4.4. Vuelva a establecer el objetivo de unidad systemd predeterminado en el objetivo gráfico.
+
+root@workstation:~# systemctl set-default graphical.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/graphical.target'. 4.5. El paso anterior concluye la primera parte del ejercicio, donde practicará la configuración del objetivo predeterminado de systemd. En esta segunda parte del ejercicio, practicará la recuperación del sistema iniciando desde el destino de rescate. Acceda al cargador de arranque reiniciando nuevamente la máquina de la estación de trabajo. Desde el menú del cargador de arranque, inicie en el objetivo de rescate. 5. Reinicie la máquina de la estación de trabajo.
+
+root@workstation:~# systemctl reboot
+
+5.1. Cuando aparezca el menú del cargador de arranque, presione cualquier tecla para interrumpir la cuenta atrás (excepto Enter, que inicia un arranque normal). 5.2. Pulsa Esc para interrumpir la cuenta atrás. 5.3. Presione E para editar la entrada predeterminada actual. 5.4. Usando las teclas del cursor, vaya a la línea que comienza con el texto de Linux. 5.5. Presione Fin o Ctrl+E para mover el cursor al final de la línea. 5.6. Agregue la opción systemd.unit=rescue.target al final de la línea. Nota Si el texto en la consola es difícil de ver, considere cambiar la resolución al editar la línea del kernel en la entrada del cargador de arranque. Para cambiar la resolución de la consola, agregue el parámetro video=640x480 o vga=ask en la línea que comienza con la palabra linux, después del parámetro rd.break. Para la mayoría de las consolas, un
+
+resolution of 640x480 is enough. By using the vga=ask parameter, you can choose a more suitable
+
+resolución para su entorno. 5.7. Presione Ctrl+X para iniciar usando la configuración modificada. 5.8. Inicie sesión en modo rescate. Es posible que deba presionar Enter para obtener un mensaje de limpieza. Utilice redhat como contraseña. Proporcione la contraseña de root para mantenimiento (o presione Control-D para continuar): redhat
+
+root@workstation:~#
+
+5.9. Confirme que el sistema de archivos raíz esté en modo lectura/escritura. 6.
+
+
+
+
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-selecting
+root@workstation:~# mount
+
+...salida omitida...
+
+/dev/sda3 on / type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+...salida omitida... Presione Ctrl+D para continuar con el proceso de arranque. El sistema arranca en modo gráfico. Nota En su configuración predeterminada, el destino gráfico inicia el sistema en una pantalla de inicio de sesión gráfica donde puede iniciar sesión como cualquier usuario. En el entorno de laboratorio, el objetivo gráfico está configurado para iniciar sesión automáticamente como usuario estudiante. 7.
+
+
+
+
+
+17.5. Reparación de sistemas de archivos dañados en el momento del arranque 17.5. Reparación de sistemas de archivos dañados en el momento del arranque Objetivos Reparar sistemas de archivos que están mal configurados o dañados y que hacen que el proceso de arranque se detenga prematuramente. Problemas con el sistema de archivos Durante el proceso de arranque, la unidad systemd monta los sistemas de archivos persistentes que están definidos en el archivo /etc/fstab. Los errores en el archivo /etc/fstab o sistemas de archivos dañados pueden impedir que un sistema complete el proceso de inicio. En algunos escenarios de falla, el sistema sale del proceso de inicio y abre un shell de emergencia que requiere la contraseña del usuario root. La siguiente lista describe algunos problemas comunes de montaje del sistema de archivos al analizar el archivo /etc/fstab durante el proceso.
+
+boot process:
+
+Sistema de archivos dañado La unidad systemd intenta reparar el sistema de archivos. Si el problema no se puede reparar automáticamente, el sistema abre un shell de emergencia. Dispositivo de almacenamiento, UUID de dispositivo o punto de montaje inexistente. La unidad systemd agota el tiempo de espera a que el dispositivo de almacenamiento esté disponible. Si el dispositivo no responde, el sistema abre un caparazón de emergencia. Comprobación y reparación de daños en el sistema de archivos Red Hat Enterprise Linux 10 proporciona herramientas para comprobar y reparar problemas del sistema de archivos. En el caso de problemas menores que se detectan durante el arranque, estas utilidades intentan reparar el sistema de archivos automáticamente. Para los sistemas de archivos de diario, como XFS y ext4, puede que solo sea necesario reproducir el diario, lo que suele ser una operación rápida. En el caso de problemas de corrupción más graves del sistema de archivos, un administrador del sistema puede utilizar las herramientas para comprobar y reparar los sistemas de archivos manualmente. La herramienta que ayuda a mantener los sistemas de archivos en buen estado durante el arranque se conoce genéricamente como herramienta de verificación del sistema de archivos o comando fsck. Sin embargo, la herramienta que repara el sistema de archivos XFS no sigue la misma convención de nomenclatura. Aunque hay un archivo binario fsck.xfs en el sistema, su único propósito es satisfacer los requisitos de arranque y sale inmediatamente con un código de salida de 0. El comando xfs_repair puede verificar y reparar problemas con los sistemas de archivos XFS que una reparación automática no soluciona.
+
+root@host:~# xfs_repair block-device
+
+Para realizar operaciones de verificación y reparación en sistemas de archivos ext4, use el comando fsck.ext4, que es un enlace físico al comando e2fsck que también cubre los sistemas de archivos ext3 y ext2 heredados. Utilice la opción -p para reparar automáticamente problemas menores sin intervención del usuario.
+
+
+
+
+

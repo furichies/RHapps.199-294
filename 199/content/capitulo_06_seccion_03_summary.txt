@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 3. Edición de archivos de texto
+
+3.3. Resumen 3.3. Resumen En esta lección, aprendió a crear, ver y editar archivos de texto desde la línea de comandos. Red Hat recomienda aprender a editar archivos con el editor de texto Vim porque está disponible en la mayoría de las distribuciones de Linux. Puede utilizar varias pulsaciones de teclas para editar un archivo de texto en un editor de texto de línea de comandos. Puede utilizar el comando vimtutor para aprender las funciones principales de Vim. Puede configurar el comportamiento del editor Vim para todo el sistema o para un usuario específico en los archivos de configuración /etc/vimrc y ~/.vimrc, respectivamente.
+
+
+
+
+
+Capítulo 4. Gestión de usuarios y grupos locales Objetivo Obtener acceso de superusuario a un sistema; crear, administrar y eliminar usuarios y grupos locales; y administrar políticas de contraseñas locales. Secciones Usuarios y grupos de Linux (y cuestionario) Obtener acceso de superusuario (y ejercicio guiado) Administrar cuentas de usuarios locales (y ejercicio guiado) Administrar cuentas de grupos locales (y ejercicio guiado) Administrar contraseñas de usuarios (y ejercicio guiado) Práctica de laboratorio Administrar usuarios y grupos locales
+
+
+
+
+

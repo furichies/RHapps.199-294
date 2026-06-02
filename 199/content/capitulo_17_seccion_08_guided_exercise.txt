@@ -1,0 +1,146 @@
+# Ejercicio Guiado: Ejercicio guiado para investigar y resolver problemas de SELinux
+# Tipo: guided_exercise
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.8. Ejercicio guiado Investigar y resolver problemas de SELinux 14.8. Ejercicio guiado Investigar y resolver problemas de SELinux Solucionar problemas de SELinux utilizando herramientas de análisis de registros de SELinux e interpretando sus resultados. Resultados Adquirir experiencia con las herramientas de resolución de problemas de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-issues
+
+Instrucciones Desde un navegador web en la estación de trabajo, abra la página web http://servera/index.html. Un mensaje de error indica que no tiene permiso para acceder al archivo. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 2. Utilice el comando less para ver el contenido del archivo /var/log/messages. Utiliza el carácter / y busca el texto del sello. Presione la tecla n hasta llegar a la última aparición, porque es posible que los ejercicios anteriores también hayan generado mensajes SELinux. Copie el comando sealert sugerido para poder usarlo en el siguiente paso. Utilice la tecla q para salir del comando less.
+
+[root@servera ~]# less /var/log/messages
+
+... salida omitida... 6 de junio 18:11:23 servera setroubleshoot[14796]: SELinux impide que /usr/sbin/httpd acceda a getattr
+
+on the file /custom/index.html. For complete SELinux messages run: sealert -l 5a96d815-a187-4024-be5d-
+
+36daf8e0d774 ...salida omitida... 3. Ejecute el comando sealert sugerido. Tenga en cuenta el contexto de origen, los objetos de destino, la política y el modo de aplicación. Encuentre la etiqueta de contexto SELinux correcta para el archivo que el servicio httpd intenta entregar. 4. Ejecute el comando sealert. El resultado explica que el archivo /custom/index.html tiene una etiqueta de contexto incorrecta. 4.1.
+
+
+
+
+
+14.8. Ejercicio guiado para investigar y resolver problemas de SELinux
+
+[root@servera ~]# sealert -l 5a96d815-a187-4024-be5d-36daf8e0d774
+
+SELinux impide que /usr/sbin/httpd acceda getattr al archivo /custom/index.html. ***** Se sugiere el complemento catchall_labels (83,8 de confianza) ******************* Si desea permitir que httpd tenga acceso getattr en el archivo index.html, entonces debe cambiar la etiqueta en /custom/index.html.
+
+# semanage fcontext -a -t FILE_TYPE '/custom/index.html'
+where FILE_TYPE is one of the following: ... abrt_dump_oops_exec_t, abrt_etc_t,
+
+abrt_exec_t, abrt_handle_event_exec_t, abrt_helper_exec_t, abrt_retrace_coredump_exec_t, abrt_retrace_spool_t, abrt_retrace_worker_exec_t, abrt_tmp_t, abrt_upload_watch_tmp_t, abrt_var_cache_t, abrt_var_log_t, abrt_var_run_t, cuentasd_exec_t, acct_data_t, acct_exec_t, admin_crontab_tmp_t, admin_passwd_exec_t, afs_logfile_t, aide_exec_t, aide_log_t, alsa_exec_t, ... Luego ejecute:
+
+restorecon -v '/custom/index.html'
+
+Información adicional: Contexto de origen system_u:system_r:httpd_t:s0 Contexto de destino unconfined_u:object_r:default_t:s0 Objetos de destino /custom/index.html [ archivo ] Fuente httpd Ruta de origen /usr/sbin/httpd Puerto <Desconocido> Servidor hosta Paquetes RPM de origen httpd-core-2.4.63-1.el10.x86_64 Paquetes RPM de destino Política SELinux RPM selinux-policy-targeted-40.13.26-1.el10.noarch Política local RPM selinux-policy-targeted-40.13.26-1.el10.noarch Selinux habilitado Verdadero Tipo de política objetivo Modo de aplicación de la aplicación Nombre del host de aplicación servera Plataforma Linux servera 6.12.0-55.12.1.el10_0.x86_64 #1 SMP
+
+                              PREEMPT_DYNAMIC Tue May 13 02:51:44 EDT 2025
+                              x86_64
+
+Recuento de alertas 6 Visto por primera vez 2025-06-06 13:49:29 UTC Visto por última vez 2025-06-06 18:11:19 UTC ID local 5a96d815-a187-4024-be5d-36daf8e0d774 Mensajes de auditoría sin procesar
+
+type=AVC msg=audit(1749233479.381:1477): avc:  denied  { getattr } for  pid=2114 comm="httpd" 
+path="/custom/index.html" dev="sda3" ino=17265301 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+
+...salida omitida... Verifique el contexto SELinux para el directorio /var/www/html, desde donde el servicio httpd sirve el contenido de forma predeterminada. El contexto httpd_sys_content_t SELinux es apropiado para el archivo /custom/index.html.
+
+[root@servera ~]# ls -ldZ /var/www/html
+drwxr-xr-x. 2 root root system_u:object_r:httpd_sys_content_t:s0 6 Jan 27 00:00 /var/www/html
+
+4.2. La sección Mensajes de auditoría sin procesar del comando sealert contiene información del archivo /var/log/audit/audit.log. Utilice el comando ausearch para buscar ese archivo. La opción -m busca según el tipo de mensaje. La opción -ts establece la fecha y hora de inicio de la búsqueda. La siguiente entrada identifica el proceso y el archivo relevantes que causan la alerta. El proceso es el servidor web httpd Apache, el archivo es
+
+/custom/index.html, and the context is system_r:httpd_t.
+
+5.
+
+
+
+
+
+14.8. Ejercicio guiado Investigar y resolver problemas de SELinux Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-issues
+[root@servera ~]# ausearch -m AVC -ts today
+
+...salida omitida...
+
+----
+time->Fri Jun  6 18:11:19 2025
+type=PROCTITLE msg=audit(1749233479.381:1477): 
+proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
+type=SYSCALL msg=audit(1749233479.381:1477): arch=c000003e syscall=262 success=no exit=-13 a0=ffffff9c 
+a1=7f4aec013a98 a2=7f4afa3e09f0 a3=100 items=0 ppid=2104 pid=2114 auid=4294967295 uid=48 gid=48 euid=48 
+suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 comm="httpd" exe="/usr/sbin/httpd" 
+subj=system_u:system_r:httpd_t:s0 key=(null)
+type=AVC msg=audit(1749233479.381:1477): avc:  denied  { getattr } for  pid=2114 comm="httpd" 
+path="/custom/index.html" dev="sda3" ino=17265301 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+
+Resuelva el problema aplicando el contexto httpd_sys_content_t. 6. Vuelva a configurar la política SELinux para permitir que el servicio httpd acceda al contenido del directorio /custom/.
+
+[root@servera ~]# semanage fcontext -a -t httpd_sys_content_t '/custom(/.*)?'
+
+6.1. Utilice restablecimiento con para aplicar los contextos de archivos SELinux correctos para el directorio /custom, siguiendo la política modificada.
+
+[root@servera ~]# restorecon -Rv /custom
+
+Reetiquetado /personalizado de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Se volvió a etiquetar /custom/index.html de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+6.2. En la máquina de la estación de trabajo, utilice un navegador web para ver la URL http://servera/index.html. Debes ver el Esto es SERVERA. mensaje. 7. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+8.
+
+
+
+
+
+14.9. Laboratorio Administrar la seguridad con SELinux 14.9. Laboratorio Administrar seguridad con SELinux Configure el modo SELinux para el sistema. Actualice los contextos de archivos SELinux en archivos según la configuración de políticas. Ajuste la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Identificar problemas en los archivos de registro del sistema. Ajuste la configuración de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade selinux-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña. 1. Desde un navegador web en la máquina de la estación de trabajo, vea la página web http://serverb/lab.html. ves el
+
+error message: You do not have permission to access this resource.
+
+2. Investigue e identifique el problema de SELinux que impide que el servicio Apache proporcione contenido web. 3. Muestre el contexto SELinux del nuevo directorio de documentos HTTP y el directorio de documentos HTTP original. Resuelva el problema de SELinux que impide que el servidor Apache proporcione contenido web. 4. Verifique que el servidor Apache ahora pueda servir contenido web en la máquina de la estación de trabajo. 5. Regrese a la máquina de la estación de trabajo como usuario estudiante. 6.
+
+
+
+
+

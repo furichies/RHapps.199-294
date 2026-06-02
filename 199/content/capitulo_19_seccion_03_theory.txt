@@ -1,0 +1,109 @@
+# 16.3. Ampliar un volumen lógico
+# Tipo: theory
+# Capítulo: Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+16.3. Ampliación de un volumen lógico 16.3. Ampliación de un volumen lógico Objetivos Aumentar el almacenamiento disponible en un volumen lógico y ampliar su sistema de archivos o espacio de intercambio para utilizar el almacenamiento adicional. Aumente la capacidad de almacenamiento en un volumen lógico Un beneficio de utilizar volúmenes lógicos es aumentar su tamaño sin experimentar tiempo de inactividad. Agregue extensiones físicas gratuitas al LV desde el VG para ampliar la capacidad del LV y ampliar el sistema de archivos. Utilice el comando vgdisplay para confirmar que el grupo de volúmenes tiene suficiente espacio libre para la extensión LV. Utilice el comando lvextend para extender el LV:
+
+root@host:~# lvextend -L +500M /dev/vg01/lv01
+  Size of logical volume vg01/lv01 changed from 512.00 MiB (128 extents) to 1012.00 MiB (253 extents).
+  Logical volume vg01/lv01 successfully resized.
+
+Este comando aumenta el tamaño del volumen lógico lv01 en 500 MiB. El signo más (+) delante del tamaño significa
+
+adding this value to the existing size; otherwise, without the plus sign, the value defines the final size of the LV.
+
+La opción lvextend del comando -l espera el número de PE como argumento. La opción lvextend del comando -L espera tamaños en bytes, mebibytes, gibibytes o similares. Extender un sistema de archivos XFS al tamaño de volumen lógico El comando xfs_growfs ayuda a expandir el sistema de archivos para ocupar el LV extendido. El sistema de archivos de destino debe ser
+
+mounted before you use the xfs_growfs command. You can continue to use the file system when resizing.
+
+Utilice el comando xfs_growfs para expandir el sistema de archivos XFS:
+
+root@host:~# xfs_growfs /mnt/data/
+
+...salida omitida... los bloques de datos cambiaron de 131072 a 259072 Importante Ejecute siempre el comando xfs_growfs después de ejecutar el comando lvextend. Utilice el lvextend
+
+command -r option to run the two steps consecutively. An XFS file system must be mounted before resizing;
+
+si el sistema de archivos no está montado, la opción -r crea un directorio de punto de montaje temporal para realizar la operación. Alternativamente, después de extender el LV, puede cambiar el tamaño del sistema de archivos usando el comando fsadm. Este comando tiene un alcance más amplio porque admite varios otros sistemas de archivos. Extender un sistema de archivos EXT4 al tamaño de volumen lógico Los pasos para extender LV usando el sistema de archivos ext4 son los mismos que para LV usando el sistema de archivos XFS, excepto por el paso para cambiar el tamaño del sistema de archivos.
+
+
+
+
+
+16.3. Ampliación de un volumen lógico El comando resize2fs expande el sistema de archivos para ocupar el nuevo LV extendido. Puede continuar usando el sistema de archivos al cambiar el tamaño.
+
+root@host:~# resize2fs /dev/vg01/lv01
+
+resize2fs 1.47.1 (20 de mayo de 2024) Cambiar el tamaño del sistema de archivos en /dev/vg01/lv01 a 259072 (4k) bloques. El sistema de archivos en /dev/vg01/lv01 ahora tiene 259072 (4k) bloques de largo. El comando xfs_growfs expande un sistema de archivos XFS. Este comando normalmente toma el punto de montaje como argumento o, de lo contrario, puede usar indirectamente un nombre de dispositivo montando el dispositivo y luego especificando el punto de montaje. Por el contrario, el comando resize2fs cambia el tamaño de los sistemas de archivos ext2, ext3 o ext4 y toma el nombre del dispositivo como argumento. El comando xfs_growfs solo admite el cambio de tamaño en línea, mientras que el comando resize2fs admite el cambio de tamaño tanto en línea como fuera de línea. Aunque puede cambiar el tamaño de un sistema de archivos ext4 hacia arriba o hacia abajo, solo puede cambiar el tamaño de un sistema de archivos XFS hacia arriba. Ampliar volúmenes lógicos del espacio de intercambio Puede ampliar los LV que se utilizan como espacio de intercambio; sin embargo, el proceso difiere de expandir el sistema de archivos ext4 o XFS. Los volúmenes lógicos que se utilizan como espacio de intercambio deben estar fuera de línea para poder ampliarlos. Utilice el comando swapoff para desactivar el espacio de intercambio en el LV:
+
+root@host:~# swapoff -v /dev/vg01/swap
+
+swapoff /dev/vg01/swap Utilice el comando lvextend para extender el LV:
+
+root@host:~# lvextend -L +300M /dev/vg01/swap
+  Size of logical volume vg01/swap changed from 500.00 MiB (125 extents) to 800.00 MiB (200 extents).
+  Logical volume vg01/swap successfully resized.
+
+Utilice el comando mkswap para formatear el LV como espacio de intercambio:
+
+root@host:~# mkswap /dev/vg01/swap
+mkswap: /dev/vg01/swap: warning: wiping old swap signature.
+
+Configurando swapspace versión 1, tamaño = 800 MiB (838856704 bytes)
+
+no label, UUID=690ef204-9d59-4b3c-b145-eb8ba591ead8
+
+Utilice el comando swapon para activar el espacio de intercambio en el LV:
+
+root@host:~# swapon /dev/vg01/swap
+
+Importante Tenga en cuenta los posibles problemas al realizar esta operación en un sistema en vivo. A veces, no hay suficiente espacio de memoria física disponible para liberarlo vaciando y reubicando páginas en la memoria cuando el espacio de intercambio está desactivado. En esos escenarios, puede encontrarse con errores de falta de memoria (OOM) y el sistema podría comportarse inesperadamente. Asegúrese de que el espacio de intercambio no se utilice de forma agresiva al realizar esta operación. Alternativamente, puede crear un espacio de intercambio basado en LV adicional con el tamaño objetivo, habilitarlo y luego deshabilitar el volumen anterior. Una vez que el LV anterior esté completamente deshabilitado, puede eliminar el LV para recuperar las extensiones del VG.
+
+
+
+
+
+16.3. Ampliación de referencias de un volumen lógico
+
+lvextend(8), xfs_growfs(8), resize2fs(8), swapoff(8), mkswap(8), and swapon(8) man pages
+
+
+
+
+
+16.4. Ejercicio guiado Ampliar un volumen lógico 16.4. Ejercicio guiado Ampliar un volumen lógico Ampliar un volumen lógico para aumentar el almacenamiento disponible y ampliar su sistema de archivos para utilizar el almacenamiento adicional. Resultados Ampliar el almacenamiento de un volumen lógico existente. Amplíe el sistema de archivos de un volumen lógico para utilizar el almacenamiento disponible. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-extend
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree la tercera partición con un tamaño de 512 MiB en el dispositivo de almacenamiento /dev/sdb. Configure la partición al tipo de partición LVM de Linux y registre la partición con el kernel. 2. Cree la tercera partición con un tamaño de 512 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart third 514MiB 1026MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Configure la tercera partición al tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 3 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Registre la nueva partición con el kernel.
+
+[root@servera ~]# udevadm settle
+
+2.3. Etiquete la tercera partición como un volumen físico.
+
+[root@servera ~]# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+3. Utilizando la tercera partición, extienda el sistema de archivos en lv_servera LV a un tamaño total de 700 MiB. 4. Extienda el vg_servera VG usando el PV /dev/sdb3. 4.1.
+
+
+
+
+

@@ -1,0 +1,56 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Resumen
+• Los bucles se usan para iterar un conjunto de valores, como una simple lista de cadenas o una
+lista de diccionarios.
+• Los condicionales se pueden usar para ejecutar tareas o plays únicamente cuando se hayan
+cumplido ciertas condiciones.
+• Los manejadores son tareas especiales que se ejecutan al final de un play si otras tareas los
+notifican.
+• Los manejadores solo son notificados cuando una tarea informa que se cambió algo en un host
+gestionado.
+• Las tareas se pueden configurar para manejar condiciones de error ignorando una falla en las
+tareas, forzando a los manejadores a ser invocados aun cuando la tarea haya fallado, marcar una
+tarea como con errores cuando fue satisfactoria o reemplazar el comportamiento que hace que
+la tarea se marque como modificada.
+• Los bloques se usan para agrupar tareas como una unidad y ejecutar otras tareas dependiendo
+de si todas las tareas en el bloque se realizaron satisfactoriamente.
+190
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5
+Implementación de archivos en
+hosts gestionados
+Meta
+Implementar, administrar y ajustar archivos en
+hosts gestionados por Ansible.
+Objetivos
+•
+Crear, instalar, editar y eliminar archivos
+en hosts gestionados; gestionar permisos,
+propiedades, contextos de SELinux y otras
+características de esos archivos.
+•
+Implementar archivos en hosts gestionados que
+se personalizan mediante el uso de plantillas
+Jinja2.
+Secciones
+•
+Modificación y copia de archivos a hosts (y
+ejercicio guiado)
+•
+Implementación de archivos personalizados con
+plantillas Jinja2 (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Implementación de archivos en hosts
+gestionados
+RH294-RHEL9.0-es-3-20240620
+191
+
+

@@ -1,0 +1,33 @@
+# Cuestionario: Procesos de prueba y ciclo de vida del proceso
+# Tipo: quiz
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.2. Procesos de cuestionarios y ciclo de vida del proceso 9.2. Procesos del cuestionario y ciclo de vida del proceso Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando se utiliza principalmente para enumerar los procesos actualmente en ejecución? 1. agradable a. lsp b. matar c. PD d. renice e. ¿Qué estado representa un proceso detenido o suspendido? 2.D a. Rb. Sc. T d. Z e. ¿Qué estado representa un proceso que liberó todos sus recursos excepto su PID? 3.D a. Rb. Sc. T d. Z e. ¿Qué operación de Linux crea un nuevo proceso hijo al clonar el espacio de direcciones del padre? 4. ejecutivo a. tenedor b. zombi c. llamada al sistema d. cosechar e. ¿Qué estado representa un proceso que está inactivo hasta que se cumple alguna condición? 5.D a. Rb. Sc. T d. Z e.
+
+
+
+
+
+9.2. Procesos de prueba y la solución del ciclo de vida del proceso ¿Qué comando se utiliza principalmente para enumerar los procesos actualmente en ejecución? 1. agradable a. lsp b. matar c. PD d. renice e. ¿Qué estado representa un proceso detenido o suspendido? 2.D a. Rb. Sc. T d. Z e. ¿Qué estado representa un proceso que liberó todos sus recursos excepto su PID? 3.D a. Rb. Sc. T d. Z e. ¿Qué operación de Linux crea un nuevo proceso hijo al clonar el espacio de direcciones del padre? 4. ejecutivo a. tenedor b. zombi c. llamada al sistema d. cosechar e. ¿Qué estado representa un proceso que está inactivo hasta que se cumple alguna condición? 5.D a. Rb. Sc. T d. Z e.
+
+
+
+
+
+9.3. Gestión de Procesos con Control de Trabajos 9.3. Gestión de procesos con objetivos de control de trabajos Controlar los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Trabajos y sesiones Con la función de shell de control de trabajos, puede ejecutar y administrar múltiples comandos en una única instancia de shell. Se asocia un trabajo con cada canalización que se ingresa en un símbolo del shell. Todos los procesos en esa canalización son parte del trabajo y son miembros del mismo grupo de procesos. Puede considerar que una canalización mínima es solo un comando que se ingresa en el símbolo del shell para crear un trabajo con un solo miembro. Sólo un trabajo a la vez puede leer señales de entrada y generadas por el teclado desde una ventana de terminal particular. Los procesos que forman parte de ese trabajo son procesos de primer plano de esa terminal de control. Un proceso en segundo plano de ese terminal de control es cualquier otro trabajo asociado con ese terminal. Los procesos en segundo plano de un terminal no pueden leer entradas ni recibir interrupciones generadas por el teclado desde el terminal, pero pueden escribir en el terminal. Es posible que un trabajo en segundo plano esté detenido (suspendido) o que se esté ejecutando. Si un trabajo en segundo plano en ejecución intenta leer desde la terminal, el kernel lo suspende automáticamente y el proceso permanece en estado detenido hasta que se mueve al primer plano. Cada terminal se ejecuta en su propia sesión y puede tener un proceso en primer plano y cualquier número de procesos en segundo plano. Un trabajo que se ejecuta en su propia sesión pertenece a su terminal de control. El comando ps muestra el nombre del dispositivo del terminal de control en la columna TTY.
+
+user@host:~$ ps
+    PID TTY          TIME CMD
+   2328 pts/0    00:00:00 bash
+   8910 pts/0    00:00:00 ps
+
+Algunos procesos, como los demonios del sistema, los inicia el sistema y no desde una terminal de control. Estos procesos no son miembros de un trabajo y no pueden ponerse en primer plano. El comando ps muestra un signo de interrogación (?) en la columna TTY para estos procesos. Utilice el comando ps j para buscar información sobre procesos y sesiones, así como detalles sobre trabajos. En el siguiente ejemplo, el comando de suspensión está actualmente suspendido y el estado del proceso es T (detenido).
+
+user@host:~$ ps j
+
+PPID PID PGID SID TTY TPGID STAT UID HORA COMANDO ...salida omitida... 8527 8528 8528 8528 pts/0 8633 Ss 1000 0:00 -bash 8528 8559 8559 8528 pts/0 8633 T 1000 0:00 dormir 10000 8528 8633 8633 8528 pts/0 8633 R+ 1000 0:00 ps j El PID es el ID de proceso único del proceso. El ID del proceso principal (PPID) es el PID del proceso principal que inició (bifurcó) este proceso. El PGID es el PID del líder del grupo de procesos, normalmente el primer proceso en la canalización del trabajo.
+
+
+
+
+

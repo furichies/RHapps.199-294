@@ -1,0 +1,157 @@
+# Trabajo de laboratorio: oratorio Administrar la seguridad con SELinux
+# Tipo: lab
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.9. Laboratorio Administrar la seguridad con SELinux 14.9. Laboratorio Administrar seguridad con SELinux Configure el modo SELinux para el sistema. Actualice los contextos de archivos SELinux en archivos según la configuración de políticas. Ajuste la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Identificar problemas en los archivos de registro del sistema. Ajuste la configuración de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade selinux-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña. 1. Desde un navegador web en la máquina de la estación de trabajo, vea la página web http://serverb/lab.html. ves el
+
+error message: You do not have permission to access this resource.
+
+2. Investigue e identifique el problema de SELinux que impide que el servicio Apache proporcione contenido web. 3. Muestre el contexto SELinux del nuevo directorio de documentos HTTP y el directorio de documentos HTTP original. Resuelva el problema de SELinux que impide que el servidor Apache proporcione contenido web. 4. Verifique que el servidor Apache ahora pueda servir contenido web en la máquina de la estación de trabajo. 5. Regrese a la máquina de la estación de trabajo como usuario estudiante. 6.
+
+
+
+
+
+14.9. Lab Manage Security con la solución SELinux Configure el modo SELinux para el sistema. Actualice los contextos de archivos SELinux en archivos según la configuración de políticas. Ajuste la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Identificar problemas en los archivos de registro del sistema. Ajuste la configuración de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-review
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1. Desde un navegador web en la estación de trabajo, vea la página web http://serverb/lab.html. ves el
+
+error message: You do not have permission to access this resource.
+
+2. Investigue e identifique el problema de SELinux que impide que el servicio Apache proporcione contenido web. 3. Vea el contenido del archivo /var/log/messages. Utilice la tecla / y busque la cadena de sellado. Utilice la tecla q para salir del comando less.
+
+[root@serverb ~]# less /var/log/messages
+
+... salida omitida... 12 de junio 23:20:07 serverb setroubleshoot[2089]: no se pudo recuperar la información de rpm para la ruta '/lab-
+
+content/lab.html':
+
+12 de junio 23:30:32 serverb setroubleshoot[2282]: SELinux impide que /usr/sbin/httpd obtengaattr
+
+access on the file /lab-content/lab.html. For complete SELinux messages run: sealert -l 3ba31d72-
+
+a61a-4162-8064-a961581b9b6a 12 de junio 23:30:32 serverb setroubleshoot[2282]: SELinux impide que /usr/sbin/httpd acceda getattr al archivo /lab-content/lab.html. ...salida omitida... 3.1. Ejecute el comando sealert sugerido. Tenga en cuenta el contexto de origen, los objetos de destino, la política y el modo de aplicación. 3.2.
+
+
+
+
+
+14.9. Laboratorio Administrar la seguridad con SELinux
+
+[root@serverb ~]# sealert -l 3ba31d72-a61a-4162-8064-a961581b9b6a
+
+SELinux impide que /usr/sbin/httpd acceda getattr al archivo /lab-content/lab.html. ***** Se sugiere el complemento catchall_labels (83,8 de confianza) ******************* Si desea permitir que httpd tenga acceso getattr al archivo lab.html, entonces debe cambiar la etiqueta en /lab-content/lab.html.
+
+# semanage fcontext -a -t FILE_TYPE '/lab-content/lab.html'
+where FILE_TYPE is one of the following:
+
+...salida omitida... Información adicional: Contexto de origen system_u:system_r:httpd_t:s0 Contexto de destino unconfined_u:object_r:default_t:s0 Objetos de destino /lab-content/lab.html [ archivo ] Fuente httpd Ruta de origen /usr/sbin/httpd ...salida omitida... ID local 3ba31d72-a61a-4162-8064-a961581b9b6a Mensajes de auditoría sin procesar
+
+type=AVC msg=audit(1749771030.133:236): avc:  denied  { getattr } for  pid=1911 comm="httpd" 
+path="/lab-content/lab.html" dev="sda3" ino=8640016 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+type=SYSCALL msg=audit(1749771030.133:236): arch=x86_64 syscall=newfstatat success=no exit=EACCES 
+a0=ffffff9c a1=7fa59c004928 a2=7fa5aafd49f0 a3=100 items=0 ppid=1908 pid=1911 auid=4294967295 
+uid=48 gid=48 euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 
+comm=httpd exe=/usr/sbin/httpd subj=system_u:system_r:httpd_t:s0 key=(null)
+
+Hash: httpd,httpd_t,default_t,file,getattr La sección Mensajes de auditoría sin procesar del comando sealert contiene información del archivo /var/log/audit/audit.log. Busque ese archivo. La opción -m busca por tipo de mensaje. La opción ts busca según el tiempo. La siguiente entrada identifica el proceso, el archivo y los contextos relevantes que causaron la alerta. El proceso es el servidor web httpd Apache, el archivo es /lab-content/lab.html y
+
+the context is system_r:httpd_t.
+[root@serverb ~]# ausearch -m AVC -ts recent
+
+...salida omitida...
+
+----
+time->Thu Jun 12 23:30:30 2025
+type=PROCTITLE msg=audit(1749771030.133:236): 
+proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
+type=SYSCALL msg=audit(1749771030.133:236): arch=c000003e syscall=262 success=no exit=-13 
+a0=ffffff9c a1=7fa59c004928 a2=7fa5aafd49f0 a3=100 items=0 ppid=1908 pid=1911 auid=4294967295 
+uid=48 gid=48 euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 
+comm="httpd" exe="/usr/sbin/httpd" subj=system_u:system_r:httpd_t:s0 key=(null)
+type=AVC msg=audit(1749771030.133:236): avc:  denied  { getattr } for  pid=1911 comm="httpd" 
+path="/lab-content/lab.html" dev="sda3" ino=8640016 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+
+3.3. Muestra el contexto SELinux del nuevo directorio de documentos HTTP y el directorio de documentos HTTP original. Resuelva el problema de SELinux que impide que el servidor Apache proporcione contenido web. 4. Compare el contexto SELinux para los directorios /lab-content y /var/www/html. 4.1.
+
+
+
+
+
+14.9. Lab Administrar seguridad con evaluación SELinux Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade selinux-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-review
+[root@serverb ~]# ls -dZ /lab-content /var/www/html
+      unconfined_u:object_r:default_t:s0 /lab-content
+system_u:object_r:httpd_sys_content_t:s0 /var/www/html
+
+Cree una regla de contexto de archivo que establezca el tipo predeterminado en httpd_sys_content_ para el directorio /lab-content y todos los archivos que contiene.
+
+[root@serverb ~]# semanage fcontext -a -t httpd_sys_content_t '/lab-content(/.*)?'
+
+4.2. Corrija el contexto SELinux para los archivos en el directorio /lab-content.
+
+[root@serverb ~]# restorecon -Rv /lab-content/
+
+Se volvió a etiquetar /lab-content de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Se volvió a etiquetar /lab-content/lab.html de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+4.3. Verifique que el servidor Apache ahora pueda servir contenido web en la máquina de la estación de trabajo. 5. Utilice un navegador web en la máquina de la estación de trabajo para acceder a la URL http://serverb/lab.html. Si se muestra el siguiente contenido, entonces el problema está resuelto. Este es el archivo html para el laboratorio final de SELinux en SERVERB. 5.1. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+14.10. Resumen 14.10. Resumen En esta lección, aprendió sobre SELinux y cómo puede mejorar la seguridad de un sistema Linux. SELinux tiene tres modos: obligatorio, permisivo y deshabilitado, y puede alternar entre ellos para afectar el comportamiento de SELinux. Las políticas de SELinux definen las reglas para el control de acceso obligatorio en un sistema. Los contextos SELinux imponen políticas de seguridad. El comando chcon cambia el contexto de archivos y directorios independientemente de la política de SELinux. El comando semanage fcontext administra la política para modificar los contextos de archivos SELinux, y el comando restaurarcon aplica estos contextos a archivos y directorios. Los booleanos de SELinux habilitan o deshabilitan la configuración opcional de la política de SELinux para ajustar selectivamente el comportamiento de una aplicación. El comando getsebool ve los booleanos de SELinux y su estado actual, y el comando setsebool los habilita o deshabilita, ya sea de manera temporal o persistente. El archivo /var/log/audit/audit.log almacena eventos SELinux en formato sin formato, y el archivo /var/log/messages almacena mensajes genéricos del demonio setroubleshootd. Esos archivos de registro, junto con el comando sealert, pueden analizar eventos de SELinux y brindar sugerencias para resolver problemas.
+
+
+
+
+

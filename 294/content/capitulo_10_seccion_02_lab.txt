@@ -1,0 +1,485 @@
+# Trabajo de laboratorio: Implementación de Ansible
+# Tipo: lab
+# Capítulo: Capítulo 10. Revisión exhaustiva
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Implementación de Ansible
+Instalar Ansible en workstation, configurarlo como nodo de control y configurar un
+inventario para las conexiones con los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com. Puede crear, modificar y solucionar problemas de playbooks
+sencillos que usan variables y datos.
+Resultados
+• Instalar y configurar Ansible.
+• Crear, modificar y solucionar problemas de playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr1
+Especificaciones
+• Instale el navegador de contenido de automatización en workstation para que pueda servir
+como nodo de control. El repositorio Yum que contiene el paquete se ha configurado en
+workstation.
+• Su directorio de proyectos de Ansible es /home/student/review-cr1.
+• En el nodo de control, cree el archivo de inventario /home/student/review-cr1/
+inventory. El inventario debe contener un grupo denominado dev que consta de los hosts
+gestionados servera.lab.example.com y serverb.lab.example.com.
+• Cree un archivo de configuración de Ansible denominado /home/student/review-cr1/
+ansible.cfg. Este archivo de configuración debe usar el archivo /home/student/review-
+cr1/inventory como archivo de inventario del proyecto.
+• Inicie sesión en su centro de automatización privado en utility.lab.example.com desde la
+línea de comandos antes de intentar ejecutar el navegador de contenido de automatización, de
+modo que pueda extraer imágenes del entorno de ejecución de la automatización de su registro
+de contenedores. El nombre de usuario es admin y la contraseña es redhat.
+• Cree un archivo de configuración para el navegador de contenido de automatización
+denominado /home/student/review-cr1/ansible-navigator.yml. Este archivo
+de configuración debe establecer la imagen del entorno de ejecución de automatización
+predeterminada en utility.lab.example.com/ee-supported-rhel8:latest, y el
+navegador de contenido de automatización solo debe extraer esta imagen del repositorio de
+contenedores si la imagen falta en su nodo de control.
+RH294-RHEL9.0-es-3-20240620
+503
+
+
+capítulo 10 |  Revisión exhaustiva
+• Cree un playbook denominado users.yml en el directorio del proyecto. Debe contener un play
+que se ejecute en hosts gestionados en el grupo dev. Su play debe usar una tarea para agregar
+los usuarios joe y sam a todos los hosts gestionados en el grupo dev. Ejecute el playbook
+users.yml y confirme que funciona.
+• Inspeccione el playbook packages.yml existente. En el play de ese manual, defina una
+variable de play denominada packages con una lista de dos paquetes como su valor: httpd y
+mariadb-server. Ejecute el playbook packages.yml y confirme que ambos paquetes estén
+instalados en los hosts gestionados en los que se ejecutó el playbook.
+• Agregue una tarea al playbook packages.yml que instala el paquete redis si el espacio
+de intercambio total en el host gestionado es superior a 10 MB. Ejecute el playbook
+packages.yml nuevamente después de agregar esta tarea.
+• Solucione los problemas del playbook verify_user.yml existente. Se supone que debe
+verificar que el usuario sam se haya creado correctamente y no se supone que cree el usuario
+sam si falta. Ejecute el playbook con la opción --check y resuelva los errores. Repita este
+proceso hasta que pueda ejecutar el playbook con la opción --check y se apruebe, y luego
+ejecute el playbook verify_user.yml normalmente.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr1
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr1
+504
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Solución
+Implementación de Ansible
+Instalar Ansible en workstation, configurarlo como nodo de control y configurar un
+inventario para las conexiones con los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com. Puede crear, modificar y solucionar problemas de playbooks
+sencillos que usan variables y datos.
+Resultados
+• Instalar y configurar Ansible.
+• Crear, modificar y solucionar problemas de playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr1
+1.
+Instale el navegador de contenido de automatización en workstation para que pueda
+servir como nodo de control.
+[student@workstation ~]$ sudo dnf install ansible-navigator
+[sudo] password for student: student
+Last metadata expiration check: 1:51:10 ago on Fri 26 Aug 2022 02:42:43 PM EDT.
+Dependencies resolved.
+...output omitted...
+Is this ok [y/N]: y
+...output omitted...
+Complete!
+2.
+En el nodo de control, cree el archivo de inventario /home/student/review-cr1/
+inventory. Debe contener un grupo denominado dev que consta de los hosts gestionados
+servera.lab.example.com y serverb.lab.example.com.
+2.1.
+Cambie al directorio /home/student/review-cr1.
+[student@workstation ~]$ cd ~/review-cr1
+[student@workstation review-cr1]$
+2.2.
+Cree el archivo inventory con el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+505
+
+
+capítulo 10 |  Revisión exhaustiva
+[dev]
+servera.lab.example.com
+serverb.lab.example.com
+3.
+Cree un archivo de configuración de Ansible denominado /home/student/review-cr1/
+ansible.cfg. El archivo de configuración debe usar el archivo /home/student/review-
+cr1/inventory como archivo de inventario del proyecto.
+Agregue las siguientes entradas para configurar el archivo de inventario ./inventory como
+la fuente de inventario. Guarde y cierre el archivo.
+[defaults]
+inventory=./inventory
+4.
+Cree un archivo de configuración para el navegador de contenido de automatización
+denominado /home/student/review-cr1/ansible-navigator.yml. Este archivo
+de configuración debe establecer la imagen del entorno de ejecución predeterminada en
+utility.lab.example.com/ee-supported-rhel8:latest y ansible-navigator
+solo debe extraer esta imagen del registro de contenedores si la imagen falta.
+Asegúrese de iniciar sesión en su centro de automatización privado en
+utility.lab.example.com con el comando podman login. El nombre de usuario es
+admin y la contraseña es redhat.
+Ejecute ansible-navigator para descargar la imagen del entorno de ejecución.
+4.1.
+Cree el archivo /home/student/review-cr1/ansible-navigator.yml con el
+siguiente contenido:
+---
+ansible-navigator:
+  execution-environment:
+    image: utility.lab.example.com/ee-supported-rhel8:latest
+    pull:
+      policy: missing
+4.2.
+Ejecute el comando podman login utility.lab.example.com.
+[student@workstation review-cr1]$ podman login utility.lab.example.com
+Username: admin
+Password: redhat
+Login Succeeded!
+4.3.
+Ejecute el comando ansible-navigator.
+[student@workstation review-cr1]$ ansible-navigator
+------------------------------------------------------------------------------------
+Execution environment image and pull policy overview
+------------------------------------------------------------------------------------
+Execution environment image name:     utility.lab.example.com/ee-supported-
+rhel8:latest
+Execution environment image tag:      latest
+Execution environment pull arguments: None
+506
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Execution environment pull policy:    missing
+Execution environment pull needed:    True
+------------------------------------------------------------------------------------
+Updating the execution environment
+------------------------------------------------------------------------------------
+Running the command: podman pull utility.lab.example.com/ee-supported-rhel8:latest
+Trying to pull utility.lab.example.com/ee-supported-rhel8:latest...
+...output omitted...
+5.
+En el directorio del proyecto, cree y ejecute el playbook users.yml para agregar los
+usuarios joe y sam a los hosts de inventario en el grupo dev. Use solo una tarea en este
+playbook.
+5.1.
+Cree el playbook users.yml con el siguiente contenido:
+---
+- name: Add users
+  hosts: dev
+  tasks:
+    - name: Add the users joe and sam
+      ansible.builtin.user:
+        name: "{{ item }}"
+      loop:
+        - joe
+        - sam
+5.2.
+Ejecute el playbook users.yml.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout users.yml
+PLAY [Add users] ***************************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Add the users joe and sam] ***********************************************
+changed: [serverb.lab.example.com] => (item=joe)
+changed: [servera.lab.example.com] => (item=joe)
+changed: [serverb.lab.example.com] => (item=sam)
+changed: [servera.lab.example.com] => (item=sam)
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+6.
+Inspeccione el playbook packages.yml. En el play de ese manual, defina una variable
+de play denominada packages con una lista de dos paquetes como su valor: httpd y
+mariadb-server. Ejecute el playbook packages.yml.
+RH294-RHEL9.0-es-3-20240620
+507
+
+
+capítulo 10 |  Revisión exhaustiva
+6.1.
+Defina la variable packages.
+---
+- name: Install packages
+  hosts: dev
+  vars:
+    packages:
+      - httpd
+      - mariadb-server
+  tasks:
+    - name: Install the required packages
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+6.2.
+Ejecute el playbook packages.yml.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout packages.yml
+PLAY [Install packages] ********************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Install the required packages] *******************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.
+Agregue una tarea al playbook packages.yml que instala el paquete redis si el espacio
+de intercambio disponible en el host gestionado es superior a 10 MB. Ejecute el playbook
+packages.yml nuevamente después de agregar esta tarea.
+7.1.
+Agregue la nueva tarea al playbook packages.yml.
+---
+- name: Install packages
+  hosts: dev
+  vars:
+    packages:
+      - httpd
+      - mariadb-server
+  tasks:
+508
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+    - name: Install the required packages
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+    - name: Install redis
+      ansible.builtin.dnf:
+        name: redis
+        state: latest
+      when: ansible_facts['swaptotal_mb'] > 10
+7.2.
+Ejecute el playbook packages.yml nuevamente.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout packages.yml
+PLAY [Install packages] ********************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Install the required packages] *******************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Install redis] ***********************************************************
+skipping: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+serverb.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+8.
+Solucione los problemas del playbook verify_user.yml existente. Se supone que debe
+verificar que el usuario sam se haya creado correctamente y no se supone que cree el usuario
+sam si falta. Ejecute el playbook con la opción --check y resuelva los errores. Repita este
+proceso hasta que pueda ejecutar el playbook con la opción --check y se apruebe, y luego
+ejecute el playbook verify_user.yml normalmente.
+8.1.
+Ejecute el playbook verify_user.yml con la opción --check.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml --check
+ERROR! couldn't resolve module/action 'ansible.buildin.user'. This often indicates
+ a misspelling, missing collection, or incorrect module path.
+The error appears to be in '/home/student/review-cr1/verify_user.yml': line 7,
+ column 7, but may
+be elsewhere in the file depending on the exact syntax problem.
+The offending line appears to be:
+RH294-RHEL9.0-es-3-20240620
+509
+
+
+capítulo 10 |  Revisión exhaustiva
+    - name: Verify the sam user exists
+      ^ here
+Please review the log for errors.
+8.2.
+Corrija el error de ortografía en el playbook verify_user.yml.
+---
+- name: Verify the sam user was created
+  hosts: dev
+  tasks:
+    - name: Verify the sam user exists
+      ansible.builtin.user:
+        name: sam
+      check_mode: true
+      register: sam_check
+    - name: Sam was created
+      ansible.builtin.debug:
+        msg: "Sam was created"
+      when: sam_check['changed'] == false
+    - name: Output sam user status to file
+      ansible.builtin.lineinfile:
+        path: /home/student/verify.txt
+        line: "Sam was created"
+        create: true
+        when: sam_check['changed'] == false
+8.3.
+Ejecute el playbook verify_user.yml nuevamente usando la opción --check.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml --check
+...output omitted...
+TASK [Output sam user status to file] ******************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg":
+ "Unsupported parameters for (ansible.builtin.lineinfile) module: when. Supported
+ parameters include: backup, group, firstmatch, setype, create, path (dest,
+ destfile, name), selevel, serole, backrefs, regexp (regex), mode, seuser,
+ attributes (attr), insertafter, line (value), insertbefore, search_string, state,
+ owner, unsafe_writes, validate."}
+fatal: [serverb.lab.example.com]: FAILED! => {"changed": false, "msg":
+ "Unsupported parameters for (ansible.builtin.lineinfile) module: when. Supported
+ parameters include: path (dest, destfile, name), search_string, backrefs, serole,
+ validate, unsafe_writes, regexp (regex), state, setype, firstmatch, backup,
+ selevel, create, mode, insertbefore, insertafter, group, owner, attributes
+ (attr), seuser, line (value)."}
+PLAY RECAP *********************************************************************
+510
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+servera.lab.example.com    : ok=3    changed=0    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=3    changed=0    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+8.4.
+Corrija el error de sangría en el playbook verify_user.yml.
+---
+- name: Verify the sam user was created
+  hosts: dev
+  tasks:
+    - name: Verify the sam user exists
+      ansible.builtin.user:
+        name: sam
+      check_mode: true
+      register: sam_check
+    - name: Sam was created
+      ansible.builtin.debug:
+        msg: "Sam was created"
+      when: sam_check['changed'] == false
+    - name: Output sam user status to file
+      ansible.builtin.lineinfile:
+        path: /home/student/verify.txt
+        line: "Sam was created"
+        create: true
+      when: sam_check['changed'] == false
+8.5.
+Ejecute el playbook verify_user.yml nuevamente usando la opción --check.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml --check
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+8.6.
+Ejecute el playbook verify_user.yml.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml
+PLAY [Verify the sam user was created] *****************************************
+TASK [Gathering Facts] *********************************************************
+RH294-RHEL9.0-es-3-20240620
+511
+
+
+capítulo 10 |  Revisión exhaustiva
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Verify the sam user exists] **********************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Sam was created] *********************************************************
+ok: [servera.lab.example.com] => {
+    "msg": "Sam was created"
+}
+ok: [serverb.lab.example.com] => {
+    "msg": "Sam was created"
+}
+TASK [Output sam user status to file] ******************************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr1
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr1
+512
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Creación de playbooks
+Cree tres playbooks. El primer playbook, dev_deploy.yml, instala e inicia el servidor
+web. El segundo playbook, get_web_content.yml, garantiza que el servidor web esté
+ofreciendo contenido. El tercer playbook, site.yml, ejecuta los otros dos playbooks.
+Resultados
+• Crear y ejecutar playbooks para realizar tareas en hosts gestionados.
+• Usar plantillas, variables y manejadores Jinja2 en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr2
+Especificaciones
+• Cree los playbooks especificados por esta actividad en el directorio del proyecto /home/
+student/review-cr2.
+• Cree un playbook denominado dev_deploy.yml con un play que se ejecute en el grupo de
+hosts webservers (que contiene los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com). Habilitar el aumento de privilegios para el play. Agregue las
+siguientes tareas al play.
+– Instale el paquete httpd.
+– Inicie el servicio httpd y habilítelo para que se inicie durante el arranque.
+– Implemente la plantilla templates/vhost.conf.j2 en /etc/httpd/conf.d/
+vhost.conf en los hosts gestionados. Esta tarea debe notificar al controlador Restart
+httpd.
+– Copie el archivo files/index.html en el directorio /var/www/vhosts/hostname de los
+hosts gestionados. Asegúrese de que se cree el directorio de destino si aún no existe.
+– Configure el firewall para permitir el servicio httpd.
+– Agregue un manejador Restart httpd al play que reinicia el servicio httpd.
+• Cree un playbook denominado get_web_content.yml con un play denominado Test web
+content que se ejecute en el host gestionado workstation. Este playbook prueba si el
+playbook dev_deploy.yml se ejecutó correctamente y garantiza que el servidor web esté
+RH294-RHEL9.0-es-3-20240620
+513
+
+

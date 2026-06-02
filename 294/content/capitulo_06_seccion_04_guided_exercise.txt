@@ -1,0 +1,288 @@
+# Ejercicio Guiado: Inclusión e importación de archivos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 6. Administración de plays y playbooks complejos
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Ejercicio Guiado
+Inclusión e importación de archivos
+Incluir e importar playbooks y tareas en un playbook de Ansible de máximo nivel.
+Resultados
+• Incluir archivos de playbooks y tareas en los playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-file
+Instrucciones
+ 1.
+Cambie al directorio /home/student/projects-file.
+[student@workstation ~]$ cd ~/projects-file
+[student@workstation projects-file]$
+ 2.
+Revise el contenido de los tres archivos en el subdirectorio tasks.
+2.1.
+Revise el contenido del archivo tasks/environment.yml. El archivo contiene
+tareas para la instalación de paquetes y la administración del servicio.
+---
+  - name: Install the {{ package }} package
+    ansible.builtin.dnf:
+      name: "{{ package }}"
+      state: latest
+  - name: Start the {{ service }} service
+    ansible.builtin.service:
+      name: "{{ service }}"
+      enabled: true
+      state: started
+2.2.
+Revise el contenido del archivo tasks/firewall.yml. El archivo contiene tareas
+para la instalación, administración y configuración del software de firewall.
+---
+  - name: Install the firewall
+    ansible.builtin.dnf:
+RH294-RHEL9.0-es-3-20240620
+259
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+      name: "{{ firewall_pkg }}"
+      state: latest
+  - name: Start the firewall
+    ansible.builtin.service:
+      name: "{{ firewall_svc }}"
+      enabled: true
+      state: started
+  - name: Open the port for {{ rule }}
+    ansible.posix.firewalld:
+      service: "{{ item }}"
+      immediate: true
+      permanent: true
+      state: enabled
+    loop: "{{ rule }}"
+2.3.
+Revise el contenido del archivo tasks/placeholder.yml. Este archivo contiene
+una tarea para completar un archivo de contenido web de marcador de posición.
+---
+  - name: Create placeholder file
+    ansible.builtin.copy:
+      content: "{{ ansible_facts['fqdn'] }} has been customized using Ansible.\n"
+      dest: "{{ file }}"
+ 3.
+Revise el contenido del archivo test.yml en el subdirectorio plays. Este archivo contiene
+un play que prueba las conexiones a un servicio web.
+---
+- name: Test web service
+  hosts: workstation
+  become: false
+  tasks:
+    - name: connect to internet web server
+      ansible.builtin.uri:
+        url: "{{ url }}"
+        status_code: 200
+ 4.
+Cree un playbook denominado playbook.yml. Defina el primer play con el nombre
+Configure web server. El play debe ejecutarse contra el host gestionado
+servera.lab.example.com definido en el archivo inventory. El inicio del archivo debe
+aparecer de la siguiente manera:
+---
+- name: Configure web server
+  hosts: servera.lab.example.com
+ 5.
+En el primer play del playbook playbook.yml, configure su sección tasks con tres
+conjuntos de tareas que se incluyen o importan desde archivos de tareas.
+260
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+La primera tarea del play debe incluir el primer conjunto de tareas del archivo de tareas
+tasks/environment.yml. Defina las variables de tareas necesarias para instalar el
+paquete httpd y para habilitar e iniciar el servicio httpd.
+La segunda tarea del play debe importar el segundo conjunto de tareas del archivo de
+tareas tasks/firewall.yml. Defina las variables necesarias de la tarea para instalar el
+paquete firewalld a fin de habilitar e iniciar el servicio firewalld y permitir texto sin
+formato y conexiones HTTP seguras.
+La tercera tarea del play debe importar el segundo conjunto de tareas del archivo de tareas
+tasks/placeholder.yml.
+5.1.
+Cree la sección de tareas en el primer play agregando la siguiente entrada al playbook
+playbook.yml.
+  tasks:
+5.2.
+Incluya el primer conjunto de tareas desde tasks/environment.yml con la
+característica include_tasks. Establezca las variables package y service en
+httpd.
+    - name: Include the environment task file and set the variables
+      include_tasks: tasks/environment.yml
+      vars:
+        package: httpd
+        service: httpd
+5.3.
+Importe el segundo conjunto de tareas desde tasks/firewall.yml con
+la característica import_tasks. Establezca las variables firewall_pkg y
+firewall_svc en firewalld. Establezca la variable rule en http y https.
+    - name: Import the firewall task file and set the variables
+      import_tasks: tasks/firewall.yml
+      vars:
+        firewall_pkg: firewalld
+        firewall_svc: firewalld
+        rule:
+          - http
+          - https
+5.4.
+Importe el último conjunto de tareas desde tasks/placeholder.yml usando la
+característica import_tasks. Establezca la variable file en /var/www/html/
+index.html.
+    - name: Import the placeholder task file and set the variable
+      import_tasks: tasks/placeholder.yml
+      vars:
+        file: /var/www/html/index.html
+ 6.
+Agregue un segundo play al playbook playbook.yml importando el contenido del
+playbook plays/test.yml.
+RH294-RHEL9.0-es-3-20240620
+261
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+6.1.
+Agregue un segundo play al playbook playbook.yml para validar la instalación del
+servidor web. Importar el play desde plays/test.yml. Establezca la variable url
+en http://servera.lab.example.com como variable de play.
+- name: Import test play file and set the variable
+  import_playbook: plays/test.yml
+  vars:
+    url: 'http://servera.lab.example.com'
+6.2.
+El playbook final debería incluir el siguiente contenido:
+---
+- name: Configure web server
+  hosts: servera.lab.example.com
+  tasks:
+    - name: Include the environment task file and set the variables
+      include_tasks: tasks/environment.yml
+      vars:
+        package: httpd
+        service: httpd
+    - name: Import the firewall task file and set the variables
+      import_tasks: tasks/firewall.yml
+      vars:
+        firewall_pkg: firewalld
+        firewall_svc: firewalld
+        rule:
+          - http
+          - https
+    - name: Import the placeholder task file and set the variable
+      import_tasks: tasks/placeholder.yml
+      vars:
+        file: /var/www/html/index.html
+- name: Import test play file and set the variable
+  import_playbook: plays/test.yml
+  vars:
+    url: 'http://servera.lab.example.com'
+6.3.
+Guarde los cambios en el playbook playbook.yml.
+ 7.
+Antes de ejecutar el playbook, ejecute ansible-navigator run -m stdout
+playbook.yml --syntax-check para verificar que su sintaxis sea correcta. Corrija los
+errores informados antes de pasar al siguiente paso.
+[student@workstation projects-file]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+playbook: /home/student/projects-file/playbook.yml
+ 8.
+Ejecute el playbook playbook.yml. La salida de ansible-navigator muestra las
+tareas y los plays que se importan y el archivo de tareas que se incluye.
+262
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+[student@workstation projects-file]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Configure web server] ***********************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Include the environment task file and set the variables] ************
+included: /home/student/projects-file/tasks/environment.yml for
+ servera.lab.example.com
+TASK [Install the httpd package] ******************************************
+changed: [servera.lab.example.com]
+TASK [Start the httpd service] ********************************************
+changed: [servera.lab.example.com]
+TASK [Install the firewall] ***********************************************
+ok: [servera.lab.example.com]
+TASK [Start the firewall] *************************************************
+ok: [servera.lab.example.com]
+TASK [Open the port for ['http', 'https']] ********************************
+changed: [servera.lab.example.com] => (item=http)
+changed: [servera.lab.example.com] => (item=https)
+TASK [Create placeholder file] ********************************************
+changed: [servera.lab.example.com]
+PLAY [Test web service] ***************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [workstation]
+TASK [connect to internet web server] *************************************
+ok: [workstation]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=8    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish projects-file
+RH294-RHEL9.0-es-3-20240620
+263
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+264
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Trabajo de laboratorio
+Administración de plays y playbooks
+complejos
+Modificar un playbook complejo para que sea más fácil de gestionar mediante el uso de
+patrones de host, inclusiones e importaciones.
+Resultados
+• Especifique patrones de host para simplificar las referencias de host en un playbook.
+• Reestructure un playbook para que las tareas se importen desde archivos de tareas
+externos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-review
+Instrucciones
+Ha heredado un playbook del administrador anterior de algunos servidores web. El
+playbook se usa para configurar un servicio web en servera.lab.example.com,
+serverb.lab.example.com, serverc.lab.example.com y serverd.lab.example.com.
+En el playbook, también se configura el firewall en los cuatro hosts gestionados para permitir el
+tráfico web.
+Realice los siguientes cambios en el archivo del playbook playbook.yml para que sea más fácil
+de gestionar.
+1.
+Simplifique la lista de hosts gestionados por el play en el playbook /home/student/
+projects-review/playbook.yml usando un patrón de host comodín.
+Tiene un segundo playbook, /home/student/projects-review/host-test.yml, que
+contiene un play que puede usar para probar los patrones de host antes de usarlos en el play
+del playbook playbook.yml.
+2.
+Reestructure el playbook playbook.yml para que las cuatro primeras tareas del play
+se guarden en un archivo de tareas externo ubicado en tasks/web_tasks.yml. Use el
+módulo ansible.builtin.import_tasks para incorporar este archivo de tareas en el
+play.
+3.
+Reestructure el playbook playbook.yml para que la quinta, sexta y séptima tareas en su
+play se guarden en un archivo de tareas externo ubicado en tasks/firewall_tasks.yml.
+Use el módulo ansible.builtin.import_tasks para incorporar este archivo de tareas
+en el play.
+RH294-RHEL9.0-es-3-20240620
+265
+
+

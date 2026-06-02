@@ -1,0 +1,204 @@
+# 16.1. Crear volúmenes lógicos
+# Tipo: theory
+# Capítulo: Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+16.1. Creación de volúmenes lógicos 16.1. Creación de volúmenes lógicos Objetivos Describir cómo funciona Logical Volume Manager y utilizar LVM para crear un volumen lógico, formatear el volumen con un sistema de archivos y montar el volumen. Descripción general del Administrador de volúmenes lógicos Utilice el sistema LVM para crear volúmenes de almacenamiento lógicos como una capa en el almacenamiento físico. Este sistema de almacenamiento proporciona mayor flexibilidad que utilizar el almacenamiento físico directamente. LVM oculta la configuración de almacenamiento de hardware del software y le permite cambiar el tamaño de los volúmenes sin detener aplicaciones ni desmontar sistemas de archivos. LVM proporciona herramientas integrales de línea de comandos para administrar el almacenamiento. Dispositivos físicos Los volúmenes lógicos utilizan dispositivos físicos para almacenar datos. Estos dispositivos pueden ser particiones de disco, discos completos, dispositivos de matriz redundante de discos independientes (RAID) o discos de redes de área de almacenamiento (SAN). Debe inicializar un dispositivo como un volumen físico LVM. Un volumen físico LVM debe utilizar todo el dispositivo físico. Volúmenes físicos (PV) LVM utiliza el dispositivo físico subyacente como volumen físico LVM. Las herramientas LVM segmentan los volúmenes físicos en extensiones físicas (PE) para formar pequeños fragmentos de datos que actúan como el bloque de almacenamiento más pequeño en un PV. Grupos de volúmenes (VG) Un grupo de volúmenes es un grupo de almacenamiento formado por uno o más PV. Es el equivalente funcional de un disco completo en almacenamiento físico. Un PV debe asignarse únicamente a un único VG. LVM establece el tamaño del PE automáticamente, aunque es posible especificarlo. Un VG puede constar de espacio no utilizado y varios volúmenes lógicos. Volúmenes lógicos (LV) Los volúmenes lógicos se crean a partir de extensiones físicas libres en un VG y se proporcionan como dispositivo de almacenamiento para aplicaciones, usuarios y sistemas operativos. Los LV son una colección de extensiones lógicas (LE), que se asignan a
+
+extents. By default, each LE is mapped to one PE. Setting specific LV options changes this mapping; for
+
+Por ejemplo, la duplicación hace que cada LE se asigne a dos PE. Flujo de trabajo de Logical Volume Manager La creación de almacenamiento LVM requiere la construcción de estructuras en un flujo de trabajo lógico. Determine los dispositivos físicos que se convertirán en volúmenes físicos e inicialice estos dispositivos como volúmenes físicos LVM. Cree un grupo de volúmenes a partir de varios volúmenes físicos. Cree los volúmenes lógicos a partir del espacio disponible en el grupo de volúmenes. Formatee el volumen lógico con un sistema de archivos y móntelo, actívelo como espacio de intercambio o pase el volumen sin formato a una base de datos o servidor de almacenamiento para estructuras avanzadas.
+
+
+
+
+
+16.1. Creación de volúmenes lógicos Figura 22. Flujo de trabajo del Administrador de volúmenes lógicos Nota Los ejemplos aquí utilizan el nombre del dispositivo /dev/sdb y sus particiones de almacenamiento. Los nombres de los dispositivos en el sistema de su aula pueden ser diferentes. Utilice los comandos lsblk, blkid o cat /proc/partitions para identificar los dispositivos de su sistema. Construir almacenamiento LVM La creación de un volumen lógico implica la creación de particiones de dispositivos físicos, volúmenes físicos y grupos de volúmenes. Después de crear un LV, formatee el volumen y móntelo para acceder a él como almacenamiento. Preparar dispositivos físicos Nota La partición es opcional. Puede utilizar todo el dispositivo físico sin formato como volumen físico. Utilice el comando parted para etiquetar la partición.
+
+root@host:~# parted /dev/sdb mklabel gpt mkpart primary 1MiB 769MiB
+
+...salida omitida... Utilice el comando parted para crear una partición en el dispositivo físico.
+
+root@host:~# parted /dev/sdb mkpart secondary 770MiB 1026MiB
+
+Establezca la primera partición en el tipo de partición LVM de Linux.
+
+root@host:~# parted /dev/sdb set 1 lvm on
+
+Configure la segunda partición al tipo de partición LVM de Linux.
+
+
+
+
+
+16.1. Crear volúmenes lógicos
+
+root@host:~# parted /dev/sdb set 2 lvm on
+
+Utilice el comando udevadm SET para registrar la nueva partición con el kernel.
+
+root@host:~# udevadm settle
+
+Crear volúmenes físicos Utilice el comando pvcreate para etiquetar la partición física como un volumen físico LVM. Etiquete varios dispositivos simultáneamente utilizando nombres de dispositivos delimitados por espacios como argumentos para el comando pvcreate. Este ejemplo etiqueta los dispositivos /dev/sdb1 y /dev/sdb2 como PV que están listos para crear grupos de volúmenes.
+
+root@host:~# pvcreate /dev/sdb1 /dev/sdb2
+  Physical volume "/dev/sdb1" successfully created.
+  Physical volume "/dev/sdb2" successfully created.
+  Creating devices file /etc/lvm/devices/system.devices
+
+Crear un grupo de volúmenes El comando vgcreate crea uno o más volúmenes físicos en un grupo de volúmenes. El primer argumento es el nombre de un grupo de volúmenes, seguido de uno o más volúmenes físicos para asignar a este VG. Este ejemplo crea el VG vg01 utilizando los PV /dev/sdb1 y /dev/sdb2.
+
+root@host:~# vgcreate vg01 /dev/sdb1 /dev/sdb2
+  Volume group "vg01" successfully created
+
+Crear un volumen lógico El comando lvcreate crea un volumen lógico a partir de los PE disponibles en un grupo de volúmenes. Utilice el comando lvcreate para configurar el nombre y el tamaño de LV y el nombre de VG para contener este volumen lógico. Este ejemplo crea el LV lv01 con 300 MiB en el VG vg01.
+
+root@host:~# lvcreate -n lv01 -L 300M vg01
+  Logical volume "lv01" created.
+
+Este comando puede fallar si el grupo de volúmenes no tiene suficientes extensiones físicas libres. El tamaño LV se redondea al siguiente valor de tamaño PE cuando el tamaño no coincide exactamente. La opción -L del comando lvcreate requiere tamaños en bytes, mebibytes (megabytes binarios) y gibibytes (gigabytes binarios), o similares. La -l minúscula requiere tamaños que se especifican como una cantidad de extensiones físicas. Los siguientes comandos son dos opciones para crear el mismo LV con el mismo tamaño:
+
+lvcreate -n lv01 -L 128M vg01 : Create an LV of size 128 MiB, rounded to the next PE.
+lvcreate -n lv01 -l 32 vg01 : Create an LV of size 32 PEs at 4 MiB each, total 128 MiB.
+
+Cree un sistema de archivos en el volumen lógico Especifique el volumen lógico utilizando el nombre tradicional /dev/vgname/lvname o el nombre del asignador de dispositivos del kernel /dev/mapper/vgname-lvname.
+
+
+
+
+
+16.1. Creación de volúmenes lógicos Utilice el comando mkfs para crear un sistema de archivos en el nuevo volumen lógico.
+
+root@host:~# mkfs -t xfs /dev/vg01/lv01
+
+...salida omitida... Cree un punto de montaje utilizando el comando mkdir.
+
+root@host:~# mkdir /mnt/data
+
+Para que el sistema de archivos esté disponible de forma persistente, agregue una entrada al archivo /etc/fstab. /dev/vg01/lv01 /mnt/data xfs defaults 0 0 Actualice el demonio systemd con el nuevo archivo de configuración /etc/fstab.
+
+root@host:~# systemctl daemon-reload
+
+Monte el LV usando el comando de montaje.
+
+root@host:~# mount /mnt/data/
+
+Nota Puede montar un volumen lógico por nombre o por UUID, porque LVM analiza los PV buscando el UUID. Este comportamiento es exitoso incluso cuando el VG se creó usando un nombre, porque el PV siempre contiene un UUID. Mostrar el estado del componente LVM LVM proporciona varias utilidades para mostrar la información de estado de PV, VG y LV. Utilice los comandos pvdisplay, vgdisplay y lvdisplay para mostrar la información de estado de los componentes LVM. Los comandos pvs, vgs y lvs asociados se usan comúnmente y muestran un subconjunto de información de estado, con una línea para cada entidad. Mostrar información del volumen físico El comando pvdisplay muestra información sobre los PV. Utilice el comando sin argumentos para enumerar información de todos los PV del sistema. Proporcionar el nombre del PV como argumento del comando muestra la información específica del PV. Utilice el comando pvdisplay para mostrar la información del PV /dev/sdb1:
+
+root@host:~# pvdisplay /dev/sdb1
+  --- Physical volume ---
+  PV Name               /dev/sdb1                         
+  VG Name               vg01                              
+  PV Size               768.00 MiB / not usable 4.00 MiB  
+  Allocatable           yes
+  PE Size               4.00 MiB                          
+  Total PE              191
+  Free PE               116                               
+  Allocated PE          75
+  PV UUID               evAimq-gs8W-6X9C-3H6q-ndDk-pvTx-QEZ9Jc
+
+Nombre PV muestra el nombre del dispositivo.
+
+
+
+
+
+16.1. Creación de volúmenes lógicos Nombre de VG muestra el grupo de volúmenes donde se asigna el PV. Tamaño PV muestra el tamaño físico del PV, incluido el espacio inutilizable. Tamaño PE muestra el tamaño de la extensión física. Free PE muestra el tamaño de PE disponible en el VG para crear LV o ampliar LV existentes. Mostrar información del grupo de volúmenes El comando vgdisplay muestra información sobre los grupos de volúmenes. Para enumerar información sobre todos los VG, utilice el comando sin argumentos. Proporcione el nombre del VG como argumento para enumerar información específica del VG. Utilice el comando vgdisplay para mostrar la información del grupo de volúmenes vg01:
+
+root@host:~# vgdisplay vg01
+  --- Volume group ---
+  VG Name               vg01                
+  System ID
+  Format                lvm2
+  Metadata Areas        2
+  Metadata Sequence No  2
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                1
+  Open LV               1
+  Max PV                0
+  Cur PV                2
+  Act PV                2
+  VG Size               1016.00 MiB         
+  PE Size               4.00 MiB
+  Total PE              254                 
+  Alloc PE / Size       75 / 300.00 MiB
+  Free  PE / Size       179 / 716.00 MiB    
+  VG UUID               F5a4lm-Ln8v-cYM0-YJth-f7fj-lQYZ-1AP8Zu
+
+Nombre VG muestra el nombre del grupo de volúmenes. Tamaño de VG muestra el tamaño total del grupo de almacenamiento que está disponible para la asignación de LV. PE total muestra el tamaño total de las unidades de PE. Free PE / Size muestra el espacio disponible en el VG para crear o ampliar LV. Mostrar información de volúmenes lógicos El comando lvdisplay muestra información sobre volúmenes lógicos. Utilice el comando sin argumentos para enumerar información de todos los LV. Al proporcionar el nombre del LV como argumento se muestra la información específica del LV. Utilice el comando lvdisplay para mostrar la información del volumen /dev/vg01/lv01.
+
+
+
+
+
+16.1. Crear volúmenes lógicos
+
+root@host:~# lvdisplay /dev/vg01/lv01
+  --- Logical volume ---
+  LV Path                /dev/vg01/lv01         
+  LV Name                lv01
+  VG Name                vg01                   
+  LV UUID                7Toe5z-ozzv-aW4I-mJYQ-2VOV-MiP2-hNGFCf
+  LV Write Access        read/write
+  LV Creation host, time servera, 2025-06-18 18:49:54 +0000
+  LV Status              available
+  # open                 1
+  LV Size                300.00 MiB             
+  Current LE             75                     
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:0
+
+LV Path muestra el nombre del dispositivo del LV. Nombre de VG muestra el VG que se utiliza para crear este LV. Tamaño LV muestra el tamaño total del VI. Utilice las herramientas del sistema de archivos para determinar el espacio libre y utilizado para el LV. LE actual muestra el número de extensiones lógicas que utiliza este LV. Referencias
+
+fdisk(8), gdisk(8), parted(8), partprobe(8), lvm(8), pvcreate(8), vgcreate(8), lvcreate(8),
+mkfs(8), pvdisplay(8), vgdisplay(8), and lvdisplay(8) man pages.
+
+Para obtener más información, consulte la guía Configuración y gestión de volúmenes lógicos en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/configuración_y_gestión_volumen_lógico/index
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos 16.2. Ejercicio guiado Crear volúmenes lógicos Cree volúmenes lógicos, formatéelos con un sistema de archivos y móntelos. Resultados Cree volúmenes físicos, grupos de volúmenes y volúmenes lógicos con herramientas LVM. Cree sistemas de archivos en volúmenes lógicos y móntelos de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-create
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Etiquete el dispositivo de almacenamiento /dev/sdb con la etiqueta gpt y cree dos particiones de dispositivo físico con un tamaño de 256 MiB. Configure ambas particiones al tipo de partición LVM de Linux y registre las particiones con el kernel. 2. Utilice la etiqueta gpt para la partición /dev/sdb:
+
+[root@servera ~]# parted /dev/sdb mklabel gpt
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Crea la primera partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart first 1MiB 257MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Establezca la primera partición en el tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 1 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.3. Crea la segunda partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart second 257MiB 513MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.4. Configure la segunda partición al tipo de partición LVM de Linux. 2.5.
+
+
+
+
+

@@ -1,0 +1,856 @@
+# Capítulo 10. Control de servicios y demonios
+
+## 10.1. Identificar procesos del sistema que se inician automáticamente
+
+10.1. Identificación de procesos del sistema que se inician automáticamente 10.1. Identificación de procesos del sistema que se inician automáticamente Objetivos Enumerar los demonios del sistema y los servicios de red que se inician en el momento del arranque como servicios, o que se inician y se detienen dinámicamente cuando se establece una conexión de red. El demonio systemd El demonio systemd gestiona el proceso de inicio de Linux, que incluye el inicio de servicios y la gestión de servicios en general. El demonio systemd activa recursos del sistema, demonios del servidor y otros procesos, tanto en el momento del arranque como en un sistema en ejecución. Los demonios son procesos que esperan o se ejecutan en segundo plano para realizar diversas tareas. Por convención, los nombres de los demonios terminan en d, como httpd, vsftpd, chronyd, etc. En el contexto de systemd, un servicio a menudo se refiere a uno o más demonios. Generalmente, los demonios se inician automáticamente en el momento del arranque y continúan ejecutándose hasta que el sistema se apaga o hasta que los detienes manualmente. Sin embargo, iniciar o detener un servicio podría cambiar el estado del sistema una vez, sin dejar un proceso demonio en ejecución después (un tipo de servicio de una sola vez). En Red Hat Enterprise Linux, el primer proceso que se inicia (PID 1) es el demonio systemd, que proporciona estas características: Capacidades de paralelización (iniciar múltiples servicios simultáneamente), que aumentan la velocidad de arranque de un sistema. Inicio bajo demanda de demonios sin necesidad de un servicio independiente. Gestión automática de dependencias de servicios, que puede evitar tiempos de espera prolongados. Por ejemplo, un servicio dependiente de la red no intenta iniciarse hasta que la red esté disponible. Un método para rastrear procesos relacionados juntos mediante el uso de grupos de control de Linux. Descripción de unidades de servicio Una unidad systemd define objetos que el sistema sabe cómo gestionar. Las unidades están representadas por archivos de configuración denominados archivos de unidad, que encapsulan información sobre los servicios del sistema, los sockets de escucha y otros objetos relevantes para el sistema de inicio systemd. Una unidad tiene un nombre y un tipo de unidad. El nombre proporciona una identidad única a la unidad. El tipo de unidad permite agrupar unidades con otros tipos de unidades similares. El demonio systemd utiliza unidades para gestionar diferentes tipos de objetos: Unidades de servicio Las unidades de servicio tienen una extensión .service y representan servicios del sistema. Puede utilizar unidades de servicio para iniciar demonios utilizados con frecuencia, como un servidor web. Unidades de zócalo Las unidades de zócalo tienen una extensión .socket y representan sockets de comunicación entre procesos (IPC) que systemd debe monitorear. Si un cliente se conecta al socket, entonces el administrador systemd inicia un demonio y le pasa la conexión. Puede utilizar unidades de socket para retrasar el inicio de un servicio en el momento del arranque y para iniciar bajo demanda los servicios que se utilizan con menos frecuencia.
+
+
+
+
+
+10.1. Identificación de procesos del sistema que se inician automáticamente Unidades de ruta Las unidades de ruta tienen una extensión .path y retrasan la activación de un servicio hasta que ocurre un cambio específico en el sistema de archivos. Puede utilizar unidades de ruta para servicios que utilizan directorios de spool, como un sistema de impresión. Para administrar unidades, use el comando systemctl. Por ejemplo, muestre los tipos de unidades disponibles con el comando systemctl -t help. El comando systemctl puede tomar nombres de unidades abreviados, entradas del árbol de procesos y descripciones de unidades. Listado de unidades de servicio Utilice el comando systemctl para explorar el estado actual del sistema. Por ejemplo, el siguiente comando enumera y pagina todas las unidades de servicio actualmente cargadas.
+
+root@host:~# systemctl list-units --type=service
+  UNIT                       LOAD   ACTIVE SUB          DESCRIPTION
+  accounts-daemon.service    loaded active running      Accounts Service
+  atd.service                loaded active running      Deferred execution ...
+  auditd.service             loaded active running      Security Audit ...
+  avahi-daemon.service       loaded active running      Avahi mDNS/DNS-SD Stack
+  chronyd.service            loaded active running      NTP client/server
+
+...salida omitida... En este ejemplo, la opción --type=service limita el tipo de unidades systemd a unidades de servicio. La salida tiene la
+
+following columns:
+
+UNIDAD: El nombre de la unidad de servicio. LOAD: Si el demonio systemd analizó correctamente la configuración de la unidad y cargó la unidad en la memoria. ACTIVO: El estado de activación de alto nivel de la unidad. Esta información indica si la unidad se inició exitosamente. SUB: El estado de activación de bajo nivel de la unidad. Esta información indica información más detallada sobre la unidad. La información varía según el tipo de unidad, su estado y cómo se ejecuta la unidad. DESCRIPCIÓN: La breve descripción de la unidad. De forma predeterminada, el comando systemctl list-units --type=service enumera solo las unidades de servicio con estados de activación activos. La opción systemctl list-units --all enumera todas las unidades de servicio independientemente de los estados de activación. Utilice la opción --state= para filtrar por los valores en los campos LOAD, ACTIVE o SUB.
+
+root@host:~# systemctl list-units --type=service --all
+  UNIT                     LOAD      ACTIVE    SUB      DESCRIPTION
+  accounts-daemon.service  loaded    active    running  Accounts Service
+  alsa-restore.service     loaded    inactive  dead     Save/Restore Sound ...
+
+● apt-daily.service no encontrado inactivo apt-daily.service muerto
+
+  atd.service              loaded    active    running  Deferred execution ...
+  audit-rules.service      loaded    inactive  dead     Load Audit Rules
+  auditd.service           loaded    active    running  Security Audit ...
+
+● auto-cpufreq.service no encontrado inactivo muerto auto-cpufreq.service ...salida omitida... El comando systemctl sin ningún argumento enumera las unidades que están cargadas y activas.
+
+
+
+
+
+10.1. Identificar procesos del sistema que se inician automáticamente
+
+root@host:~# systemctl
+
+UNIDAD DE CARGA ACTIVA SUB DESCRIPCIÓN proc-sys-fs-binfmt_misc.automount cargado activo esperando Arbitrario... sys-devices-....dispositivo cargado activo conectado Red Virtio... sys-subsystem-net-devices-ens3.deviceloaded activo conectado Red Virtio... ...salida omitida... -.mount cargado activo montado Root Mount boot.mount cargado activo montado /boot...salida omitida... systemd-ask-password-plymouth.path cargado activo esperando Reenviar contraseña... systemd-ask-password-wall.path cargado activo esperando Reenviar contraseña... init.scope cargado activo en ejecución Sistema y Servi... sesión-1.scope cargado activo en ejecución Sesión 1 de... atd.service cargado activo en ejecución Herramientas de cola de trabajos auditd.service cargado activo en ejecución Auditoría de seguridad...
+
+chronyd.service                      loaded active running   NTP client/server
+
+crond.service cargado activo ejecutando el Programador de comandos... salida omitida... La opción list-units del comando systemctl muestra las unidades que el servicio systemd intenta analizar y cargar en la memoria. Esta opción no muestra los servicios que están instalados pero no habilitados. Puedes usar systemctl
+
+command list-unit-files option to see the state of all the installed unit files:
+root@host:~# systemctl list-unit-files --type=service
+
+UNIT FILE STATE VENDOR PRESET arp-ethers.service deshabilitado deshabilitado atd.service habilitado habilitado auditd.service habilitado habilitado auth-rpcgss-module.service estático - autovt@.service alias - blk-availability.service deshabilitado deshabilitado ... salida omitida... En la salida del comando systemctl list-unit-files, algunas entradas comunes para el campo ESTADO están habilitadas, deshabilitadas, estáticas y enmascaradas. Todos los valores de ESTADO se enumeran en las páginas del manual del comando systemctl. Visualización de estados de servicio Vea el estado de una unidad con el comando systemctl status name.type. Si se omite el tipo de unidad, el comando espera una unidad de servicio con ese nombre.
+
+root@host:~# systemctl status sshd.service
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:33 UTC; 2h 48min ago
+
+Invocación: 215ee4e3b9e2426880cb727cb3933db1
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 2212 (sshd)
+      Tasks: 1 (limit: 35724)
+     Memory: 3.2M (peak: 6.4M)
+        CPU: 8.984s
+     CGroup: /system.slice/sshd.service
+             └─2212 "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups"
+
+22 de mayo 17:33:34 estación de trabajo sshd-session[5124]: Conexión cerrada por... 22 de mayo 17:33:46 estación de trabajo sshd-session[5125]: Conexión cerrada por... 22 de mayo 17:33:59 estación de trabajo sshd-session[5126]: Conexión cerrada por... ...salida omitida... La siguiente tabla enumera algunos campos de salida del Opción de estado del comando systemctl:
+
+
+
+
+
+10.1. Identificación de procesos del sistema que se inician automáticamente Tabla 13. Información de la unidad de servicio Cargado Si la unidad de servicio está cargada en la memoria Activa Si la unidad de servicio está ejecutándose y, de ser así, durante cuánto tiempo Documentos Dónde encontrar más información sobre el servicio PID principal El ID del proceso principal del servicio, incluido el nombre del comando Estado Más información sobre el servicio Proceso Más información sobre los procesos relacionados CGroup Más información sobre los grupos de control relacionados No todos estos campos siempre están presentes en la salida del comando. Las palabras clave en la salida de estado indican el estado del servicio. La siguiente tabla define palabras clave para los estados del servicio. Tabla 14. Estados de servicio en systemctl Salida cargada Se procesa el archivo de configuración de la unidad. activo (en ejecución) El servicio se está ejecutando con procesos continuos. activo (salido) El servicio completó exitosamente una configuración única. activo (en espera) El servicio se está ejecutando pero está esperando un evento. inactivo El servicio no se está ejecutando. habilitado El servicio se inicia en el momento del arranque. deshabilitado El servicio no está configurado para iniciarse en el momento del arranque. estático El servicio no se puede habilitar, pero una unidad habilitada podría iniciarlo automáticamente. Campo Descripción Palabra clave Descripción
+
+
+
+
+
+10.1. Identificación de procesos del sistema que comienzan automáticamente Verificación del estado del servicio El comando systemctl verifica los estados específicos de un servicio. Por ejemplo, use el comando systemctl es-
+
+active option to verify whether a service unit is active (running):
+root@host:~# systemctl is-active sshd.service
+
+active El comando devuelve el estado de la unidad de servicio, que normalmente es activa o inactiva. Ejecute la opción is-enabled del comando systemctl para verificar si una unidad de servicio está habilitada para iniciarse automáticamente
+
+during system boot:
+root@host:~# systemctl is-enabled sshd.service
+
+enable El comando devuelve si la unidad de servicio está habilitada para iniciarse en el momento del arranque y el estado generalmente está habilitado o deshabilitado. Para verificar si la unidad falló durante el inicio, ejecute la opción is-failed del comando systemctl:
+
+root@host:~# systemctl is-failed sshd.service
+
+activo El comando regresa activo si el servicio se está ejecutando correctamente, o falla si ocurrió un error durante el inicio. Si la unidad se detuvo, regresa desconocida o inactiva. Para enumerar todas las unidades fallidas, ejecute el comando systemctl --failed --type=service. Hace referencia a las páginas de manual systemd(1), systemd.unit(5), systemd.service(5), systemd.socket(5) y systemctl(1). Para obtener más información, consulte la guía Uso de archivos unitarios systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_systemd_unit_files_to_customize_and_optimize_your_system
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente 10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente Enumere las unidades de servicio instaladas e identifique qué servicios están actualmente habilitados y activos en un servidor. Resultados Enumerar las unidades de servicio instaladas. Identificar servicios activos y habilitados en el sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-identify
+
+Instrucciones Enumere todas las unidades de servicio instaladas en la máquina del servidor. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1.1. Enumere todas las unidades de servicio instaladas.
+
+[student@servera ~]$ systemctl list-units --type=service
+
+SUBDESCRIPCIÓN ACTIVA DE CARGA UNIDAD
+
+  atd.service            loaded active   running  Deferred execution scheduler
+  auditd.service         loaded active   running  Security Audit Logging Service
+  chronyd.service        loaded active   running  NTP client/server
+  cloud-config.service   loaded active   exited   Cloud-init: Config Stage
+  cloud-final.service    loaded active   exited   Cloud-init: Final Stage
+
+...salida omitida... Presione Q para salir del comando. 1.2. Enumere todas las unidades de socket, tanto activas como inactivas, en la máquina del servidor. 2.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Identificar procesos del sistema que se inician automáticamente
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente 10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente Enumere las unidades de servicio instaladas e identifique qué servicios están actualmente habilitados y activos en un servidor. Resultados Enumerar las unidades de servicio instaladas. Identificar servicios activos y habilitados en el sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-identify
+
+Instrucciones Enumere todas las unidades de servicio instaladas en la máquina del servidor. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1.1. Enumere todas las unidades de servicio instaladas.
+
+[student@servera ~]$ systemctl list-units --type=service
+
+SUBDESCRIPCIÓN ACTIVA DE CARGA UNIDAD
+
+  atd.service            loaded active   running  Deferred execution scheduler
+  auditd.service         loaded active   running  Security Audit Logging Service
+  chronyd.service        loaded active   running  NTP client/server
+  cloud-config.service   loaded active   exited   Cloud-init: Config Stage
+  cloud-final.service    loaded active   exited   Cloud-init: Final Stage
+
+...salida omitida... Presione Q para salir del comando. 1.2. Enumere todas las unidades de socket, tanto activas como inactivas, en la máquina del servidor. 2.
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente
+
+[student@servera ~]$ systemctl list-units --type=socket --all
+  UNIT                 LOAD   ACTIVE SUB       DESCRIPTION
+  cockpit.socket       loaded active running   Cockpit Web Service Socket
+  dbus.socket          loaded active running   D-Bus System Message Bus Socket
+  dm-event.socket      loaded active listening Device-mapper event daemon FIFOs
+  lvm2-lvmpolld.socket loaded active listening LVM2 poll daemon socket
+
+...salida omitida... Leyenda: LOAD → Refleja si la definición de unidad se cargó correctamente.
+
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+29 unidades cargadas listadas. Para mostrar todos los archivos de unidades instalados, utilice 'systemctl list-unit-files'. Presione Q para salir del comando. Explore el estado del servicio chronyd. Este servicio realiza la sincronización del protocolo de tiempo de red (NTP). 3. Muestra el estado del servicio chronyd. Tenga en cuenta el ID del proceso de cualquier demonio activo.
+
+[student@servera ~]$ systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; ...
+     Active: active (running) since Thu 2025-05-22 14:47:06 UTC; 4h 0min ago
+
+Invocación: c9e1ab4edb1d426bbc065db07ee1d475
+
+       Docs: man:chronyd(8)
+             man:chrony.conf(5)
+    Process: 929 ExecStart=/usr/sbin/chronyd $OPTIONS (code=exited, ...
+   Main PID: 946 (chronyd)
+      Tasks: 1 (limit: 9897)
+     Memory: 4.4M (peak: 5.2M)
+        CPU: 96ms
+     CGroup: /system.slice/chronyd.service
+             └─946 /usr/sbin/chronyd -F 2
+
+22 de mayo 14:47:06 servera.lab.example.com chronyd[946]: chronyd versión 4.6.1... 22 de mayo 14:47:06 servera.lab.example.com chronyd[946]: la directiva de clave de comando es... 22 de mayo 14:47:06 servera.lab.example.com chronyd[946]: generatecommandkey... ...salida omitida... 22 de mayo 14:47:12 servera chronyd[946]: Fuente 172.25.254.254 en línea 22 de mayo 14:47:16 servera chronyd[946]: Fuente seleccionada 172.25.254.254 Presione Q para salir del comando. 3.1. Confirme que el demonio chronyd se esté ejecutando utilizando su ID de proceso. En el comando anterior, el resultado del ID del proceso asociado con el servicio chronyd es 946. El ID del proceso puede diferir en su sistema.
+
+[student@servera ~]$ ps -p 946
+    PID TTY          TIME CMD
+    946 ?        00:00:00 chronyd
+
+3.2. Explore el estado del servicio sshd. Puede utilizar este servicio para una comunicación cifrada segura entre sistemas. 4. Determine si el servicio sshd está habilitado para iniciarse en el inicio del sistema. 4.1.
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente y finalizan En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[student@servera ~]$ systemctl is-enabled sshd
+
+habilitado Determine si el servicio sshd está activo sin mostrar toda la información de estado.
+
+[student@servera ~]$ systemctl is-active sshd
+
+activo 4.2. Muestra el estado del servicio sshd.
+
+[student@servera ~]$ systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; ...
+     Active: active (running) since Thu 2025-05-22 14:48:13 UTC; 4h ...
+
+Invocación: 8dfdf690e8134f4b9e317b91fe84ebda
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 1403 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 6.8M (peak: 9.8M)
+        CPU: 12.525s
+     CGroup: /system.slice/sshd.service
+             └─1403 "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 ...
+
+22 de mayo 18:48:24 servera sshd-session[13035]: Conexión cerrada por... 22 de mayo 18:48:48 servera sshd-session[13074]: Conexión cerrada por... 22 de mayo 18:49:00 servera sshd-session[13081]: Conexión cerrada por... ...salida omitida... Presione Q para salir del comando. 4.3. Enumere los estados habilitados o deshabilitados de todas las unidades de servicio.
+
+[student@servera ~]$ systemctl list-unit-files --type=service
+
+UNIDAD ESTADO DE ARCHIVO PRESET arp-ethers.service deshabilitado deshabilitado atd.service habilitado habilitado auditd.service habilitado habilitado autovt@.service alias - blk-availability.service deshabilitado deshabilitado bluetooth.service habilitado habilitado Capsule@.service estático -
+
+chronyd.service                 enabled         enabled
+
+cloud-config.service habilitado habilitado... salida omitida... Presione Q para salir del comando. 5. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente
+
+student@workstation:~$ lab finish services-identify
+
+
+
+
+
+10.3. Servicios del sistema de control 10.3. Control de los servicios del sistema Objetivos Controlar los demonios del sistema y los servicios de red con el comando systemctl. Iniciar y detener servicios Puede iniciar, detener o recargar servicios manualmente para actualizar el servicio, actualizar el archivo de configuración, desinstalar el servicio o administrar manualmente un servicio que se utiliza con poca frecuencia. Para verificar el estado de un servicio, incluido si el servicio se está ejecutando o detenido, use el estado systemctl
+
+command:
+root@host:~# systemctl status sshd.service
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:33 UTC; 7h ago
+
+...salida omitida... Para iniciar un servicio, utilice el comando systemctl start como usuario root (con el comando sudo si es necesario). Si ejecuta el comando systemctl start solo con el nombre del servicio (sin el tipo de servicio), entonces el servicio systemd busca archivos .service.
+
+root@host:~# systemctl start sshd
+
+Para detener un servicio en ejecución, utilice la opción de detención del comando systemctl. El siguiente ejemplo detiene el
+
+sshd.service service:
+root@host:~# systemctl stop sshd.service
+
+Reinicio y recarga de servicios Cuando reinicia un servicio en ejecución, el servicio primero se detiene y luego se reinicia. Al reiniciar el servicio, el nuevo proceso obtiene una nueva ID durante el inicio y, por lo tanto, la ID del proceso cambia. Para reiniciar un servicio en ejecución, use la opción de reinicio del comando systemctl. El siguiente ejemplo reinicia el sshd
+
+service:
+root@host:~# systemctl restart sshd.service
+
+Algunos servicios pueden recargar sus archivos de configuración sin necesidad de reiniciar, lo que se denomina recarga del servicio. Recargar un servicio no cambia el ID de proceso asociado con varios procesos de servicio. Para recargar un servicio en ejecución, use la opción de recarga del comando systemctl. El siguiente ejemplo muestra cómo recargar el servicio sshd.service
+
+after configuration changes:
+root@host:~# systemctl reload sshd.service
+
+Si no está seguro de si el servicio tiene la función para recargar los cambios del archivo de configuración, use la opción recargar o reiniciar del comando systemctl. El comando recarga los cambios de configuración si la función de recarga está
+
+available. Otherwise, the command restarts the service to implement the new configuration changes:
+
+
+
+
+
+
+
+## 10.3. Servicios del sistema de control
+
+10.3. Servicios del sistema de control 10.3. Control de los servicios del sistema Objetivos Controlar los demonios del sistema y los servicios de red con el comando systemctl. Iniciar y detener servicios Puede iniciar, detener o recargar servicios manualmente para actualizar el servicio, actualizar el archivo de configuración, desinstalar el servicio o administrar manualmente un servicio que se utiliza con poca frecuencia. Para verificar el estado de un servicio, incluido si el servicio se está ejecutando o detenido, use el estado systemctl
+
+command:
+root@host:~# systemctl status sshd.service
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:33 UTC; 7h ago
+
+...salida omitida... Para iniciar un servicio, utilice el comando systemctl start como usuario root (con el comando sudo si es necesario). Si ejecuta el comando systemctl start solo con el nombre del servicio (sin el tipo de servicio), entonces el servicio systemd busca archivos .service.
+
+root@host:~# systemctl start sshd
+
+Para detener un servicio en ejecución, utilice la opción de detención del comando systemctl. El siguiente ejemplo detiene el
+
+sshd.service service:
+root@host:~# systemctl stop sshd.service
+
+Reinicio y recarga de servicios Cuando reinicia un servicio en ejecución, el servicio primero se detiene y luego se reinicia. Al reiniciar el servicio, el nuevo proceso obtiene una nueva ID durante el inicio y, por lo tanto, la ID del proceso cambia. Para reiniciar un servicio en ejecución, use la opción de reinicio del comando systemctl. El siguiente ejemplo reinicia el sshd
+
+service:
+root@host:~# systemctl restart sshd.service
+
+Algunos servicios pueden recargar sus archivos de configuración sin necesidad de reiniciar, lo que se denomina recarga del servicio. Recargar un servicio no cambia el ID de proceso asociado con varios procesos de servicio. Para recargar un servicio en ejecución, use la opción de recarga del comando systemctl. El siguiente ejemplo muestra cómo recargar el servicio sshd.service
+
+after configuration changes:
+root@host:~# systemctl reload sshd.service
+
+Si no está seguro de si el servicio tiene la función para recargar los cambios del archivo de configuración, use la opción recargar o reiniciar del comando systemctl. El comando recarga los cambios de configuración si la función de recarga está
+
+available. Otherwise, the command restarts the service to implement the new configuration changes:
+
+
+
+
+
+10.3. Servicios del sistema de control
+
+root@host:~# systemctl reload-or-restart sshd.service
+
+Listado de dependencias de unidades Algunos servicios requieren que otros servicios se ejecuten primero, lo que crea dependencias en los otros servicios. Algunos servicios se inician sólo a pedido, en lugar de en el momento del arranque. En ambos casos, los comandos systemd y systemctl inician los servicios según sea necesario, ya sea para resolver la dependencia o para iniciar un servicio que se utiliza con poca frecuencia. Deshabilitar el servicio deshabilita las dependencias. Para ver una asignación jerárquica de dependencias para iniciar una unidad de servicio, utilice el comando systemctl list-dependencies UNIT. El siguiente ejemplo enumera las dependencias para el servicio sshd.service:
+
+root@host:~# systemctl list-dependencies sshd.service
+
+sshd.service ○ ├─ssh-host-keys-migration.service ● ├─system.slice ● ├─sshd-keygen.target ○ │ ├─sshd-keygen@ecdsa.service ○ │ ├─sshd-keygen@ed25519.service ○ │ └─sshd-keygen@rsa.service ● └─sysinit.target ...salida omitida... Para enumerar dependencias inversas (unidades que dependen de la unidad especificada), use la opción --reverse con el comando. Este ejemplo enumera los servicios que dependen del servicio NetworkManager:
+
+root@host:~# systemctl list-dependencies --reverse NetworkManager.service
+
+NetworkManager.service ● ├─NetworkManager-wait-online.service ● └─multi-user.target ● └─graphical.target Servicios de enmascaramiento y desenmascaramiento Al administrar un sistema Linux, es posible que algunos servicios entren en conflicto entre sí. Un ejemplo común es cuando dos servicios requieren el mismo puerto de red. Por ejemplo, tanto el servidor HTTP Apache como el servidor web nginx utilizan el puerto 80 para escuchar el tráfico HTTP. Para evitar conflictos, puede enmascarar uno de los servicios utilizando el comando systemctl mask. Enmascarar un servicio crea un enlace simbólico desde la unidad de servicio al archivo /dev/null, lo que impide que un administrador inicie el servicio. El siguiente ejemplo enmascara el servicio httpd:
+
+root@host:~# systemctl mask httpd.service
+
+Enlace simbólico creado '/etc/systemd/system/httpd.service' → '/dev/null'. Después de enmascarar un servicio, puedes verificar su estado:
+
+
+
+
+
+10.3. Servicios del sistema de control
+
+root@host:~# systemctl status httpd.service
+
+○ httpd.servicio
+
+     Loaded: masked (Reason: Unit httpd.service is masked.)
+     Active: inactive (dead)
+
+...salida omitida...
+
+root@host:~# systemctl list-unit-files httpd.service
+
+UNIT FILE STATE PRESET httpd.service enmascarado deshabilitado El intento de iniciar una unidad de servicio enmascarada falla con el siguiente resultado:
+
+root@host:~# systemctl start httpd.service
+
+No se pudo iniciar httpd.service: la unidad httpd.service está enmascarada. Si desea ejecutar un servicio enmascarado, primero debe usar el comando systemctl unmask para desenmascarar la unidad. Luego podrás iniciar el servicio como de costumbre.
+
+root@host:~# systemctl unmask httpd.service
+
+Se eliminó '/etc/systemd/system/httpd.service'.
+
+root@host:~# systemctl start httpd.service
+
+Importante Un servicio deshabilitado no se inicia automáticamente al iniciar, pero aún puede iniciarlo manualmente. Un servicio enmascarado no se puede iniciar en absoluto, ni automática ni manualmente. Habilitar servicios para que se inicien o se detengan al arrancar Iniciar un servicio en un sistema en ejecución no garantiza que el servicio se inicie automáticamente cuando se reinicie el sistema. De manera similar, detener un servicio en un sistema en ejecución no impide que se reinicie cuando el sistema se reinicie. La creación de enlaces en los directorios de configuración de systemd permite que el servicio se inicie en el arranque. Puede crear o eliminar estos enlaces utilizando el comando systemctl con la opción habilitar o deshabilitar.
+
+root@root:~# systemctl enable sshd.service
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/sshd.service' → '/usr/lib/systemd/system/sshd.service'. Este comando crea un enlace simbólico desde el archivo de la unidad de servicio, generalmente en el directorio /usr/lib/systemd/system, a la ubicación del disco donde el comando systemd busca archivos, en el directorio /etc/systemd/system/TARGETNAME.target.wants. Habilitar un servicio no inicia el servicio en la sesión actual. Para iniciar el servicio y permitir que se inicie automáticamente durante el arranque, puede ejecutar tanto el
+
+systemctl start and systemctl enable commands, or use the equivalent systemctl enable --now
+
+dominio.
+
+root@root:~# systemctl enable --now sshd.service
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/sshd.service' → '/usr/lib/systemd/system/sshd.service'. Para impedir que el servicio se inicie automáticamente, utilice el comando systemctl enable, que elimina el enlace simbólico que se creó al habilitar un servicio. Deshabilitar un servicio no lo detiene si se está ejecutando actualmente. Para deshabilitar y detener un servicio, puede ejecutar los comandos systemctl stop y systemctl enable, o usar el comando systemctl enable --now equivalente.
+
+
+
+
+
+10.3. Servicios del sistema de control
+
+root@host:~# systemctl disable --now sshd.service
+
+Se eliminó '/etc/systemd/system/multi-user.target.wants/sshd.service'. Para verificar si el servicio está habilitado o deshabilitado, use el comando systemctl is-enabled.
+
+root@host:~# systemctl is-enabled sshd.service
+
+enable Resumen de comandos systemctl Puede iniciar y detener servicios en un sistema en ejecución y habilitarlos o deshabilitarlos para un inicio automático en el momento del arranque. Tabla 15. Comandos útiles de gestión de servicios
+
+systemctl status UNIT
+
+Ver información detallada sobre el estado de una unidad.
+
+systemctl stop UNIT
+
+Detener un servicio en un sistema en ejecución.
+
+systemctl start UNIT
+
+Inicie un servicio en un sistema en ejecución.
+
+systemctl restart UNIT
+
+Reinicie un servicio en un sistema en ejecución.
+
+systemctl reload UNIT
+
+Vuelva a cargar el archivo de configuración de un servicio en ejecución.
+
+systemctl mask UNIT
+
+Deshabilite el inicio de un servicio, tanto manualmente como durante el arranque.
+
+systemctl unmask UNIT
+
+Poner a disposición un servicio enmascarado.
+
+systemctl enable UNIT
+
+Configure un servicio para que se inicie en el momento del arranque. Utilice la opción --now para iniciar también el servicio.
+
+systemctl disable UNIT
+
+Deshabilite el inicio de un servicio en el momento del arranque. Utilice la opción --now para detener también el servicio. Hace referencia a las páginas de manual systemd(1), systemd.unit(5), systemd.service(5), systemd.socket(5) y systemctl(1). Para obtener más información, consulte la guía Uso de archivos unitarios systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+tarea de comando single/using_systemd_unit_files_to_customize_and_optimize_your_system
+
+
+
+
+
+10.4. Servicios del Sistema de Control del Ejercicio Guiado 10.4. Ejercicio guiado Servicios del sistema de control Controle los demonios del sistema y los servicios de red con el comando systemctl. Resultados Utilice el comando systemctl para controlar los servicios systemd. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-control
+
+Instrucciones Reinicie y vuelva a cargar el servicio sshd en la máquina del servidor y observe los resultados. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Muestra el estado del servicio sshd. Tenga en cuenta el ID del proceso del demonio sshd.
+
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:48:13 UTC; 7h ago
+
+Invocación: 8dfdf690e8134f4b9e317b91fe84ebda
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 1403 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 6.5M (peak: 9.8M)
+
+...salida omitida... Presione Q para salir del comando. 1.2. Reinicie el servicio sshd y vea el estado. En este ejemplo, el ID de proceso del demonio cambia de 1403 a 23088. 1.3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Servicios del sistema de control del ejercicio guiado
+
+10.4. Servicios del Sistema de Control del Ejercicio Guiado 10.4. Ejercicio guiado Servicios del sistema de control Controle los demonios del sistema y los servicios de red con el comando systemctl. Resultados Utilice el comando systemctl para controlar los servicios systemd. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-control
+
+Instrucciones Reinicie y vuelva a cargar el servicio sshd en la máquina del servidor y observe los resultados. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Muestra el estado del servicio sshd. Tenga en cuenta el ID del proceso del demonio sshd.
+
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:48:13 UTC; 7h ago
+
+Invocación: 8dfdf690e8134f4b9e317b91fe84ebda
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 1403 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 6.5M (peak: 9.8M)
+
+...salida omitida... Presione Q para salir del comando. 1.2. Reinicie el servicio sshd y vea el estado. En este ejemplo, el ID de proceso del demonio cambia de 1403 a 23088. 1.3.
+
+
+
+
+
+10.4. Servicios del sistema de control del ejercicio guiado
+
+[root@servera ~]# systemctl restart sshd
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:22:57 UTC; 1s ago
+
+Invocación: 43b0376f99fb4224bdef70bc7a9100f2
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 23088 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 1M (peak: 1.2M)
+
+...salida omitida... Vuelva a cargar el servicio sshd y vea el estado. El ID de proceso del demonio no cambia.
+
+[root@servera ~]# systemctl reload sshd
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:22:57 UTC; 3min 13s ago
+
+Invocación: 43b0376f99fb4224bdef70bc7a9100f2
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+    Process: 23255 ExecReload=/bin/kill -HUP $MAINPID (code=exited, status=0/SUCCESS)
+   Main PID: 23088 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 1M (peak: 2.6M)
+
+...salida omitida... 1.4. Detenga el servicio chronyd. 2. Verifique que el servicio chronyd se esté ejecutando.
+
+[root@servera ~]# systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:06 UTC; 7h ago
+
+...salida omitida... 2.1. Detenga el servicio chronyd y vea el estado.
+
+[root@servera ~]# systemctl stop chronyd
+[root@servera ~]# systemctl status chronyd
+
+○ chronyd.service - cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; preset: enabled)
+     Active: inactive (dead) since Thu 2025-05-22 22:28:35 UTC; 1s ago
+
+...salida omitida... 22 de mayo 22:28:35 servera systemd[1]: Deteniendo chronyd.service - cliente/servidor NTP... 22 de mayo 22:28:35 servera systemd[1]: chronyd.service: Desactivado correctamente. 22 de mayo 22:28:35 servera systemd[1]: chronyd.service detenido - cliente/servidor NTP. 2.2. Determine si el servicio chronyd está habilitado para iniciarse en el inicio del sistema.
+
+[root@servera ~]# systemctl is-enabled chronyd
+
+habilitado 3. Reinicie la máquina del servidor y luego vea el estado del servicio chronyd. 4. Reinicie la máquina del servidor. 4.1.
+
+
+
+
+
+10.4. Servicios del sistema de control del ejercicio guiado
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+Inicie sesión como usuario estudiante en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 4.2. Revisar el estado del servicio chronyd.
+
+[root@servera ~]# systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:32:16 UTC; 1min 49s ago
+
+...salida omitida... 4.3. Deshabilite el servicio chronyd para que no se inicie durante el arranque y luego vea el estado del servicio.
+
+[root@servera ~]# systemctl disable chronyd
+
+Se eliminó '/etc/systemd/system/multi-user.target.wants/chronyd.service'.
+
+[root@servera ~]# systemctl status chronyd
+
+● chronyd.service: cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; disabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 22:32:16 UTC; 3min 11s ago
+
+...salida omitida... 5. Reinicie la máquina del servidor y luego vea el estado del servicio chronyd. 6. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+La máquina puede tardar unos minutos en iniciarse. 6.1. Inicie sesión como usuario estudiante en la máquina del servidor y revise el estado del servicio chronyd.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ systemctl status chronyd
+
+○ chronyd.service - cliente/servidor NTP
+
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; disabled; preset: enabled)
+     Active: inactive (dead)
+       Docs: man:chronyd(8)
+             man:chrony.conf(5)
+
+6.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+10.4. Ejercicio guiado Servicios del sistema de control Finalizar En la máquina de la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-control
+
+
+
+
+
+10.5. Servicios de control de laboratorio y demonios 10.5. Servicios de control de laboratorio y demonios Controla y monitorea los servicios del sistema y demonios que inicia systemd. Resultados Habilitar, deshabilitar, iniciar y detener servicios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade services-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. En la máquina del servidor, inicie el servicio psacct. 1. Verificar el estado actual del servicio psacct. Si el servicio psacct está detenido, inícielo. 2. Configure el servicio psacct para que se inicie al iniciar el sistema. 3. Verifique el estado del servicio rsyslog. Si el servicio rsyslog se está ejecutando, deténgalo y verifique que ya no esté activo. 4. Configure el servicio rsyslog para que no se inicie durante el inicio del sistema. 5. Reinicie la máquina del servidor para que la configuración de inicio de los servicios surta efecto. Espere a que la máquina se inicie antes de evaluar esta actividad. La máquina puede tardar unos minutos en iniciarse. 6.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Servicios de control de laboratorio y demonios
+
+10.5. Servicios de control de laboratorio y demonios 10.5. Servicios de control de laboratorio y demonios Controla y monitorea los servicios del sistema y demonios que inicia systemd. Resultados Habilitar, deshabilitar, iniciar y detener servicios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade services-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. En la máquina del servidor, inicie el servicio psacct. 1. Verificar el estado actual del servicio psacct. Si el servicio psacct está detenido, inícielo. 2. Configure el servicio psacct para que se inicie al iniciar el sistema. 3. Verifique el estado del servicio rsyslog. Si el servicio rsyslog se está ejecutando, deténgalo y verifique que ya no esté activo. 4. Configure el servicio rsyslog para que no se inicie durante el inicio del sistema. 5. Reinicie la máquina del servidor para que la configuración de inicio de los servicios surta efecto. Espere a que la máquina se inicie antes de evaluar esta actividad. La máquina puede tardar unos minutos en iniciarse. 6.
+
+
+
+
+
+10.5. Servicios de control de laboratorio y solución de demonios Controle y monitoree los servicios del sistema y los demonios que inicia systemd. Resultados Habilitar, deshabilitar, iniciar y detener servicios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-review
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. En la máquina del servidor, inicie el servicio psacct. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Verifique el estado actual del servicio psacct. Si el servicio psacct está detenido, inícielo. 2. Verificar el estado del servicio psacct.
+
+[root@serverb ~]# systemctl status psacct
+
+○ psacct.service: contabilidad de procesos del kernel
+
+     Loaded: loaded (/usr/lib/systemd/system/psacct.service; disabled; preset: disabled)
+     Active: inactive (dead)
+
+El servicio psacct está en estado inactivo y deshabilitado. El estado deshabilitado confirma que el servicio no se inicia en el momento del arranque. 2.1. Inicie el servicio psacct.
+
+[root@serverb ~]# systemctl start psacct
+
+2.2. Verifique que el servicio psacct se esté ejecutando.
+
+[root@serverb ~]# systemctl is-active psacct
+
+activo 2.3. Configure el servicio psacct para que se inicie al iniciar el sistema. 3. Habilite el servicio psacct para que se inicie al iniciar el sistema. 3.1.
+
+
+
+
+
+10.5. Servicios de control de laboratorio y evaluación de demonios Como usuario estudiante en la estación de trabajo, utilice el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+[root@serverb ~]# systemctl enable psacct
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/psacct.service' → '/usr/lib/systemd/system/psacct.service'. Verifique que el servicio psacct esté habilitado para iniciarse en el inicio del sistema.
+
+[root@serverb ~]# systemctl is-enabled psacct
+
+habilitado 3.2. Verifique el estado del servicio rsyslog. Si el servicio rsyslog se está ejecutando, deténgalo y verifique que ya no esté activo. 4. Verifique el estado del servicio rsyslog. Observe que el servicio rsyslog se está ejecutando y habilitado para iniciarse en el momento del arranque.
+
+[root@serverb ~]# systemctl status rsyslog
+
+● rsyslog.service: servicio de registro del sistema
+
+     Loaded: loaded (/usr/lib/systemd/system/rsyslog.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2025-05-26 14:29:48 UTC; 2h 47min ago
+
+...salida omitida... 4.1. Detenga el servicio rsyslog.
+
+[root@serverb ~]# systemctl stop rsyslog
+
+4.2. Verifique que el servicio rsyslog esté detenido.
+
+[root@serverb ~]# systemctl is-active rsyslog
+
+inactivo 4.3. Configure el servicio rsyslog para que no se inicie durante el inicio del sistema. 5. Deshabilite el servicio rsyslog para que no se inicie durante el inicio del sistema.
+
+[root@serverb ~]# systemctl disable rsyslog
+
+Se eliminó '/etc/systemd/system/multi-user.target.wants/rsyslog.service'. 5.1. Verifique que el servicio rsyslog no se inicie durante el proceso de inicio.
+
+[root@serverb ~]# systemctl is-enabled rsyslog
+
+deshabilitado 5.2. Reinicie la máquina del servidor para que la configuración de inicio de los servicios surta efecto. Espere a que la máquina se inicie antes de evaluar esta actividad.
+
+[root@serverb ~]# systemctl reboot
+
+Conexión al servidor cerrada por el host remoto. Conexión al servidor cerrada.
+
+student@workstation:~$
+
+La máquina puede tardar unos minutos en iniciarse. 6.
+
+
+
+
+
+10.5. Servicios de control de laboratorio y demonios
+
+student@workstation:~$ lab grade services-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish services-review
+
+
+
+
+
+10.6. Resumen 10.6. Resumen En esta lección, aprendió que la utilidad systemd proporciona herramientas para activar recursos del sistema, demonios del servidor y otros procesos, tanto en el momento del arranque como en un sistema en ejecución. Por ejemplo, el comando systemctl habilita y deshabilita servicios y puede enumerar el estado de todos los demonios que se ejecutan en el sistema. Puede administrar cada demonio configurando su configuración de inicio automático o iniciando, deteniendo y reiniciando el demonio. La utilidad systemd también gestiona unidades de servicio, unidades de socket y unidades de ruta. Puede enmascarar una unidad de servicio para que no se ejecute, incluso para satisfacer dependencias.
+
+
+
+
+
+
+
+## Resumen
+
+10.6. Resumen 10.6. Resumen En esta lección, aprendió que la utilidad systemd proporciona herramientas para activar recursos del sistema, demonios del servidor y otros procesos, tanto en el momento del arranque como en un sistema en ejecución. Por ejemplo, el comando systemctl habilita y deshabilita servicios y puede enumerar el estado de todos los demonios que se ejecutan en el sistema. Puede administrar cada demonio configurando su configuración de inicio automático o iniciando, deteniendo y reiniciando el demonio. La utilidad systemd también gestiona unidades de servicio, unidades de socket y unidades de ruta. Puede enmascarar una unidad de servicio para que no se ejecute, incluso para satisfacer dependencias.
+
+
+
+
+
+Capítulo 11. Gestión de la configuración de red Objetivo Configurar interfaces y ajustes de red en servidores Red Hat Enterprise Linux. Secciones Configuración de redes desde la línea de comandos (y ejercicio guiado) Edición de archivos de configuración de red (y ejercicio guiado) Configuración de nombres de host y resolución de nombres (y ejercicio guiado) Práctica de laboratorio Administrar la configuración de red
+
+
+
+
+

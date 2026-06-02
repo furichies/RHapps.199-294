@@ -1,0 +1,97 @@
+# 4.5. Administrar cuentas de usuarios locales
+# Tipo: theory
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.5. Gestión de cuentas de usuarios locales 4.5. Gestión de cuentas de usuarios locales Objetivos Crear, modificar y eliminar cuentas de usuarios locales. Administrar usuarios locales desde la línea de comandos Puede utilizar herramientas de línea de comandos para administrar cuentas de usuarios locales. Esta sección revisa algunas herramientas importantes para crear y eliminar cuentas de usuario y para configurar contraseñas para los usuarios. Creación de usuarios El comando useradd nombre de usuario crea una cuenta de usuario llamada nombre de usuario. Este comando completa lo siguiente
+
+tasks to set up and configure the new account:
+
+Ejecute el comando useradd como superusuario. El comando useradd lee la configuración para la creación de usuarios del archivo /etc/login.defs. El comando useradd escribe una entrada en los archivos /etc/group, /etc/passwd y /etc/shadow con la información asignada al nombre de usuario (ID de usuario e ID de grupo). El comando useradd crea el directorio de inicio del usuario nombre de usuario en la ruta /home/nombredeusuario. El comando useradd copia los archivos de perfil de usuario en el directorio /etc/skel al directorio de inicio del usuario del nombre de usuario (bajo /home/nombredeusuario). Además, el comando useradd realiza las siguientes acciones: Hace referencia al archivo de configuración /etc/default/useradd para determinar los valores predeterminados para nuevas cuentas de usuario. Agrega una entrada al archivo /etc/gshadow cuando se crea un nuevo usuario. Crea un buzón para el nuevo usuario en el archivo /var/spool/mail/username. Actualiza los archivos /etc/subuid y /etc/subgid para asignar rangos de ID subordinados para el nuevo usuario. En este punto, no se establece una contraseña válida para la cuenta y el usuario no puede iniciar sesión hasta que se establezca una contraseña.
+
+
+
+
+
+4.5. Administrar cuentas de usuarios locales El comando useradd --help muestra las opciones básicas para anular los valores predeterminados. Normalmente, puede utilizar las mismas opciones con el comando usermod para modificar un usuario existente. De forma predeterminada, el comando useradd asigna a los nuevos usuarios el primer UID libre que sea mayor o igual a 1000, a menos que especifique explícitamente un UID mediante la opción -u. Modificación de usuarios existentes El comando usermod --help muestra las opciones para modificar una cuenta. La siguiente tabla muestra algunas opciones comunes para administrar cuentas de usuario. Tabla 3. Opciones del comando usermod para modificar usuarios -a, --append Úselo con la opción -G para agregar los grupos suplementarios al conjunto actual de membresías de grupo del usuario en lugar de reemplazar el conjunto de grupos suplementarios con un nuevo conjunto. -c, --comment COMENTARIO Añade el texto COMENTARIO al campo de comentario. -d, --home HOME-DIR Especifica un directorio de inicio para la cuenta de usuario. -g, --gid GROUP Especifica el grupo principal de la cuenta de usuario. -G, --groups GRUPOS Especifique una lista separada por comas de grupos suplementarios para la cuenta de usuario. -L, --lock Bloquea la cuenta de usuario. -m, --move-home Mueve el directorio de inicio del usuario a una nueva ubicación. Debes usarlo con la opción -d. -s, --shell SHELL Especifica un shell de inicio de sesión particular para la cuenta de usuario. -U, --unlock Desbloquea la cuenta de usuario. Eliminación de usuarios El comando userdel nombre de usuario elimina el nombre de usuario del archivo /etc/passwd, pero deja intacto el directorio de inicio del usuario. El comando userdel -r nombre de usuario elimina al usuario del archivo /etc/passwd y elimina el directorio de inicio del usuario y el archivo de cola de correo correspondiente en el directorio /var/spool/mail/.
+
+usermod option
+
+Uso
+
+
+
+
+
+4.5. Administración de cuentas de usuarios locales Advertencia Cuando elimina un usuario sin especificar la opción userdel -r, un UID no asignado ahora posee los archivos del usuario. Si crea un usuario y a ese usuario se le asigna el UID del usuario eliminado, entonces la nueva cuenta posee esos archivos, lo cual es un riesgo para la seguridad. Normalmente, las políticas de seguridad de la organización no permiten la eliminación de cuentas de usuario y, en su lugar, bloquean su uso para evitar este escenario. El siguiente ejemplo demuestra cómo este escenario puede provocar una fuga de información:
+
+root@host:~# useradd user01
+root@host:~# ls -l /home
+drwx------.  4 user01     user01       93 May  9 17:40 user01
+root@host:~# userdel user01
+root@host ~# ls -l /home
+drwx------.  4       1000       1000   93 May  9 17:40 user01
+root@host:~# useradd -u 1000 user02
+root@host:~# ls -l /home
+drwx------.  4 user02     user02       93 May  9 17:40 user01
+drwx------.  4 user02     user02       93 May  9 17:41 user02
+
+Observe que el usuario usuario02 ahora posee todos los archivos que anteriormente poseía el usuario usuario01. El usuario root puede utilizar el comando find / -nouser -o -nogroup para buscar todos los archivos y directorios sin propietario. Configuración de contraseñas El comando passwd nombre de usuario establece la contraseña inicial o cambia la contraseña existente para el usuario nombre de usuario. El usuario root puede establecer una contraseña con cualquier valor. Si la contraseña no cumple con los criterios mínimos recomendados, el terminal muestra un mensaje. Puede volver a escribir la misma contraseña y el comando passwd la actualizará correctamente.
+
+root@host:~# passwd user01
+
+Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+root@host:~#
+
+Un usuario normal debe elegir una contraseña de al menos ocho caracteres. No utilice una palabra del diccionario, el nombre de usuario o la contraseña anterior. Rangos UID Red Hat Enterprise Linux utiliza números UID específicos y rangos de números para propósitos específicos. UID 0 El UID de la cuenta de superusuario (raíz). UID 1-200 UID de cuenta del sistema que se asignan estáticamente a procesos del sistema. UID 201-999 UID que se asignan a procesos del sistema que no poseen archivos en este sistema. Al software que requiere un UID sin privilegios se le asigna dinámicamente un UID de este grupo disponible. UID 1000+ El rango de UID para asignar a usuarios habituales sin privilegios.
+
+
+
+
+
+4.5. Administrar cuentas de usuarios locales Nota Puede cambiar los rangos de UID predeterminados para el comando useradd en el archivo /etc/login.defs. Referencias
+
+useradd(8), usermod(8), userdel(8), login.defs(5), passwd(1), passwd(5), shadow(5), and group(5)
+
+paginas man
+
+
+
+
+
+4.6. Ejercicio guiado Administrar cuentas de usuarios locales 4.6. Ejercicio guiado Administrar cuentas de usuarios locales Cree, modifique y elimine cuentas de usuarios locales. Resultados Configurar un sistema Linux con cuentas de usuario adicionales. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-user
+
+Instrucciones Cree el usuario operador1 en la máquina del servidor y establezca la contraseña del nuevo usuario en redhat. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el usuario operador1 y confirme que existe en el sistema.
+
+[root@servera ~]# useradd operator1
+[root@servera ~]# tail /etc/passwd
+
+...salida omitida...
+
+operator1:x:1003:1003::/home/operator1:/bin/bash
+
+1.2. Establezca la contraseña para el usuario operador1 en redhat.
+
+[root@servera ~]# passwd operator1
+
+Nueva contraseña: redhat CONTRASEÑA MALA: La contraseña tiene menos de 8 caracteres Vuelva a escribir la nueva contraseña: redhat
+
+passwd: password updated successfully
+
+1.3. Cree dos usuarios adicionales: operador2 y operador3. Establezca sus contraseñas para redhat. 2. Agregue el usuario operador2. Establezca la contraseña para el usuario operador2 en redhat. 2.1.
+
+
+
+
+

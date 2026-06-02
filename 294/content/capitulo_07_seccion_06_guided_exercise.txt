@@ -1,0 +1,330 @@
+# Ejercicio Guiado: Implementación de roles desde fuentes externas de contenido
+# Tipo: guided_exercise
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Implementación de roles desde fuentes
+externas de contenido
+Usar el comando ansible-galaxy para descargar e instalar un rol de Ansible.
+Resultados
+• Crear un archivo de roles para especificar las dependencias de roles para un playbook.
+• Instalar roles especificados en un archivo de requisitos.
+• Enumerar los roles descargados mediante el comando ansible-galaxy.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-galaxy
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-galaxy.
+[student@workstation ~]$ cd ~/role-galaxy
+[student@workstation role-galaxy]$
+ 2.
+Crear un archivo de requisitos de rol en el directorio de su proyecto que descargue el rol
+student.bash_env. Este rol configura los archivos de inicialización predeterminados para
+la shell Bash usada para los usuarios recién creados, el prompt predeterminado para las
+cuentas de estos usuarios y el color del prompt que se usará.
+Cree un archivo denominado requirements.yml en el subdirectorio roles. La URL
+del repositorio de Git del rol es: git@workstation.lab.example.com:student/
+bash_env.
+Para ver cómo el rol afecta el comportamiento de los hosts de producción, use la rama
+main del repositorio. Establezca el nombre local del rol en student.bash_env.
+Asegúrese de que el archivo roles/requirements.yml contenga el siguiente
+contenido:
+RH294-RHEL9.0-es-3-20240620
+309
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+---
+# requirements.yml
+- src: git@workstation.lab.example.com:student/bash_env
+  scm: git
+  version: main
+  name: student.bash_env
+ 3.
+Use el comando ansible-galaxy para procesar el nuevo archivo de requisitos que instala
+el rol student.bash_env.
+3.1.
+Enumere el contenido del subdirectorio roles antes de instalar el rol, de modo que
+pueda comparar su estado actual con los resultados del comando.
+[student@workstation role-galaxy]$ ls roles/
+requirements.yml
+3.2.
+Use el comando ansible-galaxy role install para descargar e instalar los
+roles enumerados en el archivo roles/requirements.yml en el subdirectorio
+roles de su proyecto.
+[student@workstation role-galaxy]$ ansible-galaxy role install \
+> -r roles/requirements.yml -p roles
+Starting galaxy role install process
+- extracting student.bash_env to /home/student/role-galaxy/roles/student.bash_env
+- student.bash_env (main) was installed successfully
+3.3.
+Enumere el contenido del subdirectorio roles después de instalar el rol. Confirme
+que tiene un nuevo subdirectorio, denominado student.bash_env, que coincide
+con el valor de name especificado en el archivo de requisitos.
+[student@workstation role-galaxy]$ ls roles/
+requirements.yml  student.bash_env
+3.4.
+Use el comando ansible-galaxy role list para enumerar los roles del
+proyecto en el subdirectorio roles.
+[student@workstation role-galaxy]$ ansible-galaxy role list -p roles
+# /home/student/role-galaxy/roles
+- student.bash_env, main
+# /usr/share/ansible/roles
+- linux-system-roles.certificate, (unknown version)
+- linux-system-roles.cockpit, (unknown version)
+- linux-system-roles.crypto_policies, (unknown version)
+- linux-system-roles.firewall, (unknown version)
+- linux-system-roles.ha_cluster, (unknown version)
+- linux-system-roles.kdump, (unknown version)
+- linux-system-roles.kernel_settings, (unknown version)
+...output omitted...
+[WARNING]: - the configured path /home/student/.ansible/roles does not exist.
+310
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Si no especifica la opción -p roles en su comando ansible-galaxy role
+list, el rol que instaló no aparece en la lista porque el subdirectorio roles no está
+en su roles_path predeterminado.
+[student@workstation role-galaxy]$ ansible-galaxy role list
+# /usr/share/ansible/roles
+- linux-system-roles.certificate, (unknown version)
+- linux-system-roles.cockpit, (unknown version)
+- linux-system-roles.crypto_policies, (unknown version)
+- linux-system-roles.firewall, (unknown version)
+- linux-system-roles.ha_cluster, (unknown version)
+- linux-system-roles.kdump, (unknown version)
+- linux-system-roles.kernel_settings, (unknown version)
+...output omitted...
+[WARNING]: - the configured path /home/student/.ansible/roles does not exist.
+ 4.
+Cree un playbook denominado use-bash_env-role.yml que use el rol
+student.bash_env. El playbook incluye el siguiente contenido:
+---
+- name: Use student.bash_env role playbook
+  hosts: devservers
+  vars:
+    default_prompt: '[\u on \h in \W dir]\$ '
+  pre_tasks:
+    - name: Ensure test user does not exist
+      ansible.builtin.user:
+        name: student2
+        state: absent
+        force: true
+        remove: true
+  roles:
+    - student.bash_env
+  post_tasks:
+    - name: Create the test user
+RH294-RHEL9.0-es-3-20240620
+311
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+      ansible.builtin.user:
+        name: student2
+        state: present
+        password: "{{ 'redhat' | password_hash }}"
+Para ver los efectos del cambio de configuración, debe crear una cuenta de usuario. Las
+secciones pre_tasks y post_tasks del playbook garantizan que la cuenta de usuario
+student2 elimine y cree cada vez que se ejecuta el playbook.
+Cuando ejecute el playbook use-bash_env-role.yml, la cuenta student2 se crea con
+una contraseña de redhat.
+nota
+La contraseña student2 se genera con un filtro. Los filtros toman datos
+y los modifican; aquí, la cadena redhat se modifica pasándola al filtro
+password_hash para convertir el valor en un hash de contraseña protegido. De
+forma predeterminada, el algoritmo de hash utilizado es sha512.
+Los filtros son un tema avanzado que no se trata en este curso.
+ 5.
+Ejecute el playbook use-bash_env-role.yml.
+El rol student.bash_env crea archivos de configuración de plantillas estándares
+en /etc/skel en el host gestionado. Los archivos que crea incluyen .bashrc,
+.bash_profile y .vimrc.
+[student@workstation role-galaxy]$ ansible-navigator run \
+> -m stdout use-bash_env-role.yml
+PLAY [Use student.bash_env role playbook] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Ensure test user does not exist] *****************************************
+ok: [servera.lab.example.com]
+TASK [student.bash_env : put away .bashrc] *************************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .bash_profile] *******************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .vimrc] **************************************
+changed: [servera.lab.example.com]
+TASK [Create the test user] ****************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+312
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ 6.
+Use SSH para iniciar sesión en la máquina servera con el usuario student2. Observe el
+aviso personalizado para el usuario student2 y desconéctese de la máquina servera.
+[student@workstation role-galaxy]$ ssh student2@servera
+...output omitted...
+[student2 on servera in ~ dir]$ exit
+logout
+Connection to servera closed.
+[student@workstation role-galaxy]$
+ 7.
+Ejecute el playbook usando la versión de desarrollo del rol student.bash_env.
+La versión de desarrollo del rol se encuentra en la rama dev del repositorio de Git. La
+versión de desarrollo del rol usa una nueva variable, prompt_color.
+Antes de ejecutar el playbook, agregue la variable prompt_color a la sección vars del
+playbook y establezca su valor en blue.
+7.1.
+Actualice el archivo roles/requirements.yml y establezca el valor version en
+dev. Asegúrese de que el archivo roles/requirements.yml contenga el siguiente
+contenido:
+---
+# requirements.yml
+- src: git@workstation.lab.example.com:student/bash_env
+  scm: git
+  version: dev
+  name: student.bash_env
+7.2.
+Modifique ~/role-galaxy/ansible.cfg y agregue la configuración roles_path
+a la sección [defaults] del archivo. Esto establece la ruta de roles predeterminada
+y le permite omitir la opción -p roles al escribir comandos ansible-galaxy.
+Cuando se completa, el archivo incluye el siguiente contenido:
+[defaults]
+inventory=inventory
+remote_user=devops
+roles_path=roles
+[privilege_escalation]
+become=true
+become_method=sudo
+become_user=root
+become_ask_pass=false
+7.3.
+Elimine la versión existente del rol student.bash_env del subdirectorio roles.
+[student@workstation role-galaxy]$ ansible-galaxy role remove student.bash_env
+- successfully removed student.bash_env
+7.4.
+Use el comando ansible-galaxy role install para instalar el rol con el archivo
+de requisitos actualizado.
+RH294-RHEL9.0-es-3-20240620
+313
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-galaxy]$ ansible-galaxy role install \
+> -r roles/requirements.yml
+Starting galaxy role install process
+- extracting student.bash_env to /home/student/role-galaxy/roles/student.bash_env
+- student.bash_env (dev) was installed successfully
+7.5.
+Modifique el archivo use-bash_env-role.yml. Agregue la variable
+prompt_color con un valor de blue a la sección vars del playbook. Asegúrese de
+que el archivo contenga el siguiente contenido:
+---
+- name: Use student.bash_env role playbook
+  hosts: devservers
+  vars:
+    prompt_color: blue
+    default_prompt: '[\u on \h in \W dir]\$ '
+  pre_tasks:
+...output omitted...
+7.6.
+Ejecute el playbook use-bash_env-role.yml.
+[student@workstation role-galaxy]$ ansible-navigator run \
+> -m stdout use-bash_env-role.yml
+PLAY [Use student.bash_env role playbook] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Ensure test user does not exist] *****************************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .bashrc] *************************************
+changed: [servera.lab.example.com]
+TASK [student.bash_env : put away .bash_profile] *******************************
+ok: [servera.lab.example.com]
+TASK [student.bash_env : put away .vimrc] **************************************
+ok: [servera.lab.example.com]
+TASK [Create the test user] ****************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 8.
+Use SSH para iniciar sesión en la máquina servera con el usuario student2. El indicador
+personalizado para el usuario student2 ahora se muestra con caracteres azules.
+314
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-galaxy]$ ssh student2@servera
+...output omitted...
+[student2 on servera in ~ dir]$
+ 9.
+Cierre sesión de servera.
+[student2 on servera in ~ dir]$ exit
+logout
+Connection to servera closed.
+[student@workstation role-galaxy]$
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-galaxy
+RH294-RHEL9.0-es-3-20240620
+315
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Obtención de roles y módulos de las
+colecciones de contenido
+Objetivos
+• Obtener un conjunto de roles relacionados, módulos suplementarios y otro contenido de Ansible
+Content Collection y usarlos en un playbook.
+Ansible Content Collections
+Cuando se desarrolló Ansible por primera vez, todos los módulos que usaba se incluían como
+parte del paquete de software central (core). A medida que aumentaba la cantidad de módulos, se
+hizo más difícil para el proyecto upstream gestionar todos estos módulos. Cada módulo requería
+un nombre único y sincronizar las actualizaciones del módulo con las actualizaciones del código
+central (core) de Ansible.
+Con Ansible Content Collections, las actualizaciones del código Ansible se separan de las
+actualizaciones de módulos y complementos (plug-ins). Una Ansible Content Collection
+proporciona un conjunto de módulos, roles y otros complementos (plug-ins) relacionados que
+puede usar en sus playbooks. Este enfoque permite a los proveedores y desarrolladores mantener
+y distribuir sus colecciones a su propio ritmo, independientemente de las versiones de Ansible.
+Por ejemplo:
+• La colección de contenido redhat.insights ofrece módulos y roles que puede usar para
+registrar un sistema con Red Hat Insights para Red Hat Enterprise Linux.
+• La colección de contenido cisco.ios, soportada y mantenida por Cisco, ofrece módulos y
+complementos (plug-ins) que administran dispositivos de red de Cisco IOS.
+• La colección de contenido community.crypto proporciona módulos que crean certificados
+SSL/TLS.
+Ansible Content Collections también brindan flexibilidad. Puede instalar solo el contenido que
+necesita en lugar de instalar todos los módulos soportados.
+También puede seleccionar una versión específica de una colección (posiblemente una anterior
+o posterior) o elegir entre una versión de una colección compatible con Red Hat o proveedores, o
+una proporcionada por la comunidad.
+Ansible 2.9 y posteriores admiten Ansible Content Collections. Upstream Ansible separó la
+mayoría de los módulos del código central de Ansible en Ansible Base 2.10 y Ansible Core 2.11 y
+los colocó en colecciones. Red Hat Ansible Automation Platform 2.2 proporciona entornos de
+ejecución de automatización basados en Ansible Core 2.13 que heredan esta característica.
+nota
+Puede desarrollar sus propias colecciones para proporcionar roles y módulos
+personalizados a sus equipos. La creación de Ansible Content Collections por su
+cuenta está fuera del alcance de este curso. Puede obtener más información sobre
+cómo crear Ansible Content Collections en el curso que sigue a este, Desarrollo de
+automatización avanzada con Red Hat Ansible Automation Platform (DO374).
+316
+RH294-RHEL9.0-es-3-20240620
+
+

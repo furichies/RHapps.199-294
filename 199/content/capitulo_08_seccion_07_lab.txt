@@ -1,0 +1,198 @@
+# Trabajo de laboratorio: Acceso de control de laboratorio a archivos
+# Tipo: lab
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.7. Control de acceso al laboratorio de archivos 5.7. Lab Control de acceso a archivos Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Resultados Crear un directorio donde los usuarios puedan trabajar colaborativamente en archivos. Cree la estructura de archivos y directorios requerida, asignando derechos de acceso según lo solicitado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-review
+
+Instrucciones El comando de inicio de laboratorio crea los usuarios dev1 y dev2, que son miembros del grupo techdocs. El comando también crea el usuario dbadmin1, que no pertenece a este grupo. En esta actividad, creará el directorio colaborativo techdocs y lo configurará de la siguiente manera: En el directorio techdocs, los usuarios agregan archivos y subdirectorios para uso exclusivo del grupo techdocs. Otros usuarios del sistema no pueden tener acceso al directorio. Todo el contenido nuevo creado en el directorio debe heredar la propiedad del grupo techdocs. El directorio techdocs debe configurarse para que solo el propietario de un archivo pueda eliminarlo. Asegúrese de que la máscara de creación de archivos de usuario esté configurada de forma persistente para los usuarios dev1 y dev2 para permitir la colaboración grupal y prohibir que todos los demás usuarios accedan a sus datos. Para validar su configuración del directorio techdocs, cree los siguientes subdirectorios y archivos como dev1 y
+
+dev2 users to ensure that their level of access complies with requirements:
+
+dev1 dev1 techdocs dev1.txt dev1.log dev1.cfg Archivos del grupo del propietario del directorio
+
+
+
+
+
+5.7. Control de laboratorio Acceso a archivos dev2 dev2 techdocs dev2.txt dev2.log dev2.cfg Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade perms-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish perms-review
+
+Archivos del grupo del propietario del directorio Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. 1. Cree el directorio colaborativo techdocs en el directorio /home. Establezca la propiedad del grupo del directorio en el grupo techdocs, otorgue permisos completos al usuario y al grupo propietario y no permita todo acceso a otras personas en el sistema. Configure el directorio para que todo el contenido nuevo sea propiedad del grupo techdocs y solo los propietarios de archivos puedan eliminarlos. 2. Configure de manera persistente la máscara de creación de archivos de usuario en el shell para los usuarios dev1 y dev2 para que los miembros del grupo puedan colaborar, pero otros usuarios no puedan acceder a sus datos. 3. Verifique que los usuarios del grupo techdocs puedan crear y colaborar en contenido en el directorio /home/techdocs. Como usuario dev2, modifique el archivo /home/techdocs/dev1/dev1.log con el siguiente contenido: Se inició el registro. 4. Verifique que los miembros del grupo techdoc puedan eliminar solo sus propios archivos. Como usuario dev2, intente eliminar el directorio /home/techdocs/dev1, lo cual debería fallar. 5. Verifique que solo los usuarios del grupo techdocs puedan acceder al directorio colaborativo /home/techdocs. Como usuario dbadmin1, intente acceder al directorio /home/techdocs, lo cual debería fallar. 6. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 7.
+
+
+
+
+
+5.7. Solución de control de acceso a archivos de laboratorio Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Resultados Crear un directorio donde los usuarios puedan trabajar colaborativamente en archivos. Cree la estructura de archivos y directorios requerida, asignando derechos de acceso según lo solicitado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-review
+
+Instrucciones El comando de inicio de laboratorio crea los usuarios dev1 y dev2, que son miembros del grupo techdocs. El comando también crea el usuario dbadmin1, que no pertenece a este grupo. En esta actividad, creará el directorio colaborativo techdocs y lo configurará de la siguiente manera: En el directorio techdocs, los usuarios agregan archivos y subdirectorios para uso exclusivo del grupo techdocs. Otros usuarios del sistema no pueden tener acceso al directorio. Todo el contenido nuevo creado en el directorio debe heredar la propiedad del grupo techdocs. El directorio techdocs debe configurarse para que solo el propietario de un archivo pueda eliminarlo. Asegúrese de que la máscara de creación de archivos de usuario esté configurada de forma persistente para los usuarios dev1 y dev2 para permitir la colaboración grupal y prohibir que todos los demás usuarios accedan a sus datos. Para validar su configuración del directorio techdocs, cree los siguientes subdirectorios y archivos como dev1 y
+
+dev2 users to ensure that their level of access complies with requirements:
+
+dev1 dev1 techdocs dev1.txt dev1.log dev1.cfg Archivos del grupo del propietario del directorio
+
+
+
+
+
+5.7. Control de laboratorio Acceso a archivos dev2 dev2 techdocs dev2.txt dev2.log dev2.cfg Archivos del grupo del propietario del directorio Inicie sesión en la máquina del servidorb como usuario estudiante y luego cambie al usuario raíz. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Cree el directorio colaborativo techdocs en el directorio /home. Establezca la propiedad del grupo del directorio en el grupo techdocs, otorgue permisos completos al usuario y al grupo propietario y no permita todo acceso a otras personas en el sistema. Configure el directorio para que todo el contenido nuevo sea propiedad del grupo techdocs y solo los propietarios de archivos puedan eliminarlos. 2. Cree un directorio /home/techdocs.
+
+[root@serverb ~]# mkdir /home/techdocs
+
+2.1. Cambie la propiedad del grupo para el directorio /home/techdocs al grupo techdocs.
+
+[root@serverb ~]# chown :techdocs /home/techdocs
+
+2.2. Establezca permisos de lectura, escritura y ejecución para usuarios y grupos, y ningún permiso para otros en el directorio /home/techdocs.
+
+[root@serverb ~]# chmod 770 /home/techdocs
+
+2.3. Establezca el permiso SGID especial en el directorio para garantizar que todo el contenido nuevo herede la propiedad del grupo techdocs.
+
+[root@serverb ~]# chmod g+s /home/techdocs
+
+2.4. Asigne el bit adhesivo al directorio /home/techdocs.
+
+[root@serverb ~]# chmod o+t /home/techdocs
+
+2.5. Enumere los permisos del directorio. 2.6.
+
+
+
+
+
+5.7. Acceso de control de laboratorio a archivos
+
+[root@serverb ~]# ls -ld /home/techdocs
+drwxrws--T. 2 root techdocs 6 Oct  6 20:40 /home/techdocs
+
+Configure de manera persistente la máscara de creación de archivos de usuario en el shell para los usuarios dev1 y dev2 para que los miembros del grupo puedan colaborar, pero otros usuarios no puedan acceder a sus datos. 3. Cambie al usuario dev1 y establezca el atributo umask del shell en 007.
+
+[root@serverb ~]# su - dev1
+[dev1@serverb ~]$ umask 007
+
+3.1. Configure el valor de umask de forma persistente actualizando el archivo de inicio ~/.bashrc para Bash.
+
+[dev1@serverb ~]$ echo "umask 007" >> ~/.bashrc
+
+3.2. Para probar la configuración del directorio, cree el subdirectorio dev1 especificado en el directorio del equipo /home/techdocs y cree los archivos dev1.txt, dev1.log y dev1.cfg.
+
+[dev1@serverb ~]$ cd /home/techdocs/
+[dev1@serverb techdocs]$ mkdir dev1
+[dev1@serverb techdocs]$ touch dev1/dev1{.txt,.log,.cfg}
+
+3.3. Enumere el contenido del directorio dev1.
+
+[dev1@serverb techdocs]$ ls -l dev1*
+
+total 0 -rw-rw----. 1 dev1 techdocs 0 6 de octubre 20:43 dev1.cfg -rw-rw----. 1 dev1 techdocs 0 6 de octubre 20:43 dev1.log -rw-rw----. 1 dev1 techdocs 0 6 de octubre 20:43 dev1.txt 3.4. Salga del shell de usuario dev1. Cambie al usuario dev2.
+
+[dev1@serverb techdocs]$ exit
+
+cerrar sesión
+
+[root@serverb ~]# su - dev2
+
+[dev2@serverb ~]$ 3,5. Establezca el atributo umask del shell del usuario en 007 y configúrelo de forma persistente.
+
+[dev2@serverb ~]$ umask 007
+[dev2@serverb ~]$ echo "umask 007" >> ~/.bashrc
+
+3.6. Cree el subdirectorio dev2 especificado en el directorio del equipo /home/techdocs junto con los archivos necesarios.
+
+[dev2@serverb ~]$ cd /home/techdocs/
+[dev2@serverb techdocs]$ mkdir dev2
+[dev2@serverb techdocs]$ touch dev2/dev2{.txt,.log,.cfg}
+
+3.7. Enumere el contenido del directorio dev2. 3.8.
+
+
+
+
+
+5.7. Control de laboratorio Acceso a archivos Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+[dev2@serverb techdocs]$ ls -l dev2*
+
+total 0 -rw-rw----. 1 dev2 techdocs 0 6 de octubre 21:08 dev2.cfg -rw-rw----. 1 dev2 techdocs 0 6 de octubre 21:08 dev2.log -rw-rw----. 1 dev2 techdocs 0 6 de octubre 21:08 dev2.txt Verifique que los usuarios del grupo techdocs puedan crear y colaborar en contenido en el directorio /home/techdocs. Como usuario dev2, modifique el archivo /home/techdocs/dev1/dev1.log con el siguiente contenido: Se inició el registro. 4. Actualice el archivo /home/techdocs/dev1/dev1.log como se describe y luego muestre el contenido del archivo.
+
+[dev2@serverb techdocs]$ echo "Logging started" >> dev1/dev1.log
+[dev2@serverb techdocs]$ cat dev1/dev1.log
+
+Se inició el registro 4.1. Verifique que los miembros del grupo techdoc puedan eliminar solo sus propios archivos. Como usuario dev2, intente eliminar el directorio /home/techdocs/dev1, lo cual debería fallar. 5. Como usuario dev2, intente eliminar el directorio /home/techdocs/dev1. Este intento falla porque el bit adhesivo está configurado en el directorio techdocs.
+
+[dev2@serverb techdocs]$ rm -rf dev1
+rm: cannot remove 'dev1': Operation not permitted
+
+5.1. Verifique que solo los usuarios del grupo techdocs puedan acceder al directorio colaborativo /home/techdocs. Como usuario dbadmin1, intente acceder al directorio /home/techdocs, lo cual debería fallar. 6. Salga del shell de usuario dev2. Cambie al usuario dbadmin1. Cambie al directorio /home/techdocs.
+
+[dev2@serverb techdocs]$ exit
+
+cerrar sesión
+
+[root@serverb ~]# su - dbadmin1
+[dbadmin1@serverb ~]$ cd /home/techdocs/
+
+-bash: cd: /home/techdocs/: Permiso denegado [dbadmin1@serverb ~]$ 6.1. Salga del shell de usuario dbadmin1.
+
+[dbadmin1@serverb ~]$ exit
+
+cerrar sesión [root@serverb ~]# 6.2. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+5.7. Acceso de control de laboratorio a archivos
+
+student@workstation:~$ lab grade perms-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish perms-review
+
+
+
+
+
+5.8. Resumen 5.8. Resumen En esta lección, aprendió cómo Red Hat Enterprise Linux administra la propiedad y los permisos de los archivos. Todos los archivos pertenecen a un propietario y a un grupo. La configuración de permisos determina quién puede acceder a los archivos (usuario, grupo y otros),
+
+and what kind of access they have (read, write, and execute). The most specific permissions take precedence: user
+
+Los permisos tienen prioridad sobre los permisos de grupo, y los permisos de grupo anulan a los demás. Puede ver la propiedad y los permisos de los archivos utilizando el formato de lista larga del comando ls. Puede cambiar los permisos de los archivos utilizando notación simbólica u octal. Además, puede cambiar recursivamente los permisos entre directorios utilizando el comando chmod -R. Los permisos especiales suid, sgid y sticky proporcionan funciones adicionales relacionadas con el acceso a los archivos. También aprendió a ver y definir valores de umask. Los valores de umask predeterminados para Bash se definen en el archivo /etc/login.defs y pueden verse afectados por la configuración de los archivos /etc/profile y /etc/bashrc, los archivos en /etc/profile.d o los archivos de inicialización del shell de su cuenta. Red Hat Enterprise Linux 9 y versiones posteriores aplican sistemáticamente una máscara de usuario predeterminada de 0022 para todos los usuarios, tanto en el shell de inicio de sesión como en el de no inicio de sesión.
+
+
+
+
+

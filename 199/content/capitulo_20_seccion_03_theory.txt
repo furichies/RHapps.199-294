@@ -1,0 +1,138 @@
+# 17.3. Exploración del proceso de inicio y selección de un destino de inicio
+# Tipo: theory
+# Capítulo: Capítulo 17. Control y solución de problemas del proceso de arranque
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio 17.3. Exploración del proceso de inicio y selección de un destino de inicio Objetivos Describir cómo se inicia un sistema Red Hat Enterprise Linux, cambiar el destino de inicio predeterminado e iniciar manualmente el sistema en un destino distinto al predeterminado. Inicialización del sistema en Red Hat Enterprise Linux 10 Una vez que se enciende el sistema y se inicia el cargador de arranque, comienza el proceso de inicialización del sistema. La siguiente lista ofrece una descripción general de alto nivel del proceso de inicialización del sistema en Red Hat Enterprise Linux 10. El cargador de arranque carga el kernel y la imagen initramfs desde el disco y los coloca en la memoria. La imagen initramfs es un archivo con los módulos del kernel para todo el hardware requerido en el arranque, scripts de inicialización y más. En RHEL 10, la imagen initramfs contiene un sistema de archivos raíz de arranque con un kernel en ejecución y una unidad systemd. Puede utilizar el comando lsinitrd para inspeccionar la imagen initramfs y extraer su contenido. El cargador de arranque pasa el control al kernel, junto con las opciones especificadas en la línea de comando del kernel y la ubicación de la imagen initramfs en la memoria. El kernel inicializa todo el hardware para el cual puede encontrar un controlador en la imagen initramfs y luego ejecuta el
+
+/sbin/init script from the initramfs image as PID 1. You can override this script by using the init= kernel
+
+parámetro. En RHEL 10, el script /sbin/init es un enlace simbólico a la unidad systemd. La unidad systemd de la imagen initramfs ejecuta todas las unidades para el objetivo initrd.target. Esta unidad incluye el montaje del sistema de archivos raíz en el directorio /sysroot, que aparece en el archivo /etc/fstab del disco. El kernel cambia (pivota) el sistema de archivos raíz desde la imagen initramfs al sistema de archivos raíz en el directorio /sysroot. Luego, la unidad systemd se vuelve a ejecutar utilizando la copia instalada de la unidad systemd en el disco. Entonces, la unidad systemd tiene el control total del proceso de arranque. La unidad systemd busca un destino predeterminado, que está configurado en el sistema o se pasa desde la línea de comandos del kernel. Luego, la unidad systemd inicia (y detiene) las unidades para cumplir con la configuración para ese objetivo y resuelve automáticamente las dependencias entre unidades. Estos objetivos normalmente inician un inicio de sesión basado en texto o una pantalla de inicio de sesión gráfica, completando así el proceso de inicio. Selección de un objetivo systemd Un objetivo systemd es un conjunto de unidades systemd que el sistema debe comenzar para alcanzar el estado deseado. La siguiente tabla enumera los objetivos más importantes.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio Tabla 22. Destinos comúnmente utilizados graphical.target Este destino admite múltiples usuarios y proporciona inicios de sesión gráficos y basados ​​en texto. multi-user.target Este destino admite múltiples usuarios y proporciona inicios de sesión basados ​​únicamente en texto. Rescue.target Este objetivo proporciona un sistema de usuario único para permitir la reparación de su sistema. Emergency.target Este objetivo inicia el sistema mínimo para reparar su sistema cuando la unidad Rescue.target no se inicia. Un objetivo puede ser parte de otro objetivo. Por ejemplo, la unidad de destino gráfico incluye la unidad de destino multiusuario, que depende de la unidad de destino básico y otras. Puede ver estas dependencias con el siguiente comando:
+
+user@host:~$ systemctl list-dependencies graphical.target | grep target
+
+objetivo.gráfico * └─objetivo.multiusuario * ├─destino.basic * │ ├─destino.rutas * │ ├─destino.slices * │ ├─sockets.target * │ ├─sysinit.target * │ │ ├─cryptsetup.target * | | ├─integritysetup.target * │ │ ├─local-fs.target ...salida omitida... Para enumerar los objetivos disponibles, utilice el siguiente comando:
+
+user@host:~$ systemctl list-units --type=target --all
+  UNIT                      LOAD      ACTIVE   SUB    DESCRIPTION
+  ---------------------------------------------------------------------------
+  basic.target              loaded    active   active Basic System
+
+...salida omitida...
+
+  cloud-config.target       loaded    active   active Cloud-config availability
+  cloud-init.target         loaded    active   active Cloud-init target
+  cryptsetup-pre.target     loaded    inactive dead   Local Encrypted Volumes (Pre)
+  cryptsetup.target         loaded    active   active Local Encrypted Volumes
+
+...salida omitida... Seleccione un destino en tiempo de ejecución En un sistema en ejecución, los administradores pueden cambiar a un destino diferente usando el comando systemctl Insulated.
+
+root@host:~# systemctl isolate multi-user.target
+
+Aislar un objetivo detiene todos los servicios que el objetivo no requiere (y sus dependencias) e inicia cualquier servicio requerido que aún no se haya iniciado. Propósito objetivo
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio No todos los destinos se pueden aislar. Puede aislar solo destinos donde la opción AllowIsolate=yes esté configurada en sus archivos de unidad. Por ejemplo, puedes aislar el objetivo gráfico:
+
+user@host:~$ systemctl cat graphical.target
+# /usr/lib/systemd/system/graphical.target
+
+...salida omitida... [Unidad] Descripción=Interfaz gráfica Documentación=man:systemd.special(7) Requires=multi-user.target Wants=display-manager.service Conflicts=rescue.service rescate.target After=multi-user.target rescate.servicio rescate.target display-manager.service AllowIsolate=yes Pero no puede aislar el objetivo de cryptsetup:
+
+user@host:~$ systemctl cat cryptsetup.target
+# /usr/lib/systemd/system/cryptsetup.target
+
+...salida omitida... [Unidad] Descripción=Volúmenes cifrados locales Documentación=man:systemd.special(7) Establecer un destino predeterminado Cuando se inicia el sistema, la unidad systemd activa el destino default.target. Normalmente, el archivo default.target en el directorio /etc/systemd/system es un enlace simbólico a los destinos graphical.target o multi-user.target. En lugar de editar este enlace simbólico manualmente, el comando systemctl proporciona dos subcomandos para administrar este
+
+link: get-default and set-default.
+
+Utilice el comando systemctl para obtener el objetivo predeterminado:
+
+root@host:~# systemctl get-default
+
+multi-user.target Utilice el comando systemctl para configurar graphical.target como destino predeterminado:
+
+root@host:~# systemctl set-default graphical.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/graphical.target'. Utilice el comando systemctl para verificar el destino predeterminado:
+
+root@host:~# systemctl get-default
+
+Graphical.target Utilice los objetivos de emergencia y rescate Al agregar las opciones systemd.unit=rescue.target o systemd.unit=emergency.target a la línea de comando del kernel desde el cargador de arranque, el sistema ingresa a un shell de rescate o emergencia en lugar de un proceso de arranque estándar. Ambos shells requieren la contraseña de root.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio El destino de emergencia monta el sistema de archivos raíz en modo de solo lectura. En este punto, el usuario root no puede cambiar el archivo /etc/fstab hasta que la unidad se vuelva a montar en modo lectura/escritura usando el comando mount -o remount,rw /. Por el contrario, el objetivo de rescate espera a que se complete la unidad sysinit.target, de modo que se inicialice una mayor parte del sistema, como el servicio de registro o el montaje de sistemas de archivos con acceso de lectura/escritura. Los administradores pueden utilizar estos shells para solucionar problemas que impiden que el sistema se inicie como se esperaba, por ejemplo, un bucle de dependencia entre servicios o una entrada incorrecta en el archivo /etc/fstab. Después de salir de estos shells, el sistema continúa con el proceso de inicio estándar. Seleccione un destino diferente en el momento del arranque Para seleccionar un destino diferente en el momento del arranque, agregue la opción systemd.unit=target.target a la línea de comando del kernel desde el cargador de arranque. Por ejemplo, para iniciar el sistema en un shell de rescate donde puede cambiar la configuración del sistema casi sin
+
+services running, append the following option to the kernel command line from the boot loader:
+systemd.unit=rescue.target
+
+Este cambio de configuración afecta solo a un inicio y es una herramienta útil para solucionar problemas del proceso de inicio. Para utilizar este método para seleccionar un destino diferente, siga estos pasos: Apagar y reiniciar Para apagar o reiniciar un sistema en ejecución desde la línea de comandos, puede utilizar el comando systemctl. El comando systemctl poweroff detiene todos los servicios en ejecución, desmonta todos los sistemas de archivos (o los vuelve a montar como de solo lectura cuando no se pueden desmontar) y luego apaga el sistema. El comando systemctl reboot detiene todos los servicios en ejecución, desmonta todos los sistemas de archivos y luego reinicia el sistema. También puede utilizar la versión más corta de estos comandos, poweroff y reboot, que son enlaces simbólicos al
+
+systemctl unit equivalents.
+
+Nota Los comandos systemctl halt y halt también están disponibles para detener el sistema. A diferencia del apagado
+
+command, these commands do not power off the system; they bring down a system to a point where it is safe
+
+para apagarlo manualmente. Inicie o reinicie el sistema. 1. En el menú de GRUB2, interrumpa la cuenta regresiva presionando cualquier tecla (excepto Enter, que inicia un inicio normal). 2. Mueva el cursor a la entrada del kernel para comenzar. 3. Presione E para editar la entrada actual. 4. Mueva el cursor a la línea que comienza con Linux, que es la línea de comando del kernel. 5. Agregue systemd.unit=target.target; por ejemplo, systemd.unit=emergency.target. 6. Presione Ctrl+X para iniciar con estos cambios. 7.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio Referencias a las páginas man de bootup(7), dracut.bootup(7), lsinitrd(1), systemd.target(5), systemd.special(7), sulogin(8) y systemctl(1). Para obtener más información, consulte el capítulo Administración de systemd en la guía Uso de archivos de unidad systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_systemd_unit_files_to_customize_and_optimize_your_system/index#managing-systemd
+
+
+
+
+
+17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio 17.4. Ejercicio guiado Explore el proceso de inicio y seleccione un destino de inicio Cambie el destino de inicio predeterminado e inicie manualmente el sistema en un destino distinto al predeterminado. Resultados Actualice el destino predeterminado del sistema y utilice un destino temporal desde el cargador de arranque. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-selecting
+
+Instrucciones Abra la consola de la máquina de la estación de trabajo y confirme que el destino gráfico es el destino de inicio predeterminado.
+
+student@workstation:~$ systemctl get-default
+
+Graphical.target 1. Cambie manualmente al destino multiusuario sin reiniciar. Utilice el comando sudo para escalar los privilegios. Utilice estudiante como contraseña.
+
+student@workstation:~$ sudo systemctl isolate multi-user.target
+
+[sudo] contraseña para estudiante: estudiante 2. El sistema ahora presenta una consola basada en texto en lugar de una interfaz gráfica. Inicie sesión como usuario root. Utilice redhat como contraseña.
+
+workstation login: root
+
+Contraseña: sombrero rojo
+
+root@workstation:~#
+
+3. Configure la máquina de la estación de trabajo para que inicie automáticamente en el destino multiusuario y luego reinicie la máquina de la estación de trabajo para verificar la configuración. Cuando termine, cambie el objetivo de la unidad systemd nuevamente al objetivo gráfico. 4. Establezca el objetivo predeterminado en el objetivo multiusuario.
+
+root@workstation:~# systemctl set-default multi-user.target
+
+Se eliminó '/etc/systemd/system/default.target'. Enlace simbólico creado '/etc/systemd/system/default.target' → '/usr/lib/systemd/system/multi-user.target'. 4.1. Reinicie la máquina de la estación de trabajo.
+
+root@workstation:~# systemctl reboot
+
+4.2. Después de que el sistema se reinicie, espere a que expire el tiempo de espera del menú GRUB2 o presione Entrar para omitir la cuenta regresiva. El sistema presenta una consola basada en texto y no una pantalla de inicio de sesión gráfica. 4.3.
+
+
+
+
+

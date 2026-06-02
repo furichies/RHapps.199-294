@@ -1,0 +1,1903 @@
+# Capítulo 10. Revisión exhaustiva
+
+capítulo 10
+Revisión exhaustiva
+Meta
+Revisar tareas de Red Hat Enterprise Linux
+Automation with Ansible.
+Secciones
+•
+Revisión exhaustiva
+Trabajo de
+laboratorio
+•
+Implementación de Ansible
+•
+Creación de playbooks
+•
+Administración de hosts de Linux y uso de roles
+del sistema
+•
+Creación de roles
+RH294-RHEL9.0-es-3-20240620
+499
+
+
+capítulo 10 |  Revisión exhaustiva
+Revisión exhaustiva
+Objetivos
+Tras finalizar esta sección, usted deberá haber revisado y actualizado las habilidades y los
+conocimientos aprendidos en Red Hat Enterprise Linux Automation with Ansible.
+Revisión de Red Hat Enterprise Linux Automation with
+Ansible
+Antes de comenzar la revisión exhaustiva de este curso, debe sentirse cómodo con los temas
+que se abordaron en cada capítulo. No dude en solicitarle al instructor orientación o aclaraciones
+adicionales sobre estos temas.
+Capítulo 1,  Presentación de Ansible
+Describir los conceptos fundamentales de Ansible y la forma de usarlo e instalar herramientas de
+desarrollo desde Red Hat Ansible Automation Platform.
+• Describir la motivación para automatizar las tareas de administración de Linux con Ansible, los
+conceptos fundamentales de Ansible y la arquitectura básica de Ansible.
+• Instalar Ansible en un nodo de control y describir la distinción entre Ansible comunitario y
+Red Hat Ansible Automation Platform.
+Capítulo 2,  Implementación de un playbook de Ansible
+Crear un inventario de hosts gestionados, escribir un playbook de Ansible simple y ejecutarlo para
+automatizar las tareas en esos hosts.
+• Describir los conceptos de inventario de Ansible y administrar un archivo de inventario estático.
+• Describir dónde se encuentran los archivos de configuración de Ansible, cómo los selecciona
+Ansible y editarlos para aplicar los cambios a la configuración predeterminada.
+• Escribir un playbook de Ansible básico y ejecutarlo con el navegador de contenido de
+automatización.
+• Escribir un playbook que use múltiples plays con aumento de privilegios por play y aprovechar
+eficazmente el navegador de contenido de automatización para encontrar nuevos módulos en
+Ansible Content Collections disponibles a fin de implementar tareas para un play.
+Capítulo 3,  Administración de variables y datos
+Escribir playbooks que usen variables para simplificar la administración del playbook y datos para
+hacer referencia a información sobre los hosts gestionados.
+• Crear variables que afecten a hosts particulares o grupos de hosts, el play o el entorno global, y
+hacer referencia a ellas, y describir cómo funciona la prioridad de variables.
+• Cifrar las variables confidenciales usando Ansible Vault y ejecutar playbooks que hagan
+referencia a archivos de variables cifradas por Vault.
+500
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+• Hacer referencia a los datos sobre hosts gestionados que usan datos de Ansible y configurar
+datos personalizados en hosts gestionados.
+Capítulo 4,  Implementación del control de tareas
+Administrar el control de tareas, los manejadores y los errores de tareas en playbooks de Ansible.
+• Usar bucles para escribir tareas eficientes y condiciones para controlar cuándo ejecutar tareas.
+• Implementar una tarea que se ejecute solo cuando otra tarea cambie el host gestionado.
+• Controlar lo que sucede cuando falla una tarea y qué condiciones hacen que falle una tarea.
+Capítulo 5,  Implementación de archivos en hosts gestionados
+Implementar, administrar y ajustar archivos en hosts gestionados por Ansible.
+• Crear, instalar, editar y eliminar archivos en hosts gestionados; gestionar permisos, propiedades,
+contextos de SELinux y otras características de esos archivos.
+• Implementar archivos en hosts gestionados que se personalizan mediante el uso de plantillas
+Jinja2.
+Capítulo 6,  Administración de plays y playbooks complejos
+Escribir playbooks para plays y playbooks más grandes y complejos.
+• Escribir patrones de host sofisticados para seleccionar hosts de manera eficiente para un play.
+• Administrar playbooks grandes importando o incluyendo otros playbooks o tareas desde
+archivos externos, ya sea sin condiciones o sobre la base de una prueba condicional.
+Capítulo 7,  Simplificación de playbooks con roles y Ansible
+Content Collections
+Usar los roles de Ansible y Ansible Content Collections para desarrollar playbooks más
+rápidamente y volver a usar el código de Ansible.
+• Describir el propósito de un rol de Ansible, su estructura y cómo se usan los roles en los
+playbooks.
+• Cree un rol en el directorio de proyectos de un playbook y ejecútelo como parte de uno de los
+plays del playbook.
+• Seleccionar y recuperar roles de fuentes externas, como repositorios de Git o Ansible Galaxy, y
+usarlos en sus playbooks.
+• Obtener un conjunto de roles relacionados, módulos suplementarios y otro contenido de Ansible
+Content Collection y usarlos en un playbook.
+• Escribir playbooks que aprovechen los roles del sistema de Red Hat Enterprise Linux para
+realizar operaciones estándares.
+Capítulo 8,  Solución de problemas de Ansible
+Solucionar problemas de playbooks y hosts gestionados.
+• Solucionar problemas genéricos con un nuevo playbook y repararlos.
+RH294-RHEL9.0-es-3-20240620
+501
+
+
+capítulo 10 |  Revisión exhaustiva
+• Solucionar fallas en hosts gestionados cuando se ejecuta un playbook.
+Capítulo 9,  Automatización de tareas de administración de
+Linux
+Automatizar las tareas de administración comunes del sistema Linux con Ansible.
+• Suscribir sistemas, configurar canales de software y repositorios, habilitar flujos de módulos y
+gestionar paquetes RPM en hosts gestionados.
+• Administrar usuarios y grupos de Linux, configurar SSH y modificar la configuración de Sudo en
+hosts gestionados.
+• Administrar el inicio del servicio, programar procesos con at, cron y systemd, reiniciar los
+hosts gestionados con reboot y controlar el destino de inicio predeterminado en los hosts
+gestionados.
+• Particionar los dispositivos de almacenamiento, configurar LVM, formatear particiones o
+volúmenes lógicos, montar sistemas de archivos y agregar espacios de intercambio (swap).
+• Configurar los ajustes de red y la resolución de nombres en los hosts gestionados y recopilar
+datos de Ansible relacionados con la red.
+502
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Implementación de Ansible
+Instalar Ansible en workstation, configurarlo como nodo de control y configurar un
+inventario para las conexiones con los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com. Puede crear, modificar y solucionar problemas de playbooks
+sencillos que usan variables y datos.
+Resultados
+• Instalar y configurar Ansible.
+• Crear, modificar y solucionar problemas de playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr1
+Especificaciones
+• Instale el navegador de contenido de automatización en workstation para que pueda servir
+como nodo de control. El repositorio Yum que contiene el paquete se ha configurado en
+workstation.
+• Su directorio de proyectos de Ansible es /home/student/review-cr1.
+• En el nodo de control, cree el archivo de inventario /home/student/review-cr1/
+inventory. El inventario debe contener un grupo denominado dev que consta de los hosts
+gestionados servera.lab.example.com y serverb.lab.example.com.
+• Cree un archivo de configuración de Ansible denominado /home/student/review-cr1/
+ansible.cfg. Este archivo de configuración debe usar el archivo /home/student/review-
+cr1/inventory como archivo de inventario del proyecto.
+• Inicie sesión en su centro de automatización privado en utility.lab.example.com desde la
+línea de comandos antes de intentar ejecutar el navegador de contenido de automatización, de
+modo que pueda extraer imágenes del entorno de ejecución de la automatización de su registro
+de contenedores. El nombre de usuario es admin y la contraseña es redhat.
+• Cree un archivo de configuración para el navegador de contenido de automatización
+denominado /home/student/review-cr1/ansible-navigator.yml. Este archivo
+de configuración debe establecer la imagen del entorno de ejecución de automatización
+predeterminada en utility.lab.example.com/ee-supported-rhel8:latest, y el
+navegador de contenido de automatización solo debe extraer esta imagen del repositorio de
+contenedores si la imagen falta en su nodo de control.
+RH294-RHEL9.0-es-3-20240620
+503
+
+
+capítulo 10 |  Revisión exhaustiva
+• Cree un playbook denominado users.yml en el directorio del proyecto. Debe contener un play
+que se ejecute en hosts gestionados en el grupo dev. Su play debe usar una tarea para agregar
+los usuarios joe y sam a todos los hosts gestionados en el grupo dev. Ejecute el playbook
+users.yml y confirme que funciona.
+• Inspeccione el playbook packages.yml existente. En el play de ese manual, defina una
+variable de play denominada packages con una lista de dos paquetes como su valor: httpd y
+mariadb-server. Ejecute el playbook packages.yml y confirme que ambos paquetes estén
+instalados en los hosts gestionados en los que se ejecutó el playbook.
+• Agregue una tarea al playbook packages.yml que instala el paquete redis si el espacio
+de intercambio total en el host gestionado es superior a 10 MB. Ejecute el playbook
+packages.yml nuevamente después de agregar esta tarea.
+• Solucione los problemas del playbook verify_user.yml existente. Se supone que debe
+verificar que el usuario sam se haya creado correctamente y no se supone que cree el usuario
+sam si falta. Ejecute el playbook con la opción --check y resuelva los errores. Repita este
+proceso hasta que pueda ejecutar el playbook con la opción --check y se apruebe, y luego
+ejecute el playbook verify_user.yml normalmente.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr1
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr1
+504
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Solución
+Implementación de Ansible
+Instalar Ansible en workstation, configurarlo como nodo de control y configurar un
+inventario para las conexiones con los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com. Puede crear, modificar y solucionar problemas de playbooks
+sencillos que usan variables y datos.
+Resultados
+• Instalar y configurar Ansible.
+• Crear, modificar y solucionar problemas de playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr1
+1.
+Instale el navegador de contenido de automatización en workstation para que pueda
+servir como nodo de control.
+[student@workstation ~]$ sudo dnf install ansible-navigator
+[sudo] password for student: student
+Last metadata expiration check: 1:51:10 ago on Fri 26 Aug 2022 02:42:43 PM EDT.
+Dependencies resolved.
+...output omitted...
+Is this ok [y/N]: y
+...output omitted...
+Complete!
+2.
+En el nodo de control, cree el archivo de inventario /home/student/review-cr1/
+inventory. Debe contener un grupo denominado dev que consta de los hosts gestionados
+servera.lab.example.com y serverb.lab.example.com.
+2.1.
+Cambie al directorio /home/student/review-cr1.
+[student@workstation ~]$ cd ~/review-cr1
+[student@workstation review-cr1]$
+2.2.
+Cree el archivo inventory con el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+505
+
+
+capítulo 10 |  Revisión exhaustiva
+[dev]
+servera.lab.example.com
+serverb.lab.example.com
+3.
+Cree un archivo de configuración de Ansible denominado /home/student/review-cr1/
+ansible.cfg. El archivo de configuración debe usar el archivo /home/student/review-
+cr1/inventory como archivo de inventario del proyecto.
+Agregue las siguientes entradas para configurar el archivo de inventario ./inventory como
+la fuente de inventario. Guarde y cierre el archivo.
+[defaults]
+inventory=./inventory
+4.
+Cree un archivo de configuración para el navegador de contenido de automatización
+denominado /home/student/review-cr1/ansible-navigator.yml. Este archivo
+de configuración debe establecer la imagen del entorno de ejecución predeterminada en
+utility.lab.example.com/ee-supported-rhel8:latest y ansible-navigator
+solo debe extraer esta imagen del registro de contenedores si la imagen falta.
+Asegúrese de iniciar sesión en su centro de automatización privado en
+utility.lab.example.com con el comando podman login. El nombre de usuario es
+admin y la contraseña es redhat.
+Ejecute ansible-navigator para descargar la imagen del entorno de ejecución.
+4.1.
+Cree el archivo /home/student/review-cr1/ansible-navigator.yml con el
+siguiente contenido:
+---
+ansible-navigator:
+  execution-environment:
+    image: utility.lab.example.com/ee-supported-rhel8:latest
+    pull:
+      policy: missing
+4.2.
+Ejecute el comando podman login utility.lab.example.com.
+[student@workstation review-cr1]$ podman login utility.lab.example.com
+Username: admin
+Password: redhat
+Login Succeeded!
+4.3.
+Ejecute el comando ansible-navigator.
+[student@workstation review-cr1]$ ansible-navigator
+------------------------------------------------------------------------------------
+Execution environment image and pull policy overview
+------------------------------------------------------------------------------------
+Execution environment image name:     utility.lab.example.com/ee-supported-
+rhel8:latest
+Execution environment image tag:      latest
+Execution environment pull arguments: None
+506
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Execution environment pull policy:    missing
+Execution environment pull needed:    True
+------------------------------------------------------------------------------------
+Updating the execution environment
+------------------------------------------------------------------------------------
+Running the command: podman pull utility.lab.example.com/ee-supported-rhel8:latest
+Trying to pull utility.lab.example.com/ee-supported-rhel8:latest...
+...output omitted...
+5.
+En el directorio del proyecto, cree y ejecute el playbook users.yml para agregar los
+usuarios joe y sam a los hosts de inventario en el grupo dev. Use solo una tarea en este
+playbook.
+5.1.
+Cree el playbook users.yml con el siguiente contenido:
+---
+- name: Add users
+  hosts: dev
+  tasks:
+    - name: Add the users joe and sam
+      ansible.builtin.user:
+        name: "{{ item }}"
+      loop:
+        - joe
+        - sam
+5.2.
+Ejecute el playbook users.yml.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout users.yml
+PLAY [Add users] ***************************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Add the users joe and sam] ***********************************************
+changed: [serverb.lab.example.com] => (item=joe)
+changed: [servera.lab.example.com] => (item=joe)
+changed: [serverb.lab.example.com] => (item=sam)
+changed: [servera.lab.example.com] => (item=sam)
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+6.
+Inspeccione el playbook packages.yml. En el play de ese manual, defina una variable
+de play denominada packages con una lista de dos paquetes como su valor: httpd y
+mariadb-server. Ejecute el playbook packages.yml.
+RH294-RHEL9.0-es-3-20240620
+507
+
+
+capítulo 10 |  Revisión exhaustiva
+6.1.
+Defina la variable packages.
+---
+- name: Install packages
+  hosts: dev
+  vars:
+    packages:
+      - httpd
+      - mariadb-server
+  tasks:
+    - name: Install the required packages
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+6.2.
+Ejecute el playbook packages.yml.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout packages.yml
+PLAY [Install packages] ********************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Install the required packages] *******************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.
+Agregue una tarea al playbook packages.yml que instala el paquete redis si el espacio
+de intercambio disponible en el host gestionado es superior a 10 MB. Ejecute el playbook
+packages.yml nuevamente después de agregar esta tarea.
+7.1.
+Agregue la nueva tarea al playbook packages.yml.
+---
+- name: Install packages
+  hosts: dev
+  vars:
+    packages:
+      - httpd
+      - mariadb-server
+  tasks:
+508
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+    - name: Install the required packages
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+    - name: Install redis
+      ansible.builtin.dnf:
+        name: redis
+        state: latest
+      when: ansible_facts['swaptotal_mb'] > 10
+7.2.
+Ejecute el playbook packages.yml nuevamente.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout packages.yml
+PLAY [Install packages] ********************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Install the required packages] *******************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Install redis] ***********************************************************
+skipping: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+serverb.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+8.
+Solucione los problemas del playbook verify_user.yml existente. Se supone que debe
+verificar que el usuario sam se haya creado correctamente y no se supone que cree el usuario
+sam si falta. Ejecute el playbook con la opción --check y resuelva los errores. Repita este
+proceso hasta que pueda ejecutar el playbook con la opción --check y se apruebe, y luego
+ejecute el playbook verify_user.yml normalmente.
+8.1.
+Ejecute el playbook verify_user.yml con la opción --check.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml --check
+ERROR! couldn't resolve module/action 'ansible.buildin.user'. This often indicates
+ a misspelling, missing collection, or incorrect module path.
+The error appears to be in '/home/student/review-cr1/verify_user.yml': line 7,
+ column 7, but may
+be elsewhere in the file depending on the exact syntax problem.
+The offending line appears to be:
+RH294-RHEL9.0-es-3-20240620
+509
+
+
+capítulo 10 |  Revisión exhaustiva
+    - name: Verify the sam user exists
+      ^ here
+Please review the log for errors.
+8.2.
+Corrija el error de ortografía en el playbook verify_user.yml.
+---
+- name: Verify the sam user was created
+  hosts: dev
+  tasks:
+    - name: Verify the sam user exists
+      ansible.builtin.user:
+        name: sam
+      check_mode: true
+      register: sam_check
+    - name: Sam was created
+      ansible.builtin.debug:
+        msg: "Sam was created"
+      when: sam_check['changed'] == false
+    - name: Output sam user status to file
+      ansible.builtin.lineinfile:
+        path: /home/student/verify.txt
+        line: "Sam was created"
+        create: true
+        when: sam_check['changed'] == false
+8.3.
+Ejecute el playbook verify_user.yml nuevamente usando la opción --check.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml --check
+...output omitted...
+TASK [Output sam user status to file] ******************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg":
+ "Unsupported parameters for (ansible.builtin.lineinfile) module: when. Supported
+ parameters include: backup, group, firstmatch, setype, create, path (dest,
+ destfile, name), selevel, serole, backrefs, regexp (regex), mode, seuser,
+ attributes (attr), insertafter, line (value), insertbefore, search_string, state,
+ owner, unsafe_writes, validate."}
+fatal: [serverb.lab.example.com]: FAILED! => {"changed": false, "msg":
+ "Unsupported parameters for (ansible.builtin.lineinfile) module: when. Supported
+ parameters include: path (dest, destfile, name), search_string, backrefs, serole,
+ validate, unsafe_writes, regexp (regex), state, setype, firstmatch, backup,
+ selevel, create, mode, insertbefore, insertafter, group, owner, attributes
+ (attr), seuser, line (value)."}
+PLAY RECAP *********************************************************************
+510
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+servera.lab.example.com    : ok=3    changed=0    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=3    changed=0    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+8.4.
+Corrija el error de sangría en el playbook verify_user.yml.
+---
+- name: Verify the sam user was created
+  hosts: dev
+  tasks:
+    - name: Verify the sam user exists
+      ansible.builtin.user:
+        name: sam
+      check_mode: true
+      register: sam_check
+    - name: Sam was created
+      ansible.builtin.debug:
+        msg: "Sam was created"
+      when: sam_check['changed'] == false
+    - name: Output sam user status to file
+      ansible.builtin.lineinfile:
+        path: /home/student/verify.txt
+        line: "Sam was created"
+        create: true
+      when: sam_check['changed'] == false
+8.5.
+Ejecute el playbook verify_user.yml nuevamente usando la opción --check.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml --check
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+8.6.
+Ejecute el playbook verify_user.yml.
+[student@workstation review-cr1]$ ansible-navigator run \
+> -m stdout verify_user.yml
+PLAY [Verify the sam user was created] *****************************************
+TASK [Gathering Facts] *********************************************************
+RH294-RHEL9.0-es-3-20240620
+511
+
+
+capítulo 10 |  Revisión exhaustiva
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Verify the sam user exists] **********************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Sam was created] *********************************************************
+ok: [servera.lab.example.com] => {
+    "msg": "Sam was created"
+}
+ok: [serverb.lab.example.com] => {
+    "msg": "Sam was created"
+}
+TASK [Output sam user status to file] ******************************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=4    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr1
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr1
+512
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Creación de playbooks
+Cree tres playbooks. El primer playbook, dev_deploy.yml, instala e inicia el servidor
+web. El segundo playbook, get_web_content.yml, garantiza que el servidor web esté
+ofreciendo contenido. El tercer playbook, site.yml, ejecuta los otros dos playbooks.
+Resultados
+• Crear y ejecutar playbooks para realizar tareas en hosts gestionados.
+• Usar plantillas, variables y manejadores Jinja2 en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr2
+Especificaciones
+• Cree los playbooks especificados por esta actividad en el directorio del proyecto /home/
+student/review-cr2.
+• Cree un playbook denominado dev_deploy.yml con un play que se ejecute en el grupo de
+hosts webservers (que contiene los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com). Habilitar el aumento de privilegios para el play. Agregue las
+siguientes tareas al play.
+– Instale el paquete httpd.
+– Inicie el servicio httpd y habilítelo para que se inicie durante el arranque.
+– Implemente la plantilla templates/vhost.conf.j2 en /etc/httpd/conf.d/
+vhost.conf en los hosts gestionados. Esta tarea debe notificar al controlador Restart
+httpd.
+– Copie el archivo files/index.html en el directorio /var/www/vhosts/hostname de los
+hosts gestionados. Asegúrese de que se cree el directorio de destino si aún no existe.
+– Configure el firewall para permitir el servicio httpd.
+– Agregue un manejador Restart httpd al play que reinicia el servicio httpd.
+• Cree un playbook denominado get_web_content.yml con un play denominado Test web
+content que se ejecute en el host gestionado workstation. Este playbook prueba si el
+playbook dev_deploy.yml se ejecutó correctamente y garantiza que el servidor web esté
+RH294-RHEL9.0-es-3-20240620
+513
+
+
+capítulo 10 |  Revisión exhaustiva
+ofreciendo contenido. Habilitar el aumento de privilegios para el play. Estructure el play de la
+siguiente manera:
+– Cree una tarea block y rescue denominado Retrieve web content and write to
+error log on failure.
+– Dentro de block, cree una tarea denominada Retrieve web content que
+use el módulo ansible.builtin.uri para devolver el contenido de http://
+servera.lab.example.com. Registre los resultados en la variable denominada content.
+– Dentro de la cláusula rescue, cree una tarea denominada Write to error file que
+escriba el valor de la variable content en el archivo /home/student/review-cr2/
+error.log si falla block. La tarea debe crear el archivo error.log si todavía no existe.
+• Cree un nuevo playbook site.yml que importe los plays de los playbooks dev_deploy.yml y
+get_web_content.yml.
+• Una vez que haya completado el resto de las especificaciones, ejecute el playbook site.yml.
+Asegúrese de que los tres playbooks se ejecuten correctamente.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr2
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr2
+514
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Solución
+Creación de playbooks
+Cree tres playbooks. El primer playbook, dev_deploy.yml, instala e inicia el servidor
+web. El segundo playbook, get_web_content.yml, garantiza que el servidor web esté
+ofreciendo contenido. El tercer playbook, site.yml, ejecuta los otros dos playbooks.
+Resultados
+• Crear y ejecutar playbooks para realizar tareas en hosts gestionados.
+• Usar plantillas, variables y manejadores Jinja2 en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr2
+1.
+Cree un playbook denominado dev_deploy.yml que contenga un play que se ejecute en
+el grupo de hosts webservers. Habilitar el aumento de privilegios para el play. Agregue una
+tarea que instale el paquete httpd.
+1.1.
+Cambie al directorio /home/student/review-cr2.
+[student@workstation ~]$ cd ~/review-cr2
+[student@workstation review-cr2]$
+1.2.
+Cree un playbook denominado dev_deploy.yml que contenga un play que se
+ejecute en el grupo de hosts webservers. Habilitar el aumento de privilegios para el
+play.
+---
+- name: Install and configure web servers
+  hosts: webservers
+  become: true
+  tasks:
+1.3.
+Agregue una tarea que instale el paquete httpd.
+RH294-RHEL9.0-es-3-20240620
+515
+
+
+capítulo 10 |  Revisión exhaustiva
+    - name: Install httpd package
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+2.
+Agregue una tarea al playbook dev_deploy.yml que inicie el servicio httpd y lo habilite en
+el arranque.
+    - name: Start httpd service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+3.
+Agregue una tarea al playbook dev_deploy.yml que implemente la plantilla templates/
+vhost.conf.j2 en /etc/httpd/conf.d/vhost.conf en los hosts gestionados. Esta
+tarea debe notificar al controlador Restart httpd.
+    - name: Deploy configuration template
+      ansible.builtin.template:
+        src: templates/vhost.conf.j2
+        dest: /etc/httpd/conf.d/vhost.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart httpd
+4.
+Agregue una tarea al playbook dev_deploy.yml que copie el archivo files/index.html
+en el directorio /var/www/vhosts/{{ ansible_facts['hostname'] }} en los hosts
+gestionados.
+Asegúrese de que se cree el directorio de destino si aún no existe.
+    - name: Copy index.html
+      ansible.builtin.copy:
+        src: files/
+        dest: "/var/www/vhosts/{{ ansible_facts['hostname'] }}/"
+        owner: root
+        group: root
+        mode: '0644'
+5.
+Agregue una tarea a la playbook dev_deploy.yml que configura el firewall para permitir el
+servicio httpd.
+    - name: Ensure web server port is open
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: http
+6.
+Agregue un manejador Restart httpd al playbook dev_deploy.yml que reinicia el
+servicio httpd.
+516
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+El playbook completo incluye el siguiente contenido:
+---
+- name: Install and configure web servers
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Install httpd package
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+    - name: Start httpd service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+    - name: Deploy configuration template
+      ansible.builtin.template:
+        src: templates/vhost.conf.j2
+        dest: /etc/httpd/conf.d/vhost.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart httpd
+    - name: Copy index.html
+      ansible.builtin.copy:
+        src: files/
+        dest: "/var/www/vhosts/{{ ansible_facts['hostname'] }}/"
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Ensure web server port is open
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: http
+  handlers:
+    - name: Restart httpd
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+RH294-RHEL9.0-es-3-20240620
+517
+
+
+capítulo 10 |  Revisión exhaustiva
+7.
+Cree un playbook denominado get_web_content.yml. Agregue un play denominado
+Test web content que se ejecute en el host gestionado workstation. Habilitar el
+aumento de privilegios para el play.
+---
+- name: Test web content
+  hosts: workstation
+  become: true
+  tasks:
+8.
+Agregue una tarea denominada Retrieve web content and write to error log
+on failure al play en el playbook get_web_content.yml. Haga que esa tarea sea
+block que contenga una sola tarea denominada Retrieve web content. La tarea
+Retrieve web content debe usar el módulo ansible.builtin.uri para devolver
+contenido de la URL http://servera.lab.example.com. Registre el contenido
+recuperado en una variable denominada content.
+---
+- name: Test web content
+  hosts: workstation
+  become: true
+  tasks:
+    - name: Retrieve web content and write to error log on failure
+      block:
+        - name: Retrieve web content
+          ansible.builtin.uri:
+            url: http://servera.lab.example.com
+            return_content: true
+          register: content
+9.
+En el playbook get_web_content.yml, agregue una cláusula rescue a la tarea block.
+Agregue una tarea a la cláusula rescue, denominada Write to error file, que escribe
+la variable content en el archivo /home/student/review-cr2/error.log cuando falla
+la tarea Retrieve web content. Cree el archivo error.log si todavía no existe.
+El playbook get_web_content.yml ahora incluye el siguiente contenido:
+---
+- name: Test web content
+  hosts: workstation
+  become: true
+  tasks:
+    - name: Retrieve web content and write to error log on failure
+      block:
+        - name: Retrieve web content
+          ansible.builtin.uri:
+            url: http://servera.lab.example.com
+            return_content: true
+          register: content
+      rescue:
+        - name: Write to error file
+518
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+          ansible.builtin.lineinfile:
+            path: /home/student/review-cr2/error.log
+            line: "{{ content }}"
+            create: true
+10.
+Cree un nuevo playbook site.yml que importe los plays de los playbooks
+dev_deploy.yml y get_web_content.yml.
+---
+- name: Deploy web servers
+  ansible.builtin.import_playbook: dev_deploy.yml
+- name: Retrieve web content
+  ansible.builtin.import_playbook: get_web_content.yml
+11.
+Ejecute el playbook site.yml. Es posible que vea algunos informes de tareas como
+changed si aún no ha ejecutado los playbooks individuales para las pruebas. Una segunda
+ejecución del playbook debería realizarse sin más cambios.
+[student@workstation review-cr2]$ ansible-navigator run \
+> -m stdout site.yml
+PLAY ***************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Install httpd package] ***************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Start httpd service] *****************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Deploy configuration template] *******************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Copy index.html] *********************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Ensure web server port is open] ******************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+RUNNING HANDLER [Restart httpd] ************************************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY [Test web content] ********************************************************
+RH294-RHEL9.0-es-3-20240620
+519
+
+
+capítulo 10 |  Revisión exhaustiva
+TASK [Gathering Facts] *********************************************************
+ok: [workstation]
+TASK [Retrieve web content] ****************************************************
+ok: [workstation]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr2
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr2
+520
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Administración de hosts de Linux y uso
+de roles del sistema
+En esta revisión, en hosts gestionados que ejecutan Red Hat Enterprise Linux, escribe
+playbooks que usan dos roles del sistema para configurar un nuevo almacenamiento con un
+volumen lógico y configurar interfaces de red y usa módulos para configurar un trabajo Cron
+y un usuario con privilegios Sudo.
+Resultados
+• Usar el rol redhat.rhel_system_roles.storage para crear, formatear y montar de
+manera persistente un volumen LVM en un host gestionado.
+• Crear un usuario con acceso sudo.
+• Configurar los ajustes de red en los hosts gestionados y recopilar datos de Ansible
+relacionados con la red.
+• Programar un trabajo Cron.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr3
+Especificaciones
+• Use el directorio del proyecto /home/student/review-cr3 para realizar esta actividad.
+• Instale la Ansible Content Collection redhat.rhel_system_roles en el subdirectorio
+collections de su directorio de proyecto .
+• Escriba un playbook denominado storage.yml que use el rol del sistema
+redhat.rhel_system_roles.storage para configurar volúmenes lógicos para los hosts
+gestionados en el grupo webservers especificado por el archivo de inventario en el directorio
+de su proyecto. El playbook debe configurar los volúmenes lógicos de la siguiente manera:
+– Cree un grupo de volúmenes denominado vg_web en el dispositivo de almacenamiento /
+dev/vdb.
+– Cree un volumen lógico denominado lv_content, de 128 MB, del grupo de volúmenes
+vg_web, formatéelo con un sistema de archivos XFS y móntelo en el directorio /var/www/
+html/content.
+RH294-RHEL9.0-es-3-20240620
+521
+
+
+capítulo 10 |  Revisión exhaustiva
+– Cree un volumen lógico denominado lv_uploads, de 256 MB, del grupo de volúmenes
+vg_web, formatéelo con un sistema de archivos XFS y móntelo en el directorio /var/www/
+html/uploads.
+• Ejecute el playbook storage.yml para configurar el almacenamiento.
+• Escriba un playbook denominado dev-users.yml que cree el usuario developer en hosts
+gestionados en el grupo de inventario webservers. Debe hacerlo de la siguiente manera:
+– Debe establecer la contraseña para el usuario developer mediante la variable pwhash
+proporcionada en el archivo pass-vault.yml, que está cifrada con Ansible Vault. La
+contraseña de Ansible Vault para el archivo pass-vault.yml es redhat.
+– El usuario developer también debe ser miembro del grupo webdev.
+– Los miembros del grupo webdev deben poder ejecutar comandos sudo sin una solicitud
+de contraseña. Cree o modifique el archivo sudoers en /etc/sudoers.d/webdev con el
+módulo ansible.builtin.lineinfile. Cualquier edición en el archivo sudoers debe
+validarse antes de aplicar los cambios.
+• Ejecute el playbook dev-users.yml. Verifique que el usuario developer pueda iniciar sesión
+en un host gestionado en el grupo webservers y que pueda ejecutar comandos como root en
+ese host usando sudo sin una contraseña.
+• Escriba un playbook network.yml que use el rol del sistema
+redhat.rhel_system_roles.network para configurar la interfaz de red eth1 en los hosts
+gestionados en el grupo de inventario webservers con la dirección IP 172.25.250.45/24.
+• Ejecute el playbook network.yml.
+• Escriba un playbook denominado log-rotate.yml para configurar un trabajo Cron del
+sistema de la siguiente manera:
+– Use el módulo ansible.builtin.cron para crear el trabajo Cron del sistema /etc/
+cron.d/rotate_web en hosts gestionados en el grupo de inventario webservers.
+– El trabajo debe ejecutarse con el usuario devops todas las noches a medianoche.
+– El trabajo debe ejecutar el comando logrotate -f /etc/logrotate.d/httpd para
+rotar los registros en el directorio /var/log/httpd/.
+• Ejecute el playbook log-rotate.yml.
+• Escriba un playbook denominado site.yml que importe los cuatro playbooks que escribió en
+esta actividad, en el siguiente orden:
+– storage.yml
+– dev-users.yml
+– network.yml
+– log-rotate.yml
+• Ejecute el playbook site.yml y asegúrese de que no haya errores.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+522
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+[student@workstation ~]$ lab grade review-cr3
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr3
+RH294-RHEL9.0-es-3-20240620
+523
+
+
+capítulo 10 |  Revisión exhaustiva
+Solución
+Administración de hosts de Linux y uso
+de roles del sistema
+En esta revisión, en hosts gestionados que ejecutan Red Hat Enterprise Linux, escribe
+playbooks que usan dos roles del sistema para configurar un nuevo almacenamiento con un
+volumen lógico y configurar interfaces de red y usa módulos para configurar un trabajo Cron
+y un usuario con privilegios Sudo.
+Resultados
+• Usar el rol redhat.rhel_system_roles.storage para crear, formatear y montar de
+manera persistente un volumen LVM en un host gestionado.
+• Crear un usuario con acceso sudo.
+• Configurar los ajustes de red en los hosts gestionados y recopilar datos de Ansible
+relacionados con la red.
+• Programar un trabajo Cron.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr3
+1.
+Instale la colección redhat.rhel_system_roles desde el archivo redhat-
+rhel_system_roles-1.19.3.tar.gz en el directorio collections del directorio del
+proyecto.
+1.1.
+Cambie al directorio review-cr3.
+[student@workstation ~]$ cd ~/review-cr3
+[student@workstation review-cr3]$
+1.2.
+Use el comando ansible-galaxy para instalar la colección
+redhat.rhel_system_roles desde el archivo redhat-
+rhel_system_roles-1.19.3.tar.gz en el directorio collections.
+[student@workstation review-cr3]$ ansible-galaxy collection install \
+> ./redhat-rhel_system_roles-1.19.3.tar.gz -p collections
+...output omitted...
+redhat.rhel_system_roles:1.19.3 was installed successfully
+524
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+2.
+Escriba un playbook denominado storage.yml que use el rol del sistema
+redhat.rhel_system_roles.storage para configurar volúmenes lógicos para los
+hosts gestionados en el grupo webservers especificado por el archivo de inventario en el
+directorio de su proyecto. El playbook debe configurar los volúmenes lógicos de la siguiente
+manera:
+• Cree un grupo de volúmenes denominado vg_web en el dispositivo de almacenamiento /
+dev/vdb.
+• Cree un volumen lógico denominado lv_content, de 128 MB, del grupo de volúmenes
+vg_web, formatéelo con un sistema de archivos XFS y móntelo en el directorio /var/
+www/html/content.
+• Cree un volumen lógico denominado lv_uploads, de 256 MB, del grupo de volúmenes
+vg_web, formatéelo con un sistema de archivos XFS y móntelo en el directorio /var/
+www/html/uploads.
+2.1.
+Cree el playbook storage.yml dirigida al grupo webservers y aplica el rol
+redhat.rhel_system_roles.storage.
+---
+- name: Configure storage on webservers
+  hosts: webservers
+  roles:
+    - name: redhat.rhel_system_roles.storage
+2.2.
+Defina la variable storage_pools. Establezca el nombre del grupo de volúmenes en
+vg_web, el type en lvm y los disks para usar el dispositivo /dev/vdb.
+      storage_pools:
+        - name: vg_web
+          type: lvm
+          disks:
+            - /dev/vdb
+2.3.
+Defina la variable volumes en storage_pools.
+          volumes:
+2.4.
+Cree un volumen lógico dentro de volumes con el nombre lv_content, un tamaño
+de 128 MB, un tipo de sistema de archivos de xfs y un punto de montaje de /var/
+www/html/content.
+            - name: lv_content
+              size: 128m
+              mount_point: "/var/www/html/content"
+              fs_type: xfs
+              state: present
+2.5.
+Cree otro volumen lógico dentro de volumes con el nombre lv_uploads, un tamaño
+de 256 MB, un tipo de sistema de archivos de xfs y un punto de montaje de /var/
+www/html/uploads.
+RH294-RHEL9.0-es-3-20240620
+525
+
+
+capítulo 10 |  Revisión exhaustiva
+            - name: lv_uploads
+              size: 256m
+              mount_point: "/var/www/html/uploads"
+              fs_type: xfs
+              state: present
+El playbook final debería incluir el siguiente contenido:
+---
+- name: Configure storage on webservers
+  hosts: webservers
+  roles:
+    - name: redhat.rhel_system_roles.storage
+      storage_pools:
+        - name: vg_web
+          type: lvm
+          disks:
+            - /dev/vdb
+          volumes:
+            - name: lv_content
+              size: 128m
+              mount_point: "/var/www/html/content"
+              fs_type: xfs
+              state: present
+            - name: lv_uploads
+              size: 256m
+              mount_point: "/var/www/html/uploads"
+              fs_type: xfs
+              state: present
+2.6.
+Ejecute el playbook storage.yml para configurar el almacenamiento.
+[student@workstation review-cr3]$ ansible-navigator run \
+> -m stdout storage.yml
+PLAY [Configure storage on webservers]
+ ************************************************
+TASK [Gathering Facts]
+ ****************************************************************
+ok: [servera.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.storage : make sure blivet is available]
+ ***************
+changed: [servera.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.storage : set up new/current mounts]
+ *******************
+changed: [servera.lab.example.com] => (item={'src': '/dev/mapper/vg_web-
+lv_content', 'path': '/var/www/html/content', 'fstype': 'xfs', 'opts': 'defaults',
+ 'dump': 0, 'passno': 0, 'state': 'mounted'})
+526
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+changed: [servera.lab.example.com] => (item={'src': '/dev/mapper/vg_web-
+lv_uploads', 'path': '/var/www/html/uploads', 'fstype': 'xfs', 'opts': 'defaults',
+ 'dump': 0, 'passno': 0, 'state': 'mounted'})
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=21   changed=3    unreachable=0    failed=0   
+ skipped=12   rescued=0    ignored=0
+3.
+Escriba un playbook denominado dev-users.yml que cree el usuario developer en hosts
+gestionados en el grupo de inventario webservers. Debe hacerlo de la siguiente manera:
+• Debe establecer la contraseña para el usuario developer mediante la variable pwhash
+proporcionada en el archivo pass-vault.yml, que está cifrada con Ansible Vault. La
+contraseña de Ansible Vault para el archivo pass-vault.yml es redhat.
+• El usuario developer debe ser miembro del grupo webdev.
+• Los miembros del grupo webdev deben poder ejecutar comandos sudo sin una solicitud
+de contraseña. Cree o modifique el archivo sudoers en /etc/sudoers.d/webdev con
+el módulo ansible.builtin.lineinfile. Cualquier edición en el archivo sudoers
+debe validarse antes de aplicar los cambios.
+3.1.
+Empiece a escribir el playbook dev-users.yml. Defina un solo play en el playbook
+que se dirija al grupo de hosts webservers.
+Agregue una clave vars_files para acceder al archivo pass-vault.yml.
+Agregue la clave tasks al playbook.
+---
+- name: Create local users
+  hosts: webservers
+  vars_files:
+    - pass-vault.yml
+  tasks:
+3.2.
+Agregue la primera tarea al playbook. Use el módulo ansible.builtin.group para
+crear el grupo webdev en el host gestionado.
+La tarea debe contar con el siguiente contenido:
+    - name: Add webdev group
+      ansible.builtin.group:
+        name: webdev
+        state: present
+3.3.
+Agregue una segunda tarea al playbook que usa el módulo ansible.builtin.user.
+Use el módulo ansible.builtin.user para crear el usuario developer en el host
+gestionado. El usuario developer debe ser miembro del grupo webdev.
+La tarea debe contar con el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+527
+
+
+capítulo 10 |  Revisión exhaustiva
+    - name: Create user accounts
+      ansible.builtin.user:
+        name: developer
+        groups: webdev
+        password: "{{ pwhash }}"
+3.4.
+Agregue una tercera tarea al play que use el módulo
+ansible.builtin.lineinfile para modificar el archivo de configuración sudo
+y permitir a los miembros del grupo webdev usar sudo sin una contraseña en el host
+gestionado. Use el parámetro validate para validar la nueva entrada sudoers.
+La tarea debe contar con el siguiente contenido:
+    - name: Modify sudo config to allow webdev members sudo without a password
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/webdev
+        state: present
+        create: true
+        mode: 0440
+        line: "%webdev ALL=(ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s
+El playbook completo debe incluir el siguiente contenido:
+---
+- name: Create local users
+  hosts: webservers
+  vars_files:
+    - pass-vault.yml
+  tasks:
+    - name: Add webdev group
+      ansible.builtin.group:
+        name: webdev
+        state: present
+    - name: Create user accounts
+      ansible.builtin.user:
+        name: developer
+        groups: webdev
+        password: "{{ pwhash }}"
+    - name: Modify sudo config to allow webdev members sudo without a password
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/webdev
+        state: present
+        create: true
+        mode: 0440
+        line: "%webdev ALL=(ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s
+4.
+Ejecute el playbook dev-users.yml. Verifique que el usuario developer pueda iniciar
+sesión en un host gestionado y ejecute los comandos usando sudo sin una contraseña.
+528
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+4.1.
+Ejecute el playbook dev-users.yml:
+[student@workstation review-cr3]$ ansible-navigator run -m stdout \
+> --pae false dev-users.yml --vault-id @prompt
+Vault password (default): redhat
+PLAY [Create local users] ****************************************************
+TASK [Gathering Facts] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Add webdev group] ******************************************************
+changed: [servera.lab.example.com]
+TASK [Create user accounts] **************************************************
+changed: [servera.lab.example.com]
+TASK [Modify sudo config to allow webdev members sudo without a password] ****
+changed: [servera.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+4.2.
+Use SSH como usuario developer e inicie sesión en el servidor
+servera.lab.example.com.
+[student@workstation review-cr3]$ ssh developer@servera
+...output omitted...
+[developer@servera ~]$
+4.3.
+Cambie al usuario root y confirme que no se requiere contraseña.
+[developer@servera ~]$ sudo -i
+[root@servera ~]#
+4.4.
+Cierre sesión de servera.lab.example.com.
+[root@servera ~]# exit
+logout
+[developer@servera ~]$ exit
+logout
+Connection to servera closed.
+[student@workstation review-cr3]$
+5.
+Escriba un playbook network.yml que use el rol del sistema
+redhat.rhel_system_roles.network para configurar la interfaz de red eth1
+en los hosts gestionados en el grupo de inventario webservers con la dirección IP
+172.25.250.45/24.
+5.1.
+Cree el playbook network.yml con un play orientado al grupo de inventarios
+webservers. Incluya el rol redhat.rhel_system_roles.network en la sección
+roles del play.
+RH294-RHEL9.0-es-3-20240620
+529
+
+
+capítulo 10 |  Revisión exhaustiva
+---
+- name: NIC Configuration
+  hosts: webservers
+  roles:
+    - redhat.rhel_system_roles.network
+5.2.
+El archivo /home/student/review-cr3/collections/
+ansible_collections/redhat/rhel_system_roles/roles/network/
+README.md enumera todas las variables y opciones disponibles para el rol
+redhat.rhel_system_roles.network.
+Revise la sección Setting the IP configuration: en el archivo README.md
+y determine qué variable se requiere para configurar la interfaz de red eth1 con la
+dirección IP 172.25.250.45.
+[student@workstation review-cr3]$ cat \
+> collections/ansible_collections/redhat/rhel_system_roles/roles/network/README.md
+...output omitted...
+Setting the IP configuration:
+```yaml
+network_connections:
+  - name: eth0
+    type: ethernet
+    ip:
+      route_metric4: 100
+      dhcp4: no
+      #dhcp4_send_hostname: no
+      gateway4: 192.0.2.1
+      dns:
+        - 192.0.2.2
+        - 198.51.100.5
+      dns_search:
+        - example.com
+        - subdomain.example.com
+      dns_options:
+        - rotate
+        - timeout:1
+      route_metric6: -1
+      auto6: no
+      gateway6: 2001:db8::1
+      address:
+        - 192.0.2.3/24
+        - 198.51.100.3/26
+        - 2001:db8::80/7
+...output omitted...
+5.3.
+Cree el subdirectorio group_vars/webservers.
+530
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+[student@workstation review-cr3]$ mkdir -pv group_vars/webservers
+mkdir: created directory 'group_vars'
+mkdir: created directory 'group_vars/webservers'
+5.4.
+Cree un archivo vars.yml para definir la variable de rol necesario.
+Como el valor de variable se aplica a los hosts del grupo de hosts webservers, debe
+crear el archivo en el directorio group_vars/webservers.
+Agregue la definición de variables para soportar la configuración de la interfaz de red
+eth1.
+Al completarse, el archivo incluye el siguiente contenido:
+---
+network_connections:
+  - name: eth1
+    type: ethernet
+    ip:
+      address:
+        - 172.25.250.45/24
+5.5.
+Ejecute el playbook network.yml para configurar la interfaz de red eth1 en hosts
+gestionados en el grupo de inventario webservers.
+[student@workstation review-cr3]$ ansible-navigator run \
+> -m stdout network.yml
+PLAY [NIC Configuration] *******************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Check which services are running] *****
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Check which packages are installed] ***
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Print network provider] ***************
+ok: [servera.lab.example.com] => {
+    "msg": "Using network provider: nm"
+}
+TASK [redhat.rhel_system_roles.network : Install packages] *********************
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Restart NetworkManager due to wireless or
+ team interfaces] ***
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Enable and start NetworkManager] ******
+ok: [servera.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+531
+
+
+capítulo 10 |  Revisión exhaustiva
+TASK [redhat.rhel_system_roles.network : Enable and start wpa_supplicant] ******
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Enable network service] ***************
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Ensure initscripts network file
+ dependency is present] ***
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Configure networking connection profiles]
+ ***
+changed: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Show stderr messages] *****************
+ok: [servera.lab.example.com] => {
+    "__network_connections_result.stderr_lines": [
+        "[002] <info>  #0, state:None persistent_state:present, 'eth1': add
+ connection eth1, 3ddd5197-7a96-4d05-abec-c586089145ff"
+    ]
+}
+TASK [redhat.rhel_system_roles.network : Show debug messages] ******************
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Re-test connectivity] *****************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=10   changed=1    unreachable=0    failed=0   
+ skipped=12   rescued=0    ignored=0
+6.
+Escriba un playbook denominado log-rotate.yml para configurar un trabajo Cron del
+sistema de la siguiente manera:
+• Use el módulo ansible.builtin.cron para crear el trabajo Cron del sistema /etc/
+cron.d/rotate_web en hosts gestionados en el grupo de inventario webservers.
+• El trabajo debe ejecutarse con el usuario devops todas las noches a medianoche.
+• El trabajo debe ejecutar el comando logrotate -f /etc/logrotate.d/httpd para
+rotar los registros en el directorio /var/log/httpd/.
+Ejecute el playbook log-rotate.yml.
+6.1.
+Cree el playbook log-rotate.yml y agregue las líneas necesarias para iniciar el play.
+Debe apuntar a los hosts gestionados del grupo webservers y habilitar el aumento de
+privilegios.
+---
+- name: Recurring cron job
+  hosts: webservers
+  become: true
+532
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+6.2.
+Defina una tarea que use el módulo ansible.builtin.cron para programar un
+trabajo cron recurrente.
+  tasks:
+    - name: Crontab file exists
+      ansible.builtin.cron:
+        name: Rotate HTTPD logs
+6.3.
+Configure el trabajo para que se ejecute todas las noches a medianoche.
+        minute: "0"
+        hour: "0"
+        weekday: "*"
+6.4.
+Use el parámetro cron_file para crear el trabajo en el archivo de trabajo Cron del
+sistema /etc/cron.d/rotate_web en lugar del crontab de un usuario individual en
+/var/spool/cron/.
+Con una ruta relativa colocará el archivo en el directorio /etc/cron.d.
+Si se usa el parámetro cron_file, también debe especificar el parámetro user para
+completar el campo que especifica qué usuario ejecuta el trabajo Cron del sistema.
+        user: devops
+        job: "logrotate -f /etc/logrotate.d/httpd"
+        cron_file: rotate_web
+        state: present
+6.5.
+Al completarse, el playbook debe incluir el siguiente contenido. Revise el playbook para
+comprobar la precisión.
+---
+- name: Recurring cron job
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Crontab file exists
+      ansible.builtin.cron:
+        name: Rotate HTTPD logs
+        minute: "0"
+        hour: "0"
+        weekday: "*"
+        user: devops
+        job: "logrotate -f /etc/logrotate.d/httpd"
+        cron_file: rotate_web
+        state: present
+6.6.
+Ejecute el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+RH294-RHEL9.0-es-3-20240620
+533
+
+
+capítulo 10 |  Revisión exhaustiva
+[student@workstation review-cr3]$ ansible-navigator run \
+> -m stdout log-rotate.yml --syntax-check
+playbook: /home/student/review-cr3/log-rotate.yml
+6.7.
+Ejecute el playbook log-rotate.yml.
+[student@workstation review-cr3]$ ansible-navigator run \
+> -m stdout log-rotate.yml
+PLAY [Recurring cron job] *************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Crontab file exists] ************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+6.8.
+Ejecute el siguiente comando para verificar que el archivo cron /etc/cron.d/
+rotate_web existe y su contenido es correcto.
+[student@workstation review-cr3]$ ssh devops@servera \
+> "cat /etc/cron.d/rotate_web"
+#Ansible: Rotate HTTPD logs
+0 0 * * * devops logrotate -f /etc/logrotate.d/httpd
+[student@workstation review-cr3]$
+7.
+Escriba un playbook denominado site.yml que importe los cuatro playbooks que escribió
+en los pasos anteriores, en el orden en el que fueron creados:
+• storage.yml
+• dev-users.yml
+• network.yml
+• log-rotate.yml
+Ejecute el playbook site.yml y asegúrese de que no haya errores.
+7.1.
+Cree el playbook site.yml. Use el módulo ansible.builtin.import_playbook
+para cada playbook creado en los pasos anteriores.
+nota
+El siguiente playbook usa los nombres de plays para cada playbook importado, pero
+puede usar los nombres que desee.
+---
+- name: Configure storage on webservers
+  ansible.builtin.import_playbook: storage.yml
+534
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+- name: Create local users
+  ansible.builtin.import_playbook: dev-users.yml
+- name: NIC Configuration
+  ansible.builtin.import_playbook: network.yml
+- name: Recurring cron job
+  ansible.builtin.import_playbook: log-rotate.yml
+7.2.
+Ejecute el playbook site.yml.
+[student@workstation review-cr3]$ ansible-navigator run -m stdout \
+> --pae false site.yml --vault-id @prompt
+Vault password (default): redhat
+...output omitted...
+TASK [Crontab file exists] ************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=37   changed=0    unreachable=0    failed=0   
+ skipped=24   rescued=0    ignored=0
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr3
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr3
+RH294-RHEL9.0-es-3-20240620
+535
+
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Creación de roles
+Crear un rol de Ansible a partir de un playbook de Ansible existente en workstation
+y, luego, crear un playbook para aplicar el rol a serverb.lab.example.com y
+serverc.lab.example.com.
+Resultados
+• Cree un rol a partir de un playbook existente.
+• Cree un playbook para aplicar el rol a los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr4
+Especificaciones
+• El directorio review-cr4 contiene su proyecto Ansible para esta actividad.
+• Convierta el playbook ansible-httpd.yml en el directorio del proyecto en un nuevo rol de
+Ansible llamado ansible-httpd. El nuevo rol debe crearse en el directorio /home/student/
+review-cr4/roles/ansible-httpd.
+• Copie las variables, las tareas, las plantillas, los archivos y los manejadores que se usaron en o
+por el playbook a los archivos o directorios correspondientes del nuevo rol. Copie las variables
+de playbook al archivo roles/ansible-httpd/defaults/main.yml.
+• Actualice el archivo meta/main.yml en el rol con el siguiente contenido:
+Variable
+Valor
+autor
+Capacitación de Red Hat
+descripción
+Ejemplo de rol para RH294
+Empresa
+Red Hat
+licencia
+BSD
+• Edite el archivo roles/ansible-httpd/README.md para que proporcione la siguiente
+información sobre el rol:
+536
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+ansible-httpd
+=========
+Example ansible-httpd role from "Red Hat Enterprise Linux Automation with
+ Ansible" (RH294)
+Role Variables
+--------------
+* `web_package`: the RPM package
+* `web_service`: the systemd service
+* `web_config_file`: the path to the main configuration file
+* `web_root`: the path to an index.html file
+* `web_fw_service`: the name of a firewalld service
+Dependencies
+------------
+None.
+Example Playbook
+----------------
+    - hosts: servers
+      roles:
+        - ansible-httpd
+License
+-------
+BSD
+Author Information
+------------------
+Red Hat (training@redhat.com)
+• Elimine todos los directorios y archivos no usados dentro del rol.
+• En el directorio del proyecto, escriba un playbook site.yml que ejecute el nuevo rol
+ansible-httpd en los hosts gestionados en el grupo de inventario webdev.
+• Ejecute el playbook site.yml.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr4
+RH294-RHEL9.0-es-3-20240620
+537
+
+
+capítulo 10 |  Revisión exhaustiva
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr4
+538
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Solución
+Creación de roles
+Crear un rol de Ansible a partir de un playbook de Ansible existente en workstation
+y, luego, crear un playbook para aplicar el rol a serverb.lab.example.com y
+serverc.lab.example.com.
+Resultados
+• Cree un rol a partir de un playbook existente.
+• Cree un playbook para aplicar el rol a los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr4
+1.
+Use el playbook ansible-httpd.yml para crear un nuevo rol de Ansible llamado
+ansible-httpd.
+1.1.
+Cambie al directorio /home/student/review-cr4.
+[student@workstation ~]$ cd ~/review-cr4
+[student@workstation review-cr4]$
+1.2.
+Cree el subdirectorio roles.
+[student@workstation review-cr4]$ mkdir -v roles
+mkdir: created directory 'roles'
+1.3.
+Con el comando ansible-galaxy, cree la estructura del directorio para el nuevo rol
+ansible-httpd en el subdirectorio roles.
+[student@workstation review-cr4]$ cd roles
+[student@workstation roles]$ ansible-galaxy role init ansible-httpd
+- Role ansible-httpd was created successfully
+[student@workstation roles]$ cd ..
+[student@workstation review-cr4]$
+1.4.
+Use el comando tree para verificar la estructura del directorio creada para el nuevo
+rol.
+RH294-RHEL9.0-es-3-20240620
+539
+
+
+capítulo 10 |  Revisión exhaustiva
+[student@workstation review-cr4]$ tree roles
+roles
+└── ansible-httpd
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    │   └── main.yml
+    ├── meta
+    │   └── main.yml
+    ├── README.md
+    ├── tasks
+    │   └── main.yml
+    ├── templates
+    ├── tests
+    │   ├── inventory
+    │   └── test.yml
+    └── vars
+        └── main.yml
+9 directories, 8 files
+2.
+Copie las variables, las tareas, las plantillas, los archivos y los manejadores en los archivos
+correspondientes dentro del nuevo rol.
+2.1.
+Copie las variables del archivo ansible-httpd.yml al archivo roles/ansible-
+httpd/defaults/main.yml. El archivo roles/ansible-httpd/defaults/
+main.yml debe incluir el siguiente contenido:
+---
+# defaults file for ansible-httpd
+web_package: httpd
+web_service: httpd
+web_config_file: /etc/httpd/conf/httpd.conf
+web_root: /var/www/html/index.html
+web_fw_service: http
+nota
+Las variables de inventario pueden anular las variables definidas en el archivo
+defaults/main.yml de un rol, pero las variables de inventario no pueden anular
+las variables definidas en el archivo vars/main.yml de un rol.
+2.2.
+Copie la plantilla del archivo de configuración httpd de templates/httpd.conf.j2
+al directorio roles/ansible-httpd/templates/.
+[student@workstation review-cr4]$ cp \
+> -v templates/httpd.conf.j2 roles/ansible-httpd/templates/
+'templates/httpd.conf.j2' -> 'roles/ansible-httpd/templates/httpd.conf.j2'
+540
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+2.3.
+Copie las tareas del archivo ansible-httpd.yml al archivo roles/ansible-
+httpd/tasks/main.yml. El archivo roles/ansible-httpd/tasks/main.yml
+debe incluir el siguiente contenido:
+---
+# tasks file for ansible-httpd
+- name: Packages are installed
+  ansible.builtin.dnf:
+    name: "{{ web_package }}"
+    state: present
+- name: Ensure service is started
+  ansible.builtin.service:
+    name: "{{ web_service }}"
+    state: started
+    enabled: true
+- name: Deploy configuration file
+  ansible.builtin.template:
+    src: templates/httpd.conf.j2
+    dest: "{{ web_config_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+    setype: httpd_config_t
+  notify: Restart httpd
+- name: Deploy index.html file
+  ansible.builtin.copy:
+    src: files/index.html
+    dest: "{{ web_root }}"
+    owner: root
+    group: root
+    mode: '0644'
+- name: Web port is open
+  ansible.posix.firewalld:
+    service: "{{ web_fw_service }}"
+    permanent: true
+    state: enabled
+    immediate: true
+2.4.
+Copie el archivo files/index.html en el directorio roles/ansible-httpd/
+files/.
+[student@workstation review-cr4]$ cp \
+> -v files/index.html roles/ansible-httpd/files/
+'files/index.html' -> 'roles/ansible-httpd/files/index.html'
+2.5.
+Copie los manejadores del archivo ansible-httpd.yml al archivo roles/ansible-
+httpd/handlers/main.yml. El archivo roles/ansible-httpd/handlers/
+main.yml debe incluir el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+541
+
+
+capítulo 10 |  Revisión exhaustiva
+---
+# handlers file for ansible-httpd
+- name: Restart httpd
+  ansible.builtin.service:
+    name: "{{ web_service }}"
+    state: restarted
+3.
+Actualice el archivo roles/ansible-httpd/meta/main.yml en el rol de acuerdo con las
+especificaciones.
+3.1.
+Cambie el valor de la entrada author a Red Hat Training.
+  author: Red Hat Training
+3.2.
+Cambie el valor de la entrada description a example role for RH294.
+  description: example role for RH294
+3.3.
+Cambie el valor de la entrada company a Red Hat.
+  company: Red Hat
+3.4.
+Cambie el valor de la entrada license a BSD.
+  license: BSD
+4.
+Edite el archivo roles/ansible-httpd/README.md de modo que proporcione
+información pertinente relacionada con el rol. El archivo debe contar con el siguiente
+contenido:
+ansible-httpd
+=========
+Example ansible-httpd role from "Red Hat Enterprise Linux Automation with
+ Ansible" (RH294)
+Role Variables
+--------------
+* `web_package`: the RPM package
+* `web_service`: the systemd service
+* `web_config_file`: the path to the main configuration file
+* `web_root`: the path to an index.html file
+* `web_fw_service`: the name of a firewalld service
+Dependencies
+------------
+None.
+Example Playbook
+----------------
+542
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+    - hosts: servers
+      roles:
+        - ansible-httpd
+License
+-------
+BSD
+Author Information
+------------------
+Red Hat (training@redhat.com)
+5.
+Elimine los directorios que no use del nuevo rol.
+5.1.
+Elimine el directorio roles/ansible-httpd/vars/.
+[student@workstation review-cr4]$ rm -rfv roles/ansible-httpd/vars/
+removed 'roles/ansible-httpd/vars/main.yml'
+removed directory 'roles/ansible-httpd/vars/'
+5.2.
+Elimine el directorio roles/ansible-httpd/tests/.
+[student@workstation review-cr4]$ rm -rfv roles/ansible-httpd/tests/
+removed 'roles/ansible-httpd/tests/inventory'
+removed 'roles/ansible-httpd/tests/test.yml'
+removed directory 'roles/ansible-httpd/tests/'
+6.
+En el directorio del proyecto, escriba un playbook site.yml que ejecute el nuevo rol
+ansible-httpd en los hosts gestionados en el grupo de inventario webdev. El playbook
+site.yml debe contener contenido similar al siguiente ejemplo:
+---
+- name: Apply the ansible-httpd role
+  hosts: webdev
+  roles:
+    - ansible-httpd
+7.
+Ejecute el playbook site.yml.
+[student@workstation review-cr4]$ ansible-navigator run -m stdout site.yml
+PLAY [Apply the ansible-httpd role] ********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+ok: [serverc.lab.example.com]
+TASK [ansible-httpd : Packages are installed] **********************************
+changed: [serverb.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+543
+
+
+capítulo 10 |  Revisión exhaustiva
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Ensure service is started] *******************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Deploy configuration file] *******************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Deploy index.html file] **********************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [ansible-httpd : Web port is open] ****************************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+RUNNING HANDLER [ansible-httpd : Restart httpd] ********************************
+changed: [serverb.lab.example.com]
+changed: [serverc.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0  ...
+serverc.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0  ...
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade review-cr4
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish review-cr4
+544
+RH294-RHEL9.0-es-3-20240620
+
+

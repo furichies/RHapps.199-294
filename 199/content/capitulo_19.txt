@@ -1,0 +1,994 @@
+# Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+## 16.1. Crear volúmenes lógicos
+
+16.1. Creación de volúmenes lógicos 16.1. Creación de volúmenes lógicos Objetivos Describir cómo funciona Logical Volume Manager y utilizar LVM para crear un volumen lógico, formatear el volumen con un sistema de archivos y montar el volumen. Descripción general del Administrador de volúmenes lógicos Utilice el sistema LVM para crear volúmenes de almacenamiento lógicos como una capa en el almacenamiento físico. Este sistema de almacenamiento proporciona mayor flexibilidad que utilizar el almacenamiento físico directamente. LVM oculta la configuración de almacenamiento de hardware del software y le permite cambiar el tamaño de los volúmenes sin detener aplicaciones ni desmontar sistemas de archivos. LVM proporciona herramientas integrales de línea de comandos para administrar el almacenamiento. Dispositivos físicos Los volúmenes lógicos utilizan dispositivos físicos para almacenar datos. Estos dispositivos pueden ser particiones de disco, discos completos, dispositivos de matriz redundante de discos independientes (RAID) o discos de redes de área de almacenamiento (SAN). Debe inicializar un dispositivo como un volumen físico LVM. Un volumen físico LVM debe utilizar todo el dispositivo físico. Volúmenes físicos (PV) LVM utiliza el dispositivo físico subyacente como volumen físico LVM. Las herramientas LVM segmentan los volúmenes físicos en extensiones físicas (PE) para formar pequeños fragmentos de datos que actúan como el bloque de almacenamiento más pequeño en un PV. Grupos de volúmenes (VG) Un grupo de volúmenes es un grupo de almacenamiento formado por uno o más PV. Es el equivalente funcional de un disco completo en almacenamiento físico. Un PV debe asignarse únicamente a un único VG. LVM establece el tamaño del PE automáticamente, aunque es posible especificarlo. Un VG puede constar de espacio no utilizado y varios volúmenes lógicos. Volúmenes lógicos (LV) Los volúmenes lógicos se crean a partir de extensiones físicas libres en un VG y se proporcionan como dispositivo de almacenamiento para aplicaciones, usuarios y sistemas operativos. Los LV son una colección de extensiones lógicas (LE), que se asignan a
+
+extents. By default, each LE is mapped to one PE. Setting specific LV options changes this mapping; for
+
+Por ejemplo, la duplicación hace que cada LE se asigne a dos PE. Flujo de trabajo de Logical Volume Manager La creación de almacenamiento LVM requiere la construcción de estructuras en un flujo de trabajo lógico. Determine los dispositivos físicos que se convertirán en volúmenes físicos e inicialice estos dispositivos como volúmenes físicos LVM. Cree un grupo de volúmenes a partir de varios volúmenes físicos. Cree los volúmenes lógicos a partir del espacio disponible en el grupo de volúmenes. Formatee el volumen lógico con un sistema de archivos y móntelo, actívelo como espacio de intercambio o pase el volumen sin formato a una base de datos o servidor de almacenamiento para estructuras avanzadas.
+
+
+
+
+
+16.1. Creación de volúmenes lógicos Figura 22. Flujo de trabajo del Administrador de volúmenes lógicos Nota Los ejemplos aquí utilizan el nombre del dispositivo /dev/sdb y sus particiones de almacenamiento. Los nombres de los dispositivos en el sistema de su aula pueden ser diferentes. Utilice los comandos lsblk, blkid o cat /proc/partitions para identificar los dispositivos de su sistema. Construir almacenamiento LVM La creación de un volumen lógico implica la creación de particiones de dispositivos físicos, volúmenes físicos y grupos de volúmenes. Después de crear un LV, formatee el volumen y móntelo para acceder a él como almacenamiento. Preparar dispositivos físicos Nota La partición es opcional. Puede utilizar todo el dispositivo físico sin formato como volumen físico. Utilice el comando parted para etiquetar la partición.
+
+root@host:~# parted /dev/sdb mklabel gpt mkpart primary 1MiB 769MiB
+
+...salida omitida... Utilice el comando parted para crear una partición en el dispositivo físico.
+
+root@host:~# parted /dev/sdb mkpart secondary 770MiB 1026MiB
+
+Establezca la primera partición en el tipo de partición LVM de Linux.
+
+root@host:~# parted /dev/sdb set 1 lvm on
+
+Configure la segunda partición al tipo de partición LVM de Linux.
+
+
+
+
+
+16.1. Crear volúmenes lógicos
+
+root@host:~# parted /dev/sdb set 2 lvm on
+
+Utilice el comando udevadm SET para registrar la nueva partición con el kernel.
+
+root@host:~# udevadm settle
+
+Crear volúmenes físicos Utilice el comando pvcreate para etiquetar la partición física como un volumen físico LVM. Etiquete varios dispositivos simultáneamente utilizando nombres de dispositivos delimitados por espacios como argumentos para el comando pvcreate. Este ejemplo etiqueta los dispositivos /dev/sdb1 y /dev/sdb2 como PV que están listos para crear grupos de volúmenes.
+
+root@host:~# pvcreate /dev/sdb1 /dev/sdb2
+  Physical volume "/dev/sdb1" successfully created.
+  Physical volume "/dev/sdb2" successfully created.
+  Creating devices file /etc/lvm/devices/system.devices
+
+Crear un grupo de volúmenes El comando vgcreate crea uno o más volúmenes físicos en un grupo de volúmenes. El primer argumento es el nombre de un grupo de volúmenes, seguido de uno o más volúmenes físicos para asignar a este VG. Este ejemplo crea el VG vg01 utilizando los PV /dev/sdb1 y /dev/sdb2.
+
+root@host:~# vgcreate vg01 /dev/sdb1 /dev/sdb2
+  Volume group "vg01" successfully created
+
+Crear un volumen lógico El comando lvcreate crea un volumen lógico a partir de los PE disponibles en un grupo de volúmenes. Utilice el comando lvcreate para configurar el nombre y el tamaño de LV y el nombre de VG para contener este volumen lógico. Este ejemplo crea el LV lv01 con 300 MiB en el VG vg01.
+
+root@host:~# lvcreate -n lv01 -L 300M vg01
+  Logical volume "lv01" created.
+
+Este comando puede fallar si el grupo de volúmenes no tiene suficientes extensiones físicas libres. El tamaño LV se redondea al siguiente valor de tamaño PE cuando el tamaño no coincide exactamente. La opción -L del comando lvcreate requiere tamaños en bytes, mebibytes (megabytes binarios) y gibibytes (gigabytes binarios), o similares. La -l minúscula requiere tamaños que se especifican como una cantidad de extensiones físicas. Los siguientes comandos son dos opciones para crear el mismo LV con el mismo tamaño:
+
+lvcreate -n lv01 -L 128M vg01 : Create an LV of size 128 MiB, rounded to the next PE.
+lvcreate -n lv01 -l 32 vg01 : Create an LV of size 32 PEs at 4 MiB each, total 128 MiB.
+
+Cree un sistema de archivos en el volumen lógico Especifique el volumen lógico utilizando el nombre tradicional /dev/vgname/lvname o el nombre del asignador de dispositivos del kernel /dev/mapper/vgname-lvname.
+
+
+
+
+
+16.1. Creación de volúmenes lógicos Utilice el comando mkfs para crear un sistema de archivos en el nuevo volumen lógico.
+
+root@host:~# mkfs -t xfs /dev/vg01/lv01
+
+...salida omitida... Cree un punto de montaje utilizando el comando mkdir.
+
+root@host:~# mkdir /mnt/data
+
+Para que el sistema de archivos esté disponible de forma persistente, agregue una entrada al archivo /etc/fstab. /dev/vg01/lv01 /mnt/data xfs defaults 0 0 Actualice el demonio systemd con el nuevo archivo de configuración /etc/fstab.
+
+root@host:~# systemctl daemon-reload
+
+Monte el LV usando el comando de montaje.
+
+root@host:~# mount /mnt/data/
+
+Nota Puede montar un volumen lógico por nombre o por UUID, porque LVM analiza los PV buscando el UUID. Este comportamiento es exitoso incluso cuando el VG se creó usando un nombre, porque el PV siempre contiene un UUID. Mostrar el estado del componente LVM LVM proporciona varias utilidades para mostrar la información de estado de PV, VG y LV. Utilice los comandos pvdisplay, vgdisplay y lvdisplay para mostrar la información de estado de los componentes LVM. Los comandos pvs, vgs y lvs asociados se usan comúnmente y muestran un subconjunto de información de estado, con una línea para cada entidad. Mostrar información del volumen físico El comando pvdisplay muestra información sobre los PV. Utilice el comando sin argumentos para enumerar información de todos los PV del sistema. Proporcionar el nombre del PV como argumento del comando muestra la información específica del PV. Utilice el comando pvdisplay para mostrar la información del PV /dev/sdb1:
+
+root@host:~# pvdisplay /dev/sdb1
+  --- Physical volume ---
+  PV Name               /dev/sdb1                         
+  VG Name               vg01                              
+  PV Size               768.00 MiB / not usable 4.00 MiB  
+  Allocatable           yes
+  PE Size               4.00 MiB                          
+  Total PE              191
+  Free PE               116                               
+  Allocated PE          75
+  PV UUID               evAimq-gs8W-6X9C-3H6q-ndDk-pvTx-QEZ9Jc
+
+Nombre PV muestra el nombre del dispositivo.
+
+
+
+
+
+16.1. Creación de volúmenes lógicos Nombre de VG muestra el grupo de volúmenes donde se asigna el PV. Tamaño PV muestra el tamaño físico del PV, incluido el espacio inutilizable. Tamaño PE muestra el tamaño de la extensión física. Free PE muestra el tamaño de PE disponible en el VG para crear LV o ampliar LV existentes. Mostrar información del grupo de volúmenes El comando vgdisplay muestra información sobre los grupos de volúmenes. Para enumerar información sobre todos los VG, utilice el comando sin argumentos. Proporcione el nombre del VG como argumento para enumerar información específica del VG. Utilice el comando vgdisplay para mostrar la información del grupo de volúmenes vg01:
+
+root@host:~# vgdisplay vg01
+  --- Volume group ---
+  VG Name               vg01                
+  System ID
+  Format                lvm2
+  Metadata Areas        2
+  Metadata Sequence No  2
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                1
+  Open LV               1
+  Max PV                0
+  Cur PV                2
+  Act PV                2
+  VG Size               1016.00 MiB         
+  PE Size               4.00 MiB
+  Total PE              254                 
+  Alloc PE / Size       75 / 300.00 MiB
+  Free  PE / Size       179 / 716.00 MiB    
+  VG UUID               F5a4lm-Ln8v-cYM0-YJth-f7fj-lQYZ-1AP8Zu
+
+Nombre VG muestra el nombre del grupo de volúmenes. Tamaño de VG muestra el tamaño total del grupo de almacenamiento que está disponible para la asignación de LV. PE total muestra el tamaño total de las unidades de PE. Free PE / Size muestra el espacio disponible en el VG para crear o ampliar LV. Mostrar información de volúmenes lógicos El comando lvdisplay muestra información sobre volúmenes lógicos. Utilice el comando sin argumentos para enumerar información de todos los LV. Al proporcionar el nombre del LV como argumento se muestra la información específica del LV. Utilice el comando lvdisplay para mostrar la información del volumen /dev/vg01/lv01.
+
+
+
+
+
+16.1. Crear volúmenes lógicos
+
+root@host:~# lvdisplay /dev/vg01/lv01
+  --- Logical volume ---
+  LV Path                /dev/vg01/lv01         
+  LV Name                lv01
+  VG Name                vg01                   
+  LV UUID                7Toe5z-ozzv-aW4I-mJYQ-2VOV-MiP2-hNGFCf
+  LV Write Access        read/write
+  LV Creation host, time servera, 2025-06-18 18:49:54 +0000
+  LV Status              available
+  # open                 1
+  LV Size                300.00 MiB             
+  Current LE             75                     
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:0
+
+LV Path muestra el nombre del dispositivo del LV. Nombre de VG muestra el VG que se utiliza para crear este LV. Tamaño LV muestra el tamaño total del VI. Utilice las herramientas del sistema de archivos para determinar el espacio libre y utilizado para el LV. LE actual muestra el número de extensiones lógicas que utiliza este LV. Referencias
+
+fdisk(8), gdisk(8), parted(8), partprobe(8), lvm(8), pvcreate(8), vgcreate(8), lvcreate(8),
+mkfs(8), pvdisplay(8), vgdisplay(8), and lvdisplay(8) man pages.
+
+Para obtener más información, consulte la guía Configuración y gestión de volúmenes lógicos en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/configuración_y_gestión_volumen_lógico/index
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos 16.2. Ejercicio guiado Crear volúmenes lógicos Cree volúmenes lógicos, formatéelos con un sistema de archivos y móntelos. Resultados Cree volúmenes físicos, grupos de volúmenes y volúmenes lógicos con herramientas LVM. Cree sistemas de archivos en volúmenes lógicos y móntelos de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-create
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Etiquete el dispositivo de almacenamiento /dev/sdb con la etiqueta gpt y cree dos particiones de dispositivo físico con un tamaño de 256 MiB. Configure ambas particiones al tipo de partición LVM de Linux y registre las particiones con el kernel. 2. Utilice la etiqueta gpt para la partición /dev/sdb:
+
+[root@servera ~]# parted /dev/sdb mklabel gpt
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Crea la primera partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart first 1MiB 257MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Establezca la primera partición en el tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 1 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.3. Crea la segunda partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart second 257MiB 513MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.4. Configure la segunda partición al tipo de partición LVM de Linux. 2.5.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Crear volúmenes lógicos
+
+16.2. Ejercicio guiado Crear volúmenes lógicos 16.2. Ejercicio guiado Crear volúmenes lógicos Cree volúmenes lógicos, formatéelos con un sistema de archivos y móntelos. Resultados Cree volúmenes físicos, grupos de volúmenes y volúmenes lógicos con herramientas LVM. Cree sistemas de archivos en volúmenes lógicos y móntelos de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-create
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Etiquete el dispositivo de almacenamiento /dev/sdb con la etiqueta gpt y cree dos particiones de dispositivo físico con un tamaño de 256 MiB. Configure ambas particiones al tipo de partición LVM de Linux y registre las particiones con el kernel. 2. Utilice la etiqueta gpt para la partición /dev/sdb:
+
+[root@servera ~]# parted /dev/sdb mklabel gpt
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Crea la primera partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart first 1MiB 257MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Establezca la primera partición en el tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 1 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.3. Crea la segunda partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart second 257MiB 513MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.4. Configure la segunda partición al tipo de partición LVM de Linux. 2.5.
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos
+
+[root@servera ~]# parted /dev/sdb set 2 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. Registre las nuevas particiones con el kernel.
+
+[root@servera ~]# udevadm settle
+
+2.6. Enumere las particiones en el dispositivo de almacenamiento /dev/sdb usando MiB como unidad de visualización. En la columna Número, los valores 1 y 2 corresponden a las particiones de dispositivo /dev/sdb1 y /dev/sdb2. La columna Banderas indica el tipo de partición.
+
+[root@servera ~]# parted /dev/sdb unit mib print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5120MiB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1.00MiB 257MiB 256MiB primer lvm 2 257MiB 513MiB 256MiB segundo nivel 2.7. Etiquete las dos nuevas particiones como volúmenes físicos.
+
+[root@servera ~]# pvcreate /dev/sdb1 /dev/sdb2
+  Physical volume "/dev/sdb1" successfully created.
+  Physical volume "/dev/sdb2" successfully created.
+  Creating devices file /etc/lvm/devices/system.devices
+
+3. Cree el grupo de volúmenes vg_servera utilizando los dos nuevos PV.
+
+[root@servera ~]# vgcreate vg_servera /dev/sdb1 /dev/sdb2
+  Volume group "vg_servera" successfully created
+
+4. Cree el volumen lógico lv_servera utilizando el VG vg_servera con un tamaño de 400 MiB. El /dev/vg_servera/lv_servera LV se crea sin un sistema de archivos.
+
+[root@servera ~]# lvcreate -n lv_servera -L 400M vg_servera
+  Logical volume "lv_servera" created.
+
+5. Formatee el LV recién creado con el sistema de archivos XFS y móntelo de forma persistente en el directorio /data. 6. Formatee lv_servera LV con el sistema de archivos XFS.
+
+[root@servera ~]# mkfs -t xfs /dev/vg_servera/lv_servera
+
+...salida omitida...
+
+meta-data=/dev/vg_servera/lv_servera isize=512    agcount=4, agsize=25600 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+
+...salida omitida...
+
+data     =                       bsize=4096   blocks=102400, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+
+...salida omitida... 6.1. Cree el directorio /data como punto de montaje.
+
+[root@servera ~]# mkdir /data
+
+6.2. Para montar de forma persistente el sistema de archivos recién creado, agregue el siguiente contenido en el archivo /etc/fstab: 6.3.
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos /dev/vg_servera/lv_servera /data xfs defaults 0 0 Actualice el demonio systemd con el nuevo archivo de configuración /etc/fstab.
+
+[root@servera ~]# systemctl daemon-reload
+
+6.4. Monte el lv_servera LV.
+
+[root@servera ~]# mount /data
+
+6.5. Verifique que se pueda acceder al sistema de archivos montado copiando los archivos de configuración del directorio /etc. 7. Verifique que pueda copiar los archivos de configuración al directorio /data.
+
+[root@servera ~]# cp -a /etc/*.conf /data
+
+7.1. Muestra el número de archivos en el directorio /data.
+
+[root@servera ~]# ls /data | wc -l
+
+30 7.2. Muestra la información del LVM. 8. Vea la información de PV de /dev/sdb2. El resultado muestra que vg_servera VG usa el PV. El PV tiene un tamaño de 256 MiB y un tamaño de extensión física de 4 MiB. El PV contiene 63 PE, de los cuales 27 PE están disponibles para su asignación y 36 PE están actualmente asignados a LV. Utilice el siguiente cálculo para asignar el tamaño del volumen en MiB:
+
+[root@servera ~]# pvdisplay /dev/sdb2
+  --- Physical volume ---
+  PV Name               /dev/sdb2
+  VG Name               vg_servera
+  PV Size               256.00 MiB / not usable 4.00 MiB
+  Allocatable           yes
+  PE Size               4.00 MiB
+  Total PE              63
+  Free PE               26
+  Allocated PE          37
+  PV UUID               1u3ddN-vh6P-enWw-LO0N-XqkS-lQVg-yWzU6N
+
+8.1. Total 252 MiB (63 PE x 4 MiB) Gratis 104 MiB (26 PE x 4 MiB) Asignados 148 MiB (37 PE x 4 MiB) Vea la información de VG para vg_servera VG. El resultado muestra un tamaño VG de 504 MiB con un tamaño PE de 4 MiB. El tamaño disponible del VG es 104 MiB. 8.2.
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que
+
+[root@servera ~]# vgdisplay vg_servera
+  --- Volume group ---
+  VG Name               vg_servera
+  System ID
+  Format                lvm2
+  Metadata Areas        2
+  Metadata Sequence No  2
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                1
+  Open LV               1
+  Max PV                0
+  Cur PV                2
+  Act PV                2
+  VG Size               504.00 MiB
+  PE Size               4.00 MiB
+  Total PE              126
+  Alloc PE / Size       100 / 400.00 MiB
+  Free  PE / Size       26 / 108.00 MiB
+  VG UUID               7pCGdT-20Mc-gQox-ZmJg-O8Rt-dExh-pJNH5N
+
+Vea la información de lv_servera LV. El resultado muestra el nombre de VG para crear el LV. También muestra un tamaño LV de 400 MiB y un tamaño LE de 100.
+
+[root@servera ~]# lvdisplay /dev/vg_servera/lv_servera
+  --- Logical volume ---
+  LV Path                /dev/vg_servera/lv_servera
+  LV Name                lv_servera
+  VG Name                vg_servera
+  LV UUID                JAxU5K-zg0x-zyoa-Liti-Lc0M-6vBs-g22itT
+  LV Write Access        read/write
+  LV Creation host, time servera, 2025-06-19 20:58:52 +0000
+  LV Status              available
+  # open                 1
+  LV Size                400.00 MiB
+  Current LE             100
+  Segments               2
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:0
+
+8.3. Vea el espacio libre en disco en unidades legibles por humanos. El resultado muestra el tamaño total de 336 MiB con el tamaño disponible de 310 MiB.
+
+[root@servera ~]# df -h /data
+
+Tamaño del sistema de archivos utilizado % de uso disponible Montado en /dev/mapper/vg_servera-lv_servera 336M 27M 310M 8% /data 8.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+9.
+
+
+
+
+
+16.2. Los recursos de creación de volúmenes lógicos de ejercicios guiados de ejercicios anteriores no afectan los ejercicios siguientes.
+
+student@workstation:~$ lab finish lvm-create
+
+
+
+
+
+16.3. Ampliación de un volumen lógico 16.3. Ampliación de un volumen lógico Objetivos Aumentar el almacenamiento disponible en un volumen lógico y ampliar su sistema de archivos o espacio de intercambio para utilizar el almacenamiento adicional. Aumente la capacidad de almacenamiento en un volumen lógico Un beneficio de utilizar volúmenes lógicos es aumentar su tamaño sin experimentar tiempo de inactividad. Agregue extensiones físicas gratuitas al LV desde el VG para ampliar la capacidad del LV y ampliar el sistema de archivos. Utilice el comando vgdisplay para confirmar que el grupo de volúmenes tiene suficiente espacio libre para la extensión LV. Utilice el comando lvextend para extender el LV:
+
+root@host:~# lvextend -L +500M /dev/vg01/lv01
+  Size of logical volume vg01/lv01 changed from 512.00 MiB (128 extents) to 1012.00 MiB (253 extents).
+  Logical volume vg01/lv01 successfully resized.
+
+Este comando aumenta el tamaño del volumen lógico lv01 en 500 MiB. El signo más (+) delante del tamaño significa
+
+adding this value to the existing size; otherwise, without the plus sign, the value defines the final size of the LV.
+
+La opción lvextend del comando -l espera el número de PE como argumento. La opción lvextend del comando -L espera tamaños en bytes, mebibytes, gibibytes o similares. Extender un sistema de archivos XFS al tamaño de volumen lógico El comando xfs_growfs ayuda a expandir el sistema de archivos para ocupar el LV extendido. El sistema de archivos de destino debe ser
+
+mounted before you use the xfs_growfs command. You can continue to use the file system when resizing.
+
+Utilice el comando xfs_growfs para expandir el sistema de archivos XFS:
+
+root@host:~# xfs_growfs /mnt/data/
+
+...salida omitida... los bloques de datos cambiaron de 131072 a 259072 Importante Ejecute siempre el comando xfs_growfs después de ejecutar el comando lvextend. Utilice el lvextend
+
+command -r option to run the two steps consecutively. An XFS file system must be mounted before resizing;
+
+si el sistema de archivos no está montado, la opción -r crea un directorio de punto de montaje temporal para realizar la operación. Alternativamente, después de extender el LV, puede cambiar el tamaño del sistema de archivos usando el comando fsadm. Este comando tiene un alcance más amplio porque admite varios otros sistemas de archivos. Extender un sistema de archivos EXT4 al tamaño de volumen lógico Los pasos para extender LV usando el sistema de archivos ext4 son los mismos que para LV usando el sistema de archivos XFS, excepto por el paso para cambiar el tamaño del sistema de archivos.
+
+
+
+
+
+
+
+## 16.3. Ampliar un volumen lógico
+
+16.3. Ampliación de un volumen lógico 16.3. Ampliación de un volumen lógico Objetivos Aumentar el almacenamiento disponible en un volumen lógico y ampliar su sistema de archivos o espacio de intercambio para utilizar el almacenamiento adicional. Aumente la capacidad de almacenamiento en un volumen lógico Un beneficio de utilizar volúmenes lógicos es aumentar su tamaño sin experimentar tiempo de inactividad. Agregue extensiones físicas gratuitas al LV desde el VG para ampliar la capacidad del LV y ampliar el sistema de archivos. Utilice el comando vgdisplay para confirmar que el grupo de volúmenes tiene suficiente espacio libre para la extensión LV. Utilice el comando lvextend para extender el LV:
+
+root@host:~# lvextend -L +500M /dev/vg01/lv01
+  Size of logical volume vg01/lv01 changed from 512.00 MiB (128 extents) to 1012.00 MiB (253 extents).
+  Logical volume vg01/lv01 successfully resized.
+
+Este comando aumenta el tamaño del volumen lógico lv01 en 500 MiB. El signo más (+) delante del tamaño significa
+
+adding this value to the existing size; otherwise, without the plus sign, the value defines the final size of the LV.
+
+La opción lvextend del comando -l espera el número de PE como argumento. La opción lvextend del comando -L espera tamaños en bytes, mebibytes, gibibytes o similares. Extender un sistema de archivos XFS al tamaño de volumen lógico El comando xfs_growfs ayuda a expandir el sistema de archivos para ocupar el LV extendido. El sistema de archivos de destino debe ser
+
+mounted before you use the xfs_growfs command. You can continue to use the file system when resizing.
+
+Utilice el comando xfs_growfs para expandir el sistema de archivos XFS:
+
+root@host:~# xfs_growfs /mnt/data/
+
+...salida omitida... los bloques de datos cambiaron de 131072 a 259072 Importante Ejecute siempre el comando xfs_growfs después de ejecutar el comando lvextend. Utilice el lvextend
+
+command -r option to run the two steps consecutively. An XFS file system must be mounted before resizing;
+
+si el sistema de archivos no está montado, la opción -r crea un directorio de punto de montaje temporal para realizar la operación. Alternativamente, después de extender el LV, puede cambiar el tamaño del sistema de archivos usando el comando fsadm. Este comando tiene un alcance más amplio porque admite varios otros sistemas de archivos. Extender un sistema de archivos EXT4 al tamaño de volumen lógico Los pasos para extender LV usando el sistema de archivos ext4 son los mismos que para LV usando el sistema de archivos XFS, excepto por el paso para cambiar el tamaño del sistema de archivos.
+
+
+
+
+
+16.3. Ampliación de un volumen lógico El comando resize2fs expande el sistema de archivos para ocupar el nuevo LV extendido. Puede continuar usando el sistema de archivos al cambiar el tamaño.
+
+root@host:~# resize2fs /dev/vg01/lv01
+
+resize2fs 1.47.1 (20 de mayo de 2024) Cambiar el tamaño del sistema de archivos en /dev/vg01/lv01 a 259072 (4k) bloques. El sistema de archivos en /dev/vg01/lv01 ahora tiene 259072 (4k) bloques de largo. El comando xfs_growfs expande un sistema de archivos XFS. Este comando normalmente toma el punto de montaje como argumento o, de lo contrario, puede usar indirectamente un nombre de dispositivo montando el dispositivo y luego especificando el punto de montaje. Por el contrario, el comando resize2fs cambia el tamaño de los sistemas de archivos ext2, ext3 o ext4 y toma el nombre del dispositivo como argumento. El comando xfs_growfs solo admite el cambio de tamaño en línea, mientras que el comando resize2fs admite el cambio de tamaño tanto en línea como fuera de línea. Aunque puede cambiar el tamaño de un sistema de archivos ext4 hacia arriba o hacia abajo, solo puede cambiar el tamaño de un sistema de archivos XFS hacia arriba. Ampliar volúmenes lógicos del espacio de intercambio Puede ampliar los LV que se utilizan como espacio de intercambio; sin embargo, el proceso difiere de expandir el sistema de archivos ext4 o XFS. Los volúmenes lógicos que se utilizan como espacio de intercambio deben estar fuera de línea para poder ampliarlos. Utilice el comando swapoff para desactivar el espacio de intercambio en el LV:
+
+root@host:~# swapoff -v /dev/vg01/swap
+
+swapoff /dev/vg01/swap Utilice el comando lvextend para extender el LV:
+
+root@host:~# lvextend -L +300M /dev/vg01/swap
+  Size of logical volume vg01/swap changed from 500.00 MiB (125 extents) to 800.00 MiB (200 extents).
+  Logical volume vg01/swap successfully resized.
+
+Utilice el comando mkswap para formatear el LV como espacio de intercambio:
+
+root@host:~# mkswap /dev/vg01/swap
+mkswap: /dev/vg01/swap: warning: wiping old swap signature.
+
+Configurando swapspace versión 1, tamaño = 800 MiB (838856704 bytes)
+
+no label, UUID=690ef204-9d59-4b3c-b145-eb8ba591ead8
+
+Utilice el comando swapon para activar el espacio de intercambio en el LV:
+
+root@host:~# swapon /dev/vg01/swap
+
+Importante Tenga en cuenta los posibles problemas al realizar esta operación en un sistema en vivo. A veces, no hay suficiente espacio de memoria física disponible para liberarlo vaciando y reubicando páginas en la memoria cuando el espacio de intercambio está desactivado. En esos escenarios, puede encontrarse con errores de falta de memoria (OOM) y el sistema podría comportarse inesperadamente. Asegúrese de que el espacio de intercambio no se utilice de forma agresiva al realizar esta operación. Alternativamente, puede crear un espacio de intercambio basado en LV adicional con el tamaño objetivo, habilitarlo y luego deshabilitar el volumen anterior. Una vez que el LV anterior esté completamente deshabilitado, puede eliminar el LV para recuperar las extensiones del VG.
+
+
+
+
+
+16.3. Ampliación de referencias de un volumen lógico
+
+lvextend(8), xfs_growfs(8), resize2fs(8), swapoff(8), mkswap(8), and swapon(8) man pages
+
+
+
+
+
+16.4. Ejercicio guiado Ampliar un volumen lógico 16.4. Ejercicio guiado Ampliar un volumen lógico Ampliar un volumen lógico para aumentar el almacenamiento disponible y ampliar su sistema de archivos para utilizar el almacenamiento adicional. Resultados Ampliar el almacenamiento de un volumen lógico existente. Amplíe el sistema de archivos de un volumen lógico para utilizar el almacenamiento disponible. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-extend
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree la tercera partición con un tamaño de 512 MiB en el dispositivo de almacenamiento /dev/sdb. Configure la partición al tipo de partición LVM de Linux y registre la partición con el kernel. 2. Cree la tercera partición con un tamaño de 512 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart third 514MiB 1026MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Configure la tercera partición al tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 3 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Registre la nueva partición con el kernel.
+
+[root@servera ~]# udevadm settle
+
+2.3. Etiquete la tercera partición como un volumen físico.
+
+[root@servera ~]# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+3. Utilizando la tercera partición, extienda el sistema de archivos en lv_servera LV a un tamaño total de 700 MiB. 4. Extienda el vg_servera VG usando el PV /dev/sdb3. 4.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado para ampliar un volumen lógico
+
+16.4. Ejercicio guiado Ampliar un volumen lógico 16.4. Ejercicio guiado Ampliar un volumen lógico Ampliar un volumen lógico para aumentar el almacenamiento disponible y ampliar su sistema de archivos para utilizar el almacenamiento adicional. Resultados Ampliar el almacenamiento de un volumen lógico existente. Amplíe el sistema de archivos de un volumen lógico para utilizar el almacenamiento disponible. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-extend
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree la tercera partición con un tamaño de 512 MiB en el dispositivo de almacenamiento /dev/sdb. Configure la partición al tipo de partición LVM de Linux y registre la partición con el kernel. 2. Cree la tercera partición con un tamaño de 512 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart third 514MiB 1026MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Configure la tercera partición al tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 3 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Registre la nueva partición con el kernel.
+
+[root@servera ~]# udevadm settle
+
+2.3. Etiquete la tercera partición como un volumen físico.
+
+[root@servera ~]# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+3. Utilizando la tercera partición, extienda el sistema de archivos en lv_servera LV a un tamaño total de 700 MiB. 4. Extienda el vg_servera VG usando el PV /dev/sdb3. 4.1.
+
+
+
+
+
+16.4. Ejercicio guiado Extender un volumen lógico Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que
+
+[root@servera ~]# vgextend vg_servera /dev/sdb3
+  Volume group "vg_servera" successfully extended
+
+Amplíe el lv_servera LV a 700 MiB.
+
+[root@servera ~]# lvextend -L 700M /dev/vg_servera/lv_servera
+  Size of logical volume vg_servera/lv_servera changed from 400.00 MiB (100 extents) to 700.00 MiB 
+
+(175 extensiones).
+
+  Logical volume vg_servera/lv_servera successfully resized.
+
+4.2. Amplíe el sistema de archivos XFS montado en /data utilizando el espacio libre en el LV.
+
+[root@servera ~]# xfs_growfs /data
+
+...salida omitida... los bloques de datos cambiaron de 102400 a 179200 4.3. Verifique que el tamaño del LV esté extendido y que el contenido aún esté presente en el volumen. 5. Verifique el tamaño del VI extendido.
+
+[root@servera ~]# lvdisplay /dev/vg_servera/lv_servera
+  --- Logical volume ---
+  LV Path                /dev/vg_servera/lv_servera
+  LV Name                lv_servera
+  VG Name                vg_servera
+  LV UUID                a7N74m-RwUN-ik3H-ZuhJ-adQW-dACp-3Qek3d
+  LV Write Access        read/write
+  LV Creation host, time servera, 2025-06-23 21:04:31 +0000
+  LV Status              available
+  # open                 1
+  LV Size                700.00 MiB
+  Current LE             175
+  Segments               3
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           253:0
+
+5.1. Verifique el nuevo tamaño del sistema de archivos.
+
+[root@servera ~]# df -h /data
+
+Tamaño del sistema de archivos utilizado Disponibilidad Uso% Montado en /dev/mapper/vg_servera-lv_servera 636M 33M 604M 6% /data 5.2. Verifique que los archivos copiados anteriormente todavía estén presentes.
+
+[root@servera ~]# ls /data | wc -l
+
+30 5.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada. 6.
+
+
+
+
+
+16.4. Ejercicio guiado Ampliar un volumen lógico Los recursos de ejercicios anteriores no afectan los ejercicios siguientes.
+
+student@workstation:~$ lab finish lvm-extend
+
+
+
+
+
+16.5. Reemplazo de volúmenes físicos y administración de LVM 16.5. Reemplazo de volúmenes físicos y administración de objetivos de LVM Reemplazar volúmenes físicos pequeños o defectuosos en un grupo de volúmenes y retirar volúmenes lógicos, grupos de volúmenes o volúmenes físicos inactivos cuando ya no sean necesarios. Reemplazo de un volumen físico en un grupo de volúmenes Es posible que se enfrente a una situación en la que deba reemplazar un PV en un VG debido a una falla de hardware, espacio insuficiente u otros motivos. LVM proporciona herramientas de línea de comandos para realizar esta operación de forma segura, incluso con LV activos y montados. Ampliar el almacenamiento del grupo de volúmenes Es posible que necesite agregar más espacio en disco para ampliar un VG. Puede agregar volúmenes físicos a un VG para ampliar su tamaño disponible. Prepare el dispositivo físico y cree el volumen físico si no existe.
+
+root@host:~# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+El comando vgextend agrega el nuevo PV al VG. Este comando extiende el VG vg01 por el tamaño de PV /dev/sdb3.
+
+root@host:~# vgextend vg01 /dev/sdb3
+  Volume group "vg01" successfully extended
+
+Reducir el almacenamiento del grupo de volumen Reducir el almacenamiento de un VG implica eliminar los PV no utilizados del VG. El comando pvmove mueve datos de extensiones en un PV a extensiones en otro PV con suficientes extensiones libres en el mismo VG. Puede continuar usando el LV del mismo VG al reducir el almacenamiento. Utilice el comando pvmove -Una opción para realizar una copia de seguridad automática de los metadatos del VG después de un cambio. Esta opción utiliza el comando vgcfgbackup para realizar una copia de seguridad de los metadatos automáticamente.
+
+root@host:~# pvmove -A y /dev/sdb1
+  /dev/sdb1: Moved: 2.74%
+  ...output omitted...
+  /dev/sdb1: Moved: 100.00%
+
+Advertencia Antes de usar el comando pvmove, haga una copia de seguridad de los datos almacenados en todos los LV del VG. Una pérdida de energía inesperada durante la operación podría dejar el VG en un estado inconsistente, lo que podría causar una pérdida de datos en los LV. Utilice el comando vgreduce para eliminar un PV de un VG.
+
+
+
+
+
+
+
+## 16.5. Reemplazo de volúmenes físicos y administración de LVM
+
+16.5. Reemplazo de volúmenes físicos y administración de LVM 16.5. Reemplazo de volúmenes físicos y administración de objetivos de LVM Reemplazar volúmenes físicos pequeños o defectuosos en un grupo de volúmenes y retirar volúmenes lógicos, grupos de volúmenes o volúmenes físicos inactivos cuando ya no sean necesarios. Reemplazo de un volumen físico en un grupo de volúmenes Es posible que se enfrente a una situación en la que deba reemplazar un PV en un VG debido a una falla de hardware, espacio insuficiente u otros motivos. LVM proporciona herramientas de línea de comandos para realizar esta operación de forma segura, incluso con LV activos y montados. Ampliar el almacenamiento del grupo de volúmenes Es posible que necesite agregar más espacio en disco para ampliar un VG. Puede agregar volúmenes físicos a un VG para ampliar su tamaño disponible. Prepare el dispositivo físico y cree el volumen físico si no existe.
+
+root@host:~# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+El comando vgextend agrega el nuevo PV al VG. Este comando extiende el VG vg01 por el tamaño de PV /dev/sdb3.
+
+root@host:~# vgextend vg01 /dev/sdb3
+  Volume group "vg01" successfully extended
+
+Reducir el almacenamiento del grupo de volumen Reducir el almacenamiento de un VG implica eliminar los PV no utilizados del VG. El comando pvmove mueve datos de extensiones en un PV a extensiones en otro PV con suficientes extensiones libres en el mismo VG. Puede continuar usando el LV del mismo VG al reducir el almacenamiento. Utilice el comando pvmove -Una opción para realizar una copia de seguridad automática de los metadatos del VG después de un cambio. Esta opción utiliza el comando vgcfgbackup para realizar una copia de seguridad de los metadatos automáticamente.
+
+root@host:~# pvmove -A y /dev/sdb1
+  /dev/sdb1: Moved: 2.74%
+  ...output omitted...
+  /dev/sdb1: Moved: 100.00%
+
+Advertencia Antes de usar el comando pvmove, haga una copia de seguridad de los datos almacenados en todos los LV del VG. Una pérdida de energía inesperada durante la operación podría dejar el VG en un estado inconsistente, lo que podría causar una pérdida de datos en los LV. Utilice el comando vgreduce para eliminar un PV de un VG.
+
+
+
+
+
+16.5. Reemplazo de volúmenes físicos y administración de LVM
+
+root@host:~# vgreduce vg01 /dev/sdb1
+  Removed "/dev/sdb1" from volume group "vg01"
+
+Eliminar almacenamiento LVM Utilice los comandos lvremove, vgremove o pvremove para eliminar un componente LVM que ya no es necesario. Advertencia Los comandos lvremove, vgremove y pvremove son operaciones destructivas e irrecuperables. Utilice estos comandos sólo cuando esté seguro de que el componente LVM ya no es necesario o no está en uso. Prepare el sistema de archivos. Mueva a otro sistema de archivos todos los datos que deban conservarse. Utilice el comando umount para desmontar el sistema de archivos y luego elimine cualquier entrada /etc/fstab asociada con este sistema de archivos.
+
+root@host:~# umount /mnt/data
+
+Eliminar el volumen lógico Utilice el comando lvremove para eliminar un volumen lógico que ya no sea necesario. Desmonte el sistema de archivos LV antes de ejecutar este comando. El comando solicita confirmación antes de retirar el LV.
+
+root@host:~# lvremove /dev/vg01/lv01
+
+¿Realmente desea eliminar el volumen lógico activo vg01/lv01? [t/n]: sí
+
+  Logical volume "lv01" successfully removed.
+
+Las extensiones físicas del LV se liberan y están disponibles para asignarse a LV nuevos o existentes en el grupo de volúmenes. Eliminar el grupo de volúmenes Utilice el comando vgremove para eliminar un grupo de volúmenes que ya no sea necesario.
+
+root@host:~# vgremove vg01
+  Volume group "vg01" successfully removed
+
+Los volúmenes físicos del VG están liberados y disponibles para asignarse a VG nuevos o existentes en el sistema. Eliminar los volúmenes físicos Utilice el comando pvremove para eliminar los volúmenes físicos que ya no son necesarios. Utilice una lista de dispositivos fotovoltaicos delimitada por espacios si necesita eliminar más de un dispositivo a la vez. Este comando elimina los metadatos PV de la partición (o disco).
+
+root@host:~# pvremove /dev/sdb2 /dev/sdb3
+  Labels on physical volume "/dev/sdb2" successfully wiped.
+  Labels on physical volume "/dev/sdb3" successfully wiped.
+
+La partición ahora está disponible para reasignación o reformateo.
+
+
+
+
+
+16.5. Reemplazo de volúmenes físicos y administración de referencias de LVM Páginas de comando man vgextend(8), pvmove(8), vgcfgbackup(8), vgreduce(8), lvremove(8), vgremove(8) y pvremove(8)
+
+
+
+
+
+16.6. Prueba sobre sustitución de volúmenes físicos y gestión de LVM 16.6. Cuestionario Reemplazo de volúmenes físicos y administración de LVM Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando agrega un PV a un VG existente para aumentar su capacidad? 1. vgexpand /dev/vg01 /dev/sdb3 a. vgextend /dev/sdb3 /dev/vg01 b. vgextend /dev/vg01 /dev/sdb3 c. vggrow /dev/sdb3 /dev/vg01 d. ¿Qué hace el comando pvmove? 2. Elimina todos los metadatos de un PV. a. Elimina un PV de un VG. b. Elimina un PV del sistema. do. Mueve datos de extensiones en un PV a extensiones en otro PV. d. ¿Qué comando elimina un PV de un VG para reducir su capacidad? 3. vgreduce /dev/vg01 /dev/sdb3 a. vgremove /dev/vg01 /dev/sdb3 b. vgreduce /dev/sdb3 c. vgrecall /dev/vg01 /dev/sdb3 d. Verdadero o falso: los comandos lvremove, vgremove y pvremove son operaciones reversibles. 4. Verdadero a. Depende del tipo de componente LVM. b. Falso c. ¿Cuál es el orden correcto para eliminar toda la estructura de componentes de LVM? 5.
+
+umount > lvremove > vgremove > pvremove
+
+a. lvremove > desmontar > pvremove > vgremove b. vgremove > pvremove > lvremove > desmontar c. pvremove > vgremove > lvremove > desmontar d.
+
+
+
+
+
+
+
+## Cuestionario: Prueba sobre sustitución de volúmenes físicos y gestión de LVM
+
+16.6. Prueba sobre sustitución de volúmenes físicos y gestión de LVM 16.6. Cuestionario Reemplazo de volúmenes físicos y administración de LVM Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando agrega un PV a un VG existente para aumentar su capacidad? 1. vgexpand /dev/vg01 /dev/sdb3 a. vgextend /dev/sdb3 /dev/vg01 b. vgextend /dev/vg01 /dev/sdb3 c. vggrow /dev/sdb3 /dev/vg01 d. ¿Qué hace el comando pvmove? 2. Elimina todos los metadatos de un PV. a. Elimina un PV de un VG. b. Elimina un PV del sistema. do. Mueve datos de extensiones en un PV a extensiones en otro PV. d. ¿Qué comando elimina un PV de un VG para reducir su capacidad? 3. vgreduce /dev/vg01 /dev/sdb3 a. vgremove /dev/vg01 /dev/sdb3 b. vgreduce /dev/sdb3 c. vgrecall /dev/vg01 /dev/sdb3 d. Verdadero o falso: los comandos lvremove, vgremove y pvremove son operaciones reversibles. 4. Verdadero a. Depende del tipo de componente LVM. b. Falso c. ¿Cuál es el orden correcto para eliminar toda la estructura de componentes de LVM? 5.
+
+umount > lvremove > vgremove > pvremove
+
+a. lvremove > desmontar > pvremove > vgremove b. vgremove > pvremove > lvremove > desmontar c. pvremove > vgremove > lvremove > desmontar d.
+
+
+
+
+
+16.6. Cuestionario Reemplazo de volúmenes físicos y administración de la solución LVM ¿Qué comando agrega un PV a un VG existente para aumentar su capacidad? 1. vgexpand /dev/vg01 /dev/sdb3 a. vgextend /dev/sdb3 /dev/vg01 b. vgextend /dev/vg01 /dev/sdb3 c. vggrow /dev/sdb3 /dev/vg01 d. ¿Qué hace el comando pvmove? 2. Elimina todos los metadatos de un PV. a. Elimina un PV de un VG. b. Elimina un PV del sistema. do. Mueve datos de extensiones en un PV a extensiones en otro PV. d. ¿Qué comando elimina un PV de un VG para reducir su capacidad? 3. vgreduce /dev/vg01 /dev/sdb3 a. vgremove /dev/vg01 /dev/sdb3 b. vgreduce /dev/sdb3 c. vgrecall /dev/vg01 /dev/sdb3 d. Verdadero o falso: los comandos lvremove, vgremove y pvremove son operaciones reversibles. 4. Verdadero a. Depende del tipo de componente LVM. b. Falso c. ¿Cuál es el orden correcto para eliminar toda la estructura de componentes de LVM? 5.
+
+umount > lvremove > vgremove > pvremove
+
+a. lvremove > desmontar > pvremove > vgremove b. vgremove > pvremove > lvremove > desmontar c. pvremove > vgremove > lvremove > desmontar d.
+
+
+
+
+
+16.7. Laboratorio Administrar almacenamiento con Logical Volume Manager 16.7. Práctica de laboratorio Administrar almacenamiento con Logical Volume Manager Cree, administre y amplíe volúmenes lógicos que puedan contener sistemas de archivos y espacios de intercambio. Resultados Crear un volumen lógico (LV) con un sistema de archivos XFS. Cambie el tamaño de un volumen lógico a un tamaño específico. Sube persistentemente el volumen. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-review
+
+Instrucciones En la máquina del servidor, el directorio /storage/data1 se está quedando sin espacio en disco. El grupo de volúmenes (VG) vg_01_serverb no tiene espacio suficiente para ampliar el volumen lógico (LV) lv_01_serverb. Para ampliar VG, primero debe crear una partición secundaria de 1024 MiB en el disco /dev/sdb. El VG no debe exceder los 2048 MiB. Luego, extienda el LV lv_01_serverb a 1024 MiB. Asegúrese de que lv_01_serverb LV permanezca montado de forma persistente en el directorio /storage/data1. Finalmente, cree el LV lv_02_serverb con 512 MiB en el VG vg_01_serverb. Cree el sistema de archivos XFS en el volumen recién creado. Monte de forma persistente el volumen lógico recién creado en el directorio /storage/data2. Tenga en cuenta especialmente la especificación del tamaño de la partición en MiB (220 bytes). Si crea la partición en MB (106 bytes), no cumple con los criterios de evaluación, porque 1 MiB = 1,048576 MB. Aunque la unidad predeterminada cuando se utiliza el comando parted es MB, puede verificar el tamaño de las particiones en unidades MiB utilizando la opción unidad MiB. En la máquina del servidor, cree la partición secundaria de 1024 MiB en el disco /dev/sdb. Registre la partición con el kernel. 1. Inicialice la partición secundaria como un volumen físico. 2. Amplíe el grupo de volúmenes vg_01_serverb para usar la partición secundaria. 3. Amplíe el volumen lógico lv_01_serverb a 1024 MiB y cambie el tamaño del sistema de archivos XFS. 4. En el grupo de volúmenes vg_01_serverb, cree el volumen lógico lv_02_serverb con 512 MiB. Agregue un sistema de archivos XFS y móntelo de forma persistente en el directorio /storage/data2. 5. Verifique que los LV lv_01_serverb y lv_02_serverb estén montados con el tamaño previsto. 6. Regrese a la máquina de la estación de trabajo como usuario estudiante. 7.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: oratorio de administración de almacenamiento con Logical Volume Manager
+
+16.7. Laboratorio Administrar almacenamiento con Logical Volume Manager 16.7. Práctica de laboratorio Administrar almacenamiento con Logical Volume Manager Cree, administre y amplíe volúmenes lógicos que puedan contener sistemas de archivos y espacios de intercambio. Resultados Crear un volumen lógico (LV) con un sistema de archivos XFS. Cambie el tamaño de un volumen lógico a un tamaño específico. Sube persistentemente el volumen. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-review
+
+Instrucciones En la máquina del servidor, el directorio /storage/data1 se está quedando sin espacio en disco. El grupo de volúmenes (VG) vg_01_serverb no tiene espacio suficiente para ampliar el volumen lógico (LV) lv_01_serverb. Para ampliar VG, primero debe crear una partición secundaria de 1024 MiB en el disco /dev/sdb. El VG no debe exceder los 2048 MiB. Luego, extienda el LV lv_01_serverb a 1024 MiB. Asegúrese de que lv_01_serverb LV permanezca montado de forma persistente en el directorio /storage/data1. Finalmente, cree el LV lv_02_serverb con 512 MiB en el VG vg_01_serverb. Cree el sistema de archivos XFS en el volumen recién creado. Monte de forma persistente el volumen lógico recién creado en el directorio /storage/data2. Tenga en cuenta especialmente la especificación del tamaño de la partición en MiB (220 bytes). Si crea la partición en MB (106 bytes), no cumple con los criterios de evaluación, porque 1 MiB = 1,048576 MB. Aunque la unidad predeterminada cuando se utiliza el comando parted es MB, puede verificar el tamaño de las particiones en unidades MiB utilizando la opción unidad MiB. En la máquina del servidor, cree la partición secundaria de 1024 MiB en el disco /dev/sdb. Registre la partición con el kernel. 1. Inicialice la partición secundaria como un volumen físico. 2. Amplíe el grupo de volúmenes vg_01_serverb para usar la partición secundaria. 3. Amplíe el volumen lógico lv_01_serverb a 1024 MiB y cambie el tamaño del sistema de archivos XFS. 4. En el grupo de volúmenes vg_01_serverb, cree el volumen lógico lv_02_serverb con 512 MiB. Agregue un sistema de archivos XFS y móntelo de forma persistente en el directorio /storage/data2. 5. Verifique que los LV lv_01_serverb y lv_02_serverb estén montados con el tamaño previsto. 6. Regrese a la máquina de la estación de trabajo como usuario estudiante. 7.
+
+
+
+
+
+16.7. Lab Manage Storage with Logical Volume Manager Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade lvm-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish lvm-review
+
+
+
+
+
+16.7. Lab Manage Storage con la solución Logical Volume Manager Cree, administre y amplíe volúmenes lógicos que puedan contener sistemas de archivos y espacios de intercambio. Resultados Crear un volumen lógico (LV) con un sistema de archivos XFS. Cambie el tamaño de un volumen lógico a un tamaño específico. Sube persistentemente el volumen. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-review
+
+Instrucciones En la máquina del servidor, el directorio /storage/data1 se está quedando sin espacio en disco. El grupo de volúmenes (VG) vg_01_serverb no tiene espacio suficiente para ampliar el volumen lógico (LV) lv_01_serverb. Para ampliar VG, primero debe crear una partición secundaria de 1024 MiB en el disco /dev/sdb. El VG no debe exceder los 2048 MiB. Luego, extienda el LV lv_01_serverb a 1024 MiB. Asegúrese de que lv_01_serverb LV permanezca montado de forma persistente en el directorio /storage/data1. Finalmente, cree el LV lv_02_serverb con 512 MiB en el VG vg_01_serverb. Cree el sistema de archivos XFS en el volumen recién creado. Monte de forma persistente el volumen lógico recién creado en el directorio /storage/data2. Tenga en cuenta especialmente la especificación del tamaño de la partición en MiB (220 bytes). Si crea la partición en MB (106 bytes), no cumple con los criterios de evaluación, porque 1 MiB = 1,048576 MB. Aunque la unidad predeterminada cuando se utiliza el comando parted es MB, puede verificar el tamaño de las particiones en unidades MiB utilizando la opción unidad MiB. En la máquina del servidor, cree la partición secundaria de 1024 MiB en el disco /dev/sdb. Registre la partición con el kernel. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Imprima los tamaños de partición en MiB para determinar dónde termina la primera partición para la partición /dev/sdb. 1.2.
+
+
+
+
+
+16.7. Laboratorio de administración de almacenamiento con Logical Volume Manager
+
+[root@serverb ~]# parted /dev/sdb unit MiB print
+
+... salida omitida... Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1,00 MiB 1025 MiB 1024 MiB principal Cree la partición secundaria de 1024 MiB en la partición /dev/sdb.
+
+[root@serverb ~]# parted /dev/sdb mkpart secondary 1025MiB 2049MiB
+
+...salida omitida... 1.3. Configure la partición secundaria al tipo de partición lvm.
+
+[root@serverb ~]# parted /dev/sdb set 2 lvm on
+
+...salida omitida... 1.4. Registre la nueva partición con el kernel.
+
+[root@serverb ~]# udevadm settle
+
+1.5. Inicialice la partición secundaria como un volumen físico. 2. Inicialice la partición secundaria como PV.
+
+[root@serverb ~]# pvcreate /dev/sdb2
+  Physical volume "/dev/sdb2" successfully created.
+
+2.1. Amplíe el grupo de volúmenes vg_01_serverb para usar la partición secundaria. 3. Extienda el VG vg_01_serverb utilizando el PV /dev/sdb2.
+
+[root@serverb ~]# vgextend vg_01_serverb /dev/sdb2
+  Volume group "vg_01_serverb" successfully extended
+
+3.1. Amplíe el volumen lógico lv_01_serverb a 1024 MiB y cambie el tamaño del sistema de archivos XFS. 4. Amplíe el LV lv_01_serverb a 1024 MiB. Alternativamente, puede usar la opción lvcreate comando -L +624M para cambiar el tamaño del LV.
+
+[root@serverb ~]# lvextend -L 1024M /dev/vg_01_serverb/lv_01_serverb
+  Size of logical volume vg_01_serverb/lv_01_serverb changed from 400.00 MiB (100 extents) to 1.00 
+
+GiB (256 extensiones).
+
+  Logical volume vg_01_serverb/lv_01_serverb successfully resized.
+
+4.1. Amplíe el sistema de archivos XFS para consumir el espacio restante en el LV. Nota El comando xfs_growfs introduce un paso adicional para ampliar el sistema de archivos. Una alternativa sería utilizar la opción lvextend comando -r. 4.2.
+
+
+
+
+
+16.7. Laboratorio de administración de almacenamiento con Logical Volume Manager
+
+[root@serverb ~]# xfs_growfs /storage/data1
+
+... salida omitida... los bloques de datos cambiaron de 102400 a 262144 En el grupo de volúmenes vg_01_serverb, cree el volumen lógico lv_02_serverb con 512 MiB. Agregue un sistema de archivos XFS y móntelo de forma persistente en el directorio /storage/data2. 5. Cree el LV lv_02_serverb con 512 MiB del VG vg_01_serverb.
+
+[root@serverb ~]# lvcreate -n lv_02_serverb -L 512M vg_01_serverb
+  Logical volume "lv_02_serverb" created.
+
+5.1. Cree el sistema de archivos XFS en lv_02_serverb LV.
+
+[root@serverb ~]# mkfs -t xfs /dev/vg_01_serverb/lv_02_serverb
+
+...salida omitida... 5.2. Cree el directorio /storage/data2.
+
+[root@serverb ~]# mkdir /storage/data2
+
+5.3. Agregue la siguiente línea al final del archivo /etc/fstab: /dev/vg_01_serverb/lv_02_serverb /storage/data2 xfs defaults 0 0 5.4. Actualice el demonio systemd con el nuevo archivo de configuración /etc/fstab.
+
+[root@serverb ~]# systemctl daemon-reload
+
+5.5. Monte el lv_02_serverb LV.
+
+[root@serverb ~]# mount /storage/data2
+
+5.6. Verifique que los LV lv_01_serverb y lv_02_serverb estén montados con el tamaño previsto. 6. Utilice el comando df para verificar el tamaño LV de lv_01_serverb.
+
+[root@serverb ~]# df -h /storage/data1
+
+Tamaño del sistema de archivos utilizado Disponibilidad Uso% Montado en /dev/mapper/vg_01_serverb-lv_01_serverb 960M 40M 921M 5% /storage/data1 6.1. Verifique el tamaño LV de lv_02_serverb.
+
+[root@serverb ~]# df -h /storage/data2
+
+Tamaño del sistema de archivos utilizado Disponibilidad Uso% Montado en /dev/mapper/vg_01_serverb-lv_02_serverb 448M 35M 414M 8% /storage/data2 6.2. Verifique los detalles de lv_01_serverb LV. 6.3.
+
+
+
+
+
+16.7. Lab Manage Storage with Logical Volume Manager Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade lvm-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish lvm-review
+[root@serverb ~]# lvdisplay /dev/vg_01_serverb/lv_01_serverb
+  --- Logical volume ---
+  LV Path                /dev/vg_01_serverb/lv_01_serverb
+  LV Name                lv_01_serverb
+  VG Name                vg_01_serverb
+  LV UUID                0BT2Tv-GwSV-1ioB-I01y-ctAk-mPF1-7vFxmo
+  LV Write Access        read/write
+  LV Creation host, time serverb, 2025-06-25 18:31:53 +0000
+  LV Status              available
+  # open                 1
+  LV Size                1.00 GiB
+  Current LE             256
+  Segments               2
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           253:0
+
+Verifique los detalles de lv_02_serverb LV.
+
+[root@serverb ~]# lvdisplay /dev/vg_01_serverb/lv_02_serverb
+  --- Logical volume ---
+  LV Path                /dev/vg_01_serverb/lv_02_serverb
+  LV Name                lv_02_serverb
+  VG Name                vg_01_serverb
+  LV UUID                RpJMUc-xSeh-Dcvj-JpOa-nqvA-bIvT-DJzK3x
+  LV Write Access        read/write
+  LV Creation host, time serverb, 2025-06-25 18:36:51 +0000
+  LV Status              available
+  # open                 1
+  LV Size                512.00 MiB
+  Current LE             128
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:1
+
+6.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+16.8. Resumen 16.8. Resumen En esta lección, aprendió sobre Logical Volume Manager y cómo utiliza volúmenes físicos, grupos de volúmenes y volúmenes lógicos para proporcionar espacio de almacenamiento flexible. Cada componente tiene comandos específicos para su gestión. El comando pvcreate crea los PV; el comando vgcreate crea los VG; y el comando lvcreate crea los LV. El comando vgextend agrega un PV a un VG existente y el comando lvextend aumenta el tamaño de un LV. Los comandos resize2fs y xfs_growfs cambian el tamaño del sistema de archivos en un LV después de modificar su tamaño. El comando pvmove mueve datos de un PV a otro, lo que libera espacio en el PV original y permite eliminarlo o reutilizarlo. El comando lvremove elimina los LV; el comando vgremove elimina los VG; y el comando pvremove elimina los PV.
+
+
+
+
+
+
+
+## Resumen
+
+16.8. Resumen 16.8. Resumen En esta lección, aprendió sobre Logical Volume Manager y cómo utiliza volúmenes físicos, grupos de volúmenes y volúmenes lógicos para proporcionar espacio de almacenamiento flexible. Cada componente tiene comandos específicos para su gestión. El comando pvcreate crea los PV; el comando vgcreate crea los VG; y el comando lvcreate crea los LV. El comando vgextend agrega un PV a un VG existente y el comando lvextend aumenta el tamaño de un LV. Los comandos resize2fs y xfs_growfs cambian el tamaño del sistema de archivos en un LV después de modificar su tamaño. El comando pvmove mueve datos de un PV a otro, lo que libera espacio en el PV original y permite eliminarlo o reutilizarlo. El comando lvremove elimina los LV; el comando vgremove elimina los VG; y el comando pvremove elimina los PV.
+
+
+
+
+
+Capítulo 17. Control y resolución de problemas del proceso de inicio Objetivo Administrar cómo se inicia el sistema para controlar qué servicios se inician y solucionar y reparar problemas de tiempo de inicio. Secciones Administrar el cargador de arranque y la línea de comandos del kernel (y ejercicio guiado) Explorar el proceso de arranque y seleccionar un destino de arranque (y ejercicio guiado) Reparar sistemas de archivos dañados en el momento del arranque (y ejercicio guiado) Laboratorio de control y solución de problemas del proceso de arranque
+
+
+
+
+

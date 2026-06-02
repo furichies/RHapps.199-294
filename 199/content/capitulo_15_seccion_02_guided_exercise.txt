@@ -1,0 +1,113 @@
+# Ejercicio Guiado: Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd
+# Tipo: guided_exercise
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.2. Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd 12.2. Ejercicio guiado Administre trabajos repetidos mediante el uso de unidades de temporizador Systemd Programe e inspeccione las tareas recurrentes del sistema que están programadas como unidades de temporizador systemd. Resultados Actualice la unidad del temporizador systemd que recopila datos de actividad del sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-timers
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale el paquete sysstat. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system. Examine el archivo de la unidad de temporizador sysstat-collect.timer. 2. Instale el paquete sysstat.
+
+[root@servera ~]# dnf install sysstat
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! 2.1. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system.
+
+[root@servera ~]# ls -1 /usr/lib/systemd/system/sysstat*
+
+/usr/lib/systemd/system/sysstat-collect.service /usr/lib/systemd/system/sysstat-collect.timer /usr/lib/systemd/system/sysstat-rotate.service /usr/lib/systemd/system/sysstat-rotate.timer /usr/lib/systemd/system/sysstat-summary.service /usr/lib/systemd/system/sysstat-summary.timer /usr/lib/systemd/system/sysstat.service 2.2. Examine el archivo de la unidad de temporizador sysstat-collect.timer en el directorio /usr/lib/systemd/system. La unidad de temporizador denominada sysstat-collect.timer activa la unidad de servicio correspondiente denominada sysstat-collect.service cada 10 minutos. 2.3.
+
+
+
+
+
+12.2. Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd
+
+# /usr/lib/systemd/system/sysstat-collect.timer
+# (C) 2014 Tomasz Torcz <tomek@pipebreaker.pl>
+
+#
+
+# sysstat-12.7.6 systemd unit file:
+#        Activates activity collector every 10 minutes
+
+[Unidad] Descripción=Ejecute la herramienta de contabilidad de actividad del sistema cada 10 minutos [Temporizador] OnCalendar=*:00/10 [Instalación] WantedBy=sysstat.service Examine el archivo de unidad de servicio sysstat-collect.service coincidente en el directorio /usr/lib/systemd/system. El archivo de la unidad de servicio denominado sysstat-collect.service recopila datos de actividad del sistema con el script de shell /usr/lib64/sa/sa1.
+
+# /usr/lib/systemd/system/sysstat-collect.service
+# (C) 2014 Tomasz Torcz <tomek@pipebreaker.pl>
+
+#
+
+# sysstat-12.7.6 systemd unit file:
+#        Collects system activity data
+#        Activated by sysstat-collect.timer unit
+
+[Unidad] Descripción=herramienta de contabilidad de actividad del sistema Documentación=man:sa1(8) Después=sysstat.service [Servicio] Tipo=oneshot Usuario=root ExecStart=/usr/lib64/sa/sa1 1 1 2.4. Los archivos de unidad en el directorio /etc/systemd/system anulan los archivos de unidad que están instalados en el directorio /usr/lib/systemd/system. Copie el archivo de configuración de la unidad de temporizador sysstat-collect.timer en el directorio /usr/lib/systemd/system al directorio /etc/systemd/system. Edite el archivo de configuración de la unidad del temporizador en el directorio /etc/systemd/system para que los datos de actividad del sistema se recopilen cada dos minutos. Notifique al demonio systemd de los cambios. 3. Copie el archivo /usr/lib/systemd/system/sysstat-collect.timer al archivo /etc/systemd/system/sysstat-collect.timer.
+
+[root@servera ~]# cp /usr/lib/systemd/system/sysstat-collect.timer \
+
+/etc/systemd/system/sysstat-collect.timer 3.1. Edite el archivo de configuración de la unidad del temporizador /etc/systemd/system/sysstat-collect.timer para que los datos de actividad del sistema se recopilen cada dos minutos. Utilice el comando vim para editar el archivo de configuración. Reemplace cualquier aparición de la cadena de 10 minutos por 2 minutos en todo el archivo de configuración de la unidad, incluida cualquier aparición en líneas comentadas. 3.2.
+
+
+
+
+
+12.2. Ejercicio guiado Administrar trabajos repetidos mediante unidades de temporizador Systemd Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish systasks-timers
+
+...salida omitida...
+
+# Activates activity collector every 2 minutes
+
+[Unidad] Descripción=Ejecute la herramienta de contabilidad de actividad del sistema cada 2 minutos [Temporizador] OnCalendar=*:00/2 [Instalación] WantedBy=sysstat.service Notifique al demonio systemd de los cambios recargando el demonio.
+
+[root@servera ~]# systemctl daemon-reload
+
+3.3. Habilite y active la unidad sysstat-collect.timer.
+
+[root@servera ~]# systemctl enable --now sysstat-collect.timer
+
+3.4. La unidad de servicio sysstat-collect.service recopila los datos de actividad del sistema en un archivo binario en el directorio /var/log/sa. Verifique que el archivo binario en ese directorio se modifique en dos minutos. 4. Espere hasta que se cree el archivo binario en el directorio /var/log/sa. El comando while, ls /var/log/sa | wc -l, devuelve 0 cuando el archivo no existe o devuelve 1 cuando el archivo existe. El comando while se detiene durante un segundo cuando el archivo no existe. El bucle while sale cuando el archivo existe.
+
+[root@servera ~]# while [ $(ls /var/log/sa | wc -l) -eq 0 ];  \
+do sleep 1s; done
+
+4.1. Verifique que el archivo binario en el directorio /var/log/sa se modifique en dos minutos.
+
+[root@servera ~]# ls -l /var/log/sa
+
+total 4 -rw-r--r--. 1 raíz raíz 2540 5 de abril 04:08 sa05 4.2. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+12.3. Gestión de archivos temporales 12.3. Gestión de archivos temporales Objetivos Configurar software que utilice una unidad de temporizador para programar tareas para borrar archivos temporales en el sistema o para garantizar que existan ciertos archivos o directorios. La herramienta Systemd-tempfiles La mayoría de las aplicaciones y servicios críticos utilizan archivos y directorios temporales. Algunas aplicaciones y usuarios usan el directorio /tmp para almacenar datos de trabajo transitorios, mientras que otras aplicaciones usan ubicaciones específicas de tareas, como directorios volátiles específicos de demonios y usuarios bajo el directorio /run, que existen solo en la memoria. Cuando el sistema se reinicia o se corta la energía, los sistemas de archivos basados ​​en memoria se limpian automáticamente. Normalmente, los demonios y scripts funcionan correctamente sólo cuando existen los archivos y directorios temporales esperados. Además, es necesario eliminar archivos temporales en el almacenamiento persistente para evitar problemas de espacio en disco o datos de trabajo obsoletos. Red Hat Enterprise Linux incluye la herramienta systemd-tmpfiles, que proporciona un método estructurado y configurable para administrar directorios y archivos temporales. Al iniciar el sistema, una de las primeras unidades de servicio systemd que se inicia es el servicio systemd-tmpfiles-setup. Este servicio ejecuta el comando systemd-tmpfiles, que lee las instrucciones de los archivos de configuración /usr/lib/tmpfiles.d/*.conf, /run/tmpfiles.d/*.conf y /etc/tmpfiles.d/*.conf. Estos archivos de configuración enumeran archivos y directorios que el servicio systemd-tmpfiles-setup debe crear, eliminar o proteger con permisos. Limpiar archivos temporales con un temporizador Systemd Para evitar que los sistemas de larga ejecución llenen sus discos con datos obsoletos, una unidad de temporizador systemd llamada systemd-tmpfiles-clean.timer activa a intervalos regulares la unidad systemd-tmpfiles-clean.service, que ejecuta el comando systemd-tmpfiles --clean. La configuración de una unidad de temporizador systemd tiene una sección [Temporizador] para indicar cómo iniciar el servicio con el mismo nombre que el temporizador. Utilice el siguiente comando systemctl para ver el contenido de la unidad systemd-tmpfiles-clean.timer
+
+configuration file:
+
+
+
+
+

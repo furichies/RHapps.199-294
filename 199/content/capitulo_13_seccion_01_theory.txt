@@ -1,0 +1,139 @@
+# 10.1. Identificar procesos del sistema que se inician automáticamente
+# Tipo: theory
+# Capítulo: Capítulo 10. Control de servicios y demonios
+
+10.1. Identificación de procesos del sistema que se inician automáticamente 10.1. Identificación de procesos del sistema que se inician automáticamente Objetivos Enumerar los demonios del sistema y los servicios de red que se inician en el momento del arranque como servicios, o que se inician y se detienen dinámicamente cuando se establece una conexión de red. El demonio systemd El demonio systemd gestiona el proceso de inicio de Linux, que incluye el inicio de servicios y la gestión de servicios en general. El demonio systemd activa recursos del sistema, demonios del servidor y otros procesos, tanto en el momento del arranque como en un sistema en ejecución. Los demonios son procesos que esperan o se ejecutan en segundo plano para realizar diversas tareas. Por convención, los nombres de los demonios terminan en d, como httpd, vsftpd, chronyd, etc. En el contexto de systemd, un servicio a menudo se refiere a uno o más demonios. Generalmente, los demonios se inician automáticamente en el momento del arranque y continúan ejecutándose hasta que el sistema se apaga o hasta que los detienes manualmente. Sin embargo, iniciar o detener un servicio podría cambiar el estado del sistema una vez, sin dejar un proceso demonio en ejecución después (un tipo de servicio de una sola vez). En Red Hat Enterprise Linux, el primer proceso que se inicia (PID 1) es el demonio systemd, que proporciona estas características: Capacidades de paralelización (iniciar múltiples servicios simultáneamente), que aumentan la velocidad de arranque de un sistema. Inicio bajo demanda de demonios sin necesidad de un servicio independiente. Gestión automática de dependencias de servicios, que puede evitar tiempos de espera prolongados. Por ejemplo, un servicio dependiente de la red no intenta iniciarse hasta que la red esté disponible. Un método para rastrear procesos relacionados juntos mediante el uso de grupos de control de Linux. Descripción de unidades de servicio Una unidad systemd define objetos que el sistema sabe cómo gestionar. Las unidades están representadas por archivos de configuración denominados archivos de unidad, que encapsulan información sobre los servicios del sistema, los sockets de escucha y otros objetos relevantes para el sistema de inicio systemd. Una unidad tiene un nombre y un tipo de unidad. El nombre proporciona una identidad única a la unidad. El tipo de unidad permite agrupar unidades con otros tipos de unidades similares. El demonio systemd utiliza unidades para gestionar diferentes tipos de objetos: Unidades de servicio Las unidades de servicio tienen una extensión .service y representan servicios del sistema. Puede utilizar unidades de servicio para iniciar demonios utilizados con frecuencia, como un servidor web. Unidades de zócalo Las unidades de zócalo tienen una extensión .socket y representan sockets de comunicación entre procesos (IPC) que systemd debe monitorear. Si un cliente se conecta al socket, entonces el administrador systemd inicia un demonio y le pasa la conexión. Puede utilizar unidades de socket para retrasar el inicio de un servicio en el momento del arranque y para iniciar bajo demanda los servicios que se utilizan con menos frecuencia.
+
+
+
+
+
+10.1. Identificación de procesos del sistema que se inician automáticamente Unidades de ruta Las unidades de ruta tienen una extensión .path y retrasan la activación de un servicio hasta que ocurre un cambio específico en el sistema de archivos. Puede utilizar unidades de ruta para servicios que utilizan directorios de spool, como un sistema de impresión. Para administrar unidades, use el comando systemctl. Por ejemplo, muestre los tipos de unidades disponibles con el comando systemctl -t help. El comando systemctl puede tomar nombres de unidades abreviados, entradas del árbol de procesos y descripciones de unidades. Listado de unidades de servicio Utilice el comando systemctl para explorar el estado actual del sistema. Por ejemplo, el siguiente comando enumera y pagina todas las unidades de servicio actualmente cargadas.
+
+root@host:~# systemctl list-units --type=service
+  UNIT                       LOAD   ACTIVE SUB          DESCRIPTION
+  accounts-daemon.service    loaded active running      Accounts Service
+  atd.service                loaded active running      Deferred execution ...
+  auditd.service             loaded active running      Security Audit ...
+  avahi-daemon.service       loaded active running      Avahi mDNS/DNS-SD Stack
+  chronyd.service            loaded active running      NTP client/server
+
+...salida omitida... En este ejemplo, la opción --type=service limita el tipo de unidades systemd a unidades de servicio. La salida tiene la
+
+following columns:
+
+UNIDAD: El nombre de la unidad de servicio. LOAD: Si el demonio systemd analizó correctamente la configuración de la unidad y cargó la unidad en la memoria. ACTIVO: El estado de activación de alto nivel de la unidad. Esta información indica si la unidad se inició exitosamente. SUB: El estado de activación de bajo nivel de la unidad. Esta información indica información más detallada sobre la unidad. La información varía según el tipo de unidad, su estado y cómo se ejecuta la unidad. DESCRIPCIÓN: La breve descripción de la unidad. De forma predeterminada, el comando systemctl list-units --type=service enumera solo las unidades de servicio con estados de activación activos. La opción systemctl list-units --all enumera todas las unidades de servicio independientemente de los estados de activación. Utilice la opción --state= para filtrar por los valores en los campos LOAD, ACTIVE o SUB.
+
+root@host:~# systemctl list-units --type=service --all
+  UNIT                     LOAD      ACTIVE    SUB      DESCRIPTION
+  accounts-daemon.service  loaded    active    running  Accounts Service
+  alsa-restore.service     loaded    inactive  dead     Save/Restore Sound ...
+
+● apt-daily.service no encontrado inactivo apt-daily.service muerto
+
+  atd.service              loaded    active    running  Deferred execution ...
+  audit-rules.service      loaded    inactive  dead     Load Audit Rules
+  auditd.service           loaded    active    running  Security Audit ...
+
+● auto-cpufreq.service no encontrado inactivo muerto auto-cpufreq.service ...salida omitida... El comando systemctl sin ningún argumento enumera las unidades que están cargadas y activas.
+
+
+
+
+
+10.1. Identificar procesos del sistema que se inician automáticamente
+
+root@host:~# systemctl
+
+UNIDAD DE CARGA ACTIVA SUB DESCRIPCIÓN proc-sys-fs-binfmt_misc.automount cargado activo esperando Arbitrario... sys-devices-....dispositivo cargado activo conectado Red Virtio... sys-subsystem-net-devices-ens3.deviceloaded activo conectado Red Virtio... ...salida omitida... -.mount cargado activo montado Root Mount boot.mount cargado activo montado /boot...salida omitida... systemd-ask-password-plymouth.path cargado activo esperando Reenviar contraseña... systemd-ask-password-wall.path cargado activo esperando Reenviar contraseña... init.scope cargado activo en ejecución Sistema y Servi... sesión-1.scope cargado activo en ejecución Sesión 1 de... atd.service cargado activo en ejecución Herramientas de cola de trabajos auditd.service cargado activo en ejecución Auditoría de seguridad...
+
+chronyd.service                      loaded active running   NTP client/server
+
+crond.service cargado activo ejecutando el Programador de comandos... salida omitida... La opción list-units del comando systemctl muestra las unidades que el servicio systemd intenta analizar y cargar en la memoria. Esta opción no muestra los servicios que están instalados pero no habilitados. Puedes usar systemctl
+
+command list-unit-files option to see the state of all the installed unit files:
+root@host:~# systemctl list-unit-files --type=service
+
+UNIT FILE STATE VENDOR PRESET arp-ethers.service deshabilitado deshabilitado atd.service habilitado habilitado auditd.service habilitado habilitado auth-rpcgss-module.service estático - autovt@.service alias - blk-availability.service deshabilitado deshabilitado ... salida omitida... En la salida del comando systemctl list-unit-files, algunas entradas comunes para el campo ESTADO están habilitadas, deshabilitadas, estáticas y enmascaradas. Todos los valores de ESTADO se enumeran en las páginas del manual del comando systemctl. Visualización de estados de servicio Vea el estado de una unidad con el comando systemctl status name.type. Si se omite el tipo de unidad, el comando espera una unidad de servicio con ese nombre.
+
+root@host:~# systemctl status sshd.service
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:33 UTC; 2h 48min ago
+
+Invocación: 215ee4e3b9e2426880cb727cb3933db1
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 2212 (sshd)
+      Tasks: 1 (limit: 35724)
+     Memory: 3.2M (peak: 6.4M)
+        CPU: 8.984s
+     CGroup: /system.slice/sshd.service
+             └─2212 "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups"
+
+22 de mayo 17:33:34 estación de trabajo sshd-session[5124]: Conexión cerrada por... 22 de mayo 17:33:46 estación de trabajo sshd-session[5125]: Conexión cerrada por... 22 de mayo 17:33:59 estación de trabajo sshd-session[5126]: Conexión cerrada por... ...salida omitida... La siguiente tabla enumera algunos campos de salida del Opción de estado del comando systemctl:
+
+
+
+
+
+10.1. Identificación de procesos del sistema que se inician automáticamente Tabla 13. Información de la unidad de servicio Cargado Si la unidad de servicio está cargada en la memoria Activa Si la unidad de servicio está ejecutándose y, de ser así, durante cuánto tiempo Documentos Dónde encontrar más información sobre el servicio PID principal El ID del proceso principal del servicio, incluido el nombre del comando Estado Más información sobre el servicio Proceso Más información sobre los procesos relacionados CGroup Más información sobre los grupos de control relacionados No todos estos campos siempre están presentes en la salida del comando. Las palabras clave en la salida de estado indican el estado del servicio. La siguiente tabla define palabras clave para los estados del servicio. Tabla 14. Estados de servicio en systemctl Salida cargada Se procesa el archivo de configuración de la unidad. activo (en ejecución) El servicio se está ejecutando con procesos continuos. activo (salido) El servicio completó exitosamente una configuración única. activo (en espera) El servicio se está ejecutando pero está esperando un evento. inactivo El servicio no se está ejecutando. habilitado El servicio se inicia en el momento del arranque. deshabilitado El servicio no está configurado para iniciarse en el momento del arranque. estático El servicio no se puede habilitar, pero una unidad habilitada podría iniciarlo automáticamente. Campo Descripción Palabra clave Descripción
+
+
+
+
+
+10.1. Identificación de procesos del sistema que comienzan automáticamente Verificación del estado del servicio El comando systemctl verifica los estados específicos de un servicio. Por ejemplo, use el comando systemctl es-
+
+active option to verify whether a service unit is active (running):
+root@host:~# systemctl is-active sshd.service
+
+active El comando devuelve el estado de la unidad de servicio, que normalmente es activa o inactiva. Ejecute la opción is-enabled del comando systemctl para verificar si una unidad de servicio está habilitada para iniciarse automáticamente
+
+during system boot:
+root@host:~# systemctl is-enabled sshd.service
+
+enable El comando devuelve si la unidad de servicio está habilitada para iniciarse en el momento del arranque y el estado generalmente está habilitado o deshabilitado. Para verificar si la unidad falló durante el inicio, ejecute la opción is-failed del comando systemctl:
+
+root@host:~# systemctl is-failed sshd.service
+
+activo El comando regresa activo si el servicio se está ejecutando correctamente, o falla si ocurrió un error durante el inicio. Si la unidad se detuvo, regresa desconocida o inactiva. Para enumerar todas las unidades fallidas, ejecute el comando systemctl --failed --type=service. Hace referencia a las páginas de manual systemd(1), systemd.unit(5), systemd.service(5), systemd.socket(5) y systemctl(1). Para obtener más información, consulte la guía Uso de archivos unitarios systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_systemd_unit_files_to_customize_and_optimize_your_system
+
+
+
+
+
+10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente 10.2. Ejercicio guiado Identificar procesos del sistema que se inician automáticamente Enumere las unidades de servicio instaladas e identifique qué servicios están actualmente habilitados y activos en un servidor. Resultados Enumerar las unidades de servicio instaladas. Identificar servicios activos y habilitados en el sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-identify
+
+Instrucciones Enumere todas las unidades de servicio instaladas en la máquina del servidor. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1.1. Enumere todas las unidades de servicio instaladas.
+
+[student@servera ~]$ systemctl list-units --type=service
+
+SUBDESCRIPCIÓN ACTIVA DE CARGA UNIDAD
+
+  atd.service            loaded active   running  Deferred execution scheduler
+  auditd.service         loaded active   running  Security Audit Logging Service
+  chronyd.service        loaded active   running  NTP client/server
+  cloud-config.service   loaded active   exited   Cloud-init: Config Stage
+  cloud-final.service    loaded active   exited   Cloud-init: Final Stage
+
+...salida omitida... Presione Q para salir del comando. 1.2. Enumere todas las unidades de socket, tanto activas como inactivas, en la máquina del servidor. 2.
+
+
+
+
+

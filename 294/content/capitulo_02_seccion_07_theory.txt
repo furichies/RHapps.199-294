@@ -1,0 +1,422 @@
+# Implementación de varios plays
+# Tipo: theory
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Implementación de varios plays
+Objetivos
+• Escribir un playbook que use múltiples plays con aumento de privilegios por play y aprovechar
+eficazmente el navegador de contenido de automatización para encontrar nuevos módulos en
+Ansible Content Collections disponibles a fin de implementar tareas para un play.
+Escritura de varios plays
+Un playbook es un archivo YAML que contiene una lista de uno o más plays. Recuerde que un solo
+play es una lista ordenada de tareas para ejecutar respecto de hosts seleccionados del inventario.
+Por lo tanto, si un playbook contiene varios plays, cada play podría aplicar sus tareas a un conjunto
+de hosts diferente.
+Esto puede ser muy útil cuando se organiza una implementación compleja que puede involucrar
+diferentes tareas en diferentes hosts. Puede escribir un playbook que ejecute un play respecto de
+un conjunto de hosts y que, cuando este finaliza, ejecute otro play respecto de otro conjunto de
+hosts.
+Escribir un playbook que contenga varios plays es muy sencillo. Cada play en el playbook se
+escribe como un ítem de lista de nivel superior en el playbook. Cada play es un ítem de una lista
+que contiene las palabras clave de plays habituales.
+En el siguiente ejemplo se muestra un playbook simple con dos plays. El primer play se ejecuta
+respecto de web.example.com y el segunda, respecto de database.example.com.
+---
+# This is a simple playbook with two plays
+- name: First play
+  hosts: web.example.com
+  tasks:
+    - name: First task
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+    - name: Second task
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+- name: Second play
+  hosts: database.example.com
+  tasks:
+    - name: First task
+      ansible.builtin.service:
+        name: mariadb
+        enabled: true
+RH294-RHEL9.0-es-3-20240620
+59
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Usuarios remotos y aumento de privilegios en los plays
+Los plays pueden usar usuarios remotos o parámetros de aumento de privilegios diferentes a
+aquellos especificados por los valores predeterminados en el archivo de configuración. Puede
+anular esta configuración en el play en sí en el mismo nivel que las palabras clave hosts o tasks.
+Atributos de usuario
+Las tareas en playbooks se ejecutan generalmente a través de una conexión de red en los hosts
+gestionados. Ansible tiene que conectarse a cada host gestionado como algún usuario para
+ejecutar esas tareas.
+De forma predeterminada, si usa ansible-navigator run para ejecutar un playbook, Ansible
+se conecta al host gestionado como el usuario actual dentro del entorno de ejecución de la
+automatización, root.
+nota
+Si ejecuta un comando de Ansible que no usa entornos de ejecución, como
+ansible-playbook, Ansible intentará de forma predeterminada autenticarse
+en el host gestionado remoto con el nombre de usuario de la cuenta que usó para
+ejecutar el comando.
+Puede establecer una directiva remote_user en el archivo ansible.cfg de su proyecto para
+configurar Ansible para usar una cuenta de usuario diferente en los hosts gestionados cuando
+inicie sesión inicialmente. Si aún necesita que las tareas se ejecuten como root, puede usar el
+aumento de privilegios para cambiar a ese usuario después de la conexión remota inicial.
+Sin embargo, también puede especificar el usuario remoto que Ansible usa para cada play.
+Si el usuario remoto definido en la configuración Ansible para la ejecución de las tareas no es
+adecuado, se lo puede sobrescribir usando la palabra clave remote_user dentro de un play.
+remote_user: remoteuser
+Importante
+Ansible determina qué cuenta de usuario usar cuando se conecta a un host
+gestionado según la siguiente lista, seleccionando el primer nombre de usuario que
+encuentra en este orden:
+• La variable ansible_user establecida para el host o el grupo, si está
+configurada.
+• El remote_user del play actual, si está configurado.
+• El remote_user del archivo de configuración ansible.cfg, si está
+configurado.
+Si no se ha establecido ningún valor para ninguna de las configuraciones anteriores
+y está ejecutando playbooks usando ansible-navigator con un entorno de
+ejecución, Ansible usa root. (Si usa ansible-playbook, Ansible usa el nombre
+del usuario que ejecutó el comando).
+60
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Atributos de aumento de privilegios
+También puede configurar el aumento de privilegios en un play. Use la palabra clave booleana
+become para habilitar o deshabilitar el aumento de privilegios para un play o tarea individual. Esto
+anula la configuración en el archivo de configuración ansible.cfg. Puede seleccionar yes o
+true para habilitar el aumento de privilegios, o no o false para deshabilitarlo.
+become: true
+Si se habilita el aumento de privilegios, use la palabra clave become_method en el play para
+especificar el método de aumento de privilegios para usar para ese play. El siguiente ejemplo
+especifica que se use sudo como el método de aumento de privilegios.
+become_method: sudo
+Asimismo, con el aumento de privilegios habilitado, puede usar la palabra clave become_user en
+el play para definir la cuenta del usuario que debe usarse para el aumento de privilegios en ese
+play específico.
+become_user: privileged_user
+En el siguiente ejemplo se demuestran algunas de estas palabras clave en un play:
+- name: /etc/hosts is up-to-date
+  hosts: datacenter-west
+  remote_user: automation
+  become: true
+  tasks:
+    - name: server.example.com in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: '192.0.2.42 server.example.com server'
+        state: present
+Selección de módulos
+La gran cantidad de módulos incluidos con Ansible brinda a los administradores muchas
+herramientas para tareas administrativas comunes.
+En la siguiente tabla, se enumera un pequeño número de ejemplos de módulos útiles. Existen
+muchos otros.
+RH294-RHEL9.0-es-3-20240620
+61
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Módulos de Ansible
+Categoría
+Los módulos
+Archivos
+• ansible.builtin.copy: copiar un archivo local en el host gestionado.
+• ansible.builtin.file: establecer permisos y otras propiedades de
+archivos.
+• ansible.builtin.lineinfile: garantizar que una línea particular
+esté o no esté en un archivo.
+• ansible.posix.synchronize: sincronizar contenido usando rsync.
+Software
+• ansible.builtin.package: administrar los paquetes usando el
+gestor de paquetes detectado automáticamente nativo del sistema
+operativo.
+• ansible.builtin.dnf: administrar paquetes usando el administrador
+de paquetes DNF.
+• ansible.builtin.apt: administrar paquetes usando el administrador
+de paquetes APT.
+• ansible.builtin.pip: administrar paquetes de Python desde PyPI.
+Sistema
+• ansible.posix.firewalld: administrar puertos y servicios arbitrarios
+con firewalld.
+• ansible.builtin.reboot: reiniciar una máquina.
+• ansible.builtin.service: administrar servicios.
+• ansible.builtin.user: agregar, eliminar y administrar cuentas de
+usuario.
+Herramientas de
+red
+• ansible.builtin.get_url: descargar archivos por HTTP, HTTPS o
+FTP.
+• ansible.builtin.uri: interactuar con servicios web.
+Documentación de módulos
+Para ver una lista de los módulos disponibles en su entorno de ejecución de automatización actual,
+ejecute el comando ansible-navigator doc -l. Esto muestra una lista de nombres de
+módulos y una sinopsis de sus funciones.
+[user@controlnode ~]$ ansible-navigator doc -l
+add_host                                                Add a host (and alt...
+amazon.aws.aws_az_facts                                 Gather information ...
+amazon.aws.aws_az_info                                  Gather information ...
+amazon.aws.aws_caller_info                              Get information abo...
+amazon.aws.aws_s3                                       manage objects in S...
+...output omitted...
+vyos.vyos.vyos_user                                     Manage the collecti...
+vyos.vyos.vyos_vlan                                     Manage VLANs on VyO...
+wait_for                                                Waits for a conditi...
+62
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+wait_for_connection                                     Waits until remote ...
+yum                                                     Manages packages wi...
+yum_repository                                          Add or remove YUM r...
+Importante
+El comando ansible-navigator doc -l muestra los nombres cortos de los
+módulos en Ansible Content Collection ansible.builtin en lugar de sus FQCN.
+Use el comando ansible-navigator doc module_name para mostrar documentación
+detallada de un módulo. Si especifica la opción -m stdout, la documentación formateada se
+muestra en su terminal. Si no especifica esa opción, dejando ansible-navigator en modo
+interactivo, puede desplazarse por la documentación en formato YAML.
+Como alternativa, puede ejecutar el comando ansible-navigator collections en
+modo interactivo y explorar la documentación de las colecciones en el entorno de ejecución de
+automatización actual y sus módulos.
+La documentación del módulo incluye una descripción de para qué es el módulo, una lista de los
+atributos que puede usar para controlar el módulo en una tarea, ejemplos de cómo usar el módulo
+y otros metadatos.
+También puede ver un resumen de todos los atributos que puede usar con un módulo ejecutando
+el comando ansible-navigator -s doc module_name. Esta salida puede servir como
+plantilla de inicio, la cual se puede incluir en un playbook para implementar el módulo para la
+ejecución de la tarea. Los comentarios se incluyen en la salida para explicar cómo usar cada
+atributo.
+nota
+Si está usando el comando ansible-playbook provisto con soporte limitado
+en Red Hat Enterprise Linux, o desde Ansible comunitario, usa su nodo de control
+como un entorno de ejecución. En ese caso, puede usar un comando ansible-
+doc para ver la documentación de los módulos instalados en el nodo de control, que
+funciona con las mismas opciones que ansible-navigator doc.
+Sin embargo, el comando ansible-doc en su nodo de control no se puede usar
+para inspeccionar la documentación de un entorno de ejecución de automatización
+que está usando ansible-navigator.
+Ejecución de comandos arbitrarios en hosts gestionados
+Si no existe un módulo para automatizar alguna tarea, hay módulos especiales disponibles que
+pueden ejecutar comandos arbitrarios en sus hosts gestionados.
+El módulo ansible.builtin.command es el más simple de estos comandos. Su argumento cmd
+especifica el comando que desea ejecutar.
+La siguiente tarea de ejemplo ejecuta /opt/bin/makedb.sh en hosts gestionados.
+- name: Run the /opt/bin/makedb.sh command
+  ansible.builtin.command:
+    cmd: /opt/bin/makedb.sh
+RH294-RHEL9.0-es-3-20240620
+63
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+A diferencia de la mayoría de los módulos, ansible.builtin.command no es idempotente.
+Cada vez que se especifica la tarea en un play, se ejecuta e informa que cambió algo en el host
+gestionado, incluso si no es necesario cambiar nada.
+Puede intentar que la tarea sea más segura configurándola para que se ejecute solo en función
+de la existencia de un archivo. La opción creates hace que la tarea se ejecute solo si falta un
+archivo; la suposición es que si la tarea se ejecuta, crea ese archivo. La opción removes hace que
+la tarea se ejecute solo si hay un archivo; la suposición es que, si la tarea se ejecuta, elimina ese
+archivo.
+Por ejemplo, la siguiente tarea solo se ejecuta si /opt/db/database.db no está presente:
+- name: Initialize the database
+  ansible.builtin.command:
+    cmd: /opt/bin/makedb.sh
+    creates: /opt/db/database.db
+El módulo ansible.builtin.command no puede acceder a las variables del entorno de la
+shell ni realizar operaciones de la shell, como redirección de entrada/salida o pipelines. Cuando
+necesite realizar un procesamiento de shell, puede usar el módulo ansible.builtin.shell.
+Al igual que el módulo ansible.builtin.command, pase los comandos que se deben ejecutar
+como argumentos al módulo.
+Ambos módulos ansible.builtin.command y ansible.builtin.shell requieren una
+instalación Python de trabajo en el host gestionado. Un tercer módulo, ansible.builtin.raw,
+puede ejecutar comandos directamente con la shell remota y eludir el subsistema del módulo.
+Esto es útil cuando administra sistemas que no pueden tener Python instalado (por ejemplo, un
+enrutador de red). También puede usarse para instalar Python en un host gestionado.
+Importante
+De ser posible, intente evitar los módulos ansible.builtin.command,
+ansible.builtin.shell y ansible.builtin.raw en los playbooks, por más
+simple que parezca su uso. Debido a que estos adoptan comandos arbitrarios en los
+hosts gestionados, es muy fácil programar playbooks no idempotentes con estos
+módulos.
+Si no necesita usarlos, probablemente sea mejor usar el módulo
+ansible.builtin.command primero, y recurrir a los módulos
+ansible.builtin.shell o ansible.builtin.raw solo si necesita sus
+características especiales.
+Otro ejemplo sería la siguiente tarea que usa el módulo ansible.builtin.shell que no es
+idempotente. Cada vez que se ejecuta el play, reescribe /etc/resolv.conf aunque ya conste
+de la línea nameserver 192.0.2.1. Una tarea que no es idempotente muestra el estado
+changed cada vez que se ejecuta la tarea.
+- name: Non-idempotent approach with shell module
+  ansible.builtin.shell:
+    cmd: echo "nameserver 192.0.2.1" > /etc/resolv.conf
+Puede crear tareas idempotentes de varias maneras con el módulo ansible.builtin.shell
+y, algunas veces, realizar estas modificaciones y usar ansible.builtin.shell es el mejor
+64
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+enfoque. Pero en este caso, una mejor solución sería usar ansible-navigator doc para
+descubrir el módulo ansible.builtin.copy y usarlo para obtener el efecto deseado.
+El siguiente ejemplo no reescribe el archivo /etc/resolv.conf si ya consta del contenido
+correcto:
+- name: Idempotent approach with copy module
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: "nameserver 192.0.2.1\n"
+El módulo ansible.builtin.copy comprueba si ya se alcanzó el estado y, de ser así, no
+realiza cambios. El módulo ansible.builtin.shell permite mucha flexibilidad, pero también
+requiere de más atención para garantizar que se ejecute con idempotencia.
+Puede ejecutar los playbooks idempotentes de manera repetida para garantizar que los sistemas
+se encuentren en un estado particular sin interrumpir esos sistemas si ya lo están.
+Sintaxis de YAML
+La última parte de este capítulo investiga algunas variaciones de la sintaxis del playbook de
+Ansible o YAML que puede encontrar.
+Comentarios en YAML
+Los comentarios también se pueden usar para asistir a la capacidad de lectura. En YAML, todo lo
+que está a la derecha del símbolo numérico (#) es un comentario. Si hay contenido a la izquierda
+del comentario, coloque un espacio delante del numeral.
+# This is a YAML comment
+some data # This is also a YAML comment
+Cadenas en YAML
+Por lo general, no es necesario colocar entre comillas las cadenas en YAML, inclusive si la cadena
+no contiene espacios. Puede incluir cadenas entre comillas dobles o comillas simples.
+this is a string
+'this is another string'
+"this is yet another a string"
+Puede escribir cadenas de varias líneas de dos formas. Puede usar el carácter de barra vertical (|)
+para denotar que deben preservarse los caracteres de nueva línea dentro de una cadena.
+RH294-RHEL9.0-es-3-20240620
+65
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+include_newlines: |
+        Example Company
+        123 Main Street
+        Atlanta, GA 30303
+También puede escribir cadenas de líneas múltiples usando el carácter mayor que (>) para indicar
+que los caracteres de nueva línea se deben convertir a espacios y que se deben quitar los espacios
+en blanco en las líneas. A menudo, este método se usa para dividir cadenas extensas en caracteres
+de espacio a fin de que puedan abarcar múltiples líneas para una mejor capacidad de lectura.
+fold_newlines: >
+        This is an example
+        of a long string,
+        that will become
+        a single sentence once folded.
+Diccionarios en YAML
+Hemos visto recopilaciones de pares de clave-valor escritos como un bloque con sangría, de la
+siguiente manera:
+  name: svcrole
+  svcservice: httpd
+  svcport: 80
+Los diccionarios también pueden escribirse en un formato de bloque en línea entre llaves, de la
+siguiente manera:
+  {name: svcrole, svcservice: httpd, svcport: 80}
+Evite el formato de bloque en línea, ya que es difícil de leer. Sin embargo, existe al menos una
+situación en la que se usa más comúnmente. Más adelante en este curso hablaremos sobre el
+uso de roles. Cuando un playbook incluye una lista de roles, es más común usar esta sintaxis para
+facilitar la distinción de los roles que se incluyen en un play de las variables que se pasan a un rol.
+Listas en YAML
+También hemos visto listas escritas con la sintaxis normal de un solo guion:
+  hosts:
+    - servera
+    - serverb
+    - serverc
+Las listas también tienen un formato en línea entre corchetes que se ve de la siguiente manera:
+hosts: [servera, serverb, serverc]
+Debe evitar esta sintaxis porque generalmente es más difícil de leer.
+66
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Abreviatura de playbook obsoleto
+Algunos playbooks pueden usar un método de abreviatura anterior para definir tareas y ponen
+los pares de clave-valor para el módulo en la misma línea que el nombre del módulo. Por ejemplo,
+puede ver esta sintaxis:
+  tasks:
+    - name: Shorthand form
+      ansible.builtin.service: name=httpd enabled=true state=started
+En general, escribiría la misma tarea de la siguiente manera:
+  tasks:
+    - name: Normal form
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+        state: started
+En general, debe evitar la forma de abreviatura y usar la forma normal.
+La forma normal tiene más líneas, pero es más fácil para trabajar. Las palabras clave de la tarea se
+apilan verticalmente y son más fáciles de diferenciar. Sus ojos pueden recorrer el play hacia abajo
+con menos movimiento de izquierda a derecha, facilitando la lectura.
+Además, la sintaxis normal es YAML nativa, mientras que la abreviatura no lo es. Las herramientas
+de resaltado de sintaxis en editores de texto pueden ayudarlo de manera más efectiva si usa el
+formato normal en lugar del formato abreviado.
+Puede encontrar esta sintaxis en documentación y playbooks anteriores de otras personas y la
+sintaxis aún funciona.
+Referencias
+Introducción a los playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
+Trabajo con playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks.html
+Soporte y mantenimiento de módulos: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/modules_support.html
+Agregar módulos y complementos localmente: documentación de Ansible
+https://docs.ansible.com/ansible/latest/dev_guide/developing_locally.html
+Sintaxis YAML: documentación de Ansible
+https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+Ansible.Builtin — Ansible Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html
+RH294-RHEL9.0-es-3-20240620
+67
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Implementación de varios plays
+Escribir y usar un playbook que contiene varios plays.
+Resultados
+• Usted deberá ser capaz de construir y ejecutar un playbook para gestionar la
+configuración y realizar la administración de un host gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-multi
+Instrucciones
+ 1.
+El directorio /home/student/playbook-multi se ha creado en la máquina
+workstation para su proyecto de Ansible. El directorio ya se ha llenado con un archivo de
+configuración ansible.cfg y un archivo de inventario denominado inventory. El host
+gestionado, servera.lab.example.com, ya está definido en este archivo de inventario.
+Cree un playbook denominado /home/student/playbook-multi/intranet.yml y
+agregue las líneas necesarias para iniciar el primer play. Debería apuntar al host gestionado
+servera.lab.example.com y habilitar el aumento de privilegios.
+1.1.
+Cambie al directorio /home/student/playbook-multi.
+[student@workstation ~]$ cd ~/playbook-multi
+[student@workstation playbook-multi]$
+1.2.
+Use un editor de texto para crear un nuevo playbook denominado /home/student/
+playbook-multi/intranet.yml. Agregue una línea que conste de tres guiones al
+comienzo del archivo para indicar el comienzo del archivo YAML.
+---
+1.3.
+Agregue la siguiente línea al archivo /home/student/playbook-multi/
+intranet.yml para denotar el comienzo de un play denominado Enable
+intranet services.
+- name: Enable intranet services
+68
+RH294-RHEL9.0-es-3-20240620
+
+

@@ -1,0 +1,132 @@
+# 14.7. Investigación y resolución de problemas de SELinux
+# Tipo: theory
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.7. Investigación y resolución de problemas de SELinux 14.7. Investigación y resolución de problemas de SELinux Objetivos Investigar problemas que potencialmente se relacionen con SELinux mediante el uso de herramientas de análisis de registros de SELinux e interpretando sus resultados. Solucionar problemas de SELinux Cuando las aplicaciones inesperadamente no funcionan debido a denegaciones de acceso a SELinux, hay métodos y herramientas disponibles para resolver estos problemas. Es útil comenzar por comprender algunos conceptos y comportamientos fundamentales cuando SELinux está habilitado. SELinux consta de políticas específicas que definen explícitamente acciones permitidas. Una entrada de política define un proceso etiquetado y un recurso etiquetado que interactúan. La política establece el tipo de proceso y el contexto del archivo o puerto mediante etiquetas. La entrada de política define un tipo de proceso, una etiqueta de recurso y la acción explícita que se permitirá. Una acción puede ser una llamada al sistema, una función del núcleo u otra rutina de programación específica. Si no se crea ninguna entrada para una relación proceso-recurso-acción específica, entonces se deniega la acción. Cuando se rechaza una acción, el intento se registra con información de contexto. Red Hat Enterprise Linux proporciona una política SELinux específica y estable para casi todos los servicios de la distribución. Por lo tanto, es inusual tener problemas de acceso de SELinux con servicios comunes de RHEL cuando están configurados correctamente. Los problemas de acceso a SELinux ocurren cuando los servicios se implementan incorrectamente o cuando las nuevas aplicaciones tienen políticas incompletas. Considere estos conceptos de solución de problemas antes de realizar cambios amplios en la configuración de SELinux. La mayoría de las denegaciones de acceso indican que SELinux está funcionando correctamente al bloquear acciones inadecuadas. La evaluación de acciones denegadas requiere cierta familiaridad con las acciones de servicio normales y esperadas. El problema más común de SELinux es un contexto incorrecto en archivos nuevos, copiados o movidos. Los contextos de archivos se pueden arreglar cuando una política existente hace referencia a su ubicación. Las características opcionales de la política booleana están documentadas en las páginas del manual de _selinux. La implementación de funciones booleanas generalmente requiere establecer una configuración adicional que no sea SELinux. Las políticas de SELinux no reemplazan ni eluden los permisos de archivos ni las restricciones de la lista de control de acceso. Cuando falla una aplicación o servicio común y se sabe que el servicio tiene una política SELinux funcional, primero consulte la página de manual _selinux del servicio para verificar la etiqueta de tipo de contexto correcta. Vea el proceso afectado y los atributos del archivo para verificar que estén configuradas las etiquetas correctas. Monitorear violaciones de SELinux El servicio de resolución de problemas de SELinux, del paquete setroubleshoot-server, proporciona herramientas para diagnosticar problemas de SELinux. Cuando SELinux niega una acción, se registra un mensaje de Access Vector Cache (AVC) en el archivo de registro de seguridad /var/log/audit/audit.log. El servicio de resolución de problemas de SELinux monitorea los eventos AVC y envía un resumen del evento al archivo /var/log/messages. El resumen de AVC incluye un identificador único de evento (UUID). Utilice el comando sealert -l UUID para ver detalles completos del informe para el evento específico. Utilice el comando sealert -a /var/log/audit/audit.log
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux para ver todos los eventos existentes. Considere la siguiente secuencia de ejemplo de comandos en un servidor web Apache estándar. Cree el archivo /root/mypage.
+
+root@host:~# touch /root/mypage
+
+Mueva el archivo /root/mypage al directorio /var/www/html.
+
+root@host:~# mv /root/mypage /var/www/html
+
+Inicie el servicio httpd.
+
+root@host:~# systemctl start httpd
+
+Intente acceder al servidor Apache en la URL http://localhost/mypage.
+
+root@host:~# curl http://localhost/mypage
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"> <html><head> <title>403 Prohibido</title> </head><body> <h1>Prohibido</h1> <p>No tienes permiso para acceder a este recurso.</p> </body></html> El servidor web no muestra el contenido y devuelve un error de permiso denegado. Un evento AVC se registra en los archivos /var/log/audit/audit.log y /var/log/messages. Tenga en cuenta el comando sealert y el UUID sugeridos en el mensaje de evento /var/log/messages. Vea los mensajes de registro del archivo /var/log/audit/audit.log.
+
+root@host:~# tail /var/log/audit/audit.log
+
+...salida omitida...
+
+type=AVC msg=audit(1749508506.271:159): avc:  denied  { getattr } for  pid=1984 comm="httpd" 
+path="/var/www/html/mypage" dev="sda3" ino=8805547 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file permissive=0
+
+...salida omitida..._ Ver los mensajes de registro del archivo /var/log/messages.
+
+root@host:~# tail /var/log/messages
+
+...salida omitida... 9 de junio 22:35:06 servera setroubleshoot[2175]: SELinux impide que /usr/sbin/httpd acceda a getattr en
+
+the file /var/www/html/mypage. For complete SELinux messages run: sealert -l a0bca4b2-46a9-4252-b0cd-
+
+6de0dfcdd454 ...salida omitida... La salida del comando sealert describe el evento e incluye el proceso afectado, el archivo accedido y la acción intentada y denegada. El resultado incluye consejos para corregir la etiqueta del archivo, si corresponde. Consejos adicionales describen cómo generar una nueva política para permitir la acción denegada. Utilice los consejos proporcionados sólo cuando sean apropiados para su situación.
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux Importante El resultado del comando sealert incluye una calificación de confianza, que indica el nivel de confianza en que el consejo proporcionado mitiga la denegación. Sin embargo, es posible que ese consejo no sea apropiado para su situación. Por ejemplo, si la denegación de AVC se debe a un archivo colocado en una ubicación incorrecta, entonces el comando sealert podría recomendar ajustar la etiqueta de contexto del archivo o crear una política para esta ubicación y acción. Aunque técnicamente es precisa, no es la solución correcta para su situación. Si la causa principal es una ubicación o un nombre de archivo incorrectos, la solución correcta es mover o cambiar el nombre del archivo y luego restaurar un contexto de archivo correcto.
+
+root@host:~# sealert -l a0bca4b2-46a9-4252-b0cd-6de0dfcdd454
+
+SELinux impide que /usr/sbin/httpd acceda getattr al archivo /var/www/html/mypage. ***** Se sugiere restaurar el complemento (confianza del 99,5) ************************ Si desea corregir la etiqueta. La etiqueta predeterminada de /var/www/html/mypage debe ser httpd_sys_content_t. Entonces puedes ejecutar recoverycon. Es posible que el intento de acceso se haya detenido debido a permisos insuficientes para acceder a un directorio principal, en cuyo caso intente cambiar el siguiente comando en consecuencia. Hacer
+
+# /sbin/restorecon -v /var/www/html/mypage
+
+***** El complemento general (confianza de 1,49) sugiere **************************** Si cree que a httpd se le debe permitir el acceso getattr al archivo mypage de forma predeterminada. Entonces deberías informar esto como un error. Puede generar un módulo de política local para permitir este acceso. Hacer
+
+allow this access for now by executing:
+# ausearch -c 'httpd' --raw | audit2allow -M my-httpd
+# semodule -X 300 -i my-httpd.pp
+
+Información adicional: Contexto de origen system_u:system_r:httpd_t:s0 Contexto de destino unconfined_u:object_r:admin_home_t:s0 Objetos de destino /var/www/html/mypage [ archivo ] Fuente httpd Ruta de origen /usr/sbin/httpd ...salida omitida... Mensajes de auditoría sin procesar
+
+type=AVC msg=audit(1749508506.271:159): avc:  denied  { getattr } for  pid=1984 comm="httpd" 
+path="/var/www/html/mypage" dev="sda3" ino=8805547 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file permissive=0
+type=SYSCALL msg=audit(1749508506.271:159): arch=x86_64 syscall=newfstatat success=no exit=EACCES 
+a0=ffffff9c a1=7fd554011a70 a2=7fd562de19f0 a3=100 items=0 ppid=1982 pid=1984 auid=4294967295 uid=48 gid=48 
+euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 comm=httpd exe=/usr/sbin/httpd 
+subj=system_u:system_r:httpd_t:s0 key=(null)
+
+Hash: httpd,httpd_t,admin_home_t,file,getattr En este ejemplo, el archivo al que se accede está en la ubicación correcta, pero no tiene el contexto de archivo SELinux correcto. La sección Mensajes de auditoría sin procesar muestra información de la entrada del evento /var/log/audit/audit.log. Utilice el
+
+restorecon /var/www/html/mypage command to set the correct context label. To correct multiple files
+
+de forma recursiva, utilice el comando restaurarcon -R en el directorio principal. Utilice el comando ausearch para buscar eventos AVC en el archivo de registro /var/log/audit/audit.log. Utilice la opción -m para especificar el tipo de mensaje AVC y la opción -ts para proporcionar una pista de tiempo, como reciente.
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux
+
+root@host:~# ausearch -m AVC -ts recent
+----
+time->Mon Jun  9 22:35:06 2025
+type=PROCTITLE msg=audit(1749508506.271:159): 
+proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
+type=SYSCALL msg=audit(1749508506.271:159): arch=c000003e syscall=262 success=no exit=-13 a0=ffffff9c 
+a1=7fd554011a70 a2=7fd562de19f0 a3=100 items=0 ppid=1982 pid=1984 auid=4294967295 uid=48 gid=48 euid=48 
+suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 comm="httpd" exe="/usr/sbin/httpd" 
+subj=system_u:system_r:httpd_t:s0 key=(null)
+type=AVC msg=audit(1749508506.271:159): avc:  denied  { getattr } for  pid=1984 comm="httpd" 
+path="/var/www/html/mypage" dev="sda3" ino=8805547 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file permissive=0
+
+Solucionar problemas de SELinux con la consola web La consola web de RHEL incluye herramientas para solucionar problemas de SELinux. Seleccione SELinux en el menú de la izquierda. La ventana de política de SELinux muestra el estado de aplicación actual. La sección de errores de control de acceso de SELinux enumera los problemas actuales de SELinux. Figura 19. Política de SELinux y errores en la consola web. Haga clic en el carácter > para mostrar los detalles del evento. Haga clic en Detalles de la solución para mostrar todos los detalles y consejos del evento. Puede hacer clic en Aplicar esta solución. Después de corregir el problema, la sección de errores de control de acceso de SELinux debería eliminar ese evento de la vista. Si aparece el mensaje Sin alertas de SELinux, entonces ha corregido todos los problemas actuales de SELinux. Referencias página de manual sealert(8)
+
+
+
+
+
+14.8. Ejercicio guiado Investigar y resolver problemas de SELinux 14.8. Ejercicio guiado Investigar y resolver problemas de SELinux Solucionar problemas de SELinux utilizando herramientas de análisis de registros de SELinux e interpretando sus resultados. Resultados Adquirir experiencia con las herramientas de resolución de problemas de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-issues
+
+Instrucciones Desde un navegador web en la estación de trabajo, abra la página web http://servera/index.html. Un mensaje de error indica que no tiene permiso para acceder al archivo. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 2. Utilice el comando less para ver el contenido del archivo /var/log/messages. Utiliza el carácter / y busca el texto del sello. Presione la tecla n hasta llegar a la última aparición, porque es posible que los ejercicios anteriores también hayan generado mensajes SELinux. Copie el comando sealert sugerido para poder usarlo en el siguiente paso. Utilice la tecla q para salir del comando less.
+
+[root@servera ~]# less /var/log/messages
+
+... salida omitida... 6 de junio 18:11:23 servera setroubleshoot[14796]: SELinux impide que /usr/sbin/httpd acceda a getattr
+
+on the file /custom/index.html. For complete SELinux messages run: sealert -l 5a96d815-a187-4024-be5d-
+
+36daf8e0d774 ...salida omitida... 3. Ejecute el comando sealert sugerido. Tenga en cuenta el contexto de origen, los objetos de destino, la política y el modo de aplicación. Encuentre la etiqueta de contexto SELinux correcta para el archivo que el servicio httpd intenta entregar. 4. Ejecute el comando sealert. El resultado explica que el archivo /custom/index.html tiene una etiqueta de contexto incorrecta. 4.1.
+
+
+
+
+

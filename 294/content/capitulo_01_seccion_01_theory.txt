@@ -1,0 +1,283 @@
+# Automatización de la administración de Linux con Ansible
+# Tipo: theory
+# Capítulo: Capítulo 1. Presentación de Ansible
+
+capítulo 1 |  Presentación de Ansible
+Automatización de la administración de
+Linux con Ansible
+Objetivos
+• Describir la motivación para automatizar las tareas de administración de Linux con Ansible, los
+conceptos fundamentales de Ansible y la arquitectura básica de Ansible.
+Automatización y administración de sistemas Linux
+Durante muchos años, la mayor parte de la administración de sistemas y de infraestructuras se
+ha basado en tareas manuales realizadas a través de interfaces de usuario tanto gráficas como
+de línea de comandos. Los administradores de sistemas suelen usar listas de verificación, otra
+documentación o una rutina memorizada para realizar tareas estándares.
+Este enfoque es propenso a errores. Es fácil que un administrador de sistemas omita un paso o
+cometa un error en un paso. A menudo, se hace una verificación limitada para comprobar que los
+pasos se hayan realizado correctamente o que produzcan el resultado esperado.
+Además, al administrar cada servidor de forma manual e independiente, es muy fácil que muchos
+servidores que se supone que deben tener una configuración idéntica tengan diferencias menores
+(o importantes). Esto puede dificultar el mantenimiento e introducir errores o inestabilidad en el
+entorno de TI.
+La automatización puede ayudar a evitar los problemas causados por la administración manual
+del sistema y la administración de la infraestructura. Como administrador de sistemas, puede usar
+la automatización para garantizar que todos sus sistemas se implementen y configuren de forma
+rápida y correcta. Por consiguiente, puede automatizar las tareas repetitivas de su cronograma
+diario a fin de tener más tiempo para enfocarse en tareas más importantes. Para su organización,
+la automatización puede ayudarlo a implementar más rápidamente la próxima versión de una
+aplicación o las actualizaciones de un servicio.
+Infraestructura como código
+Un buen sistema de automatización permite implementar prácticas de infraestructura como
+código. La infraestructura como código significa que puede usar un lenguaje de automatización
+legible por máquinas para definir y describir el estado de su infraestructura de TI. Idealmente, este
+lenguaje de automatización también debería ser fácil de leer para los humanos, lo que permite
+entender fácilmente el estado actual y modificarlo. Este código se aplica a su infraestructura para
+garantizar que realmente se encuentre en ese estado.
+Si el lenguaje de automatización se representa como archivos de texto simples, es fácil de
+administrar en un sistema de control de versiones. La ventaja de esto es que cada cambio se
+puede registrar en el sistema de control de versiones, lo que garantiza que tenga un historial
+constante de los cambios que realiza. Si quiere volver a una configuración anterior de eficacia
+comprobada, basta con revisar esa versión y aplicarla a su infraestructura.
+Esto crea la base para ayudarlo a seguir las prácticas recomendadas en DevOps. Los
+desarrolladores pueden definir su configuración deseada en el lenguaje de automatización. Los
+operadores pueden revisar esos cambios con mayor facilidad para proporcionar comentarios y
+usar esa automatización para garantizar de manera reproducible que los sistemas se encuentren
+en el estado que esperan los desarrolladores.
+2
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Mitigación del error humano
+Reducir la cantidad de tareas realizadas manualmente en los servidores mediante la
+automatización de tareas y las prácticas de infraestructura como código puede ayudar a garantizar
+que sus servidores tengan configuraciones coherentes con mayor frecuencia.
+Esto significa que debe acostumbrarse a hacer cambios actualizando el código de automatización
+en lugar de aplicarlos manualmente a los servidores. De lo contrario, corre el riesgo de perder los
+cambios aplicados manualmente la próxima vez que aplique cambios mediante la automatización.
+Puede usar la revisión de código, la revisión por varios colegas expertos en la materia y
+documentar el procedimiento en el contenido de automatización para reducir los riesgos
+operativos.
+En última instancia, puede hacer que los cambios en su infraestructura de TI se realicen a través de
+la automatización para mitigar los errores humanos.
+¿Qué es Ansible?
+Ansible es una plataforma de automatización de código abierto. Es un lenguaje de automatización
+simple que puede describir de manera correcta una infraestructura de aplicaciones de TI en los
+playbooks de Ansible. También es un motor de automatización que ejecuta playbooks de Ansible.
+Ansible puede administrar tareas de automatización potentes y puede adaptarse a muchos flujos
+de trabajo y entornos diferentes. Al mismo tiempo, los nuevos usuarios de Ansible pueden usarla
+muy rápidamente para volverse productivos.
+Ansible es simple
+Los playbooks de Ansible proporcionan automatización legible por el ojo humano. Esto significa
+que los playbooks son herramientas de automatización que también son fáciles de leer,
+comprender y cambiar para los humanos. No se necesitan habilidades de codificación especiales
+para escribirlas. Los playbooks ejecutan tareas en orden. La simplicidad del diseño del playbook
+hace que lo usen todos los equipos, lo que permite que las personas que nunca usaron Ansible se
+vuelvan productivas rápidamente.
+Ansible es potente
+Puede usar Ansible para implementar aplicaciones para la administración de la configuración,
+la automatización de flujos de trabajo y la automatización de redes. Puede usar Ansible para
+orquestar el ciclo de vida completo de la aplicación.
+Ansible no tiene agentes
+Ansible está diseñada alrededor de una arquitectura sin agentes. En general, Ansible se conecta
+con hosts que administra con OpenSSH o WinRM y ejecuta tareas, a menudo (pero no siempre)
+enviando pequeños programas denominados módulos Ansible a esos hosts. Estos programas se
+usan para colocar el sistema en un estado deseado específico. Todos los módulos enviados se
+eliminan cuando Ansible haya finalizado sus tareas. Puede comenzar a usar Ansible casi de forma
+inmediata, ya que no se necesita aprobar agentes especiales para usar y, luego, implementarlos en
+los hosts gestionados. Dado que no hay agentes ni una infraestructura de seguridad personalizada
+adicional, Ansible es más eficaz y más segura que otras alternativas.
+Ansible tiene varios puntos fuertes importantes:
+• Soporte para diversas plataformas: Ansible proporciona soporte sin agentes para Linux,
+Windows, UNIX y dispositivos de red, en entornos físicos, virtuales, de nube y en contenedores.
+RH294-RHEL9.0-es-3-20240620
+3
+
+
+capítulo 1 |  Presentación de Ansible
+• Automatización legible por el ojo humano: los playbooks de Ansible, escritos como archivos de
+texto YAML, son fáciles de leer y permiten garantizar que todos entiendan lo que harán.
+• Descripciones precisas de aplicaciones: los playbooks de Ansible pueden realizar todas las
+modificaciones, y se pueden describir y documentar todos los aspectos de su entorno de
+aplicaciones.
+• Fácil de administrar en el control de versiones: los playbooks de Ansible y los proyectos son
+texto sin formato. Puede considerarse código fuente y colocarse en su sistema de control de
+versiones existente.
+• Soporte para inventarios dinámicos: la lista de máquinas que administra Ansible puede
+actualizarse de forma dinámica desde fuentes externas para capturar la lista actual y correcta
+de todos los servidores gestionados todo el tiempo, independientemente de la infraestructura o
+la ubicación.
+• Orquestación que se integra fácilmente con otros sistemas: HP SA, Puppet, Jenkins, Red Hat
+Satellite, y otros sistemas que existen en su entorno, se pueden aprovechar e integrar en su
+workflow de Ansible.
+Ansible: El lenguaje de DevOps
+Figura 1.1: Ansible durante el ciclo de vida de la aplicación
+La comunicación es la clave de DevOps. Ansible es el primer lenguaje de automatización que se
+puede leer y escribir en TI.
+Conceptos y arquitectura de Ansible
+Hay dos tipos de máquinas en la arquitectura Ansible: nodos de control y hosts gestionados.
+Ansible se instala y se ejecuta desde un nodo de control, y esta máquina también tiene copias de
+sus archivos de proyecto de Ansible.
+Los hosts gestionados aparecen en un inventario, que también organiza estos sistemas en grupos
+para una administración colectiva más sencilla. Puede definir el inventario de manera estática en
+un archivo de texto o de manera dinámica mediante scripts que obtienen información de grupos y
+host de fuentes externas.
+En lugar de escribir scripts complejos, los usuarios de Ansible crean plays de alto nivel para
+asegurarse de que un host o grupo de hosts estén en un estado particular. Un play realiza una
+serie de tareas en los hosts, en el orden especificado por el play. Estas plays se expresan en
+formato YAML en un archivo de texto. Un archivo que contiene uno o más plays se denomina
+playbook.
+Cada tarea ejecuta un módulo, una pequeña parte de un código (escrito en Python, PowerShell
+o cualquier otro lenguaje), con argumentos específicos. Cada módulo es esencialmente una
+herramienta en su kit de herramientas. Ansible se envía con cientos de módulos útiles que pueden
+4
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+realizar una amplia variedad de tareas de automatización. Pueden actuar en archivos de sistemas,
+instalar software o realizar llamadas de API.
+Cuando se usa en una tarea, un módulo generalmente garantiza que un aspecto específico de la
+máquina tenga un estado específico. Por ejemplo, una tarea que usa un módulo puede garantizar
+que un archivo exista y tenga permisos y contenido específicos. Una tarea que usa un módulo
+diferente puede garantizar que se monte un sistema de archivos en particular. Si el sistema no
+tiene ese estado, la tarea debe colocarlo en ese estado o no hacer nada. Si una tarea falla, el
+comportamiento predeterminado de Ansible es cancelar el resto del playbook para los hosts que
+tuvieron una falla y continuar con los host restantes.
+Las tareas, los plays y playbooks están diseñados para ser idempotentes. Esto significa que puede
+ejecutar de forma segura un playbook en los mismos hosts varias veces. Cuando sus sistemas
+tienen el estado correcto, el playbook no realiza cambios cuando lo ejecuta. Hay múltiples
+módulos disponibles que puede usar para ejecutar comandos arbitrarios. Sin embargo, debe usar
+esos módulos con cuidado para asegurarse de que se ejecuten de forma idempotente.
+Ansible también usa complementos (plug-ins). Los complementos (plug-ins) son códigos que
+puede agregar a Ansible para ampliarla y adaptarla a los nuevos usos y las nuevas plataformas.
+La arquitectura de Ansible no tiene agentes. En general, cuando un administrador ejecuta un
+playbook de Ansible, el nodo de control se conecta con el host gestionado mediante SSH (de
+forma predeterminada) o WinRM. Esto significa que no necesita tener un agente específico de
+Ansible instalado en los hosts gestionados y no necesita permitir ninguna comunicación adicional
+entre el nodo de control y los hosts gestionados.
+Obtención de soporte para Ansible
+Red Hat Ansible Automation Platform es una versión totalmente compatible de Ansible que
+permite a las empresas gestionar su automatización a escala.
+Proporciona los siguientes beneficios:
+• Soporte oficial para el conjunto de herramientas central (core) de Ansible.
+• Ansible Content Collections certificadas por Red Hat para ayudarlo a acelerar la adopción de la
+automatización de Ansible con códigos compatibles.
+• Herramientas locales para ayudarlo a centralizar la entrega de contenido de automatización,
+administrar las tareas de automatización y escalar la distribución de la ejecución de la
+automatización.
+• Servicios en la nube para ayudarlo a descubrir contenido certificado de Ansible, facilitar la
+colaboración en equipo y proporcionar análisis operativos para automatizar entornos híbridos
+mixtos.
+Por ejemplo, el componente del controlador de automatización (antes llamado Red Hat Ansible
+Tower) es un marco empresarial que puede usar para controlar quién tiene acceso a la ejecución
+de playbooks y en qué hosts, compartir el uso de credenciales SSH sin permitir a los usuarios
+transferir o ver su contenido, registrar todos sus trabajos de Ansible y gestionar el inventario,
+entre muchas otras cosas. Proporciona una interfaz de usuario basada en un explorador (IU
+web) y una API RESTful. La comunidad upstream de Ansible no incluye automáticamente este
+componente con la distribución de Ansible comunitario, pero se desarrolla como código abierto, y
+se proporciona y se admite como parte del producto Red Hat Ansible Automation Platform.
+La manera de Ansible
+Los siguientes objetivos se usaron durante el diseño de Ansible.
+RH294-RHEL9.0-es-3-20240620
+5
+
+
+capítulo 1 |  Presentación de Ansible
+La complejidad mata la productividad
+Más sencillo es mejor. Ansible está diseñada de modo que sus herramientas sean simples de
+usar y la automatización sea simple de escribir y leer. Debería aprovechar esto para lograr la
+simplificación en el modo en que crea su automatización.
+Optimizar para brindar capacidad de lectura
+El lenguaje de automatización de Ansible se desarrolla alrededor de archivos de texto simples
+y declarativos que son fáciles para ser leídos por humanos. Al escribirse correctamente, los
+playbooks de Ansible pueden documentar claramente la automatización de su flujo de trabajo.
+Pensar de forma declarativa
+Ansible es un motor de estado deseado. Aborda el problema sobre el modo de automatizar
+las implementaciones de TI expresándolas en términos del estado que desea que tengan sus
+sistemas. El objetivo de Ansible es colocar sus sistemas en el estado deseado, haciendo solo los
+cambios que sean necesarios. Intentar tratar a Ansible como un lenguaje de creación de scripts no
+es el enfoque correcto.
+Casos de uso
+A diferencia de otras herramientas, Ansible combina la orquestación con la administración de la
+configuración, el aprovisionamiento y la implementación de aplicaciones en una plataforma fácil
+de usar.
+A continuación, se incluyen algunos casos prácticos para Ansible:
+Administración de configuraciones
+Centralizar la implementación y administración de archivos de configuración es un caso
+práctico común para Ansible, por lo que constituye el primer contacto de muchos usuarios
+avanzados con la plataforma de automatización de Ansible.
+Implementación de aplicaciones
+Al definir su aplicación con Ansible, y gestionar la implementación con el controlador de
+automatización, los equipos de desarrollo pueden gestionar con eficacia todo el ciclo de vida
+de la aplicación desde el desarrollo hasta la producción.
+Provisioning (Aprovisionamiento)
+Las aplicaciones deben implementarse o instalarse en los sistemas. Ansible y el controlador de
+automatización pueden ayudar a optimizar el proceso de los sistemas de aprovisionamiento,
+ya sea que esté arrancando servidores o máquinas virtuales sin sistema operativo (bare-
+metal) PXE, o que cree máquinas virtuales o instancias de nube a partir de plantillas.
+Entrega continua
+Crear un pipeline de CI/CD requiere la coordinación y la participación de numerosos equipos.
+No puede hacerlo sin una plataforma de automatización simple que pueden usar todos en
+su organización. Los playbooks de Ansible mantienen sus aplicaciones implementadas y
+administradas correctamente durante todo su ciclo de vida.
+Seguridad y conformidad
+Al definir su política de seguridad en los playbooks de Ansible, la detección y la corrección de
+posibles problemas de seguridad se pueden integrar en otros procesos automatizados. En
+lugar de ser algo secundario, es una parte integral de todo lo que se implementa.
+6
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Orquestación
+Las configuraciones en sí mismas no definen su entorno. Debe definir cómo interactúan
+los diferentes archivos de configuración y asegurarse de que las distintas piezas se puedan
+administrar como una sola.
+Referencias
+Ansible
+https://www.ansible.com
+Cómo funciona Ansible
+https://www.ansible.com/how-ansible-works
+Red Hat Ansible Automation Platform
+https://www.redhat.com/en/technologies/management/ansible
+Presentación de Ansible Automation Platform 2
+https://www.ansible.com/blog/introducing-ansible-automation-platform-2
+Announcing the Community Ansible 3.0.0 Package
+https://www.ansible.com/blog/announcing-the-community-ansible-3.0.0-package
+RH294-RHEL9.0-es-3-20240620
+7
+
+
+capítulo 1 |  Presentación de Ansible
+Cuestionario
+Automatización de la administración de
+Linux con Ansible
+Elija la respuesta correcta para las siguientes preguntas:
+ 1.
+¿Qué término describe mejor la arquitectura de Ansible?
+a. Sin agente
+b. Cliente/Servidor
+c. Basado en eventos
+d. Sin estado
+ 2. ¿Qué protocolo de red usa Ansible, de manera predeterminada, para comunicarse con
+nodos administrados?
+a. HTTP
+b. HTTPS
+c. SNMP
+d. SSH
+ 3. ¿Qué archivo define las acciones que realiza Ansible en nodos gestionados?
+a. Inventario de host
+b. Manifiesto
+c. Playbook
+d. Script
+ 4. ¿Qué sintaxis se usa para definir los playbooks de Ansible?
+a. Bash
+b. Perl
+c. Python
+d. YAML
+8
+RH294-RHEL9.0-es-3-20240620
+
+

@@ -1,0 +1,148 @@
+# Trabajo de laboratorio: oratorio de configuración y gestión de sistemas de archivos y almacenamiento
+# Tipo: lab
+# Capítulo: Capítulo 21. Revisión integral
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento 21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento Administre usuarios y grupos, use el Administrador de volúmenes lógicos (LVM) para crear volúmenes lógicos e intercambiar espacio, de manera persistente
+
+mount the Network File System (NFS) share, and schedule a task to clear temporary files on the system.
+
+Resultados Crear un volumen lógico. Montar un sistema de archivos de red. Cree una partición de intercambio que se active automáticamente en el arranque. Configure un directorio para almacenar archivos temporales. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review2
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Se le ha encomendado la tarea de implementar los siguientes cambios de infraestructura para mejorar la administración del almacenamiento, el acceso a los recursos de la red y los controles de acceso de los usuarios. La empresa requiere un espacio de almacenamiento dedicado, escalable y eficiente en la máquina del servidor para los nuevos activos del juego. Configure el almacenamiento para cumplir con las siguientes especificaciones. Utilice el disco /dev/sdb disponible para crear la partición para realizar la copia de seguridad del volumen físico. Elija un tamaño apropiado para que la partición cumpla con los demás requisitos. Cree un volumen lógico vol_home de 1 GiB en un nuevo grupo de volúmenes de 2 GiB denominado extra_storage. El grupo de volúmenes debe utilizar una partición creada en el disco /dev/sdb como volumen físico. El volumen lógico vol_home debe formatearse con un sistema de archivos XFS y montarse de forma persistente en el directorio /user-homes.
+
+
+
+
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento La máquina servera exporta /share NFS, que contiene archivos que todas las estaciones de trabajo de desarrollo requieren. Haga que la exportación /share NFS desde la máquina del servidor esté disponible en la máquina del servidor automáticamente al arrancar. Utilice el directorio /local-share como punto de montaje en la máquina del servidor. Configure la máquina serverb para montar persistentemente la exportación servera:/share NFS en el directorio /local-share. Debido al aumento de las demandas de memoria por parte de los ingenieros del juego, proporcione espacio de intercambio para evitar que la máquina del servidor falle durante las cargas máximas. En la máquina del servidor, cree una partición de intercambio de 512 MiB en el disco /dev/sdc. Active persistentemente la partición de intercambio. El equipo de producción necesita acceso a los recursos del juego en la máquina del servidor. Utilice un grupo compartido para la gestión de permisos. Cree el grupo de usuarios de producción. Cree los usuarios de producción1, producción2, producción3 y producción4. Los cuatro usuarios deben ser miembros del grupo complementario de producción y deben utilizar redhat como contraseña. Las pruebas continuas generan muchos artefactos de compilación temporales que deben limpiarse automáticamente para liberar espacio en el disco. En la máquina del servidor, configure un nuevo directorio para almacenamiento temporal que cumpla con los
+
+following specifications:
+
+Configure el directorio /run/volatile para almacenar archivos temporales. El sistema elimina automáticamente los archivos del directorio /run/volatile a los que no se accede durante más de 30 segundos. Establezca 0700 como permisos octales para el directorio /run/volatile. Utilice el archivo /etc/tmpfiles.d/volatile.conf para configurar la eliminación basada en tiempo de los archivos en el directorio /run/volatile. Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review2
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review2
+
+
+
+
+
+21.3. Laboratorio de configuración y administración de sistemas de archivos y solución de almacenamiento Administre usuarios y grupos, use el Administrador de volúmenes lógicos (LVM) para crear volúmenes lógicos e intercambiar espacio, de manera persistente
+
+mount the Network File System (NFS) share, and schedule a task to clear temporary files on the system.
+
+Resultados Crear un volumen lógico. Montar un sistema de archivos de red. Cree una partición de intercambio que se active automáticamente en el arranque. Configure un directorio para almacenar archivos temporales. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review2
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Se le ha encomendado la tarea de implementar los siguientes cambios de infraestructura para mejorar la administración del almacenamiento, el acceso a los recursos de la red y los controles de acceso de los usuarios. La empresa requiere un espacio de almacenamiento dedicado, escalable y eficiente en la máquina del servidor para los nuevos activos del juego. Configure el almacenamiento para cumplir con las siguientes especificaciones. Utilice el disco /dev/sdb disponible para crear la partición para realizar la copia de seguridad del volumen físico. Elija un tamaño apropiado para que la partición cumpla con los demás requisitos. Cree un volumen lógico vol_home de 1 GiB en un nuevo grupo de volúmenes de 2 GiB denominado extra_storage. El grupo de volúmenes debe utilizar una partición creada en el disco /dev/sdb como volumen físico. El volumen lógico vol_home debe formatearse con un sistema de archivos XFS y montarse de forma persistente en el directorio /user-homes.
+
+
+
+
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento La máquina servera exporta /share NFS, que contiene archivos que todas las estaciones de trabajo de desarrollo requieren. Haga que la exportación /share NFS desde la máquina del servidor esté disponible en la máquina del servidor automáticamente al arrancar. Utilice el directorio /local-share como punto de montaje en la máquina del servidor. Configure la máquina serverb para montar persistentemente la exportación servera:/share NFS en el directorio /local-share. Debido al aumento de las demandas de memoria por parte de los ingenieros del juego, proporcione espacio de intercambio para evitar que la máquina del servidor falle durante las cargas máximas. En la máquina del servidor, cree una partición de intercambio de 512 MiB en el disco /dev/sdc. Active persistentemente la partición de intercambio. El equipo de producción necesita acceso a los recursos del juego en la máquina del servidor. Utilice un grupo compartido para la gestión de permisos. Cree el grupo de usuarios de producción. Cree los usuarios de producción1, producción2, producción3 y producción4. Los cuatro usuarios deben ser miembros del grupo complementario de producción y deben utilizar redhat como contraseña. Las pruebas continuas generan muchos artefactos de compilación temporales que deben limpiarse automáticamente para liberar espacio en el disco. En la máquina del servidor, configure un nuevo directorio para almacenamiento temporal que cumpla con los
+
+following specifications:
+
+Configure el directorio /run/volatile para almacenar archivos temporales. El sistema elimina automáticamente los archivos del directorio /run/volatile a los que no se accede durante más de 30 segundos. Establezca 0700 como permisos octales para el directorio /run/volatile. Utilice el archivo /etc/tmpfiles.d/volatile.conf para configurar la eliminación basada en tiempo de los archivos en el directorio /run/volatile. Solución Se proporciona una posible solución a este ejercicio. Podría utilizar un método diferente para lograr el resultado especificado. Para prepararlo mejor para los desafíos del mundo real, es posible que la solución proporcionada no incluya comandos, bloques de código o pasos para todas las tareas. Si el script de calificación falla, el sistema muestra una pista sobre qué contenido revisar. Inicie sesión en la máquina serverb como usuario estudiante usando el comando ssh Student@serverb y use el comando
+
+sudo -i command to switch to the root user.
+
+1. Utilice el siguiente comando para configurar el volumen lógico vol_home y formatéelo con el tipo de sistema de archivos XFS. 2.
+
+
+
+
+
+21.3. Laboratorio de configuración y administración de sistemas de archivos y evaluación de almacenamiento Como usuario estudiante en la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+[root@serverb ~]# parted /dev/sdb mklabel msdos && \
+
+parted /dev/sdb mkpart primario 1MiB 2049MiB && \ parted /dev/sdb set 1 lvm on && \
+
+pvcreate /dev/sdb1 && \
+vgcreate extra_storage /dev/sdb1 && \
+lvcreate -L 1GiB -n vol_home extra_storage && \
+mkdir /user-homes && \
+mkfs -t xfs /dev/extra_storage/vol_home
+
+...salida omitida... Monte persistentemente el volumen lógico /dev/extra_storage/vol_home en el directorio /user-homes.
+
+[root@serverb ~]# echo "/dev/extra_storage/vol_home /user-homes xfs defaults 0 0"\
+
+>> /etc/fstab && \
+
+systemctl daemon-reload && \
+mount /user-homes
+
+...salida omitida... 3. Utilice el siguiente comando para montar el sistema de archivos de red /share en el directorio /local-share.
+
+[root@serverb ~]# mkdir /local-share && \
+echo "servera:/share /local-share nfs rw,sync 0 0" >> /etc/fstab && \
+systemctl daemon-reload && \
+mount /local-share
+
+4. Cree, active y monte de forma persistente la partición de intercambio.
+
+[root@serverb ~]# parted /dev/sdc mklabel msdos && \
+
+parted /dev/sdc mkpart intercambio primario de Linux 1MiB 513MiB && \ mkswap /dev/sdc1
+
+[root@serverb ~]# lsblk -o UUID /dev/sdc1
+
+UUIDcc18ccb6-bd29-48a5-8554-546bf3471b69
+
+[root@serverb ~]# echo "UUID=cc18...1b69 swap swap defaults 0 0" >> /etc/fstab
+[root@serverb ~]# swapon -a
+
+5. Utilice los siguientes comandos para crear el grupo de usuarios de producción, crear y agregar los usuarios que deben tener el grupo suplementario de producción y establecer las contraseñas de usuario requeridas.
+
+[root@serverb ~]# groupadd production
+[root@serverb ~]# for i in 1 2 3 4; do useradd -G production production$i; done
+[root@serverb ~]# for i in 1 2 3 4; do echo redhat | passwd --stdin production$i; done
+
+6. Utilice el siguiente comando para configurar el directorio /run/volatile para almacenar archivos temporales.
+
+[root@serverb ~]# echo "d /run/volatile 0700 root root 30s" > \
+
+/etc/tmpfiles.d/volatile.conf
+
+[root@serverb ~]# systemd-tmpfiles --create /etc/tmpfiles.d/volatile.conf
+
+7.
+
+
+
+
+
+21.3. Laboratorio de configuración y gestión de sistemas de archivos y almacenamiento
+
+student@workstation:~$ lab grade compreview-review2
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review2
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor 21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Configure el acceso seguro a servidores remotos, ajuste la configuración del firewall y solucione problemas de SELinux. Resultados Configurar la autenticación basada en claves SSH. Configure los ajustes del firewall. Ajuste el modo SELinux y los booleanos de SELinux. Solucionar problemas de SELinux. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review3
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Usted es responsable de implementar cambios críticos de seguridad y configuración para garantizar un acceso remoto seguro, un montaje adecuado del sistema de archivos y generación de informes basados ​​en la web. La empresa requiere acceso seguro y sin contraseña desde la máquina del servidor a la máquina del servidor para realizar transferencias de datos automatizadas. El usuario estudiante en la máquina del servidor debe poder iniciar sesión en la máquina del servidor a través de SSH sin ingresar una contraseña. En la máquina del servidor, genere un par de claves SSH para el usuario estudiante. No proteja la clave privada con una frase de contraseña. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor. Verifique que el usuario estudiante pueda iniciar sesión en la máquina del servidor desde la máquina del servidor sin ingresar una contraseña.
+
+
+
+
+

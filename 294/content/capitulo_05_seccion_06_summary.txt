@@ -1,0 +1,57 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 5. Implementación de archivos en hosts gestionados
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Resumen
+• Los módulos de gestión de archivos en Ansible Content Collections ansible.builtin y
+ansible.posix le permiten realizar la mayoría de las tareas relacionadas con la administración
+de archivos, como crear, copiar, editar y modificar permisos y otros atributos de archivos.
+• Varios módulos de administración de archivos pueden establecer el modo de permisos y el
+contexto de SELinux para los archivos.
+• Puede usar plantillas Jinja2 para crear archivos dinámicamente para la implementación.
+• Por lo general, una plantilla Jinja2 se compone de dos elementos: variables y expresiones. Estas
+variables y expresiones se reemplazan con valores cuando se entrega la plantilla Jinja2.
+• Use el módulo ansible.builtin.template para implementar plantillas Jinja2 en hosts
+gestionados.
+• Los filtros en Jinja2 transforman las expresiones de las plantillas de un tipo o formato de datos a
+otro.
+RH294-RHEL9.0-es-3-20240620
+225
+
+
+226
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6
+Administración de plays y
+playbooks complejos
+Meta
+Escribir playbooks para plays y playbooks más
+grandes y complejos.
+Objetivos
+•
+Escribir patrones de host sofisticados para
+seleccionar hosts de manera eficiente para un
+play.
+•
+Administrar playbooks grandes importando
+o incluyendo otros playbooks o tareas desde
+archivos externos, ya sea sin condiciones o
+sobre la base de una prueba condicional.
+Secciones
+•
+Selección de hosts con patrones de hosts (y
+ejercicio guiado)
+•
+Inclusión e importación de archivos (y ejercicio
+guiado)
+Trabajo de
+laboratorio
+•
+Administración de plays y playbooks complejos
+RH294-RHEL9.0-es-3-20240620
+227
+
+

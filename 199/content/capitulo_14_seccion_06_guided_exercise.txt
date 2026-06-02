@@ -1,0 +1,170 @@
+# Ejercicio Guiado: Ejercicio guiado Configurar nombres de host y resolución de nombres
+# Tipo: guided_exercise
+# Capítulo: Capítulo 11. Gestión de la configuración de red
+
+11.6. Ejercicio guiado Configurar nombres de host y resolución de nombres 11.6. Ejercicio guiado Configurar nombres de host y resolución de nombres Configure el nombre de host estático de un servidor y su resolución de nombres, y pruebe los resultados. Resultados Establezca un nombre de host personalizado. Configure los ajustes de resolución de nombres. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-hostnames
+
+Instrucciones Verifique la configuración actual del nombre de host en la máquina del servidor. 1. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@testa ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@testa ~]# Tenga en cuenta que el mensaje muestra el nombre de host como testa. 1.1. Muestra el nombre de host actual.
+
+[root@testa ~]# hostname
+
+prueba 1.2. Muestre el estado del nombre de host utilizando el comando hostnamectl.
+
+[root@testa ~]# hostnamectl status
+   Static hostname: servera
+
+Nombre de host transitorio: testa ...salida omitida... La salida muestra testa como un nombre de host transitorio y servera como un nombre de host estático. En este caso, la testa
+
+hostname was defined by a DNS or DHCP service, or was temporarily assigned with the hostname
+
+dominio. El nombre de host transitorio anula el nombre de host estático, razón por la cual testa aparece en el símbolo del sistema. 1.3. Establezca el nombre de host en servera para eliminar el nombre de host transitorio. 2. Utilice el comando hostnamectl para configurar el nombre de host. Este cambio se guarda de forma persistente. 2.1.
+
+
+
+
+
+11.6. Ejercicio guiado Configurar nombres de host y resolución de nombres
+
+[root@testa ~]# hostnamectl hostname servera
+
+Vea el contenido del archivo /etc/hostname, que establece el nombre del host cuando se inicia el sistema.
+
+[root@testa ~]# cat /etc/hostname
+
+servidor 2.2. Cierre sesión y vuelva a iniciar sesión en servera como usuario estudiante para ver el nombre de host actualizado en el indicador de shell. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[root@testa ~]# exit
+
+cerrar sesión
+
+[student@testa ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 2.3. Muestre el estado del nombre de host utilizando el comando hostnamectl.
+
+[root@servera ~]# hostnamectl status
+
+Nombre de host estático: servera ...salida omitida... Debido a que ahora está configurado un nombre de host estático, el nombre de host transitorio ya no se muestra. 2.4. Cambie temporalmente el nombre de host a nombre de prueba. 3. Cambie el nombre de host utilizando el comando hostname.
+
+[root@servera ~]# hostname testname
+
+3.1. Muestra el nombre de host actual.
+
+[root@servera ~]# hostname
+
+nombre de prueba 3.2. Vea el contenido del archivo /etc/hostname.
+
+[root@servera ~]# cat /etc/hostname
+
+servera El archivo /etc/hostname contiene la definición del nombre de host estático. Debido a que el nombre de host se cambió temporalmente, el archivo /etc/hostname no se actualiza. 3.3. Para probar el cambio de nombre de host temporal, reinicie el sistema para ver si el nombre de host del nombre de prueba persiste. 3.4.
+
+
+
+
+
+11.6. Ejercicio guiado Configurar nombres de host y resolución de nombres
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 3.5. Muestra el nombre de host actual.
+
+[root@servera ~]# hostname
+
+servera El nombre de host del nombre de prueba se configuró temporalmente, por lo que no persiste después de reiniciar el sistema. El comando hostname ahora muestra el nombre de host estático del servidor. 3.6. Agregue class como alias de nombre de host local para el servidor del aula y asegúrese de que puede hacer ping al servidor utilizando ese alias. 4. Busque la dirección IP del servidor aula.ejemplo.com.
+
+[root@servera ~]# host classroom.example.com
+
+aula.ejemplo.com tiene dirección 172.25.254.254 4.1. Actualice el archivo /etc/hosts agregando el alias del nombre de host de la clase a la línea del aula con el
+
+following contents:
+
+127.0.0.1 localhost localhost.localdomain localhost4 localhost4.localdomain4 ::1 localhost localhost.localdomain localhost6 localhost6.localdomain6 172.25.254.254 Classroom.example.com Classroom Class Guarde y cierre el archivo cuando haya terminado. 4.2. Busque la dirección IP del servidor de clase utilizando el comando host.
+
+[root@servera ~]# host class
+
+Clase de host no encontrada: 3 (NXDOMAIN) El comando del host consulta el servidor DNS directamente y no pudo resolver el problema breve y no calificado.
+
+hostname.
+
+4.3. Busque la dirección IP del servidor de clase utilizando el comando getent.
+
+[root@servera ~]# getent hosts class
+
+172.25.254.254 aula.ejemplo.com clase de aula El comando getent hosts utiliza el orden estándar de resolución de nombres, que tiene en cuenta las entradas en el archivo /etc/hosts. 4.4. Utilice el comando ping para probar la conectividad con el servidor de clase. 4.5.
+
+
+
+
+
+11.6. Ejercicio guiado Configurar nombres de host y resolución de nombres Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish net-hostnames
+[root@servera ~]# ping -c3 class
+
+PING aula.ejemplo.com (172.25.254.254) 56(84) bytes de datos. 64 bytes desde aula.example.com (172.25.254.254): icmp_seq=1 ttl=64 tiempo=0.373 ms 64 bytes desde aula.example.com (172.25.254.254): icmp_seq=2 ttl=64 tiempo=0.314 ms 64 bytes desde aula.example.com (172.25.254.254): icmp_seq=3 ttl=64 tiempo=0,272 ms
+
+--- classroom.example.com ping statistics ---
+
+3 paquetes transmitidos, 3 recibidos, 0% de pérdida de paquetes, tiempo 2028 ms
+
+rtt min/avg/max/mdev = 0.272/0.319/0.373/0.041 ms
+
+Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+11.7. Práctica de laboratorio Administrar configuración de red 11.7. Práctica de laboratorio Administrar la configuración de red Configure interfaces y configuraciones de red en servidores Red Hat Enterprise Linux. Resultados Configure dos direcciones IPv4 estáticas para la interfaz de red principal. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-review
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña. 1. Cree una conexión que utilice una configuración de red estática utilizando la información de la siguiente tabla. Nombre de conexión perfil personalizado Nombre de interfaz Utilice la interfaz con la dirección MAC 52:54:00:00:fa:0b. Dirección IP 172.25.250.11/24 Dirección de puerta de enlace 172.25.250.254 Dirección DNS 172.25.250.254 Importante El nombre de la interfaz de red asociada con la dirección MAC proporcionada puede variar según la plataforma del curso y el hardware en uso. Esta actividad utiliza el nombre de la interfaz ens3. Localice el nombre de conexión predeterminado para el aula (como System-ens3) que está asociado con la dirección MAC proporcionada en la tabla. Utilice este nombre de conexión para reemplazar el marcador de posición System-ens3 a lo largo de este ejercicio si es diferente. 2. Configuración de parámetros Configure la conexión de perfil personalizado para que se inicie automáticamente. Para todas las demás conexiones Ethernet, desactive la configuración de conexión automática. 3.
+
+
+
+
+

@@ -1,0 +1,168 @@
+# Ejercicio Guiado: Gestión de secretos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 3. Administración de variables y datos
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de secretos
+Cifrar las variables confidenciales con Ansible Vault para protegerlas y, luego, ejecutará un
+playbook que usa esas variables.
+Resultados
+• Ejecutar un playbook usando variables definidas en un archivo cifrado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-secret
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-secret.
+[student@workstation ~]$ cd ~/data-secret
+[student@workstation data-secret]$
+ 2.
+Edite el contenido del archivo cifrado secret.yml . El archivo puede ser descifrado
+usando redhat como contraseña. Elimine los comentarios de las entradas con variables
+username y pwhash.
+2.1.
+Edite el archivo /home/student/data-secret/secret.yml cifrado. Ingrese
+redhat como contraseña de Vault cuando se la solicite. El archivo cifrado se abre en
+el editor predeterminado, vim.
+[student@workstation data-secret]$ ansible-vault edit secret.yml
+Vault password: redhat
+2.2.
+Elimine el comentario de las dos entradas variables (username y pwhash)
+eliminando el signo de almohadilla (#) al comienzo de cada línea y, a continuación,
+guarde y cierre el archivo.
+ 3.
+Cree un playbook denominado /home/student/data-secret/create_users.yml.
+El playbook debe contener un play (Create user accounts for all our servers
+en el siguiente ejemplo), que usa las variables definidas en el archivo cifrado /home/
+student/data-secret/secret.yml.
+Configure el play para usar el grupo de hosts devservers. Ejecute este play con el
+usuario devops en el host gestionado remoto. Configure el play para crear el usuario
+RH294-RHEL9.0-es-3-20240620
+105
+
+
+capítulo 3 |  Administración de variables y datos
+ansibleuser1 definido por la variable username. Configure la contraseña del usuario
+usando el hash de contraseña almacenado en la variable pwhash.
+---
+- name: Create user accounts for all our servers
+  hosts: devservers
+  become: true
+  remote_user: devops
+  vars_files:
+    - secret.yml
+  tasks:
+    - name: Creating user from secret.yml
+      ansible.builtin.user:
+        name: "{{ username }}"
+        password: "{{ pwhash }}"
+ 4.
+Ejecute el comando ansible-navigator run -m stdout --syntax-check para
+verificar la sintaxis de su playbook create_users.yml.
+Use la opción --vault-id @prompt para que Ansible le solicite de forma interactiva la
+contraseña de Vault que descifra el archivo secret.yml. Use la opción --pae false o
+--playbook-artifact-enable false para deshabilitar la creación de artefactos de
+playbook.
+Resuelva los errores de sintaxis en su playbook antes de continuar.
+[student@workstation data-secret]$ ansible-navigator run -m stdout \
+> --pae false create_users.yml --syntax-check --vault-id @prompt
+Vault password (default): redhat
+playbook: /home/student/data-secret/create_users.yml
+ 5.
+Cree un archivo de contraseña llamado vault-pass que contenga la contraseña para
+que ansible-navigator la use en lugar de solicitarle una contraseña cuando ejecute
+el playbook create_users.yml. El archivo debe contener el texto sin formato redhat
+como la contraseña de Vault. Cambie los permisos del archivo a 0600.
+[student@workstation data-secret]$ echo 'redhat' > vault-pass
+[student@workstation data-secret]$ chmod 0600 vault-pass
+ 6.
+Ejecute el playbook de Ansible para crear el usuario ansibleuser1 en un sistema remoto,
+usando la contraseña de Vault en el archivo vault-pass para descifrar la contraseña
+hash para ese usuario. Esa contraseña se almacena como una variable en el archivo cifrado
+secret.yml Ansible Vault.
+[student@workstation data-secret]$ ansible-navigator run \
+> -m stdout create_users.yml --vault-password-file=vault-pass
+PLAY [Create user accounts for all our servers] ********************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+106
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+TASK [Creating users from secret.yml] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 7.
+Verifique que el playbook se haya ejecutado correctamente. El usuario ansibleuser1
+debe existir y tener la contraseña correcta en la máquina servera.lab.example.com.
+Pruebe esto usando ssh para iniciar sesión en la máquina servera.lab.example.com
+como el usuario ansibleuser1 con redhat como contraseña.
+Para asegurarse de que SSH solo intente autenticarse con una contraseña y no con una
+clave SSH, use la opción -o PreferredAuthentications=password cuando inicie
+sesión.
+Cierre sesión en servera cuando haya iniciado sesión correctamente.
+[student@workstation data-secret]$ ssh -o PreferredAuthentications=password \
+> ansibleuser1@servera.lab.example.com
+ansibleuser1@servera.lab.example.com's password: redhat
+...output omitted...
+[ansibleuser1@servera ~]$ exit
+logout
+Connection to servera.lab.example.com closed.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-secret
+RH294-RHEL9.0-es-3-20240620
+107
+
+
+capítulo 3 |  Administración de variables y datos
+Gestión de datos
+Objetivos
+• Hacer referencia a los datos sobre hosts gestionados que usan datos de Ansible y configurar
+datos personalizados en hosts gestionados.
+Descripción de Datos de Ansible
+Los datos de Ansible son variables detectadas automáticamente por Ansible en un host
+gestionado. Los datos contienen información específica del host que puede usarse como variables
+regulares en plays, condicionales, bucles o cualquier otra declaración que dependa de un valor
+recopilado de un host gestionado.
+Algunos datos recopilados para un host gestionado pueden incluir los siguientes:
+• El nombre del host
+• La versión del kernel
+• Nombres de interfaz de red
+• Direcciones IP de la interfaz de red
+• Versiones del sistema operativo
+• La cantidad de CPU
+• Memoria disponible o libre
+• Tamaño y espacio libre de los dispositivos de almacenamiento
+Incluso puede crear datos personalizados, que se almacenan en el host gestionado y son
+exclusivos de ese sistema.
+Los datos son una forma conveniente de recuperar el estado de un host gestionado y de
+determinar qué acción tomar en función de ese estado. Por ejemplo:
+• Su play puede reiniciar un servidor mediante el uso de una tarea condicional basada en el valor
+de un dato que se recopiló, como el estado de un servicio en particular.
+• El play puede personalizar un archivo de configuración MySQL según la memoria disponible
+informada por un dato.
+• La dirección IPv4 usada en un archivo de configuración podría configurarse sobre la base del
+valor de un dato.
+En general, cada play ejecuta el módulo ansible.builtin.setup de forma automática para
+recopilar datos antes de la primera tarea.
+Esto se informa como la tarea Gathering Facts en Ansible 2.3 y versiones posteriores o
+simplemente como setup en versiones anteriores de Ansible. De forma predeterminada, no es
+necesario tener una tarea para ejecutar ansible.builtin.setup en su play. En general, se
+ejecuta automáticamente para usted.
+Una forma de ver qué datos se recopilan para sus hosts gestionados es ejecutar un playbook
+corto que recopile datos y use el módulo ansible.builtin.debug para imprimir el valor de la
+variable ansible_facts.
+108
+RH294-RHEL9.0-es-3-20240620
+
+

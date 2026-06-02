@@ -1,0 +1,150 @@
+# 6.5. Habilitación de repositorios de software DNF
+# Tipo: theory
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.5. Habilitación de repositorios de software DNF 6.5. Habilitación de repositorios de software DNF Objetivos Habilitar y deshabilitar el uso del servidor de Red Hat o repositorios DNF de terceros. Gestión de repositorios de software De forma predeterminada, los sistemas RHEL incluyen configuración para acceder a los repositorios de Red Hat. En muchas situaciones, debe configurar repositorios adicionales para acceder al software de su organización o de un tercero. Por ejemplo, Adobe proporciona parte de su software para Linux a través de repositorios DNF. En el aula de Red Hat proporcionada para este contenido, el servidor content.example.com aloja repositorios DNF. El comando dnf puede acceder a los repositorios desde un sitio web, un servidor FTP o el sistema de archivos local. Es posible que también necesite habilitar o deshabilitar repositorios para evitar conflictos al instalar paquetes de diferentes fuentes. Puede administrar los repositorios del sistema actualizando manualmente los archivos del repositorio o utilizando DNF. el dnf
+
+repolist all command lists all available repositories and their statuses:
+root@host:~# dnf repolist all
+
+ID de repositorio Nombre de repositorio Estado rhel-10-for-x86_64-appstream-rpms RHEL 10: AppStream (RPM) habilitado rhel-10-for-x86_64-baseos-rpms RHEL 10: BaseOS (RPM) habilitado Nota Las suscripciones de Red Hat otorgan acceso a repositorios específicos. En el pasado, los administradores necesitaban adjuntar suscripciones por sistema. Simple Content Access (SCA) simplifica la forma en que los sistemas acceden a los repositorios. Con SCA, los sistemas pueden acceder a cualquier repositorio desde cualquier suscripción que compre, sin adjuntar una suscripción. Puede habilitar SCA en el Portal del cliente de Red Hat dentro de Mis suscripciones › Asignaciones de suscripción o en su servidor Red Hat Satellite. El comando dnf config-manager puede habilitar y deshabilitar repositorios. Por ejemplo, el siguiente comando
+
+enables the rhel-10-for-x86_64-baseos-debug-rpms repository:
+root@host:~# dnf config-manager --enable rhel-10-for-x86_64-baseos-debug-rpms
+
+Configuración de repositorios DNF Puede configurar repositorios de Red Hat y de terceros actualizando manualmente un archivo de repositorio o utilizando la línea de comandos. Configuración manual Para configurar manualmente un repositorio DNF, puede crear un archivo .repo en el directorio /etc/yum.repos.d/, o
+
+you can add a [repository] section to the /etc/dnf/dnf.conf file. Red Hat recommends using .repo files, and
+
+reservando el archivo dnf.conf para configuraciones de repositorio adicionales. El comando dnf busca ambas ubicaciones por
+
+default; however, the .repo files take precedence. A .repo file contains the URL of the repository, a name, and
+
+si se deben utilizar claves GPG para verificar las firmas del paquete. Si se requieren claves GPG, el archivo .repo también incluye la URL para apuntar a la clave GPG confiable.
+
+
+
+
+
+6.5. Habilitación de la configuración de la línea de comandos de los repositorios de software DNF El comando dnf config-manager también puede agregar repositorios a la máquina. El siguiente comando crea un archivo .repo utilizando la URL de un repositorio existente.
+
+root@host:~# dnf config-manager \
+
+--add-repo="https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/" Actualización de repositorios de gestión de suscripciones. Agregando repositorio desde: https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/ El archivo .repo correspondiente es visible en el directorio /etc/yum.repos.d/:
+
+root@host:~# cd /etc/yum.repos.d
+root@host:/etc/yum.repos.d# cat \
+
+dl.fedoraproject.org_pub_epel_10_Everything_x86_64_.repo [dl.fedoraproject.org_pub_epel_10_Everything_x86_64_]
+
+name=created by dnf config-manager from https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/
+baseurl=https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/
+enabled=1
+
+Verificación de paquetes firmados El comando rpm utiliza claves GPG para firmar paquetes e importa claves públicas para verificar la integridad y autenticidad de los paquetes. El comando dnf utiliza archivos de configuración del repositorio para proporcionar las ubicaciones de las claves públicas GPG e importa las claves para verificar los paquetes. Las claves se almacenan en varias ubicaciones en el sitio del repositorio remoto, como
+
+https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10. Administrators should download the key
+
+a un archivo local en lugar de utilizar el comando dnf para recuperar la clave de una fuente externa. Por ejemplo, el siguiente archivo .repo utiliza el parámetro gpgkey para hacer referencia a una clave local: [EPEL]
+
+name=EPEL 10
+baseurl=https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-10
+
+Configuración de repositorios mediante paquetes RPM Para simplificar la instalación, algunos repositorios proporcionan un archivo de configuración y una clave pública GPG como parte de un paquete RPM. Puede importar la clave pública GPG utilizando el comando rpm --import. El comando dnf install puede descargar e instalar estos paquetes RPM. Por ejemplo, el siguiente ejemplo importa la clave pública GPG RPM-GPG-KEY-EPEL-10 (EPEL) e instala el RPM del repositorio de paquetes adicionales RHEL 10 para Enterprise Linux (EPEL):
+
+
+
+
+
+6.5. Habilitación de repositorios de software DNF
+
+user@host:~$ rpm --import \
+https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10
+user@host:~$ dnf install \
+https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
+
+Advertencia Importe la clave GPG de RPM antes de instalar paquetes firmados para asegurarse de que los paquetes provengan de una fuente confiable. Si no se importa la clave RPM GPG, el comando dnf no puede instalar los paquetes firmados. La opción --nogpgcheck del comando dnf ignora las claves GPG que faltan, pero puede resultar en la instalación de paquetes comprometidos o falsificados. Los archivos .repo suelen enumerar varias referencias de repositorios en un solo archivo. Cada referencia del repositorio comienza con un nombre de una sola palabra entre corchetes.
+
+user@host:~$ cat /etc/yum.repos.d/epel.repo
+
+[epel]
+
+name=Extra Packages for Enterprise Linux $releasever - $basearch
+
+#baseurl=https://download.example/pub/epel/$releasever/Everything/$basearch/
+
+metalink=https://mirrors.fedoraproject.org/metalink?
+repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=1
+gpgcheck=1
+countme=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever
+
+...salida omitida... [fuente epel]
+
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Source
+
+#baseurl=https://download.example/pub/epel/$releasever/Everything/source/tree/
+
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-
+source-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever
+gpgcheck=1
+
+Para definir un repositorio, pero no buscarlo de forma predeterminada, inserte el parámetro enable=0. Aunque la configuración dnf-
+
+manager command persistently enables and disables repositories, the dnf command --enablerepo=PATTERN and -
+
+-disablerepo=Las opciones de PATRÓN habilitan y deshabilitan repositorios temporalmente mientras se ejecuta el comando. Referencias
+
+dnf(8), dnf.conf(5), and dnf-config-manager(8) man pages
+
+Para obtener más información, consulte la guía Administración de software con la herramienta DNF en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+único/software_de_administración_con_la_herramienta_dnf
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF 6.6. Ejercicio guiado Habilitar un repositorio de software DNF Configure un servidor para obtener paquetes de un repositorio DNF remoto y luego actualice o instale un paquete desde ese repositorio. Resultados Configurar un sistema para obtener actualizaciones de software desde un servidor del aula y actualizar el sistema para utilizar los paquetes más recientes. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-repo
+
+Instrucciones En este ejercicio guiado, configurará dos repositorios de software en el servidor una máquina. Primero instalas un paquete.
+
+from the custom repository at http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Software
+
+Los mantenedores luego le notifican sobre una actualización disponible para este paquete en el repositorio de erratas. Procedes a instalar
+
+the package from the errata repository: http://repo.example.com/rhel10.0/x86_64/rhcsa-
+
+práctica/erratas. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure la máquina del servidor para usar el repositorio personalizado en
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Disable GPG checking for this
+
+repositorio. 2. Utilice el comando dnf config-manager para agregar el repositorio de paquetes personalizados.
+
+[root@servera ~]# dnf config-manager \
+
+--add-repo "http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht" Añadiendo repositorio desde: http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht 2.1. Examine el archivo del repositorio de software para el repositorio personalizado en el directorio /etc/yum.repos.d. 2.2.
+
+
+
+
+

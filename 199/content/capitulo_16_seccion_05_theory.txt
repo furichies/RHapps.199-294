@@ -1,0 +1,122 @@
+# 13.5. Búsqueda e interpretación de entradas de registro del diario del sistema
+# Tipo: theory
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.5. Búsqueda e interpretación de entradas de registro del diario del sistema 13.5. Búsqueda e interpretación de entradas de registro del diario del sistema Objetivos Buscar e interpretar entradas de registro en el diario del sistema para revisar el estado del sistema. Buscar eventos en el diario del sistema El servicio systemd-journald almacena datos de registro en un archivo binario estructurado e indexado que se conoce como diario. Estos datos incluyen información adicional sobre el evento de registro. Por ejemplo, para los eventos syslog, esta información incluye la prioridad del mensaje original y la función, que es un valor que el servicio syslog asigna para rastrear el proceso que originó un mensaje. Importante En Red Hat Enterprise Linux, el directorio /run/log basado en memoria contiene el diario del sistema de forma predeterminada. El contenido del directorio /run/log se pierde cuando se apaga el sistema. Puede cambiar el directorio de diario a una ubicación persistente, lo cual se analiza más adelante en esta lección. Para recuperar mensajes de registro del diario, utilice el comando journalctl. Puede utilizar el comando journalctl para ver todos los mensajes del diario o buscar eventos específicos según opciones y criterios. Si ejecuta el comando como usuario root, tendrá acceso completo al diario. Aunque los usuarios habituales también pueden utilizar el comando journalctl, el sistema les impide ver ciertos mensajes.
+
+root@host:~# journalctl
+
+... salida omitida... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de tabla FACP en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla DSDT en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla FACS en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando Memoria de la tabla APIC en... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de la tabla WAET en... 09 de junio 12:56:12 kernel localhost: No se encontró configuración NUMA líneas 1-44 q El comando journalctl resalta mensajes de registro importantes; Los mensajes con prioridad de aviso o advertencia están en negrita, mientras que los mensajes con prioridad de error o superior están en texto rojo. La clave para el uso exitoso de la revista para la resolución de problemas y la auditoría es limitar las búsquedas de la revista para mostrar solo resultados relevantes. De forma predeterminada, la opción -n del comando journalctl muestra las últimas 10 entradas del registro. Puede ajustar la cantidad de entradas de registro con un argumento opcional que especifica cuántas entradas de registro mostrar. Por ejemplo, para revisar las últimas cinco entradas del registro, puede ejecutar el siguiente comando journalctl:
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas de registro del diario del sistema
+
+root@host:~# journalctl -n 5
+
+09 de junio 21:03:58 host sshd-session[9202]: Conexión cerrada... 09 de junio 21:04:00 host systemd[1]: status-api.service: Programado... 09 de junio 21:04:00 host systemd[1]: Iniciando status-api.service... 09 de junio 21:04:10 host sshd-session[9204]: Conexión cerrada por... 09 de junio 21:04:23 host sshd-session[9205]: Conexión cerrada por... Similar al comando tail, la opción -f del comando journalctl genera las últimas diez líneas del diario del sistema y continúa generando nuevas entradas de diario cuando el diario las agrega. Para salir de la opción -f del comando journalctl, utilice la combinación de teclas Ctrl+C.
+
+root@host:~# journalctl -f
+
+09 de junio 21:05:01 host bash[9243]: % Total % % recibido %... 09 de junio 21:05:01 host bash[9243]:... 09 de junio 21:05:01 host bash[9243]: [datos de blob 158B] 09 de junio 21:05:01 host bash[9243]: { 09 de junio 21:05:01 host bash[9243]: "msg": "Estado recibido y... 09 de junio 21:05:01 host bash[9243]: } 09 de junio 21:05:01 host systemd[1]: status-api.service: Desactivado exitosamente. 09 de junio 21:05:11 host sshd-session[9247]: Conexión cerrada por... junio 09 21:05:24 host sshd-session[9255]: Conexión cerrada por... Jun 09 21:05:36 host sshd-session[9258]: Conexión cerrada por... Jun 09 21:05:48 host sshd-session[9260]: Conexión cerrada por... Ctrl+C Para ayudar a solucionar problemas, puede filtrar la salida del diario por la prioridad del diario entradas.
+
+journalctl command -p option shows the journal entries with a specified priority level (by name or by number) or
+
+más alto. El comando journalctl procesa los niveles de prioridad de depuración, información, aviso, advertencia, error, crítico, alerta y emergencia, en orden de prioridad ascendente. Como ejemplo, ejecute el siguiente comando journalctl para enumerar las entradas del diario con prioridad de error o superior:
+
+root@host:~# journalctl -p err
+
+... salida omitida... 09 de junio 12:56:23 estación de trabajo systemd[1206]: Error al iniciar app-gnome... 09 de junio 12:56:23 estación de trabajo systemd[1206]: Error al iniciar app-gnome... 09 de junio 12:56:23 estación de trabajo systemd[1206]: Error al iniciar app-gnome... 09 de junio 12:56:26 estación de trabajo (d-subman)[1493]: org.gnome.SettingsDaemon... 09 de junio 12:56:26 estación de trabajo systemd[1206]: Error al iniciar org.gnome... ...salida omitida... Puede mostrar mensajes para una unidad systemd específica usando la opción -u del comando journalctl y el nombre de la unidad.
+
+root@host:~# journalctl -u sshd.service
+
+... salida omitida... 09 de junio 12:56:22 host systemd[1]: sshd.service iniciado - OpenSSH... 09 de junio 12:56:31 host sshd-session[2078]: Conexión cerrada por... 09 de junio 12:57:21 host systemd[1]: Deteniendo sshd.service - OpenSSH... 09 de junio 12:57:21 host sshd[1163]: Señal recibida 15; terminando. 09 de junio 12:57:21 host systemd [1]: sshd.service: desactivado correctamente. 09 de junio 12:57:21 host systemd[1]: sshd.service detenido - servidor OpenSSH... 09 de junio 12:57:21 host systemd[1]: iniciando sshd.service - servidor OpenSSH... ...salida omitida... líneas 1-44 q Al usar el comando journalctl para buscar eventos específicos, puede limitar la salida a un rango de tiempo específico
+
+using the --since option or the --until option. Both options take a time argument in the "YYYY-MM-DD hh:mm:ss"
+
+formato. Las comillas dobles son necesarias para preservar el espacio dentro del valor de cada opción.
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas del registro de diario del sistema El comando journalctl utiliza el formato 00:00:00 cuando se omite el argumento de hora y utiliza el día actual cuando se omite el argumento de día. Ambas opciones de journalctl admiten ayer, hoy y mañana como argumentos válidos además de la fecha y la hora. Como ejemplo, ejecute el siguiente comando journalctl para enumerar todas las entradas de diario de los registros de hoy:
+
+root@host:~# journalctl --since today
+
+... salida omitida... 9 de junio 12:56:12 kernel localhost: fuente de reloj: kvm-clock: máscara: 0xfffffff... 9 de junio 12:56:12 kernel localhost: tsc: Procesador de 2494,172 MHz detectado 9 de junio 12:56:12 kernel localhost: e820: actualización [mem 0x00000000-0x00000fff]... 09 de junio 12:56:12 kernel de localhost: e820: eliminar [mem 0x000a0000-0x000fffff]... 09 de junio 12:56:12 kernel de host local: last_pfn = 0x1c0000 max_arch_pfn =... 09 de junio 12:56:12 kernel de localhost: mapa MTRR: 4 entradas (3 fijas + 1... 9 de junio 12:56:12 kernel de localhost: x86/PAT: Configuración [0-7]: WB WC... 9 de junio 12:56:12 kernel de localhost: last_pfn = 0xbffdb max_arch_pfn =... 9 de junio 12:56:12 kernel de localhost: encontrado Tabla MP SMP en [mem 0x000f5bc0-... ...salida omitida... líneas 1996-2043/2043 (END) q Ejecute el siguiente comando journalctl para enumerar todos los diarios desde 2025-06-01 20:30 y hasta 2025-06-04 10:00:
+
+root@host:~# journalctl --since "2025-06-01 20:30" --until "2025-06-04 10:00"
+
+...salida omitida... También puede especificar todas las entradas desde un tiempo relativo hasta el presente. Por ejemplo, para especificar todas las entradas desde la última hora, puede utilizar el siguiente comando:
+
+root@host:~# journalctl --since "-1 hour"
+
+...salida omitida... Nota Puede utilizar otras especificaciones de tiempo más sofisticadas con las opciones --since y --until. Para ver algunos ejemplos, consulte la página del comando man systemd.time(7). Además de la salida del diario predeterminada, puede ver todos los campos de cada registro del diario especificando la opción detallada. La salida detallada es útil para ayudar a encontrar información más específica sobre los eventos del diario. También puede especificar cualquier nombre de campo y valor para filtrar la salida del diario.
+
+root@host:~# journalctl -o verbose
+
+Lunes 2025-06-09 12:56:12.962826 UTC [s=ef6b97242c5140218987a8b063034712...
+
+    _SOURCE_BOOTTIME_TIMESTAMP=0
+    _SOURCE_MONOTONIC_TIMESTAMP=0
+    _TRANSPORT=kernel
+    PRIORITY=5
+    SYSLOG_FACILITY=0
+    SYSLOG_IDENTIFIER=kernel
+    MESSAGE=Linux version 6.12.0-55.12.1.el10_0.x86_64 (mockbuild@...
+    _BOOT_ID=d7f2dbc620504aa08585be2d04c4c596
+    _MACHINE_ID=d676b38fd6a747d989b1e2dd98c0ffe8
+    _HOSTNAME=localhost
+    _RUNTIME_SCOPE=initrd
+
+...salida omitida... líneas 1-44 q Puede combinar múltiples campos del diario del sistema para formar una consulta de búsqueda granular con el comando journalctl.
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas del registro del diario del sistema La siguiente lista muestra algunos campos del diario del sistema para buscar líneas relevantes para un proceso o evento en particular: _COMM El nombre del comando _EXE La ruta al archivo ejecutable para el proceso _PID El PID del proceso _UID El UID del usuario que ejecuta el proceso _SYSTEMD_UNIT La unidad systemd que inició el proceso Por ejemplo, el siguiente comando journalctl muestra todas las entradas del diario relacionadas con el servicio sshd.service con
+
+the 2188 PID:
+root@host:~# journalctl _SYSTEMD_UNIT=sshd.service _PID=2188
+
+09 de junio 12:57:21 estación de trabajo (sshd)[2188]: sshd.service: referenciado pero... 09 de junio 12:57:21 estación de trabajo sshd[2188]: Servidor escuchando en 0.0.0.0 puerto 22. 09 de junio 12:57:21 estación de trabajo sshd[2188]: Servidor escuchando en :: puerto 22. Nota Para obtener una lista de campos de diario, consulte la página del manual systemd.journal-fields(7). Referencias
+
+journalctl(1), systemd.journal-fields(7), and systemd.time(7) man pages
+
+Para obtener más información, consulte el capítulo Solución de problemas mediante el uso de archivos de registro de la guía de operaciones de recuperación y reducción de riesgos de Red Hat Enterprise Linux 10 en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/operaciones_de_reducción_de_riesgo_y_recuperación/index#solución-de-problemas-mediante-el-uso-de-archivos-de-registro
+
+
+
+
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema 13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema Encuentre entradas de registro del diario del sistema utilizando diferentes criterios para revisar el estado del sistema. Resultados Busque en el diario del sistema entradas para registrar eventos según diferentes criterios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-systemd
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Utilice la opción _PID=1 del comando journalctl para mostrar solo los eventos de registro que se originan en el proceso systemd PID 1. Para salir del comando journalctl, presione q. El siguiente resultado puede diferir en su sistema:
+
+[student@servera ~]$ journalctl _PID=1
+
+05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-sysctl.service... 05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-tmpfiles-setup-dev... 05 de junio 18:46:37 localhost systemd[1]: iniciando systemd-sysusers.service... 05 de junio 18:46:38 localhost systemd[1]: finalizado systemd-vconsole-setup... 05 de junio 18:46:38 localhost systemd[1]: dracut-cmdline-ask.service - dracut... 05 de junio 18:46:38 localhost systemd[1]: iniciando dracut-cmdline.service... 05 de junio 18:46:38 localhost systemd[1]: terminado systemd-sysusers.service... líneas 1-5 q 2. Utilice la opción del comando journalctl _UID=81 para mostrar todos los eventos de registro que se originaron en un servicio del sistema con un UID de 81.
+
+[student@servera ~]$ journalctl _UID=81
+
+05 de junio 18:46:47 servera.lab.example.com dbus-broker-launch[907]: Listo 3. Utilice la opción de advertencia -p del comando journalctl para mostrar eventos de registro con la advertencia o una prioridad más alta. 4.
+
+
+
+
+

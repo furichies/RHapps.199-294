@@ -1,0 +1,303 @@
+# Compilación de un inventario de Ansible
+# Tipo: theory
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Compilación de un inventario de Ansible
+Objetivos
+• Describir los conceptos de inventario de Ansible y administrar un archivo de inventario estático.
+Definición de inventario
+Un inventario define un conjunto de hosts que gestiona Ansible. Estos hosts también pueden ser
+asignados a grupos, que pueden ser gestionados colectivamente. Los grupos pueden contener
+grupos secundarios, y los hosts pueden ser miembros de múltiples grupos. El inventario también
+puede establecer variables que se apliquen a los hosts y grupos que define.
+Existen dos formas de definir los inventarios de host. Use un archivo de texto para definir un
+inventario de host estático. Use un complemento de Ansible para generar un inventario de host
+dinámico según sea necesario, usando proveedores de información externos.
+Especificación de hosts gestionados con un inventario
+estático
+Un archivo de inventario estático es un archivo de texto que especifica los hosts gestionados a
+los que apunta Ansible. Puede escribir este archivo usando varios formatos diferentes, incluido un
+estilo INI o YAML. El formato estilo INI es muy común y se usa para la mayoría de los ejemplos en
+este curso.
+nota
+Ansible soporta múltiples formatos de inventario estático. Esta sección se centra en
+el más frecuente, el formato estilo INI.
+En su forma más simple, un archivo de inventario estático estilo INI es una lista de nombres de host
+o direcciones IP de hosts gestionados, cada uno en una línea única:
+web1.example.com
+web2.example.com
+db1.example.com
+db2.example.com
+192.0.2.42
+Sin embargo, normalmente organiza hosts gestionados en grupos de hosts. Los grupos de hosts le
+permiten ejecutar Ansible de manera más efectiva en comparación con un conjunto de sistemas.
+En este caso, cada sección comienza con un nombre de grupo de hosts encerrado entre corchetes
+([]). A continuación, siguen el nombre de host o una dirección IP para cada host gestionado en el
+grupo, cada uno en una línea única.
+En el siguiente ejemplo, el inventario del host define dos grupos de hosts: webservers y db-
+servers.
+22
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[webservers]
+web1.example.com
+web2.example.com
+192.0.2.42
+[db-servers]
+db1.example.com
+db2.example.com
+Los hosts pueden estar en múltiples grupos. De hecho, la práctica recomendada es organizar sus
+hosts en múltiples grupos, posiblemente organizados de diferentes maneras, según el rol del host,
+su ubicación física, ya sea en producción o no, y otras variables. Esto le permite aplicar fácilmente
+plays de Ansible a conjuntos específicos de hosts en función de sus características, propósito o
+ubicación.
+[webservers]
+web1.example.com
+web2.example.com
+192.0.2.42
+[db-servers]
+db1.example.com
+db2.example.com
+[east-datacenter]
+web1.example.com
+db1.example.com
+[west-datacenter]
+web2.example.com
+db2.example.com
+[production]
+web1.example.com
+web2.example.com
+db1.example.com
+db2.example.com
+[development]
+192.0.2.42
+Importante
+Existen siempre dos grupos de hosts:
+• El grupo de hosts all contiene todos los hosts detallados de manera explícita en
+el inventario.
+• El grupo de hosts ungrouped contiene todos los hosts detallados de manera
+explícita en el inventario que no son miembros de ningún otro grupo.
+RH294-RHEL9.0-es-3-20240620
+23
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Definición de grupos anidados
+Los inventarios de host de Ansible pueden incluir grupos de grupos de hosts. Esto se logra
+creando un nombre de grupo de host con el sufijo :children. En el siguiente ejemplo, se crea
+un nuevo grupo, denominado north-america, que incluye todos los hosts de los grupos usa y
+canada.
+[usa]
+washington1.example.com
+washington2.example.com
+[canada]
+ontario01.example.com
+ontario02.example.com
+[north-america:children]
+canada
+usa
+Un grupo puede tener hosts gestionados y grupos secundarios como miembros. Por ejemplo, en
+el inventario anterior, podría agregar una sección [north-america] que tenga su propia lista de
+hosts gestionados. Esta lista de hosts se fusionaría con los hosts adicionales que hereda el grupo
+north-america de sus grupos secundarios.
+Simplificación de las especificaciones de hosts con rangos
+Puede especificar rangos en los nombres de hosts o direcciones IP para simplificar inventarios de
+hosts de Ansible. Puede especificar rangos numéricos o alfabéticos. Los rangos tienen la siguiente
+sintaxis:
+[START:END]
+Los rangos hacen coincidir todos los valores desde START hasta END, inclusive. Considere los
+siguientes ejemplos:
+• 192.168.[4:7].[0:255] coincide con todas las direcciones IPv4 en la red 192.168.4.0/22 (de
+192.168.4.0 a 192.168.7.255).
+• server[01:20].example.com coincide con todos los hosts denominados
+server01.example.com a server20.example.com.
+• [a:c].dns.example.com coincide con los hosts denominados a.dns.example.com,
+b.dns.example.com y c.dns.example.com.
+• 2001:db8::[a:f] coincide con todas las direcciones IPv6 de 2001:db8::a a 2001:db8::f.
+Si se incluyen ceros a la izquierda en rangos numéricos, se usan en el patrón. El segundo ejemplo
+anterior no coincide con server1.example.com, pero sí con server07.example.com.
+Verificación del inventario
+Puede usar el comando ansible-navigator inventory para consultar un archivo de
+inventario. Puede hacer esto para verificar la presencia de un host o un grupo en el inventario.
+24
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+En los siguientes ejemplos, se supone que existe un archivo denominado inventory en el
+directorio actual y que el archivo usa rangos para simplificar las definiciones de los grupos [usa] y
+[canada]:
+[usa]
+washington[1:2].example.com
+[canada]
+ontario[01:02].example.com
+nota
+Estos comandos de ejemplo usan la opción -i inventory para especificar una
+ruta a un archivo de inventario y la opción -m stdout para enviar la salida a la
+ventana de terminal.
+La siguiente consulta coincide con un host en el inventario. Aunque esta salida muestra llaves
+vacías, si el archivo de inventario definió variables para el host, las llaves contendrían esas
+variables.
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --host washington1.example.com
+{}
+Debido a que el rango para el grupo usa no incluye ceros a la izquierda, la siguiente consulta no
+coincide con un host en el inventario:
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --host washington01.example.com
+...output omitted...
+ERROR! You must pass a single valid host to --host parameter
+El siguiente comando enumera todos los hosts en el inventario.
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --list
+{
+    "_meta": {
+        "hostvars": {}
+    },
+    "all": {
+        "children": [
+            "canada",
+            "ungrouped",
+            "usa"
+        ]
+    },
+    "canada": {
+        "hosts": [
+            "ontario01.example.com",
+            "ontario02.example.com"
+        ]
+RH294-RHEL9.0-es-3-20240620
+25
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+    },
+    "usa": {
+        "hosts": [
+            "washington1.example.com",
+            "washington2.example.com"
+        ]
+    }
+}
+El siguiente comando enumera todos los hosts en un grupo.
+[user@controlnode ~]$ ansible-navigator inventory -i inventory \
+> -m stdout --graph canada
+@canada:
+  |--ontario01.example.com
+  |--ontario02.example.com
+Ejecute el comando ansible-navigator inventory para explorar de forma interactiva hosts
+y grupos de inventario:
+[user@controlnode ~]$ ansible-navigator inventory -i inventory
+  Title             Description
+0│Browse groups     Explore each inventory group and group members members
+1│Browse hosts      Explore the inventory with a list of all hosts
+Escriba :0 para seleccionar "Explorar grupos":
+nota
+En la interfaz de usuario interactiva, para seleccionar una entrada escriba el número
+de línea correspondiente a la entrada. El uso de dos puntos es opcional para las
+líneas cero a nueve, pero cualquier número de línea que sea mayor de 10 debe estar
+precedido por dos puntos.
+  Name                                Taxonomy                         Type
+0│canada                              all                              group
+1│ungrouped                           all                              group
+2│usa                                 all                              group
+Presione la tecla ESC para salir del menú Grupos. Escriba :1 para seleccionar "Explorar hosts"
+  Inventory hostname
+0│ontario01.example.com
+1│ontario02.example.com
+2│washington1.example.com
+3│washington2.example.com
+Presione la tecla ESC dos veces para salir de ansible-navigator inventory.
+26
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Importante
+Si el inventario contiene un host y un grupo de hosts con el mismo nombre, el
+comando ansible-navigator inventory imprime una advertencia.
+Asegúrese de que los grupos de hosts no usen los mismos nombres que los hosts en
+el inventario.
+Reemplazo de la ubicación del inventario
+El archivo /etc/ansible/hosts se considera el archivo de inventario estático predeterminado
+del sistema. Sin embargo, la práctica habitual es no usar ese archivo, sino especificar una
+ubicación diferente para los archivos de inventario.
+Los comandos ansible-navigator que usa para ejecutar playbooks pueden especificar la
+ubicación de un archivo de inventario en la línea de comandos con la opción --inventory
+PATHNAME o -i PATHNAME, donde PATHNAME es la ruta al archivo de inventario deseado.
+nota
+También puede definir una ubicación predeterminada diferente para el archivo de
+inventario en su archivo de configuración de Ansible.
+Inventarios dinámicos
+La información de inventario de Ansible también puede generarse de forma dinámica con la
+información provista por bases de datos externas. La comunidad de código abierto ha escrito
+varios complementos (plug-ins) de inventario dinámicos que están disponibles desde el proyecto
+upstream de Ansible. Si estos complementos (plug-ins) Ansible no satisfacen sus necesidades,
+también puede escribir sus propios.
+Por ejemplo, un programa de inventario dinámico podría contactarse con su servidor de Red Hat
+Satellite o su cuenta de Amazon EC2, y usar la información almacenada allí para construir un
+inventario de Ansible. Dado que el programa hace esto cuando ejecuta Ansible, puede completar
+el inventario con información actualizada provista por el servicio a medida que se agregan nuevos
+hosts y se eliminan hosts anteriores.
+Cómo usar un inventario dinámico está fuera del alcance de esta sección.
+Referencias
+How to build your inventory: Ansible Documentation
+http://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+RH294-RHEL9.0-es-3-20240620
+27
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Compilación de un inventario de Ansible
+Crear un nuevo inventario estático que contenga hosts y grupos.
+Resultados
+• Deberá ser capaz de crear inventarios estáticos predeterminados y personalizados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-inventory
+Instrucciones
+ 1.
+Cambie al directorio /home/student/playbook-inventory/.
+[student@workstation ~]$ cd playbook-inventory
+[student@workstation playbook-inventory]$
+ 2.
+Cree un archivo de inventario estático personalizado denominado inventory en el
+directorio de trabajo /home/student/playbook-inventory.
+En la siguiente tabla, se encuentra la información sobre sus cuatro hosts gestionados.
+Asigne cada host a varios grupos con fines de administración según el propósito del host, la
+ciudad donde se encuentra ubicado y el entorno de implementación al que pertenece.
+Además, los grupos para ciudades de Estados Unidos (Raleigh y Mountain View) deben
+configurarse como elementos secundarios del grupo us para que los hosts de Estados
+Unidos puedan ser gestionados como un grupo.
+Especificaciones de inventario del servidor
+Nombre de host
+Propósito
+Ubicación
+Entorno
+servera.lab.example.com
+Servidor web
+Raleigh
+Desarrollo
+serverb.lab.example.com
+Servidor web
+Raleigh
+Prueba
+serverc.lab.example.com
+Servidor web
+Mountain View
+Producción
+serverd.lab.example.com
+Servidor web
+Londres
+Producción
+28
+RH294-RHEL9.0-es-3-20240620
+
+

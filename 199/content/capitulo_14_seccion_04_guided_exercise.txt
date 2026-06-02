@@ -1,0 +1,210 @@
+# Ejercicio Guiado: Ejercicio guiado Editar archivos de configuración de red
+# Tipo: guided_exercise
+# Capítulo: Capítulo 11. Gestión de la configuración de red
+
+11.4. Ejercicio guiado Editar archivos de configuración de red 11.4. Ejercicio guiado Editar archivos de configuración de red Modifique la configuración de red editando archivos de configuración. Resultados Configure direcciones de red adicionales en cada sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su sistema para esto
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-edit
+
+Instrucciones Los nombres de las interfaces de red están determinados por su tipo de bus y el orden de detección de los dispositivos durante el arranque. Los nombres de sus interfaces de red pueden variar según la plataforma del curso y el hardware en uso. En su sistema, ubique el nombre de la interfaz de red (como eth1, ens06 o enp0p2) que está asociado con la dirección Ethernet 52:54:00:01:fa:1e. Utilice este nombre de interfaz para reemplazar el marcador de posición ens4 a lo largo de este ejercicio si es diferente. En la máquina del servidor, muestre la lista de interfaces de red en su sistema usando el comando ip. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. Muestre la lista de interfaces de red en su sistema usando el comando ip. Localice el nombre de la interfaz de red asociada con la dirección Ethernet 52:54:00:01:fa:1e. Registre o recuerde este nombre y utilícelo para reemplazar el marcador de posición ens4 en comandos posteriores.
+
+[student@servera ~]$ ip link
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state Modo DESCONOCIDO DEFAULT grupo predeterminado qlen 1000
+
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:00:fa:0a brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname enx52540000fa0a
+
+3: ens4: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8942 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:01:fa:1e brd ff:ff:ff:ff:ff:ff
+    altname enp0s4
+    altname enx52540001fa1e
+
+1.2. Vea las conexiones de red actuales utilizando el comando nmcli. 2.
+
+
+
+
+
+11.4. Ejercicio guiado Editar archivos de configuración de red Utilice el comando nmcli para ver las conexiones de red actuales. Aunque NetworkManager creó la conexión temporal Conexión por cable 1 para la interfaz de red secundaria, no se activa correctamente. Es posible que vea brevemente la conexión resaltada en amarillo después de reiniciar, pero falla constantemente en cuestión de minutos y muestra dos guiones (--) en la columna del dispositivo.
+
+[student@servera ~]$ nmcli con show
+
+NOMBRE UUID TIPO DISPOSITIVO cloud-init ens3 fab1e257-61a6-3526-abf9-8c50c83a28c7 ethernet ens3 Conexión por cable 1 e5a48013-c870-3a20-9ad2-b5d13d9603f2 ethernet -- lo e4d720f0-e59d-451c-b4ef-5830ac3bc3f9 bucle invertido 2.1. Identifique el nombre de la interfaz y el método de configuración actual que utiliza la conexión por cable 1.
+
+[student@servera ~]$ nmcli -f connection.interface-name,ipv4.method \
+
+espectáculo de estafa 'Conexión por cable 1'
+
+connection.interface-name:              ens4
+ipv4.method:                            auto
+
+2.2. Como usuario raíz, modifique el perfil de Conexión por cable 1 para usar la dirección IP estática de 172.24.250.30/24, reemplazando la configuración DHCP predeterminada. 3. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 3.1. Modifique el perfil de Conexión por cable 1 para usar la dirección IP estática de 172.24.250.30/24.
+
+[root@servera ~]# nmcli con mod 'Wired connection 1' ipv4.method manual \
+
+direcciones.ipv4 172.24.250.30/24 3.2. Debido al paso anterior, NetworkManager creó un perfil persistente en /etc/NetworkManager/system-connections/Wired\connection\1.nmconnection. Tenga en cuenta que NetworkManager crea esta conexión predeterminada con espacios en el nombre del archivo. Para copiar este nombre de archivo en su terminal, use las comillas circundantes o use las barras invertidas antes de los espacios, pero no ambas. Usando su editor de texto preferido, abra este archivo y agregue 10.0.1.1/24 como dirección IP secundaria. ...salida omitida... [ipv4]
+
+address1=172.24.250.30/24
+method=manual
+address2=10.0.1.1/24
+
+...salida omitida... Guarde y cierre el archivo cuando haya terminado. 4. Active la nueva dirección de red con el comando nmcli. 5. Informe a NetworkManager de los cambios recargando las conexiones.
+
+[root@servera ~]# nmcli con reload
+
+5.1. Vuelva a activar la conexión Conexión por cable 1. 5.2.
+
+
+
+
+
+11.4. Ejercicio guiado Editar archivos de configuración de red
+
+[root@servera ~]# nmcli con up "Wired connection 1"
+
+Conexión activada exitosamente (ruta activa de D-Bus: /org/freedesktop/NetworkManager/ActiveConnection/4) Verifique que la nueva dirección IP esté activa en la configuración del tiempo de ejecución.
+
+[root@servera ~]# ip -br addr show ens4
+ens4       UP     172.24.250.30/24 10.0.1.1/24 fe80::5054:ff:fe01:fa1e/64
+
+5.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6. Realice el mismo procedimiento en la máquina del servidor. Configure 172.24.250.40/24 como la dirección estática principal para la interfaz ens4. Además, asegúrese de que 10.0.1.2/24 se agregue persistentemente al perfil de conexión como dirección IP secundaria. 7. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 7.1. Identifique el nombre de la interfaz y el método de configuración que utiliza el perfil de conexión por cable 1.
+
+[root@serverb ~]# nmcli -f connection.interface-name,ipv4.method \
+
+espectáculo de estafa 'Conexión por cable 1'
+
+connection.interface-name:              ens4
+ipv4.method:                            auto
+
+7.2. Modifique el perfil para usar una dirección IP estática de 172.24.250.40/24, reemplazando la configuración DHCP predeterminada.
+
+[root@serverb ~]# nmcli con mod 'Wired connection 1' ipv4.method manual \
+
+direcciones.ipv4 172.24.250.40/24 7.3. Edite el archivo de configuración de conexión por cable 1.nmconnection en el directorio /etc/NetworkManager/system-connections. Agregue 10.0.1.2/24 como dirección IP secundaria. ...salida omitida... [ipv4]
+
+address1=172.24.250.40/24
+method=manual
+address2=10.0.1.2/24
+
+...salida omitida... Guarde y cierre el archivo cuando haya terminado. 7.4. Utilice el comando nmcli para solicitar a NetworkManager que vuelva a leer sus archivos de configuración. 7.5.
+
+
+
+
+
+11.4. Ejercicio guiado Editar archivos de configuración de red Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish net-edit
+[root@serverb ~]# nmcli con reload
+
+Activa la conexión modificada.
+
+[root@serverb ~]# nmcli con up 'Wired connection 1'
+
+Conexión activada exitosamente (ruta activa D-Bus: /org/freedesktop/NetworkManager/ActiveConnection/5) 7.6. Verifique que la nueva dirección IP esté activa.
+
+[root@serverb ~]# ip -br addr show ens4
+ens4    UP    172.24.250.40/24 10.0.1.2/24 fe80::5054:ff:fe01:fa28/64
+
+7.7. Pruebe la conectividad entre las máquinas servera y serverb utilizando las nuevas direcciones de red. Haga ping a la nueva dirección del servidor en una máquina.
+
+[root@serverb ~]# ping -c3 10.0.1.1
+
+PING 10.0.1.1 (10.0.1.1) 56(84) bytes de datos. 64 bytes desde 10.0.1.1: icmp_seq=1 ttl=64 tiempo=1,25 ms 64 bytes desde 10.0.1.1: icmp_seq=2 ttl=64 tiempo=0,483 ms 64 bytes desde 10.0.1.1: icmp_seq=3 ttl=64 tiempo=0,413 ms
+
+--- 10.0.1.1 ping statistics ---
+
+3 paquetes transmitidos, 3 recibidos, 0% de pérdida de paquetes, tiempo 2056 ms
+
+rtt min/avg/max/mdev = 0.413/0.715/1.250/0.379 ms
+
+8. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+9.
+
+
+
+
+
+11.5. Configuración de nombres de host y resolución de nombres 11.5. Configuración de nombres de host y objetivos de resolución de nombres Configure el nombre de host estático de un servidor y su resolución de nombres, y pruebe los resultados. Actualización del nombre de host del sistema El nombre de host de dominio completo (FQDN) identifica de forma única cada servidor de la red. El comando hostname muestra o modifica temporalmente el FQDN del sistema. En el siguiente ejemplo, cambia temporalmente el nombre de host host.example.com a web1.example.com:
+
+root@host:~# hostname
+
+host.ejemplo.com
+
+root@host:~# hostname web1.example.com
+root@host:~# hostname
+
+web1.example.com El uso del comando hostname da como resultado un cambio temporal de nombre de host. Si reinicia el sistema, el FQDN vuelve a su definición anterior. Para establecer un nombre de host persistente, se debe especificar en el archivo /etc/hostname, que se lee cuando se inicia el sistema. Puede agregar manualmente el nombre de host requerido al archivo o puede usar el comando hostnamectl. El
+
+hostnamectl command offers a convenient way to both modify this file and to display the system's fully qualified
+hostname.
+
+Puede usar el comando hostnamectl hostname para ver el nombre de host actual, o usar el mismo comando con un argumento para actualizar el nombre de host al nombre proporcionado. En el siguiente ejemplo, cambia persistentemente el
+
+host.example.com hostname to db1.example.com:
+root@host:~# hostnamectl hostname
+
+host.ejemplo.com
+
+root@host:~# hostnamectl hostname db1.example.com
+root@host:~# hostnamectl hostname
+
+db1.example.com Puede verificar que el archivo /etc/hostname esté actualizado con el nuevo nombre de host:
+
+root@host:~# cat /etc/hostname
+
+db1.example.com Nota En estos ejemplos, el mensaje muestra el nombre de host anterior incluso después de una actualización, porque el shell utiliza las variables de entorno que se establecieron cuando se inició por primera vez. Para ver el nuevo nombre de host reflejado en su mensaje, puede abrir una nueva sesión de terminal o actualizar manualmente las variables de entorno de su shell. En situaciones donde el archivo /etc/hostname no existe o está vacío, el sistema establece automáticamente un archivo transitorio.
+
+hostname based on a reverse DNS lookup on the IP address that is assigned to its network interface.
+
+
+
+
+

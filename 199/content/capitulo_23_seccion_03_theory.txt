@@ -1,0 +1,118 @@
+# 20.3. Dispositivos de almacenamiento de montaje automático
+# Tipo: theory
+# Capítulo: Capítulo 20. Acceso al almacenamiento conectado a la red
+
+20.3. Montaje automático de dispositivos de almacenamiento 20.3. Montaje automático de dispositivos de almacenamiento Objetivos Montar automáticamente dispositivos de almacenamiento cuando se accede a ellos y desmontarlos cuando ya no estén en uso activo, configurando el montador automático. Montar exportaciones NFS con Automounter El automounter (autofs) es un servicio que monta automáticamente sistemas de archivos y exportaciones NFS según demanda, y los desmonta automáticamente cuando los recursos montados ya no están en uso. La función de montaje automático se creó para resolver el problema de que los usuarios sin privilegios no tienen permisos suficientes para usar el comando de montaje. Sin utilizar el comando de montaje, los usuarios sin privilegios no pueden acceder a medios extraíbles como CD, DVD y unidades de disco extraíbles. Además, si un sistema de archivos local o remoto no se monta en el arranque mediante el archivo /etc/fstab, entonces un usuario sin privilegios no puede montar ni acceder a esos sistemas de archivos desmontados. Los archivos de configuración del montador automático se completan con información de montaje del sistema de archivos, de manera similar a las entradas del archivo /etc/fstab. Aunque el archivo /etc/fstab monta los sistemas de archivos durante el arranque del sistema y permanecen
+
+mounted until system shutdown or other intervention, the automounter does not necessarily mount during system boot.
+
+El montador automático monta sistemas de archivos según demanda, cuando un usuario o una aplicación intenta ingresar al punto de montaje del sistema de archivos para acceder a los archivos. Beneficios de Automounter Automounter utiliza recursos equivalentes a los sistemas de archivos que se montan en el arranque, porque un sistema de archivos utiliza recursos sólo cuando un programa lee o escribe archivos abiertos. Los sistemas de archivos montados e inactivos, y los sistemas de archivos desmontados, casi no utilizan recursos. La ventaja de un montador automático es que, al desmontar el sistema de archivos cada vez que ya no está en uso, el sistema de archivos está protegido contra daños inesperados cuando está abierto. Cuando se indica al sistema de archivos que se monte nuevamente, el servicio autofs usa la configuración de montaje más actual, a diferencia del archivo /etc/fstab, que aún puede usar una configuración que se montó hace meses durante el último arranque del sistema. Además, si la configuración de su servidor NFS incluye rutas y servidores redundantes, el montador automático puede seleccionar la conexión más rápida cada vez que se solicita un nuevo sistema de archivos. El servicio Automounter El servicio Automounter admite los mismos sistemas de archivos locales y remotos que el archivo /etc/fstab, incluidos los protocolos de intercambio de archivos NFS y SMB, y admite las mismas opciones de montaje específicas del protocolo, incluidos los parámetros de seguridad. Los sistemas de archivos que se montan mediante el montador automático están disponibles de forma predeterminada para todos los usuarios, pero pueden restringirse mediante opciones de permiso de acceso. Debido a que el montador automático es una configuración del lado del cliente que utiliza los comandos estándar montar y desmontar para administrar sistemas de archivos, los sistemas de archivos montados automáticamente en uso exhiben el mismo comportamiento que los sistemas de archivos que se montan usando el archivo /etc/fstab. La diferencia es que un sistema de archivos de montaje automático permanece desmontado hasta que se accede al punto de montaje, lo que hace que el sistema de archivos se monte inmediatamente y permanezca montado cuando el sistema de archivos está en uso. Cuando todos los archivos del sistema de archivos están cerrados y todos los usuarios y procesos abandonan el directorio del punto de montaje, el montador automático desmontará el sistema de archivos después de un tiempo de espera mínimo.
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento Casos de uso de mapas directos e indirectos El servicio autofs admite el mapeo de puntos de montaje directo e indirecto para manejar los dos tipos de montaje. Un montaje directo es cuando un sistema de archivos se monta en una ubicación de punto de montaje conocida y que no cambia. Un punto de montaje directo existe como directorio permanente. Un montaje indirecto es cuando la ubicación del punto de montaje no se conoce hasta que se produce la demanda de montaje. Aunque indirecto
+
+mount points appear to exist, the autofs service creates them when the mount demand occurs, and deletes them
+
+nuevamente cuando finalizó la demanda y se desmontó el sistema de archivos. Configure el servicio Automounter Para utilizar el servicio autofs, debe instalar los paquetes autofs y nfs-utils.
+
+root@host:~# dnf install autofs nfs-utils
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! El archivo de mapa maestro El servicio autofs utiliza el archivo /etc/auto.master como archivo de configuración del mapa maestro predeterminado. Puede utilizar el archivo /etc/autofs.conf para cambiar el archivo de mapa para el servicio autofs. Utilice el directorio /etc/auto.master.d para configurar el archivo de mapa maestro. Este archivo identifica el directorio base para
+
+mount points, and identifies the mapping file to create the automounts.
+
+El nombre del archivo de mapa maestro es en su mayor parte arbitrario (aunque normalmente tiene sentido) y debe tener la extensión .autofs para que el subsistema lo reconozca. Puede colocar varias entradas en un único archivo de mapa maestro; Como alternativa, puede crear varios archivos de mapas maestros, cada uno con sus propias entradas agrupadas lógicamente. El mapa maestro utiliza el siguiente formato para el montaje automático:
+
+root@host:~# cat /etc/auto.master.d/demo.autofs
+mountpoint     map-file
+
+Reemplace la variable de punto de montaje con el directorio que se utilizará como punto de montaje. Reemplace la variable de archivo de mapa con el archivo que se utilizará como archivo de mapa. El archivo de mapa debe crearse antes de iniciar el servicio autofs. Los archivos de mapa configuran las propiedades de puntos de montaje individuales bajo demanda. El montador automático crea los directorios si no existen. Si los directorios existen antes de que se inicie el montador automático, el montador automático no los elimina cuando sale. Si se especifica un tiempo de espera, el directorio se desmonta automáticamente si no se accede al directorio durante el período de tiempo de espera. Si utiliza un único nombre de directorio para el punto de montaje, el directorio se monta como un montaje indirecto. Si utiliza la ruta completa para el punto de montaje, entonces el directorio se monta como montaje directo.
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento El archivo de mapa utiliza el siguiente formato para el montaje automático:
+
+root@host:~# cat /etc/auto.demo
+mountpoint     mount-options     source-location
+
+Reemplace la variable de punto de montaje con el directorio que se utilizará como punto de montaje. Reemplace la variable mount-options con las opciones que se utilizarán para montar el montaje automático. Reemplace la variable de ubicación de origen con la ubicación de origen del montaje. Crear un archivo de mapa directo Un archivo de mapa directo asigna una exportación NFS a un punto de montaje de ruta absoluta. Sólo es necesario un archivo de mapa directo y puede contener cualquier número de mapas directos. Para utilizar puntos de montaje asignados directamente, incluya el siguiente contenido en el archivo de mapa maestro:
+
+root@host:~# cat /etc/direct.autofs
+
+/- /etc/auto.direct La convención de nomenclatura para un archivo de mapa es /etc/auto.name, donde nombre refleja el contenido del mapa. Todas las entradas de mapas directos utilizan la ruta /- como directorio base. En este caso, el archivo de mapeo /etc/auto.direct contiene los detalles del montaje. El siguiente ejemplo muestra una entrada de muestra en el archivo de mapa:
+
+root@host:~# cat /etc/auto.direct
+/mnt/docs  -rw,sync  hosta:/shares/docs
+
+El punto de montaje es siempre una ruta absoluta. El resto del archivo de mapeo usa la misma estructura. En este ejemplo, el directorio /mnt existe y el servicio autofs no lo administra. El servicio autofs crea y elimina el directorio completo /mnt/docs automáticamente. Crear un archivo de mapa indirecto Cada archivo de mapeo identifica el punto de montaje, las opciones de montaje y la ubicación de origen para montar un conjunto de montajes automáticos. Para el montaje automático indirecto, incluya el siguiente contenido en el archivo de mapa maestro:
+
+root@host:~# cat /etc/auto.master.d/indirect.autofs
+
+/shares /etc/auto.indirect Esta entrada utiliza el directorio /shares como punto de montaje base para el montaje automático indirecto. El archivo de mapa /etc/auto.indirect contiene los detalles del montaje. El siguiente ejemplo muestra una entrada de muestra en el archivo de mapa:
+
+root@host:~# cat /etc/auto.indirect
+work  -rw,sync  hosta:/shares/work
+
+La convención de nomenclatura para un archivo de mapa es /etc/auto.name, donde nombre refleja el contenido del mapa.
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento El punto de montaje completo es el directorio /shares/work. El servicio autofs crea y elimina los directorios /shares y /shares/work según sea necesario. En este ejemplo, el punto de montaje local refleja la estructura de directorios del servidor. Sin embargo, esta duplicación no es necesaria; el punto de montaje local puede tener un nombre arbitrario. El servicio autofs no impone una estructura de nombres específica en el cliente. Las opciones de montaje comienzan con un guión (-) y están separadas por comas y sin espacios en blanco. Las opciones de montaje del sistema de archivos para montaje manual también están disponibles durante el montaje automático. En este ejemplo, el montador automático monta la exportación con acceso de lectura/escritura (opción rw) y el servidor se sincroniza inmediatamente durante las operaciones de escritura (opción de sincronización). Las opciones útiles específicas del montador automático incluyen las opciones -fstype= o -strict. Utilice la opción fstype para especificar el tipo de sistema de archivos, por ejemplo NFS4 o XFS, y utilice la opción estricta para tratar los errores como fatales al montar sistemas de archivos. La ubicación de origen para las exportaciones NFS sigue el patrón host:/pathname, en este ejemplo hosta:/shares/work. Para que este montaje automático tenga éxito, el servidor NFS, hosta, debe exportar el directorio con acceso de lectura/escritura, y el usuario que solicita acceso debe tener permisos de archivo estándar de Linux en el directorio. Si la máquina hosta exporta el directorio con acceso de solo lectura, entonces el cliente obtiene acceso de solo lectura incluso si el cliente solicitó acceso de lectura/escritura. Uso de comodines en archivos de mapas Cuando un servidor NFS exporta múltiples subdirectorios dentro de un directorio, el montador automático se puede configurar para acceder a cualquiera de esos subdirectorios con una única entrada de mapeo. Continuando con el ejemplo anterior, si la exportación hosta:/shares contiene dos o más subdirectorios y están
+
+accessible with the same mount options, then the entry for the /etc/auto.indirect file might appear as follows:
+root@host:~# cat /etc/auto.indirect
+
+* -rw,sync hosta:/shares/& El punto de montaje (o clave) es un carácter de asterisco (*) y el subdirectorio en la ubicación de origen es un carácter comercial (&). Todo lo demás en la entrada es igual. Cuando un usuario intenta acceder al directorio /shares/work, la tecla * (que en este ejemplo funciona) reemplaza la
+
+ampersand in the source location, and the hosta:/shares/work export is mounted. As with the indirect map file
+
+Por ejemplo, el servicio autofs crea y elimina el directorio de trabajo automáticamente. Inicie el servicio Automounter Después de haber configurado el mapa maestro y los archivos del mapa, use el comando systemctl para iniciar y habilitar el servicio autofs.
+
+root@host:~# systemctl enable --now autofs
+
+Enlace simbólico creado /etc/systemd/system/multi-user.target.wants/autofs.service → /usr/lib/systemd/system/autofs.service. El método alternativo de montaje automático El demonio systemd puede crear automáticamente archivos unitarios para las entradas en el archivo /etc/fstab que incluyen la opción x-systemd.automount. Utilice el comando systemctl daemon-reload para actualizar el demonio systemd de
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento el nuevo archivo de configuración. Luego, use el comando systemctl start unit.automount para habilitar la configuración de montaje automático. El nombre de la unidad se basa en su ubicación de montaje. Por ejemplo, si el punto de montaje es /remote/finance, entonces el archivo de la unidad se denominará remote-finance.automount. El demonio systemd monta el sistema de archivos cuando se accede inicialmente al directorio /remote/finance. Este método puede ser más sencillo que instalar y configurar el servicio autofs. Sin embargo, una unidad systemd.automount solo puede admitir puntos de montaje de ruta absoluta, similar a los mapas directos autofs. Referencias a las páginas man autofs(5), automount(8), auto.master(5), mount.nfs(8) y systemd.automount(5) Para obtener más información, consulte el capítulo Montaje de sistemas de archivos bajo demanda en Gestión de sistemas de archivos.
+
+guide at https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/managing_file_systems/index#montaje-de-sistemas-de-archivos-bajo-demanda
+
+
+
+
+
+20.4. Ejercicio guiado de dispositivos de almacenamiento con montaje automático 20.4. Ejercicio guiado Montaje automático de dispositivos de almacenamiento Monte automáticamente dispositivos de almacenamiento cuando se acceda a ellos y desmóntelos cuando ya no estén en uso activo, configurando el montador automático. Resultados Instale los paquetes necesarios para el montador automático. Configure mapas de montaje automático directos e indirectos, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-autofs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante e instale el paquete autofs. Utilice estudiante como contraseña. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. Instale el paquete autofs. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo dnf install autofs
+
+[sudo] contraseña para estudiante: estudiante...salida omitida... ¿Está bien? [y/N]: y...salida omitida... ¡Completa! 1.2. Monte manualmente la exportación serverb:/shares NFS en el directorio /home/student/nfs. Utilice el comando grep para ver todas las instancias del texto RED en el directorio /home/student/nfs. 2. Monte manualmente la exportación NFS serverb:/shares en el directorio /home/student/nfs.
+
+[student@servera ~]$ sudo mount -t nfs serverb:/shares /home/student/nfs
+
+2.1. Busque todas las instancias del texto ROJO en el directorio /home/student/nfs. 2.2.
+
+
+
+
+

@@ -1,0 +1,184 @@
+# 6.1. Investigación de paquetes de software RPM
+# Tipo: theory
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.1. Investigación de paquetes de software RPM 6.1. Investigación de paquetes de software RPM Objetivos Explicar cómo Red Hat y otras fuentes proporcionan software como paquetes RPM e investigar los paquetes del sistema instalados. Paquetes de software RPM El Administrador de paquetes RPM, desarrollado originalmente por Red Hat, proporciona una forma estándar de empaquetar software para su distribución. Administrar software en forma de paquetes RPM es más sencillo que trabajar con software extraído a un sistema de archivos desde un archivo. Con los paquetes RPM, los administradores pueden rastrear qué archivos instala el paquete de software, qué archivos elimina el paquete de software si lo desinstala y verifica que los paquetes de soporte estén presentes cuando lo instala. La base de datos RPM local de su sistema almacena la información sobre los paquetes instalados. Red Hat proporciona todo el software para Red Hat Enterprise Linux como un paquete RPM. Los nombres de los archivos del paquete RPM constan de cuatro elementos (más el sufijo .rpm): nombre-versión-lanzamiento.arquitectura: Figura 11. Elementos del nombre del archivo RPM El nombre es una o más palabras para describir el contenido (coreutils). La versión es el número de versión del software original (9.5). La versión es el número de versión del paquete según esa versión y la establece el empaquetador, que puede no ser el desarrollador del software original (6.el10). Arch es la arquitectura del procesador en la que se compila el paquete para ejecutarse. El valor x86_64 indica que este paquete está creado para la versión de 64 bits del conjunto de instrucciones x86 (a diferencia de aarch64 para ARM de 64 bits, etc.). Los paquetes RPM suelen descargarse de repositorios. Un repositorio es una ubicación central para almacenar y mantener paquetes de software RPM. Solo necesita el nombre del paquete para instalar paquetes RPM desde los repositorios. Si existen varias versiones, el Administrador de paquetes RPM instala el paquete con el número de versión posterior. Si existen varias versiones de una sola versión, el Administrador de paquetes RPM instala el paquete con el número de versión posterior. Cada paquete RPM es un archivo con los siguientes componentes: Los archivos que el paquete instala en su sistema. Información sobre el paquete (metadatos), como el nombre, la versión, la versión y la arquitectura; un resumen y
+
+description of the package; whether it requires other packages to be installed; licensing; a package change log;
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM y otros detalles. Scripts que pueden ejecutarse al instalar, actualizar o eliminar el paquete. Estos scripts también pueden ejecutarse al instalar, actualizar o eliminar otros paquetes. Normalmente, los proveedores de software firman digitalmente paquetes RPM con claves GNU Privacy Guard (GPG). Red Hat, por ejemplo, firma digitalmente todos los paquetes que lanza. El sistema RPM verifica la integridad del paquete confirmando que el paquete esté firmado con la clave GPG adecuada. El sistema RPM no puede instalar un paquete si la firma GPG no coincide. Actualización de software con paquetes RPM Red Hat genera un paquete RPM completo para actualizar el software. Un administrador que instala ese paquete obtiene solo la versión más reciente del paquete. No es necesario instalar una versión anterior de un paquete para parchearlo. Para actualizar el software, RPM elimina la versión anterior del paquete e instala la última versión. Las actualizaciones suelen conservar los archivos de configuración, pero el empaquetador de la nueva versión define el comportamiento exacto. Normalmente, sólo se instala una versión de un paquete a la vez. Si un paquete se crea con nombres de archivos que no entran en conflicto, es posible que instale varias versiones. El paquete del kernel es un ejemplo de instalación de múltiples versiones de paquetes. Debido a que usted prueba un nuevo kernel solo iniciando con ese kernel, el paquete está diseñado para admitir la instalación de múltiples versiones. Si el nuevo kernel no arranca, puede volver al kernel anterior. Inspección de paquetes RPM La utilidad rpm es una herramienta de bajo nivel que puede recuperar información detallada sobre el contenido de los paquetes instalados. La herramienta también puede inspeccionar archivos en paquetes descargados antes de la instalación. Consultar la base de datos RPM sobre paquetes instalados De forma predeterminada, la herramienta obtiene información de una base de datos local de paquetes instalados. Recuperar información general sobre los paquetes instalados:
+
+rpm -qa : List all installed packages.
+rpm -qf FILENAME : Determine which package provides FILENAME.
+user@host:~$ rpm -qf /etc/yum.repos.d
+
+redhat-release-10.0-30.el10.x86_64 Obtenga información sobre paquetes específicos:
+
+rpm -q : List the currently installed package version.
+user@host:~$ rpm -q dnf
+dnf-4.20.0-12.el10_0.noarch
+
+A partir de RHEL 10, el comando rpmsort se puede usar como el comando sort en una canalización, pero puede ordenar correctamente las cadenas de versión RPM en la salida del comando:
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+user@host:~$ rpm -q kernel | sort
+
+kernel-6.12.0-141.el10.x86_64 kernel-6.12.0-45.el10.x86_64
+
+user@host:~$ rpm -q kernel | rpmsort
+
+kernel-6.12.0-45.el10.x86_64 kernel-6.12.0-141.el10.x86_64
+
+rpm -qi : Get detailed package information.
+rpm -ql : List the files that the package installs.
+user@host:~$ rpm -ql dnf
+
+/usr/bin/dnf /usr/lib/systemd/system/dnf-makecache.service /usr/lib/systemd/system/dnf-makecache.timer /usr/share/bash-completion/completions/dnf ... salida omitida...
+
+rpm -qc : List only the configuration files that the package installs.
+user@host:~$ rpm -qc openssh-clients
+
+/etc/ssh/ssh_config /etc/ssh/ssh_config.d/50-redhat.conf
+
+rpm -qd : List only the documentation files that the package installs.
+user@host:~$ rpm -qd openssh-clients
+
+/usr/share/man/man1/scp.1.gz /usr/share/man/man1/sftp.1.gz /usr/share/man/man1/ssh-add.1.gz /usr/share/man/man1/ssh-agent.1.gz ... salida omitida...
+
+rpm -q --scripts : List the shell scripts that run before or after you install or remove the package.
+user@host:~$ rpm -q --scripts openssh-server
+preinstall scriptlet (using /bin/sh):
+# generated from openssh-server-systemd-sysusers.conf
+getent group 'sshd' >/dev/null || groupadd -f -g '74' -r 'sshd' || :
+if ! getent passwd 'sshd' >/dev/null; then
+    if ! getent passwd '74' >/dev/null; then
+        useradd -r -u '74' -g 'sshd' -d '/usr/share/empty.sshd' -s '/usr/sbin/nologin' -c 'Privilege-
+separated SSH' 'sshd' || :
+    else
+        useradd -r -g 'sshd' -d '/usr/share/empty.sshd' -s '/usr/sbin/nologin' -c 'Privilege-separated SSH' 
+
+'sshd' || :
+
+    fi
+
+fi ...salida omitida...
+
+rpm -q --changelog : List the change log information for the package.
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+user@host:~$ rpm -q --changelog audit
+
+* Miércoles 08 de enero de 2025 Attila Lakatos <alakatos@redhat.com> - 4.0.3-1 - Rebase a 4.0.3 - El complemento debe tener el sufijo .conf; de lo contrario, se omitirá
+
+  Resolves: RHEL-58838
+
+- corrección del inodo del punto de control de ausearch
+
+  Resolves: RHEL-62333
+
+- Audisp-filter: filtra eventos de auditoría y los reenvía a otros complementos
+
+  Resolves: RHEL-5199
+
+- Iniciar sesión en la consola cuando el sistema se detiene debido a que la auditoría no tiene suficiente almacenamiento
+
+  Resolves: RHEL-990
+
+...salida omitida... Consulta de un archivo RPM antes de la instalación Cuando descarga un paquete RPM de un tercero, una buena práctica es inspeccionar su contenido antes de instalarlo. Puede inspeccionar un archivo de paquete agregando la opción -p a cualquiera de los comandos de consulta rpm discutidos anteriormente. Esta opción configura la herramienta para obtener su información directamente del archivo, en lugar de la base de datos de paquetes instalados del sistema. Puede utilizar esta opción para ver los detalles del paquete, la lista de archivos, los scripts o la documentación antes de comprometerse a instalarlo. Consultar archivos de paquetes locales:
+
+rpm -qlp : List the files that the local package installs.
+user@host:~$ ls -l podman-5.4.0-1.el10.x86_64.rpm
+
+-rw-r--r--. 1 usuario usuario 16494682 9 de junio 23:43 podman-5.4.0-1.el10.x86_64.rpm
+
+user@host:~$ rpm -qlp podman-5.4.0-1.el10.x86_64.rpm
+
+/usr/bin/podman /usr/lib/.build-id /usr/lib/.build-id/0b ... salida omitida... Instalación de paquetes RPM El comando rpm puede instalar paquetes individuales, pero carece de resolución de dependencias. Si intenta instalar un paquete con dependencias no satisfechas, como bibliotecas faltantes, el comando falla. El paquete requiere que todas las dependencias estén preinstaladas. Para solucionar este problema, puede utilizar DNF (Dandified YUM). Como administrador de paquetes de alto nivel, DNF amplía la funcionalidad del Administrador de paquetes RPM conectándose a repositorios de software en línea para localizar e instalar automáticamente todas las dependencias necesarias. El siguiente ejemplo utiliza el comando rpm para instalar un paquete RPM desde un directorio local que no tiene dependencias no satisfechas.
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+root@host:~# rpm -ivh podman-5.4.0-1.el10.x86_64.rpm
+
+Verificando... ################################# [100%] Preparando... ##################################[100%] Actualizando/instalando...
+
+        podman-6:5.4.0-1     ################################# [100%]
+
+Advertencia Tenga cuidado al instalar paquetes de terceros. El paquete RPM puede incluir software inestable, desactualizado o malicioso, y puede incluir scripts arbitrarios que se ejecutan como usuario root como parte del proceso de instalación. Extracción de paquetes RPM Utilice el comando rpm2cpio para extraer archivos de un archivo de paquete RPM sin instalar el paquete. El comando rpm2cpio convierte un paquete RPM en un archivo cpio. Una vez que el paquete RPM se convierte en un archivo cpio, el comando cpio puede extraer una lista de archivos. Utilice el comando cpio con la opción -i para extraer archivos de la entrada estándar. Utilice la opción -d para crear subdirectorios según sea necesario, comenzando en el directorio de trabajo actual. Utilice la opción -v para obtener resultados detallados.
+
+user@host:~/tmp-extract$ rpm2cpio httpd-2.4.63-1.el10.x86_64.rpm | cpio -idv
+
+./etc/httpd/conf.modules.d/00-brotli.conf ./etc/httpd/conf.modules.d/00-systemd.conf ./usr/lib/.build-id ./usr/lib/systemd/system/htcacheclean.service ./usr/lib/systemd/system/httpd.service ./usr/lib/systemd/system/httpd.socket ...salida omitida... 121 bloques
+
+user@host:~/tmp-extract$ ls -l
+
+total 56
+
+drwxr-xr-x. 3 user user       19 Jun  9 23:51 etc
+
+-rw-r--r--. 1 raíz raíz 54557 9 de junio 23:50 httpd-2.4.63-1.el10.x86_64.rpm
+
+drwxr-xr-x. 5 user user       43 Jun  9 23:51 usr
+
+Extraiga archivos individuales especificando la ruta del archivo:
+
+user@host:~$ rpm2cpio httpd-2.4.63-1.el10.x86_64.rpm | \
+
+cpio -id "/etc/httpd/conf.modules.d/00-systemd.conf" 121 bloques
+
+user@host:~$ ls etc/httpd/conf.modules.d/
+
+00-brotli.conf 00-systemd.conf Utilice los comandos rpm2cpio y cpio -t para enumerar los archivos en un paquete RPM. Utilice la opción -v del comando cpio para obtener resultados detallados.
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+user@host:~$ rpm2cpio httpd-2.4.63-1.el10.x86_64.rpm | cpio -tv
+
+-rw-r--r-- 1 raíz raíz 47 27 de enero 00:00 ./etc/httpd/conf.modules.d/00-brotli.conf -rw-r--r-- 1 raíz raíz 88 27 de enero 00:00 ./etc/httpd/conf.modules.d/00-systemd.conf -rw-r--r-- 1 raíz raíz 435 27 de enero 00:00 ./usr/lib/systemd/system/htcacheclean.service -rw-r--r-- 1 raíz raíz 1340 27 de enero 00:00 ./usr/lib/systemd/system/httpd.service -rw-r--r-- 1 raíz raíz 244 27 de enero 00:00 ./usr/lib/systemd/system/httpd.socket ...salida omitida... 121 bloques Referencias
+
+rpm(8), rpm2cpio(8), rpmsort(8), cpio(1), and rpmkeys(8) man pages
+
+
+
+
+
+6.2. Ejercicio guiado Investigación de un paquete de software RPM 6.2. Ejercicio guiado Investigación de un paquete de software RPM Recopile información sobre un paquete de terceros, extraiga archivos del paquete para inspeccionarlos y luego instálelo en un servidor. Resultados Instalar un paquete que no sea de los repositorios de software. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-rpm
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En la máquina del servidor, inspeccione el paquete RPM en el directorio de inicio del usuario estudiante. Enumere los archivos del paquete y revise el script que ejecuta el sistema cuando instala o desinstala el paquete. 2. Enumere el contenido del directorio de inicio del usuario estudiante.
+
+[student@servera ~]$ ls
+
+rhcsa-script-1.0.0-1.noarch.rpm 2.1. Vea información para el paquete rhcsa-script-1.0.0-1.noarch.rpm. 2.2.
+
+
+
+
+

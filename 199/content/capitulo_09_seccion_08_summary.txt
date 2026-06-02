@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.8. Resumen 6.8. Resumen En esta lección, aprendió a administrar software utilizando la herramienta rpm para el manejo de paquetes y la herramienta dnf para la administración avanzada de software, que incluye la descarga, instalación y actualización de paquetes RPM. El software RHEL está empaquetado en formato de archivo RPM y distribuido en repositorios. Puede instalar, actualizar o eliminar software utilizando las herramientas rpm y dnf. El comando rpm le permite consultar la base de datos RPM local y administrar los paquetes descargados. La utilidad dnf es una poderosa herramienta para administrar paquetes de software para instalar, actualizar, eliminar y consultar paquetes de repositorios configurados. También aprendió que Red Hat Enterprise Linux proporciona los repositorios BaseOS y Application Stream (AppStream). BaseOS proporciona el contenido principal del sistema operativo y AppStream proporciona una variedad de dependencias y paquetes de aplicaciones.
+
+
+
+
+
+Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak Objetivo Instalar, actualizar y utilizar software de escritorio del catálogo de ecosistemas de Red Hat mediante Flatpak. Secciones Configuración de Flatpak para la instalación de aplicaciones (y ejercicio guiado) Administración de aplicaciones desde Flatpak (y ejercicio guiado) Instalación y actualización de aplicaciones mediante Flatpak (cuestionario)
+
+
+
+
+

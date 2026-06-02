@@ -1,0 +1,117 @@
+# Ejercicio Guiado: Ejercicio guiado Envío de señales a procesos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.6. Ejercicio guiado Envío de señales a procesos 9.6. Ejercicio Guiado Enviar Señales a Procesos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Resultados Iniciar y detener múltiples procesos de shell. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-kill
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, inicie tres procesos en segundo plano con el archivo de script de la instancia, pasando los argumentos de red, interfaz y conexión. El script de instancia agrega argumentos de línea de comandos al archivo ~/instance_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso.
+
+[student@servera ~]$ instance network &
+
+[1] 19851
+
+[student@servera ~]$ instance interface &
+
+[2] 19857
+
+[student@servera ~]$ instance connection &
+
+[3] 19864 2. En el shell del terminal derecho, verifique que los tres procesos estén agregando contenido al archivo /home/student/instance_outfile. Mantenga el comando tail ejecutándose para verificar los estados de salida en los pasos siguientes.
+
+[student@servera ~]$ tail -f ~/instance_outfile
+
+conexión de interfaz de red conexión de interfaz de red interfaz de red ...salida omitida... 3. En el shell del terminal izquierdo, enumere los trabajos existentes.
+
+[student@servera ~]$ jobs
+
+[1] Red de instancia en ejecución y [2] - Interfaz de instancia en ejecución y [3]+ Conexión de instancia en ejecución y 4. Utilice señales para suspender el proceso de red de instancia y verifique que el proceso esté detenido. 5.
+
+
+
+
+
+9.6. Ejercicio guiado Enviar señales a procesos En el shell del terminal izquierdo, detenga el proceso de red de la instancia. Verifique que el estado del proceso sea Detenido.
+
+[student@servera ~]$ kill -SIGSTOP %1
+
+[1]+ Red de instancia detenida
+
+[student@servera ~]$ jobs
+
+[1]+ Red de instancia detenida [2] Interfaz de instancia en ejecución y [3]- Conexión de instancia en ejecución y Nota Este ejercicio guiado utiliza números de trabajo (%1, %2, etc.) para enviar señales, lo cual es apropiado en este contexto porque los procesos se inician en la misma sesión de shell y las funciones de control de trabajos de Bash están disponibles. Si lo desea, también puede identificar el ID del proceso principal (PPID) mediante el comando ps aj y, en su lugar, enviar señales directamente al shell principal o a los ID de proceso individuales (PID). Este enfoque es especialmente útil cuando se crean secuencias de comandos o se trabaja en varias sesiones. 5.1. En el shell del terminal derecho, vea el resultado del comando tail. Verifique que la palabra red ya no esté agregada al archivo ~/instance_outfile. ...salida omitida... interfaz conexión interfaz conexión interfaz conexión interfaz 5.2. Finalice el proceso de interfaz de instancia y verifique que este proceso haya finalizado. 6. En el shell del terminal izquierdo, finalice el proceso de interfaz de instancia. Verifique que el proceso haya finalizado.
+
+[student@servera ~]$ kill -SIGTERM %2
+
+[2] Interfaz de instancia terminada
+
+[student@servera ~]$ jobs
+
+[1]+ Red de instancia detenida [3] - Conexión de instancia en ejecución y 6.1. En el shell del terminal derecho, vea el resultado del comando tail. Verifique que la palabra interfaz ya no esté agregada al archivo ~/instance_outfile. ...salida omitida... conexión conexión conexión conexión conexión conexión conexión conexión 6.2. Reanude el proceso de red de la instancia y verifique que el proceso se esté ejecutando. 7. En el shell del terminal izquierdo, reanude el proceso de red de la instancia. Verifique que el proceso esté en estado En ejecución.
+
+[student@servera ~]$ kill -SIGCONT %1
+[student@servera ~]$ jobs
+
+[1]+ Red de instancia en ejecución y [3]- Conexión de instancia en ejecución y 7.1. En el shell del terminal derecho, vea el resultado del comando tail. Verifique que la palabra red esté agregada al archivo ~/instance_outfile. 7.2.
+
+
+
+
+
+9.6. Ejercicio guiado Enviar señales a los procesos Finalizar En la máquina de la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. ...salida omitida... conexión de red conexión de red conexión de red conexión de red conexión de red En el shell del terminal izquierdo, finalice todos los procesos de instancia restantes. Verifique que no queden trabajos.
+
+[student@servera ~]$ pkill -SIGTERM instance
+
+[1]+ Red de instancia terminada [3]- Conexión de instancia terminada
+
+[student@servera ~]$ jobs
+
+8. Enumere los procesos en ejecución actuales en todos los shells de terminales abiertos. Termine el proceso de cola que se está ejecutando en la terminal derecha y verifique que el proceso ya no se esté ejecutando. 9. En el shell del terminal izquierdo, enumere todos los procesos en ejecución actuales. Refine la búsqueda para ver solo las líneas de cola. Tenga en cuenta el PID del comando tail para utilizarlo en un paso posterior.
+
+[student@servera ~]$ ps -ef | grep tail
+student   4581 31358  0 10:02 pts/0    00:00:00 tail -f /home/student/instance_outfile
+student   4869  2252  0 10:33 pts/1    00:00:00 grep --color=auto tail
+
+El resultado muestra dos procesos: uno para ejecutar el comando tail (PID 4581) y otro para ejecutar el comando grep (PID 4869). El proceso con PID 4869 aparece en la lista porque contiene la cola de cadena, que coincide con el filtrado del comando ps -ef (grep tail). El comando grep sale inmediatamente después de que finaliza la canalización, lo que deja el proceso final como el único proceso que coincide con los criterios. 9.1. Aún en el terminal izquierdo, finalice el proceso de cola. Utilice el PID que obtuvo en el paso anterior. El PID puede variar en su entorno. Verifique que el proceso ya no se esté ejecutando.
+
+[student@servera ~]$ kill -SIGTERM 4581
+[student@servera ~]$ ps -ef | grep tail
+student   4874  2252  0 10:36 pts/1    00:00:00 grep --color=auto tail
+
+Alternativamente, puede ejecutar el comando killall tail. Como se confirmó en un paso anterior, solo se está ejecutando un proceso de cola, lo que significa que la finalización de todos los procesos de cola no afecta a otros procesos ni a los usuarios no deseados. 9.2. En el shell del terminal derecho, verifique que el comando tail ya no se esté ejecutando. ...salida omitida... conexión de red conexión de red conexión de red Terminado [estudiante@servera ~]$ 9.3. Cierre la terminal adicional. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+10.
+
+
+
+
+
+9.6. Ejercicio guiado Envío de señales a procesos
+
+student@workstation:~$ lab finish processes-kill
+
+
+
+
+
+9.7. Actividad del Proceso de Monitoreo 9.7. Objetivos de la actividad de proceso de monitoreo Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Carga promedio La carga promedio es una medida que proporciona el kernel de Linux para representar la carga percibida del sistema durante un período de tiempo. Se puede utilizar como un indicador aproximado de cuántas solicitudes de recursos del sistema están pendientes para determinar si la carga del sistema aumenta o disminuye. El kernel recopila el número de carga actual cada cinco segundos en función de la cantidad de procesos en estados ejecutables e ininterrumpibles. Este número se informa como un promedio móvil exponencial durante los últimos 1, 5 y 15 minutos. Calcular el promedio de carga El promedio de carga es una medida aproximada de cuántos procesos están esperando actualmente a que se complete una solicitud antes de hacer cualquier otra cosa. La solicitud podría ser de tiempo de CPU para ejecutar el proceso. Alternativamente, la solicitud podría ser para que se complete una operación de E/S de disco crítica y el proceso no se puede ejecutar en la CPU hasta que se complete la solicitud, aunque la CPU esté inactiva. De cualquier manera, la carga del sistema se ve afectada y el sistema parece ejecutarse más lentamente porque los procesos están esperando para ejecutarse. El número de carga es un promedio acumulado del número de procesos que están listos para ejecutarse en una CPU (en el estado de proceso R) o que están esperando que se complete el disco o la E/S (en el estado de proceso D). Algunos sistemas UNIX consideran sólo el uso de la CPU o la longitud de la cola de ejecución para indicar la carga del sistema. Linux también incluye el uso de disco o red, porque el uso elevado de estos recursos puede afectar significativamente el rendimiento del sistema como carga de la CPU. Para promedios de carga elevados con actividad mínima de la CPU, examine la actividad del disco y de la red. Interpretación de los valores promedio de carga El comando uptime es una forma de mostrar el promedio de carga actual. Este comando imprime la hora actual, cuánto tiempo ha estado funcionando la máquina, cuántas sesiones de usuario se están ejecutando y el promedio de carga actual.
+
+user@host:~$ uptime
+
+15:29:03 hasta 14 min, 2 usuarios, carga promedio: 2,92, 4,48, 5,20 Los tres valores para el promedio de carga representan la carga durante los últimos 1, 5 y 15 minutos. Estos valores indican si la carga del sistema parece estar aumentando o disminuyendo. Si la principal contribución al promedio de carga proviene de procesos que están esperando la CPU, entonces puede calcular el valor de carga aproximado por CPU para determinar si el sistema está experimentando una espera significativa. Utilice el comando lscpu para determinar la cantidad de CPU en un sistema. En el siguiente ejemplo, el sistema es un sistema de un solo socket de doble núcleo con dos hiperprocesos por núcleo. Linux trata esta configuración de CPU como un sistema de cuatro CPU para fines de programación.
+
+
+
+
+

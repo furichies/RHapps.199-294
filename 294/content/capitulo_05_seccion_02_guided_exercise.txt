@@ -1,0 +1,461 @@
+# Ejercicio Guiado: Modificación y copia de archivos a hosts
+# Tipo: guided_exercise
+# Capítulo: Capítulo 5. Implementación de archivos en hosts gestionados
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Ejercicio Guiado
+Modificación y copia de archivos a hosts
+Usa los módulos estándar de Ansible para crear, instalar, editar y eliminar archivos en hosts
+gestionados y gestionar permisos, propiedad y contextos de SELinux de esos archivos.
+Resultados
+• Recuperar archivos de hosts gestionados por nombre de host y almacenarlos localmente.
+• Cree playbooks que usen módulos comunes de gestión de archivos de Ansible
+Content Collection ansible.builtin, como copy, fetch, file, lineinfile y
+blockinfile.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-manage
+Instrucciones
+ 1.
+El comando lab creó el directorio /home/student/file-manage con el archivo de
+configuración ansible.cfg y un archivo de inventario denominado inventory. Revise el
+contenido de ambos archivos antes de continuar.
+1.1.
+Cambie al directorio /home/student/file-manage.
+[student@workstation ~]$ cd ~/file-manage
+[student@workstation file-manage]$
+1.2.
+Revise el contenido del archivo ansible.cfg. Verifique que esté habilitado el
+aumento de privilegios y que esté usando sudo como método de aumento de
+privilegios para el usuario remoto devops.
+[defaults]
+inventory=inventory
+remote_user=devops
+[privilege_escalation]
+become=true
+become_method=sudo
+become_user=root
+become_ask_pass=false
+198
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+1.3.
+Revise el contenido del archivo inventory. Los servidores
+servera.lab.example.com y serverb.lab.example.com pertenecen al grupo
+servers.
+[servers]
+servera.lab.example.com
+serverb.lab.example.com
+ 2.
+Cree un playbook denominado file_management.yml.
+• Agregue una tarea con el fin de recuperar el archivo de registro /var/log/secure de
+cada uno de los hosts gestionados en el grupo servers y almacenar los archivos en el
+nodo de control.
+• Agregue una tarea para crear un directorio denominado files en el directorio de inicio
+devops de los hosts gestionados.
+• Asegúrese de que el directorio files tenga el atributo de tipo de contexto SELinux
+samba_share_t.
+• Agregue una tarea para anexar la línea This line was added by the lineinfile
+module al archivo files/users.txt en los hosts gestionados.
+2.1.
+Cree el playbook file_management.yml con un solo play denominado Preparing
+servers. Apunte al grupo de hosts servers y agregue una sección tasks al play.
+---
+- name: Preparing servers
+  hosts: servers
+  tasks:
+2.2.
+La primera tarea debe crear el directorio secure-backups con subdirectorios
+denominados según el nombre de host de cada host gestionado y almacenar los
+archivos de copia de seguridad (backup) en sus respectivos subdirectorios. Use el
+módulo ansible.builtin.fetch para copiar los archivos /var/log/secure en
+el sistema local. El valor del parámetro dest crea el directorio secure-backups si
+aún no existe.
+...output omitted...
+    - name: Fetch the /var/log/secure log file from managed hosts
+      ansible.builtin.fetch:
+        src: /var/log/secure
+        dest: secure-backups
+2.3.
+Agregue una tarea al play que usa el módulo ansible.builtin.file para crear el
+directorio /home/devops/files en todos los hosts gestionados. Asegúrese de que
+el directorio sea propiedad del usuario y grupo devops, que tenga permisos de 0775
+y que tenga un tipo de SELinux de samba_share_t.
+...output omitted...
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+RH294-RHEL9.0-es-3-20240620
+199
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: samba_share_t
+2.4.
+Agregue una tarea al play que use el módulo ansible.builtin.lineinfile para
+anexar la línea dada al archivo /home/devops/files/users.txt. Asegúrese de
+que el archivo sea propiedad del usuario y grupo devops, que tenga permisos de
+0664.
+...output omitted...
+    - name: Add a single line of text to a file
+      ansible.builtin.lineinfile:
+        path: /home/devops/files/users.txt
+        line: This line was added by the lineinfile module
+        state: present
+        create: true
+        owner: devops
+        group: devops
+        mode: 0664
+2.5.
+Al completarse, el playbook debe incluir el siguiente contenido. Revise el playbook
+para comprobar la precisión.
+---
+- name: Preparing servers
+  hosts: servers
+  tasks:
+    - name: Fetch the /var/log/secure log file from managed hosts
+      ansible.builtin.fetch:
+        src: /var/log/secure
+        dest: secure-backups
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: samba_share_t
+    - name: Add a single line of text to a file
+      ansible.builtin.lineinfile:
+        path: /home/devops/files/users.txt
+        line: This line was added by the lineinfile module
+        state: present
+        create: true
+200
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+        owner: devops
+        group: devops
+        mode: 0664
+ 3.
+Verifique la sintaxis del playbook y, luego, ejecútelo y verifique que se ejecute
+correctamente.
+3.1.
+Use el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml --syntax-check
+playbook: /home/student/file-manage/file_management.yml
+3.2.
+Use el comando ansible-navigator run para ejecutar el playbook:
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml
+PLAY [Preparing servers] **************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Fetch the /var/log/secure log file from managed hosts] **************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+TASK [Ensure the /home/devops/files directory exists] *********************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+TASK [Add a single line of text to a file] ********************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+3.3.
+Confirme que el playbook recuperó los archivos /var/log/secure de los hosts
+gestionados.
+[student@workstation file-manage]$ tree -F secure-backups
+secure-backups
+├── servera.lab.example.com/
+│   └── var/
+│       └── log/
+│           └── secure
+└── serverb.lab.example.com/
+RH294-RHEL9.0-es-3-20240620
+201
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+    └── var/
+        └── log/
+            └── secure
+3.4.
+Use un comando ls -Z con el usuario devops en la máquina servera para verificar
+los atributos SELinux del directorio files en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls -Z'
+unconfined_u:object_r:samba_share_t:s0 files
+3.5.
+Use un comando cat con el usuario devops en la máquina servera para verificar el
+contenido del archivo files/users.txt en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'cat files/users.txt'
+This line was added by the lineinfile module
+ 4.
+Después de ejecutar el playbook, decide realizar algunos cambios adicionales.
+• Cambie el contexto de tipo SELinux para el directorio files a fin de que use el contexto
+establecido por la política de SELinux predeterminada.
+• Agregue una tarea al play Preparing servers que copie el archivo system del
+directorio del proyecto al directorio /home/devops/files en los hosts gestionados.
+• Asegúrese de que el modo de archivo esté establecido en 0664 y que el archivo sea
+propiedad del usuario y grupo devops.
+• Agregue otra tarea para adjuntar el siguiente bloque de texto al archivo /home/devops/
+files/users.txt en todos los hosts gestionados:
+This block of text consists of two lines.
+They have been added by the blockinfile module.
+4.1.
+Edite el playbook file_management.yml. Actualice el parámetro setype en la
+segunda tarea para que el directorio /home/devops/files use el contexto de tipo
+SELinux predeterminado.
+...output omitted...
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: _default
+...output omitted...
+4.2.
+Agregue una tarea que usa el módulo ansible.builtin.copy para copiar el
+archivo local system al directorio /home/devops/files en todos los hosts
+gestionados.
+202
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+...output omitted...
+    - name: Copy a file to managed hosts and set ownership and permissions
+      ansible.builtin.copy:
+        src: system
+        dest: /home/devops/files/
+        owner: devops
+        group: devops
+        mode: 0664
+4.3.
+Agregue una tarea que usa el módulo ansible.builtin.blockinfile para
+anexar el bloque de texto dado al archivo /home/devops/files/users.txt en
+todos los hosts gestionados.
+...output omitted...
+    - name: Add a block of text to an existing file
+      ansible.builtin.blockinfile:
+        path: /home/devops/files/users.txt
+        block: |
+          This block of text consists of two lines.
+          They have been added by the blockinfile module.
+        state: present
+4.4.
+Al completarse, el playbook modificado debe constar del siguiente contenido:
+---
+- name: Preparing servers
+  hosts: servers
+  tasks:
+    - name: Fetch the /var/log/secure log file from managed hosts
+      ansible.builtin.fetch:
+        src: /var/log/secure
+        dest: secure-backups
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: _default
+    - name: Add a single line of text to a file
+      ansible.builtin.lineinfile:
+        path: /home/devops/files/users.txt
+        line: This line was added by the lineinfile module
+        state: present
+        create: true
+        owner: devops
+        group: devops
+RH294-RHEL9.0-es-3-20240620
+203
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+        mode: 0664
+    - name: Copy a file to managed hosts and set ownership and permissions
+      ansible.builtin.copy:
+        src: system
+        dest: /home/devops/files/
+        owner: devops
+        group: devops
+        mode: 0664
+    - name: Add a block of text to an existing file
+      ansible.builtin.blockinfile:
+        path: /home/devops/files/users.txt
+        block: |
+          This block of text consists of two lines.
+          They have been added by the blockinfile module.
+        state: present
+ 5.
+Verifique la sintaxis del playbook y, luego, ejecútelo y verifique que se ejecute
+correctamente.
+5.1.
+Use el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook file_management.yml.
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml --syntax-check
+playbook: /home/student/file-manage/file_management.yml
+5.2.
+Use el comando ansible-navigator run para ejecutar el playbook:
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml
+PLAY [Preparing servers] **************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Fetch the /var/log/secure log file from managed hosts] **************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Ensure the /home/devops/files directory exists] *********************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Add a single line of text to a file] ********************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Copy a file to managed hosts and set ownership and permissions] *****
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+204
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+TASK [Add a block of text to an existing file] ****************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.3.
+Use un comando ls -Z con el usuario devops en la máquina servera para verificar
+los atributos SELinux del directorio files en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls -Z'
+unconfined_u:object_r:user_home_t:s0 files
+5.4.
+Use un comando ls con el usuario devops en la máquina servera para verificar la
+existencia del archivo files/system en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls files/system'
+files/system
+5.5.
+Use un comando cat con el usuario devops en la máquina servera para verificar el
+contenido del archivo files/users.txt en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'cat files/users.txt'
+This line was added by the lineinfile module
+# BEGIN ANSIBLE MANAGED BLOCK
+This block of text consists of two lines.
+They have been added by the blockinfile module.
+# END ANSIBLE MANAGED BLOCK
+ 6.
+Cree un playbook denominado remove_dir.yml en el directorio de trabajo actual.
+Configure un play en el playbook para usar el módulo ansible.builtin.file a fin de
+eliminar el archivo /home/devops/files de todos los hosts gestionados.
+6.1.
+Cree el playbook remove_dir.yml con el siguiente contenido:
+---
+- name: Use the file module to remove a directory
+  hosts: servers
+  tasks:
+    - name: Remove a directory from managed hosts
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: absent
+6.2.
+Ejecute el playbook:
+RH294-RHEL9.0-es-3-20240620
+205
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout remove_dir.yml
+PLAY [Use the file module to remove a directory] **************************
+TASK [Gathering Facts] ****************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Remove a directory from managed hosts] ******************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+6.3.
+Use un comando ls -l con el usuario devops en la máquina servera para
+confirmar que el directorio files ya no exista en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls -l /home/devops/files'
+ls: cannot access '/home/devops/files': No such file or directory
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-manage
+206
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Implementación de archivos
+personalizados con plantillas Jinja2
+Objetivos
+• Implementar archivos en hosts gestionados que se personalizan mediante el uso de plantillas
+Jinja2.
+Plantillas para archivos
+Ansible Content Collection ansible.builtin ofrece una serie de módulos que se pueden usar
+para modificar archivos existentes. Estos incluyen lineinfile y blockinfile, entre otros. Sin
+embargo, no siempre son fáciles de usar de manera efectiva y correcta.
+Una forma mucho más poderosa de administrar archivos es usar una plantilla. Con este método,
+puede escribir un archivo de configuración de plantilla que se personaliza automáticamente para
+el host gestionado cuando se implementa el archivo, usando datos y variables de Ansible. Esto
+puede ser más fácil de controlar y menos propenso a errores.
+Introducción a Jinja2
+Ansible usa el sistema de plantillas Jinja2 para los archivos de plantilla. Ansible también usa la
+sintaxis de Jinja2 para hacer referencia a las variables de playbooks, por lo que ya sabe un poco
+cómo usarlo.
+Uso de delimitadores
+Las variables y expresiones lógicas se colocan entre etiquetas, o delimitadores. Cuando se evalúa
+una plantilla Jinja2, la expresión {{ EXPR }} se reemplaza con los resultados de esa expresión
+o variable. Las plantillas de Jinja2 también pueden usar {% EXPR %} para estructuras de control
+especiales o lógica que recorre el código de Jinja2 o para realizar pruebas. Use la sintaxis {#
+COMMENT #} para encerrar los comentarios que no deberían aparecer en el archivo final.
+En el siguiente ejemplo de un archivo de plantillas Jinja2, la primera línea incluye un comentario
+que no se incluirá en el archivo final. Las referencias a variables en la segunda línea se reemplazan
+con los valores de datos del sistema a los que hacen referencia.
+{# /etc/hosts line #}
+{{ ansible_facts['default_ipv4']['address'] }}    {{ ansible_facts['hostname'] }}
+Desarrollo de una plantilla Jinja2
+Una plantilla Jinja2 está compuesta por múltiples elementos: datos, variables y expresiones. Estas
+variables y expresiones se reemplazan con sus valores cuando se entrega la plantilla Jinja2. Las
+variables usadas en la plantilla se pueden especificar en la sección vars del playbook. Es posible
+usar la información de los hosts gestionados como variables en una plantilla.
+Los archivos de plantilla generalmente se guardan en el directorio templates del proyecto para
+su playbook y, generalmente, se les asigna una extensión de archivo .j2 para dejar en claro que
+son archivos de plantilla Jinja2.
+RH294-RHEL9.0-es-3-20240620
+207
+
+

@@ -1,0 +1,165 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar archivos con herramientas de línea de comandos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos 2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Cree, copie, mueva y elimine archivos y directorios. Resultados Crear, organizar, copiar y eliminar archivos y directorios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start files-manage
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante. En el directorio de inicio del usuario estudiante, cree tres
+
+subdirectories: Music, Pictures, and Videos.
+
+1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. En el directorio de inicio del usuario estudiante, use el comando mkdir para crear tres subdirectorios: Música, Imágenes y Videos.
+
+[student@servera ~]$ mkdir Music Pictures Videos
+
+1.2. Utilice el comando táctil para crear conjuntos de archivos de práctica vacíos para usar durante esta actividad. En cada conjunto, reemplace el marcador de posición X en el nombre del archivo con los números 1 y 2. 2. Cree dos archivos con nombres en el siguiente formato: songX.mp3. Cree dos archivos con nombres en el siguiente formato: snapX.jpg. Cree dos archivos con nombres en el siguiente formato: filmX.avi.
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos
+
+[student@servera ~]$ touch song1.mp3 song2.mp3
+[student@servera ~]$ touch snap1.jpg snap2.jpg
+[student@servera ~]$ touch film1.avi film2.avi
+[student@servera ~]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 6 Oct  3 20:46 Music
+drwxr-xr-x. 2 student student 6 Oct  3 20:46 Pictures
+drwxr-xr-x. 2 student student 6 Oct  3 20:46 Videos
+
+-rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film1.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film2.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap1.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap2.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song1.mp3 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song2.mp3 Mueva los archivos de canciones (extensión .mp3) al directorio de Música, los archivos de instantáneas (extensión .jpg) al directorio de Imágenes y los archivos de películas (extensión .avi) al directorio de Videos.
+
+[student@servera ~]$ mv song1.mp3 song2.mp3 Music
+[student@servera ~]$ mv snap1.jpg snap2.jpg Pictures
+[student@servera ~]$ mv film1.avi film2.avi Videos
+[student@servera ~]$ ls -l Music Pictures Videos
+
+Música: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song1.mp3 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:46 song2.mp3 Imágenes: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap1.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 snap2.jpg Vídeos: total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film1.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:47 film2.avi 3. Cree tres subdirectorios para organizar sus archivos y asígneles el nombre amigos, familia y trabajo. Utilice un solo comando para crear los tres subdirectorios al mismo tiempo.
+
+[student@servera ~]$ mkdir friends family work
+[student@servera ~]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Music
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Pictures
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Videos
+drwxr-xr-x. 2 student student  6 Oct  3 20:51 family
+drwxr-xr-x. 2 student student  6 Oct  3 20:51 friends
+drwxr-xr-x. 2 student student  6 Oct  3 20:51 work
+
+4. Copie los archivos que contengan el número 1 en sus nombres al directorio de amigos y los archivos que contengan el número 2 al
+
+family directory. Keep in mind that you are making copies; therefore, the original files must remain in their original
+
+ubicaciones después de completar el paso. 5.
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Importante Cuando copia archivos de varias ubicaciones a una sola, Red Hat recomienda que cambie al directorio de destino antes de copiar los archivos. Utilice la sintaxis de ruta más simple, ya sea absoluta o relativa, para llegar al origen de cada tarea de administración de archivos. Copie los archivos que contengan el número 1 en sus nombres al directorio de amigos.
+
+[student@servera ~]$ cd friends
+[student@servera friends]$ cp ~/Music/song1.mp3 ~/Pictures/snap1.jpg ~/Videos/film1.avi .
+[student@servera friends]$ ls -l
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 film1.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 snap1.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 canción1.mp3 5.1. Copie los archivos que contengan el número 2 en sus nombres al directorio familiar.
+
+[student@servera friends]$ cd ../family
+[student@servera family]$ cp ~/Music/song2.mp3 ~/Pictures/snap2.jpg ~/Videos/film2.avi .
+[student@servera family]$ ls -l
+
+total 0 -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 film2.avi -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 snap2.jpg -rw-r--r--. 1 estudiante estudiante 0 3 de octubre 20:53 song2.mp3 5.2. Copie los directorios de familiares y amigos y su contenido al directorio de trabajo.
+
+[student@servera family]$ cd ../work
+[student@servera work]$ cp -r ~/family ~/friends .
+[student@servera work]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 57 Oct  3 20:54 family
+drwxr-xr-x. 2 student student 57 Oct  3 20:54 friends
+
+6. Las tareas de su proyecto ya están completas y es hora de limpiar los directorios. 7. Utilice el comando de árbol para verificar el contenido de los directorios antes de eliminarlos. 7.1.
+
+
+
+
+
+2.2. Ejercicio guiado Administrar archivos con herramientas de línea de comandos Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish files-manage
+[student@servera work]$ cd ..
+[student@servera ~]$ tree
+
+. ├── Música │   ├── canción1.mp3 │   └── canción2.mp3 ├── Imágenes │   ├── snap1.jpg │   └── snap2.jpg ├── Vídeos │   ├── film1.avi │   └── film2.avi ├── familia │   ├── film2.avi │   ├── snap2.jpg │   └── canción2.mp3 ├── amigos │   ├── film1.avi │   ├── snap1.jpg │   └── song1.mp3 └── trabajo
+
+    ├── family
+    │   ├── film2.avi
+    │   ├── snap2.jpg
+    │   └── song2.mp3
+    └── friends
+        ├── film1.avi
+        ├── snap1.jpg
+        └── song1.mp3
+
+9 directorios, 18 archivos Utilice el comando rm -rf para eliminar de forma recursiva los directorios de familia, amigos y trabajo y sus contenidos.
+
+[student@servera ~]$ rm -rf family/ friends/ work/
+[student@servera ~]$ ls -l
+
+total 0
+
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Music
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Pictures
+drwxr-xr-x. 2 student student 40 Oct  3 20:50 Videos
+
+7.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+8.
+
+
+
+
+
+2.3. Crear enlaces entre archivos 2.3. Crear vínculos entre archivos Objetivos Crear y comparar el uso de vínculos físicos y vínculos simbólicos para hacer referencia al mismo archivo. Administrar vínculos entre archivos Puede crear varios nombres de archivos que apunten al mismo archivo. Estos nombres de archivos se denominan enlaces. Puede crear dos tipos de vínculos: un vínculo físico o un vínculo simbólico (a veces llamado vínculo blando). Cada tipo de enlace es útil para diferentes casos de uso. Enlaces físicos a archivos Cada archivo comienza con un único enlace físico, desde su nombre inicial hasta los datos del sistema de archivos. Cuando crea un vínculo físico a un archivo, crea otro nombre que apunta a esos mismos datos. El nuevo enlace físico actúa exactamente como el nombre del archivo original. Una vez creado el vínculo, no podrá notar la diferencia entre el nuevo vínculo físico y el nombre original del archivo. Puede determinar si un archivo tiene varios enlaces físicos utilizando el comando ls -l. Un elemento en el resultado de este comando es el recuento de enlaces de cada archivo, que es el número de enlaces físicos que tiene el archivo. En el siguiente ejemplo, el recuento de enlaces del archivo newfile.txt es 1. Tiene exactamente una ruta absoluta, que es la ubicación /home/user/newfile.txt.
+
+user@host:~$ pwd
+
+/casa/usuario
+
+user@host:~$ ls -l newfile.txt
+
+-rw-r--r--. 1 usuario usuario 0 30 de mayo 19:19 newfile.txt Puede usar el comando ln para crear un enlace físico (otro nombre de archivo) que apunte a un archivo existente. el comando
+
+needs at least two arguments: a path to the existing file, and the path to the hard link that you want to create.
+
+El siguiente ejemplo crea un vínculo físico llamado newfile-hlink2.txt en el directorio /tmp para el archivo newfile.txt existente.
+
+user@host:~$ ln newfile.txt /tmp/newfile-hlink2.txt
+user@host:~$ ls -l newfile.txt /tmp/newfile-hlink2.txt
+
+-rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 /tmp/newfile-hlink2.txt -rw-rw-r--. 2 usuario usuario 12 30 de mayo 19:19 newfile.txt Para determinar si dos archivos están vinculados de forma física, utilice la opción -i del comando ls para enumerar el número de inodo de cada archivo. Si los archivos están en el mismo sistema de archivos y sus números de inodo son los mismos, entonces los archivos son enlaces físicos que apuntan al mismo contenido del archivo de datos. En el siguiente ejemplo, puede verificar que los archivos newfile.txt y /tmp/newfile-hlink2.txt comparten el número de inodo 8924107 en la primera columna del comando ls -il.
+
+
+
+
+

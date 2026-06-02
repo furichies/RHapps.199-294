@@ -1,0 +1,467 @@
+# Ejercicio Guiado: Administración del proceso de arranque y procesos programados
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración del proceso de arranque y
+procesos programados
+Gestionar el proceso de inicio, programar trabajos recurrentes y reiniciar los hosts
+gestionados.
+Resultados
+• Programar un trabajo Cron.
+• Eliminar un solo trabajo específico de Cron de un archivo crontab.
+• Programar una tarea de at.
+• Establecer el destino de arranque predeterminado en los hosts gestionados.
+• Reiniciar los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos, incluido el directorio del proyecto /home/student/system-process.
+[student@workstation ~]$ lab start system-process
+Instrucciones
+ 1.
+Cambie al directorio /home/student/system-process.
+[student@workstation ~]$ cd ~/system-process
+[student@workstation system-process]$
+ 2.
+Cree el playbook create_crontab_file.yml en el directorio de trabajo.
+Configure el playbook para usar el módulo ansible.builtin.cron para crear un
+archivo crontab denominado /etc/cron.d/add-date-time que programa un trabajo
+cron recurrente. El trabajo debe ejecutarse con el usuario devops cada dos minutos
+comenzando a las 09:00 y terminando a las 16:59 de lunes a viernes. El trabajo debe
+adjuntar la fecha y hora del archivo /home/devops/my_datetime_cron_job.
+2.1.
+Cree el playbook create_crontab_file.yml y agregue las líneas necesarias
+para iniciar el play. Debe apuntar a los hosts gestionados del grupo webservers y
+habilitar el aumento de privilegios.
+446
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+---
+- name: Recurring cron job
+  hosts: webservers
+  become: true
+2.2.
+Defina una tarea que use el módulo ansible.builtin.cron para
+programar un trabajo cron recurrente, el comando date >> /home/devops/
+my_date_time_cron_job.
+nota
+El módulo ansible.builtin.cron proporciona una opción name para describir
+de forma única la entrada del archivo crontab y garantizar los resultados
+esperados.
+El valor que usa para la opción name se agrega al archivo crontab como
+comentario. Por ejemplo, se requiere la opción name si elimina una entrada de
+crontab usando state: absent.
+Además, la opción name evita que se cree siempre una nueva entrada de crontab
+cuando se configura el estado predeterminado, state: present.
+  tasks:
+    - name: Crontab file exists
+      ansible.builtin.cron:
+        name: Add date and time to a file
+        job: date >> /home/devops/my_date_time_cron_job
+2.3.
+Configure el trabajo para que se ejecute cada dos minutos comenzando a las 09:00 y
+finalizando a las 16:59 de lunes a viernes.
+        minute: "*/2"
+        hour: 9-16
+        weekday: 1-5
+2.4.
+Use el parámetro cron_file para usar el archivo crontab denominado /etc/
+cron.d/add-date-time en lugar del crontab de un usuario individual en /var/
+spool/cron/.
+Una ruta relativa colocará el archivo en el directorio /etc/cron.d.
+Si se usa el parámetro cron_file, también debe especificar el parámetro user para
+el archivo del sistema crontab. Use el usuario devops para este trabajo.
+        user: devops
+        cron_file: add-date-time
+        state: present
+2.5.
+Cuando se complete, el playbook debe verse de la siguiente forma. Revise el
+playbook para comprobar la precisión.
+RH294-RHEL9.0-es-3-20240620
+447
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+---
+- name: Recurring cron job
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Crontab file exists
+      ansible.builtin.cron:
+        name: Add date and time to a file
+        job: date >> /home/devops/my_date_time_cron_job
+        minute: "*/2"
+        hour: 9-16
+        weekday: 1-5
+        user: devops
+        cron_file: add-date-time
+        state: present
+2.6.
+Ejecute el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout create_crontab_file.yml --syntax-check
+playbook: /home/student/system-process/create_crontab_file.yml
+2.7.
+Ejecute el playbook create_crontab_file.yml.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout create_crontab_file.yml
+PLAY [Recurring cron job] *************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Crontab file exists] ************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+2.8.
+Ejecute el siguiente comando para verificar que el archivo cron /etc/cron.d/add-
+date-time existe y su contenido es correcto.
+[student@workstation system-process]$ ssh devops@servera \
+> "cat /etc/cron.d/add-date-time"
+#Ansible: Add date and time to a file
+*/2 9-16 * * 1-5 devops date >> /home/devops/my_date_time_cron_job
+448
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+ 3.
+Cree el playbook remove_cron_job.yml en el directorio de trabajo. Configure el
+playbook para usar el módulo ansible.builtin.cron para eliminar el trabajo cron Add
+date and time to a file del archivo /etc/cron.d/add-date-time crontab.
+3.1.
+Cree el playbook remove_cron_job.yml y agregue las siguientes líneas:
+---
+- name: Remove scheduled cron job
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Cron job removed
+      ansible.builtin.cron:
+        name: Add date and time to a file
+        user: devops
+        cron_file: add-date-time
+        state: absent
+3.2.
+Ejecute el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout remove_cron_job.yml --syntax-check
+playbook: /home/student/system-process/remove_cron_job.yml
+3.3.
+Ejecute el playbook remove_cron_job.yml.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout remove_cron_job.yml
+PLAY [Remove scheduled cron job] ******************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Cron job removed] ***************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+3.4.
+Ejecute el siguiente comando para verificar que se haya eliminado el archivo /etc/
+cron.d/add-date-time.
+[student@workstation system-process]$ ssh devops@servera \
+> "ls -l /etc/cron.d"
+total 4
+-rw-r--r--. 1 root root 128 Aug  9  2021 0hourly
+RH294-RHEL9.0-es-3-20240620
+449
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+ 4.
+Cree el playbook schedule_at_task.yml en el directorio de trabajo. Configure el
+playbook para usar el módulo ansible.posix.at para programar una tarea que se
+ejecute un minuto en el futuro.
+La tarea debe ejecutar el comando date y redirigir la salida al archivo /home/devops/
+my_at_date_time.
+Use la opción unique: true para asegurarse de que, si el comando ya existe en la cola
+at, no se agregue una nueva tarea.
+4.1.
+Cree el playbook schedule_at_task.yml y agregue las siguientes líneas:
+---
+- name: Schedule at task
+  hosts: webservers
+  become: true
+  become_user: devops
+  tasks:
+    - name: Create date and time file
+      ansible.posix.at:
+        command: date > ~/my_at_date_time
+        count: 1
+        units: minutes
+        unique: true
+        state: present
+4.2.
+Ejecute el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout schedule_at_task.yml --syntax-check
+playbook: /home/student/system-process/schedule_at_task.yml
+4.3.
+Ejecute el playbook schedule_at_task.yml.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout schedule_at_task.yml
+PLAY [Schedule at task] ***************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Create date and time file] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+4.4.
+Después de esperar un minuto hasta que se complete el comando at, ejecute
+los siguientes comandos para verificar que el archivo /home/devops/
+my_at_date_time existe y tiene el contenido correcto.
+450
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation system-process]$ ssh devops@servera \
+> "ls -l my_at_date_time"
+-rw-rw-r--. 1 devops devops 32 Aug 15 00:00 my_at_date_time
+[student@workstation system-process]$ ssh devops@servera \
+> "cat my_at_date_time"
+Mon Aug 15 12:00:00 AM EDT 2022
+ 5.
+Cree el playbook set_default_boot_target_graphical.yml en el directorio
+de trabajo. Escriba un play en el playbook para establecer el objetivo predeterminado
+systemd en graphical.target.
+5.1.
+Cree el playbook set_default_boot_target_graphical.yml y agregue las
+siguientes líneas:
+---
+- name: Change default boot target
+  hosts: webservers
+  become: true
+  gather_facts: false
+  vars:
+    default_target: "graphical.target"
+  tasks:
+    - name: Get current boot target
+      ansible.builtin.command:
+        cmd: systemctl get-default
+      changed_when: false
+      register: target
+    - name: Set default boot target
+      ansible.builtin.command:
+        cmd: systemctl set-default {{ default_target }}
+      when: default_target not in target['stdout']
+5.2.
+Ejecute el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout set_default_boot_target_graphical.yml --syntax-check
+playbook: /home/student/system-process/set_default_boot_target_graphical.yml
+5.3.
+Antes de ejecutar el playbook, ejecute el siguiente comando para verificar que el
+objetivo de arranque predeterminado actual sea multi-user.target.
+[student@workstation system-process]$ ssh devops@servera \
+> "systemctl get-default"
+multi-user.target
+5.4.
+Ejecute el playbook set_default_boot_target_graphical.yml.
+RH294-RHEL9.0-es-3-20240620
+451
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout set_default_boot_target_graphical.yml
+PLAY [Change default boot target] *****************************************
+TASK [Get current boot target] ********************************************
+ok: [servera.lab.example.com]
+TASK [Set default boot target] ********************************************
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.5.
+Ejecute el siguiente comando para verificar que el destino de arranque
+predeterminado ahora sea graphical.target.
+[student@workstation system-process]$ ssh devops@servera \
+> "systemctl get-default"
+graphical.target
+ 6.
+Cree el playbook reboot_hosts.yml en el directorio de trabajo para reiniciar los hosts
+gestionados.
+6.1.
+Cree el playbook reboot_hosts.yml y agregue las siguientes líneas:
+---
+- name: Reboot hosts
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Hosts are rebooted
+      ansible.builtin.reboot:
+6.2.
+Ejecute el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout reboot_hosts.yml --syntax-check
+playbook: /home/student/system-process/reboot_hosts.yml
+6.3.
+Antes de ejecutar el playbook, ejecute el siguiente comando para determinar el sello
+de hora del último reinicio del sistema:
+[student@workstation system-process]$ ssh devops@servera \
+> "who -b"
+         system boot  2022-08-15 00:07
+6.4.
+Ejecute el playbook reboot_hosts.yml.
+452
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout reboot_hosts.yml
+PLAY [Reboot hosts] *******************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+TASK [Hosts are rebooted] *************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+6.5.
+Ejecute el siguiente comando para determinar el sello de hora del último arranque del
+sistema. El sello de hora que se muestra después de que se ejecuta el playbook debe
+ser posterior.
+[student@workstation system-process]$ ssh devops@servera \
+> "who -b"
+         system boot  2022-08-15 00:44
+6.6.
+Ejecute el siguiente comando para determinar que el objetivo de arranque
+graphical.target sigue siendo el predeterminado después del reinicio.
+[student@workstation system-process]$ ssh devops@servera \
+> "systemctl get-default"
+graphical.target
+ 7.
+Para mantener la coherencia a lo largo de los ejercicios restantes, revierta el destino de
+arranque predeterminado a la configuración anterior, multi-user.target.
+Copie su playbook set_default_boot_target_graphical.yml en
+set_default_boot_target_multi-user.yml en el directorio de proyectos de
+Ansible.
+Edite la variable default_target para configurar el archivo multi-user.target como
+predeterminado.
+7.1.
+Copie su playbook set_default_boot_target_graphical.yml a
+set_default_boot_target_multi-user.yml.
+[student@workstation system-process]$ cp set_default_boot_target_graphical.yml \
+> set_default_boot_target_multi-user.yml
+7.2.
+Edite su play en el playbook set_default_boot_target_multi-user.yml para
+cambiar la variable default_target a multi-user.target.
+---
+- name: Change default boot target
+  hosts: webservers
+RH294-RHEL9.0-es-3-20240620
+453
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+  become: true
+  gather_facts: false
+  vars:
+    default_target: "multi-user.target"
+  tasks:
+    - name: Get current boot target
+      ansible.builtin.command:
+        cmd: systemctl get-default
+      changed_when: false
+      register: target
+    - name: Set default boot target
+      ansible.builtin.command:
+        cmd: systemctl set-default {{ default_target }}
+      when: default_target not in target['stdout']
+7.3.
+Ejecute el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout set_default_boot_target_multi-user.yml --syntax-check
+playbook: /home/student/system-process/set_default_boot_target_multi-user.yml
+7.4.
+Ejecute el playbook set_default_boot_target_multi-user.yml.
+[student@workstation system-process]$ ansible-navigator run \
+> -m stdout set_default_boot_target_multi-user.yml
+PLAY [Change default boot target] *****************************************
+TASK [Get current boot target] ********************************************
+ok: [servera.lab.example.com]
+TASK [Set default boot target] ***********************************
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.5.
+Ejecute el siguiente comando para verificar que el destino de arranque
+predeterminado ahora sea multi-user.target.
+[student@workstation system-process]$ ssh devops@servera \
+> "systemctl get-default"
+multi-user.target
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+454
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation ~]$ lab finish system-process
+RH294-RHEL9.0-es-3-20240620
+455
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Administración del almacenamiento
+Objetivos
+• Particionar los dispositivos de almacenamiento, configurar LVM, formatear particiones o
+volúmenes lógicos, montar sistemas de archivos y agregar espacios de intercambio (swap).
+Montaje de sistemas de archivos existentes
+Use el módulo ansible.posix.mount para montar un sistema de archivos existente. Los
+parámetros más comunes para el módulo ansible.posix.mount son el parámetro path,
+que especifica la ruta para montar el sistema de archivos, el parámetro src, que especifica
+el dispositivo (esto podría ser un nombre de dispositivo, UUID o volumen NFS), el parámetro
+fstype, que especifica el tipo de sistema de archivos, y el parámetro state, que acepta los
+valores absent, mounted, present, unmounted o remounted.
+La siguiente tarea de ejemplo monta el recurso compartido de NFS disponible en
+172.25.250.100:/share en el directorio /nfsshare de los hosts gestionados.
+- name: Mount NFS share
+  ansible.posix.mount:
+    path: /nfsshare
+    src: 172.25.250.100:/share
+    fstype: nfs
+    opts: defaults
+    dump: '0'
+    passno: '0'
+    state: mounted
+Configuración de almacenamiento con el rol de
+sistema de almacenamiento
+Red Hat Ansible Automation Platform proporciona el rol del sistema
+redhat.rhel_system_roles.storage para configurar dispositivos de almacenamiento
+local en sus hosts gestionados. Puede gestionar sistemas de archivos en dispositivos de bloques
+sin particiones y formatear y crear volúmenes lógicos en volúmenes físicos LVM basados en
+dispositivos de bloques sin particiones.
+Importante
+El rol redhat.rhel_system_roles.storage soporta formalmente la gestión de
+sistemas de archivos y las entradas de montaje para dos casos de uso:
+• Dispositivos sin particiones (sistemas de archivos de dispositivos completos)
+• LVM en volúmenes físicos de dispositivos completos sin particiones
+Si tiene otros casos de uso, es posible que deba usar otros módulos y roles para
+implementarlos.
+456
+RH294-RHEL9.0-es-3-20240620
+
+

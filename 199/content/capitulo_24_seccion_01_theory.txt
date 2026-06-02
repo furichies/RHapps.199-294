@@ -1,0 +1,35 @@
+# 21.1. Revisión integral
+# Tipo: theory
+# Capítulo: Capítulo 21. Revisión integral
+
+21.1. Revisión integral 21.1. Objetivos de la revisión integral Después de completar esta sección, debería haber revisado y actualizado los conocimientos y habilidades que aprendió en RHCSA Rapid Track. Revisión de RHCSA Rapid Track Antes de comenzar la revisión integral de este curso, debe sentirse cómodo con los temas tratados en cada capítulo. No dude en pedirle al instructor orientación o aclaraciones adicionales sobre estos temas. Capítulo 1, Registro de sistemas para soporte de Red Hat Registre un sistema utilizando su cuenta de Red Hat para obtener los servicios de soporte y el software que proporciona Red Hat. Capítulo 2, Gestión de archivos desde la línea de comandos Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Capítulo 3, Edición de archivos de texto Cree, vea y edite archivos de texto desde la línea de comandos. Capítulo 4, Gestión de usuarios y grupos locales Obtenga acceso de superusuario a un sistema; crear, administrar y eliminar usuarios y grupos locales; y administrar políticas de contraseñas locales. Capítulo 5, Control del acceso a archivos Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Capítulo 6, Instalación y actualización de software con RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Capítulo 7, Instalación y actualización de aplicaciones mediante Flatpak Instale, actualice y utilice software de escritorio del catálogo de ecosistemas de Red Hat mediante Flatpak. Capítulo 8, Acceso a medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Capítulo 9, Supervisión y gestión de procesos de Linux Investigue, controle y finalice procesos que se ejecutan en un sistema Red Hat Enterprise Linux.
+
+
+
+
+
+21.1. Revisión integral Capítulo 10, Control de servicios y demonios Controle y monitoree los servicios del sistema y demonios que inicia systemd. Capítulo 11, Gestión de la configuración de red Configure interfaces y ajustes de red en servidores Red Hat Enterprise Linux. Capítulo 12, Programación de tareas del sistema Programe programas del sistema que deben ejecutarse de forma recurrente para admitir demonios o funciones del sistema operativo. Capítulo 13, Análisis y almacenamiento de registros Ubique e interprete registros del sistema para solucionar problemas y garantice marcas de tiempo precisas para los eventos de registro. Capítulo 14, Gestión de la seguridad con SELinux Proteja los sistemas y administre la seguridad mediante SELinux. Capítulo 15, Gestión del almacenamiento básico Administre dispositivos de almacenamiento creando particiones, sistemas de archivos y espacios de intercambio desde la línea de comandos. Capítulo 16, Gestión del almacenamiento con Logical Volume Manager Utilice Logical Volume Manager (LVM) para gestionar volúmenes lógicos que pueden contener sistemas de archivos y espacios de intercambio. Capítulo 17, Control y solución de problemas del proceso de inicio Administre cómo se inicia el sistema para controlar qué servicios se inician y para solucionar y reparar problemas de tiempo de inicio. Capítulo 18, Recuperación del acceso de superusuario Obtenga acceso administrativo a un sistema cuando la contraseña de superusuario sea desconocida o esté bloqueada. Capítulo 19, Gestión de la seguridad de la red Controle las conexiones de red a los servicios mediante el firewall del sistema y los servicios de red que pueden vincularse a puertos particulares mediante SELinux. Capítulo 20, Acceso al almacenamiento conectado a la red Acceda al almacenamiento conectado a la red que proporciona el protocolo Network File System (NFS), ya sea manualmente o mediante el montador automático.
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener servidores 21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener servidores Solucione y repare problemas de arranque, actualice el destino de arranque predeterminado del sistema y programe tareas para que se ejecuten de forma recurrente como usuario sin privilegios. Resultados Diagnosticar problemas relacionados con el arranque. Cambie el destino de arranque predeterminado. Programe trabajos recurrentes para que se ejecuten como un usuario sin privilegios. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review1
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Sus deberes incluyen mantener la estabilidad del servidor, solucionar problemas e implementar automatización para respaldar las operaciones de los clientes. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1. Este script crea un problema con el proceso de arranque en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+Un cliente abrió un caso informando que la máquina del servidor no funciona después de reiniciarla durante las tareas de mantenimiento. La descripción del caso menciona que el servidor está bloqueado al arrancar con errores relacionados con
+
+mounting a partition. You have been asked to investigate and to fix the issue.
+
+Acceda a la consola de la máquina serverb e inicie en modo de emergencia para mantenimiento. Busque cualquier mensaje de error en la consola relacionado con un problema al montar una partición. Utilice sombrero rojo como
+
+
+
+
+

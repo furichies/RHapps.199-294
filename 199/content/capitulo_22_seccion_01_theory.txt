@@ -1,0 +1,161 @@
+# 19.1. Administrar firewalls de servidores
+# Tipo: theory
+# Capítulo: Capítulo 19. Gestión de la seguridad de la red
+
+19.1. Gestión de firewalls de servidores 19.1. Gestión de firewalls de servidores Objetivos Aceptar o rechazar conexiones a servicios de red local mediante el servicio firewalld. Conceptos de arquitectura del firewall de Linux El kernel de Linux proporciona el marco netfilter para operaciones de tráfico de red, como filtrado de paquetes, traducción de direcciones de red y traducción de puertos. El marco de clasificación de paquetes nftables se basa en el marco netfilter para aplicar reglas de firewall al tráfico de la red. En Red Hat Enterprise Linux 10, el marco nftables es el núcleo del firewall del sistema. Nota El marco nftables es el sucesor de las utilidades iptables e ip6tables, entre otras. Ofrece muchas mejoras en comodidad, funciones y rendimiento con respecto a las herramientas de filtrado de paquetes anteriores. Puede convertir los archivos de configuración de iptables anteriores a sus equivalentes de nftables utilizando las utilidades iptables-translate e ip6tables-translate. El servicio de firewall El servicio firewalld es un administrador de firewall dinámico y es la interfaz recomendada para el marco de nftables. Red Hat Enterprise Linux 10 incluye el paquete firewalld. El servicio firewalld simplifica la gestión del firewall clasificando el tráfico de red en zonas. La zona asignada a un paquete de red depende de criterios como la dirección IP de origen del paquete o la interfaz de red entrante. Cada zona tiene su propia lista de puertos y servicios abiertos o cerrados. Nota Para las máquinas que cambian de red con frecuencia, el servicio NetworkManager puede configurar automáticamente la zona del firewall para una conexión. Este servicio es útil al cambiar entre redes inalámbricas domésticas, laborales o públicas. Un usuario podría querer que se pueda acceder al servicio sshd de su sistema cuando esté conectado a sus redes domésticas o corporativas, pero no cuando esté conectado a una red inalámbrica pública en la cafetería local. El servicio firewalld inspecciona la dirección de origen de cada paquete entrante al sistema. Si la dirección de origen está asignada a una zona específica, se aplican las reglas para esa zona. Si la dirección de origen no está asignada a una zona, entonces el servicio firewalld asocia el paquete con la zona para la interfaz de red entrante y se aplican las reglas para esa zona. Si la interfaz de red no está asociada con una zona, entonces el servicio firewalld envía el paquete a la zona predeterminada. La zona predeterminada no es una zona separada; usted configura una de las zonas existentes para que se asigne como zona predeterminada. Inicialmente, el servicio firewalld designa la zona pública como predeterminada y asigna la interfaz de bucle invertido a la zona confiable. La mayoría de las zonas permiten el tráfico a través del firewall si el destino local del tráfico coincide con una lista de puertos y protocolos, como 631/udp, o una configuración de servicio predefinida, como el servicio ssh. Normalmente, si el tráfico no coincide con un
+
+
+
+
+
+19.1. La administración de firewalls de servidor permite el puerto y protocolo o servicio, luego se rechaza. Una excepción es la zona de confianza, que permite todo el tráfico de forma predeterminada. Zonas predefinidas El servicio firewalld utiliza zonas predefinidas, que puede personalizar. De forma predeterminada, todas las zonas permiten cualquier tráfico entrante que forme parte de una sesión existente que inició el sistema y también permiten todo el tráfico saliente. La siguiente tabla muestra la configuración inicial de la zona: Tabla 23. Configuración predeterminada de las zonas de firewall confiables Permitir todo el tráfico entrante. home Rechaza el tráfico entrante a menos que esté relacionado con el tráfico saliente o coincida con los servicios predefinidos ssh, mdns, ipp-client, samba-client o dhcpv6-client. interno Rechaza el tráfico entrante a menos que esté relacionado con el tráfico saliente o coincida con los servicios predefinidos ssh, mdns, ipp-client, samba-client o dhcpv6-client (igual que la zona de inicio para empezar). work Rechaza el tráfico entrante a menos que esté relacionado con el tráfico saliente o coincida con los servicios predefinidos ssh, ipp-client o dhcpv6-client. public Rechaza el tráfico entrante a menos que esté relacionado con el tráfico saliente o coincida con los servicios predefinidos del cliente ssh o dhcpv6. La zona predeterminada para las interfaces de red recién agregadas. externo Rechaza el tráfico entrante a menos que esté relacionado con el tráfico saliente o coincida con el servicio predefinido de ssh. El tráfico IPv4 saliente que se reenvía a través de esta zona se enmascara para que parezca que se originó en la dirección IPv4 de la interfaz de red saliente. dmz Rechaza el tráfico entrante a menos que esté relacionado con el tráfico saliente o coincida con el servicio predefinido de ssh. bloquear Rechazar todo el tráfico entrante a menos que esté relacionado con el tráfico saliente. drop Elimina todo el tráfico entrante a menos que esté relacionado con el tráfico saliente (ni siquiera responda con errores ICMP). Para obtener una lista de zonas predefinidas disponibles y su uso previsto, consulte la página del manual firewalld.zones(5). Nombre de zona Configuración predeterminada
+
+
+
+
+
+19.1. Gestión de servicios predefinidos de firewalls de servidor El servicio firewalld incluye configuraciones predefinidas para servicios de uso común, para simplificar la configuración de reglas de firewall. Por ejemplo, en lugar de investigar los puertos relevantes para un servidor NFS, utilice la configuración nfs predefinida para crear reglas para los puertos y protocolos correctos. La siguiente tabla enumera algunas configuraciones de servicios predefinidos que podrían estar activas en su zona firewalld predeterminada: Tabla 24. Servicios de firewall predefinidos seleccionados ssh Servidor SSH local. Tráfico a 22/tcp. dhcpv6-client Cliente DHCPv6 local. Tráfico a 546/udp en la red fe80::/64 IPv6. ipp-client Impresión del protocolo de impresión de Internet local (IPP). Tráfico al 631/udp. samba-client Cliente local para compartir archivos e impresiones de Windows. Tráfico a 137/udp y 138/udp. mdns Resolución de nombres de enlaces locales DNS de multidifusión (mDNS). Tráfico a 5353/udp a las direcciones de multidifusión 224.0.0.251 (IPv4) o ff02::fb (IPv6). cockpit Interfaz basada en web de Red Hat Enterprise Linux para administrar y monitorear sus sistemas locales y remotos. Tráfico a 9090/tcp. El paquete firewalld incluye muchas configuraciones de servicios predefinidas. Puede enumerar los servicios con el
+
+firewall-cmd command --get-services option.
+root@host:~# firewall-cmd --get-services
+
+0-AD RH-Satellite-6 RH-Satellite-6-capsule afp alvr amanda-client amanda-k5-client amqp amqps anno-1602 anno-1800 apcupsd aseqnet auditoría ausweisapp2 bacula bacula-client bareos-director bareos-filedaemon bareos- almacenamiento bb bgp bitcoin bitcoin-rpc bitcoin-testnet bitcoin-testnet-rpc bittorrent-lsd ceph ceph-exporter ceph-mon cfengine checkmk-agent civilización-iv civilización-v cabina recopilada... salida omitida... Si las configuraciones de servicio predefinidas no son apropiadas para su escenario, puede especificar manualmente los puertos y protocolos requeridos. Puede utilizar la interfaz gráfica de la consola web para revisar servicios predefinidos y definir manualmente más puertos y protocolos. Configurar el demonio Firewalld La siguiente lista muestra dos formas para que los administradores del sistema interactúen con el servicio firewalld: La interfaz gráfica de la consola web La herramienta de línea de comandos firewall-cmd Nombre del servicio Configuración
+
+
+
+
+
+19.1. Administrar firewalls de servidores Configurar servicios de firewall con la consola web Para administrar servicios de firewall con la consola web, debe iniciar sesión y escalar privilegios haciendo clic en los botones Acceso limitado o Activar acceso administrativo. Luego, ingrese su contraseña cuando se le solicite. El modo administrativo eleva los privilegios según la configuración de sudo de su usuario. Recuerde volver al modo de acceso limitado después de realizar la tarea del sistema que requiere privilegios administrativos. Haga clic en la opción Redes en el menú de navegación de la izquierda para mostrar la sección Firewall en la página principal de redes. Haga clic en el botón Editar reglas y zonas para ir a la página Firewall. Figura 28. La página de redes de la consola web. La página Firewall muestra las zonas activas y sus servicios permitidos. Haga clic en el icono de flecha ( > ) a la izquierda del nombre de un servicio para ver sus detalles. Para agregar un servicio a una zona, haga clic en el botón Agregar servicios en la esquina superior derecha de la zona correspondiente. Figura 29. La página del firewall de la consola web. La página Agregar servicios muestra los servicios predefinidos disponibles.
+
+
+
+
+
+19.1. Administración de firewalls de servidores Figura 30. Menú para agregar servicios de la consola web. Para seleccionar un servicio, desplácese por la lista o ingrese una selección en el cuadro de texto Filtrar servicios. En el siguiente ejemplo, la cadena http filtra las opciones para mostrar servicios relacionados con la web. Seleccione la casilla de verificación a la izquierda del servicio para permitirlo a través del firewall. Haga clic en el botón Agregar servicios para completar el proceso. Figura 31. Opciones del menú para agregar servicios de la consola web. La interfaz regresa a la página Firewall, donde puede revisar la lista actualizada de servicios permitidos.
+
+
+
+
+
+19.1. Administrar firewalls de servidores Figura 32. Descripción general del firewall de la consola web Configurar el firewall desde la línea de comandos El comando firewall-cmd interactúa con el demonio firewalld. Se instala como parte del paquete firewalld y está disponible para administradores que prefieren trabajar en la línea de comandos, o para trabajar en sistemas sin un entorno gráfico, o para programar una configuración de firewall. La mayoría de los comandos funcionan en la configuración del tiempo de ejecución, a menos que se especifique la opción --permanent. Si se especifica la opción --permanent, entonces debe activar la configuración ejecutando también la opción --reload del comando firewall-cmd, que aplica la configuración permanente actual como la nueva configuración de tiempo de ejecución. Muchos de los comandos enumerados toman
+
+the --zone=ZONE option to find which zone they affect. Where a netmask is required, use Classless Inter-Domain
+
+Notación de enrutamiento (CIDR), como 192.168.1/24. La siguiente tabla enumera algunos comandos firewall-cmd: --get-default-zone Consulta la zona predeterminada actual. --set-default-zone=ZONA Establece la zona predeterminada, que cambia tanto el tiempo de ejecución como la configuración permanente. --get-zones Lista todas las zonas disponibles. --get-active-zones Enumera todas las zonas en uso (con una interfaz o fuente vinculada a ellas), junto con su interfaz e información de fuente. --add-source=CIDR [--zone=ZONE] Enruta todo el tráfico desde la dirección IP o desde la red
+
+with their netmask to the specified zone. If no --zone=
+
+Si se proporciona la opción, se utiliza la zona predeterminada.
+
+firewall-cmd commands
+
+Explicación
+
+
+
+
+
+19.1. Administrar firewalls de servidor --remove-source=CIDR [--zone=ZONE] Elimina la regla que enruta todo el tráfico desde la zona que
+
+comes from the IP address or network. If no --zone=
+
+Si se proporciona la opción, se utiliza la zona predeterminada. --add-interface=INTERFACE [--zone=ZONA] Enruta todo el tráfico desde INTERFACE a la zona especificada. Si
+
+no --zone= option is provided, then the default zone is
+
+usado. --change-interface=INTERFACE [--zone=ZONE] Asocia la interfaz con ZONE en lugar de su actual
+
+zone. If no --zone= option is provided, then the default
+
+Se utiliza la zona. --list-all [--zone=ZONE] Enumera todas las interfaces, fuentes, servicios y puertos configurados
+
+for ZONE. If no --zone= option is provided, then the
+
+Se utiliza la zona predeterminada. --list-all-zones Recupera toda la información de todas las zonas (interfaces, fuentes, puertos y servicios). --add-service=SERVICIO [--zone=ZONA] Permitir tráfico al SERVICIO. Si no se proporciona la opción --zone=, entonces se utiliza la zona predeterminada. --add-port=PUERTO/PROTOCOLO [--zone=ZONA] Permitir el tráfico a los puertos PUERTO/PROTOCOLO. Si no -
+
+zone= option is provided, then the default zone is used.
+
+--remove-service=SERVICIO [--zone=ZONA] Elimina SERVICIO de la lista permitida para la zona. Si no se proporciona la opción --zone=, entonces se utiliza la zona predeterminada. --remove-port=PUERTO/PROTOCOLO [--zone=ZONA] Elimina los puertos PUERTO/PROTOCOLO de la lista permitida
+
+for the zone. If no --zone= option is provided, then the
+
+Se utiliza la zona predeterminada. --reload Elimina la configuración del tiempo de ejecución y aplica la configuración permanente. --runtime-to-permanent Crea reglas permanentes a partir de la configuración del tiempo de ejecución. El siguiente ejemplo establece la zona predeterminada en dmz:
+
+firewall-cmd commands
+
+Explicación
+
+
+
+
+
+19.1. Administrar firewalls de servidores
+
+root@host:~# firewall-cmd --set-default-zone=dmz
+
+Asigne todo el tráfico de la red 192.168.0.0/24 a la zona interna:
+
+root@host:~# firewall-cmd --permanent --zone=internal --add-source=192.168.0.0/24
+
+Abra los puertos de red para el servicio mysql en la zona interna:
+
+root@host:~# firewall-cmd --permanent --zone=internal --add-service=mysql
+
+Actualice los cambios en el demonio firewalld:
+
+root@host:~# firewall-cmd --reload
+
+Como otro ejemplo, para agregar todo el tráfico entrante desde la dirección IPv4 única 172.25.25.11 a la zona pública,
+
+use the following commands:
+root@host:~# firewall-cmd --permanent --zone=public --add-source=172.25.25.11/32
+
+Actualice los cambios en el demonio firewalld:
+
+root@host:~# firewall-cmd --reload
+
+Nota Para situaciones en las que la sintaxis básica no es suficiente, puede agregar reglas enriquecidas para escribir reglas complejas. Si incluso la sintaxis de reglas ricas no es suficiente, entonces puede usar reglas de configuración directa (que usan una combinación de sintaxis nft sin formato y reglas de firewalld). Estas configuraciones avanzadas están más allá del alcance de esta lección. Referencias
+
+firewall-cmd(1), firewalld(1), firewalld.zone(5), firewalld.zones(5), and nft(8) man pages
+
+Para obtener más información, consulte la guía Configuración de firewalls y filtros de paquetes en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/configurando_firewalls_and_packet_filters/index
+
+
+
+
+
+19.2. Ejercicio guiado Administrar un firewall de servidor 19.2. Ejercicio guiado Administrar el firewall de un servidor Acepte o rechace conexiones a servicios de red local mediante el servicio firewalld. Resultados Configurar reglas de firewall para controlar el acceso a los servicios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start netsecurity-firewalls
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale los paquetes httpd y mod_ssl. Estos paquetes proporcionan el servidor web Apache y las extensiones necesarias para que el servidor web proporcione contenido a través de SSL.
+
+[root@servera ~]# dnf install httpd mod_ssl
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! 2. Cree el archivo /var/www/html/index.html. Agregue una línea de texto: Soy servera.
+
+[root@servera ~]# echo 'I am servera.' > /var/www/html/index.html
+
+3. Inicie y habilite el servicio httpd.
+
+[root@servera ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. 4. Abra otra ventana de terminal para iniciar sesión como usuario estudiante en la máquina de la estación de trabajo. Intente acceder al servidor web que se ejecuta en la máquina del servidor utilizando el puerto de texto sin cifrar 80/TCP y el puerto encapsulado SSL 443/TCP. El acceso al servidor web falla desde ambos puertos. 5. Utilice el comando curl, que no puede acceder al servidor web desde el puerto 80/TCP. 5.1.
+
+
+
+
+

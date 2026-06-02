@@ -1,0 +1,10 @@
+# amonestaciones
+# Tipo: theory
+# Capítulo: Convenciones de documentos
+
+Convenciones de documentos Convenciones de documentos Esta sección describe varias convenciones y prácticas que se utilizan en todos los cursos de capacitación de Red Hat. Advertencias Los cursos de Red Hat Training utilizan las siguientes advertencias: Referencias Las referencias describen dónde encontrar documentación externa relevante para un tema. Nota Las notas son consejos, atajos o enfoques alternativos para la tarea en cuestión. Ignorar una nota no debería tener consecuencias negativas, pero podrías perderte algo que te hace la vida más fácil. Importante Las secciones importantes brindan detalles de información que fácilmente se pasa por alto: cambios de configuración que se aplican solo a la sesión actual o servicios que deben reiniciarse antes de que se aplique una actualización. Ignorar estas advertencias no causará pérdida de datos, pero podría causar irritación y frustración. Advertencia No ignore las advertencias. Ignorar estas advertencias probablemente provocará la pérdida de datos. Uso de inteligencia artificial Esta publicación contiene contenido o medios generados o asistidos por herramientas de inteligencia artificial. Todos los entregables de Red Hat Training tienen autoría principalmente humana y todo el contenido fue revisado por un experto en dominio humano. Lenguaje inclusivo Red Hat Training está revisando actualmente su uso del lenguaje en diversas áreas para ayudar a eliminar cualquier término potencialmente ofensivo. Este proceso es continuo y requiere alineación con los productos y servicios que se tratan en los cursos de capacitación de Red Hat. Red Hat agradece su paciencia durante este proceso.
+
+
+
+
+

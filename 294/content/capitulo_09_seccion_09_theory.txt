@@ -1,0 +1,443 @@
+# Administración de la configuración de red
+# Tipo: theory
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Administración de la configuración de red
+Objetivos
+• Configurar los ajustes de red y la resolución de nombres en los hosts gestionados y recopilar
+datos de Ansible relacionados con la red.
+Configuración de redes con el rol de sistema de red
+El rol del sistema redhat.rhel_system_roles.network proporciona una manera de
+automatizar la configuración de las interfaces de red y las configuraciones relacionadas con la red
+en los hosts gestionados de Red Hat Enterprise Linux.
+Este rol soporta la configuración de interfaces Ethernet, interfaces de puente, interfaces
+enlazadas, interfaces VLAN, interfaces MACVLAN e interfaces Infiniband e interfaces
+inalámbricas.
+El rol se configura mediante el uso de dos variables: network_provider y
+network_connections.
+---
+network_provider: nm
+network_connections:
+  - name: ens4
+    type: ethernet
+    ip:
+      address:
+        - 172.25.250.30/24
+La variable network_provider configura el proveedor de back end, ya sea nm
+(NetworkManager) o initscripts. En Red Hat Enterprise Linux 7 y versiones posteriores, use
+nm como proveedor de red predeterminado.
+Si aún tiene sistemas Red Hat Enterprise Linux 6 en Extended Lifecycle Support (ELS), debe usar
+el proveedor initscripts para esos hosts gestionados. Ese proveedor requiere que el servicio
+heredado network esté disponible en los hosts gestionados.
+La variable network_connections configura las diferentes conexiones. Toma como valor
+una lista de diccionarios, cada uno de los cuales representa configuraciones para una conexión
+específica. Use el nombre de la interfaz como nombre de la conexión.
+En la siguiente tabla, se enumeran las opciones para la variable network_connections.
+470
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Opciones seleccionadas para la variable network_connections
+Nombre de la opción
+Descripción
+name
+Para NetworkManager, identifica el perfil de conexión (la
+opción connection.id ). Para initscripts, identifica el
+nombre del archivo de configuración (/etc/sysconfig/
+network-scripts/ifcfg-name).
+state
+El estado de tiempo de ejecución de un perfil de conexión.
+Puede ser up, si el perfil de conexión está activo, o down, si no
+lo está.
+persistent_state
+Identifica si un perfil de conexión es persistente. Puede ser
+present si el perfil de conexión es persistente, o absent si
+no lo es.
+type
+Identifica el tipo de conexión. Los valores válidos son
+ethernet, bridge, bond, team, vlan, macvlan,
+infiniband y wireless.
+autoconnect
+Determina si la conexión se inicia automáticamente.
+Establecer en yes de forma predeterminada.
+mac
+Restringe la conexión que se usará en dispositivos con esta
+dirección MAC específica.
+interface_name
+Restringe el perfil de conexión que usará una interfaz
+específica.
+zone
+Configura la zona firewalld para la interfaz.
+ip
+Determina la configuración de IP para la conexión. Soporta las
+opciones address para especificar una lista de direcciones
+IPv4 o IPv6 estáticas en la interfaz, gateway4 o gateway6
+para especificar el enrutador predeterminado IPv4 o IPv6 y
+dns para configurar una lista de servidores DNS.
+La variable ip a su vez toma un diccionario de variables para su configuración. No es necesario
+usar todos estos elementos. Una conexión puede tener una configuración address con una sola
+dirección IPv4, o puede omitir la configuración de la dirección y tener dhcp4: yes configurado
+para habilitar el direccionamiento DHCPv4.
+Opciones seleccionadas para la variable ip
+Nombre de la opción
+Descripción
+address
+Una lista de direcciones IPv4 o IPv6 estáticas y prefijos de
+máscara de red para la conexión.
+gateway4
+Establece una dirección estática del enrutador IPv4
+predeterminado.
+gateway6
+Establece una dirección estática del enrutador IPv6
+predeterminado.
+RH294-RHEL9.0-es-3-20240620
+471
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Nombre de la opción
+Descripción
+dns
+Una lista de servidores de nombres DNS para la conexión.
+dhcp4
+Use DHCPv4 para configurar la interfaz.
+auto6
+Use la configuración automática de IPv6 para configurar la
+interfaz.
+Esta es una variable mínima de ejemplo network_connections para configurar y activar
+inmediatamente una dirección IPv4 estática para la interfaz enp1s0:
+network_connections:
+- name: enp1s0
+  type: ethernet
+  ip:
+    address:
+      - 192.0.2.25/24
+    state: up
+Si estaba configurando dinámicamente la interfaz usando DHCP y SLAAC, podría usar la siguiente
+configuración en su lugar:
+network_connections:
+- name: enp1s0
+  type: ethernet
+  ip:
+    dhcp4: true
+    auto6: true
+  state: up
+En el siguiente ejemplo se desactiva temporalmente una interfaz de red existente:
+network_connections:
+- name: enp1s0
+  type: ethernet
+  state: down
+Para eliminar la configuración de enp1s0 por completo, debe escribir la variable de la siguiente
+manera:
+network_connections:
+- name: enp1s0
+  type: ethernet
+  state: down
+  persistent_state: absent
+En el siguiente ejemplo, se usan algunas de estas opciones para configurar la interfaz eth0 con
+una dirección IPv4 estática, establecer un servidor de nombres DNS estático y colocar la interfaz
+en la zona external para firewalld:
+472
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+network_connections:
+- name: eth0 
+    persistent_state: present  
+    type: ethernet  
+    autoconnect: yes  
+    mac: 00:00:5e:00:53:5d  
+    ip:
+      address:
+        - 172.25.250.40/24  
+      dns:
+        - 8.8.8.8 
+    zone: external  
+Use eth0 como nombre de conexión.
+Haga que la conexión sea persistente. Este es el valor predeterminado.
+Establezca el tipo de partición en ethernet.
+Inicie automáticamente la conexión durante el arranque. Este es el valor predeterminado.
+Restrinja la configuración de la conexión para que la use solo un dispositivo con esa dirección
+MAC.
+Configure la dirección IP 172.25.250.40/24 para la conexión.
+Configure 8.8.8.8 como el servidor de nombres DNS para la conexión.
+Configure la zona external como la zona firewalld de la conexión.
+En el siguiente play de ejemplo, se establece network_connections como una variable de play
+y luego invoca al rol redhat.rhel_system_roles.network:
+- name: NIC Configuration
+  hosts: webservers
+  vars:
+    network_connections:
+      - name: ens4
+        type: ethernet
+        ip:
+          address:
+            - 172.25.250.30/24
+  roles:
+    - redhat.rhel_system_roles.network
+Puede especificar variables para el rol de red con la cláusula vars, como en el ejemplo anterior,
+como variables de rol. Alternativamente, puede crear un archivo YAML con esas variables en los
+directorios group_vars o host_vars, según su caso de uso.
+Puede usar este rol para configurar conexiones inalámbricas 802.11, VLAN, puentes y otras
+configuraciones de red más complejas. Consulte la documentación del rol para obtener más
+detalles y ejemplos.
+RH294-RHEL9.0-es-3-20240620
+473
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Configuración de redes con módulos
+Además del rol del sistema redhat.rhel_system_roles.network, Ansible incluye módulos
+que soportan la configuración del nombre de host y el firewall en un sistema.
+El módulo ansible.builtin.hostname establece el nombre de host para un host gestionado
+sin modificar el archivo /etc/hosts. Este módulo usa el parámetro name para especificar el
+nuevo nombre de host, como en la siguiente tarea:
+- name: Change hostname
+  ansible.builtin.hostname:
+    name: managedhost1
+El módulo ansible.posix.firewalld soporta la gestión de firewalld en hosts
+gestionados.
+Este módulo soporta la configuración de las reglas firewalld para servicios y puertos. También
+soporta la gestión de zona, incluida la asociación de interfaces y reglas de red a una zona
+específica.
+La siguiente tarea muestra cómo crear una regla de firewalld para el servicio http en la zona
+predeterminada (public). La siguiente tarea configura la regla como permanente y se asegura de
+que esté activa:
+- name: Enabling http rule
+  ansible.posix.firewalld:
+    service: http
+    permanent: true
+    state: enabled
+Esta siguiente tarea configura el eth0 en la zona external firewalld:
+- name: Moving eth0 to external
+  ansible.posix.firewalld:
+    zone: external
+    interface: eth0
+    permanent: true
+    state: enabled
+La siguiente tabla enumera algunos de los parámetros para el módulo
+ansible.posix.firewalld.
+Nombre del parámetro
+Descripción
+interface
+El nombre de la interfaz que se gestionará con
+firewalld.
+port
+Puerto o rango de puertos. Usa el formato
+puerto/protocolo o puerto-puerto/protocolo.
+rich_rule
+Regla enriquecida para firewalld.
+service
+El nombre del servicio que se gestionará con
+firewalld.
+474
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Nombre del parámetro
+Descripción
+source
+Red de origen que se gestionará con
+firewalld.
+zone
+Zona de firewalld.
+state
+Habilita o deshabilita una configuración de
+firewalld.
+type
+Tipo de dispositivo o conexión de red.
+permanent
+El cambio persiste en los reinicios.
+immediate
+Si los cambios se establecen en permanent,
+aplíquelos inmediatamente.
+Datos de Ansible para la configuración de red
+Ansible recopila una serie de datos relacionados con la configuración de red de cada host
+gestionado. Por ejemplo, una lista de las interfaces de red en un host gestionado está disponible
+en el dato ansible_facts['interfaces'].
+El siguiente playbook recopila y muestra las interfaces disponibles para un host:
+---
+- name: Obtain interface facts
+  hosts: host.lab.example.com
+  tasks:
+    - name: Display interface facts
+      ansible.builtin.debug:
+        var: ansible_facts['interfaces']
+El playbook anterior produce la siguiente lista de interfaces de red:
+PLAY [Obtain interface facts] **************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [host.lab.example.com]
+TASK [Display interface facts] *************************************************
+ok: [host.lab.example.com] => {
+    "ansible_facts['interfaces']": [
+        "eth2",
+        "eth1",
+        "eth0",
+        "lo"
+    ]
+}
+RH294-RHEL9.0-es-3-20240620
+475
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+PLAY RECAP *********************************************************************
+host.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+La salida del ejemplo anterior muestra que hay cuatro interfaces de red disponibles en el host
+gestionado host.lab.example.com: lo, eth2, eth1 y eth0.
+Puede recuperar información adicional sobre la configuración de una interfaz de red
+específica a partir del dato ansible_facts['NIC_name']. Por ejemplo, el siguiente
+play muestra la configuración de la interfaz de red eth0 imprimiendo el valor del dato
+ansible_facts['eth0'].
+- name: Obtain eth0 facts
+  hosts: host.lab.example.com
+  tasks:
+    - name: Display eth0 facts
+      ansible.builtin.debug:
+        var: ansible_facts['eth0']
+El playbook anterior produce la siguiente salida:
+PLAY [Obtain eth0 facts] *******************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [host.lab.example.com]
+TASK [Display eth0 facts] ******************************************************
+ok: [host.lab.example.com] => {
+    "ansible_facts['eth0']": {
+        "active": true,
+        "device": "eth0",
+        "features": {
+...output omitted...
+        },
+        "hw_timestamp_filters": [],
+        "ipv4": {
+            "address": "172.25.250.10",
+            "broadcast": "172.25.250.255",
+            "netmask": "255.255.255.0",
+            "network": "172.25.250.0",
+            "prefix": "24"
+        },
+        "ipv6": [
+            {
+                "address": "fe80::82a0:2335:d88a:d08f",
+                "prefix": "64",
+                "scope": "link"
+            }
+        ],
+        "macaddress": "52:54:00:00:fa:0a",
+        "module": "virtio_net",
+        "mtu": 1500,
+476
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+        "pciid": "virtio0",
+        "promisc": false,
+        "speed": -1,
+        "timestamping": [],
+        "type": "ether"
+    }
+}
+PLAY RECAP *********************************************************************
+host.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+En la salida anterior se muestran detalles de configuración adicionales, como la configuración de
+dirección IP para IPv4 e IPv6, el dispositivo asociado y el tipo de interfaz.
+Importante
+Los diferentes hosts gestionados pueden tener diferentes nombres de interfaz de
+red, según su configuración de hardware y software. Los datos de Ansible pueden
+ayudarlo a identificar las diferencias entre los sistemas para que pueda abordarlas o
+mitigarlas en su automatización.
+La siguiente tabla enumera algunos otros datos útiles relacionados con la red.
+Nombre del dato
+Descripción
+ansible_facts['dns']
+Una lista de las direcciones IP del servidor de
+nombres DNS y los dominios de búsqueda.
+ansible_facts['domain']
+El subdominio para el host gestionado.
+ansible_facts['all_ipv4_addresses'] Todas las direcciones IPv4 configuradas en el
+host gestionado.
+ansible_facts['all_ipv6_addresses'] Todas las direcciones IPv6 configuradas en el
+host gestionado.
+ansible_facts['fqdn']
+El nombre de dominio completamente
+calificado (FQDN) del host gestionado.
+ansible_facts['hostname']
+El nombre de host no calificado (la parte del
+nombre de host antes del primer punto en el
+FQDN).
+ansible_facts['nodename']
+El nombre de host para el host gestionado
+según lo informado por el sistema.
+nota
+Ansible también proporciona la "variable mágica" inventory_hostname que
+incluye el nombre de host como está configurado en el archivo de inventario de
+Ansible.
+RH294-RHEL9.0-es-3-20240620
+477
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Referencias
+Knowledgebase: Red Hat Enterprise Linux (RHEL) System Roles
+https://access.redhat.com/articles/3050101
+Roles de sistema de Linux
+https://linux-system-roles.github.io/
+linux-system-roles/network en GitHub
+https://github.com/linux-system-roles/network
+Documentación de módulo ansible.builtin.hostname
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+hostname_module.html
+Documentación de módulo ansible.posix.firewalld
+https://docs.ansible.com/ansible/latest/collections/ansible/posix/
+firewalld_module.html
+478
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración de la configuración de red
+Ajustar la configuración de red de un host gestionado y recopilar información sobre él en un
+archivo creado por una plantilla.
+Resultados
+• Deberá ser capaz de configurar los ajustes de red y en los hosts gestionados y recopilar
+datos de Ansible relacionados con la red.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-network
+Instrucciones
+ 1.
+Revise el archivo de inventario del directorio del proyecto /home/student/system-
+network.
+1.1.
+Cambie al directorio /home/student/system-network.
+[student@workstation ~]$ cd ~/system-network
+[student@workstation system-network]$
+1.2.
+En el archivo inventory, verifique que servera.lab.example.com sea parte del
+grupo de hosts webservers. Este servidor tiene una interfaz de red de repuesto.
+[student@workstation system-network]$ cat inventory
+[webservers]
+servera.lab.example.com
+ 2.
+Instale la Ansible Content Collection redhat.rhel_system_roles desde el archivo
+redhat-rhel_system_roles-1.19.3.tar.gz en el directorio collections del
+directorio del proyecto.
+2.1.
+Use el comando ansible-galaxy para instalar la Ansible Content
+Collection rhel_system_roles desde el archivo redhat-
+rhel_system_roles-1.19.3.tar.gz en el directorio collections del
+proyecto.
+RH294-RHEL9.0-es-3-20240620
+479
+
+

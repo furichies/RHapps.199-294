@@ -1,0 +1,109 @@
+# 8.3. Montaje y desmontaje de sistemas de archivos
+# Tipo: theory
+# Capítulo: Capítulo 8. Acceso a medios extraíbles
+
+8.3. Montaje y desmontaje de sistemas de archivos 8.3. Montaje y desmontaje de sistemas de archivos Objetivos Acceder al contenido de un sistema de archivos en medios extraíbles montándolo en la jerarquía del sistema de archivos y desmontándolo cuando haya terminado. Montaje manual de sistemas de archivos Para acceder al sistema de archivos en un dispositivo de almacenamiento extraíble, debe montar el dispositivo de almacenamiento. Con el comando mount, el usuario root puede montar un sistema de archivos manualmente. El primer argumento del comando de montaje especifica el sistema de archivos a montar. El segundo argumento especifica el directorio como punto de montaje en la jerarquía del sistema de archivos. Puede montar el sistema de archivos de una de las siguientes maneras con el comando mount: Con el nombre del archivo del dispositivo en el directorio /dev. Con el UUID, un identificador universalmente único del dispositivo. Luego, identifique el dispositivo que desea montar, asegúrese de que exista el punto de montaje y monte el dispositivo en el punto de montaje. Nota Si monta un sistema de archivos con el comando mount y luego reinicia su sistema, el sistema de archivos no se vuelve a montar automáticamente. El curso Red Hat System Administration II (RH134) explica cómo gestionar de forma persistente
+
+mount file systems with the /etc/fstab file.
+
+Identificación de un dispositivo de bloque Un dispositivo de almacenamiento conectable en caliente, ya sea una unidad de disco duro (HDD) o un dispositivo de estado sólido (SSD) en un servidor, o alternativamente un dispositivo de almacenamiento USB, se puede conectar a un puerto diferente en un sistema cada vez. Utilice el comando lsblk para enumerar los detalles de un dispositivo de bloque específico o de todos los dispositivos disponibles.
+
+root@host:~# lsblk
+
+NOMBRE MAJ:MIN RM TAMAÑO RO TIPO PUNTOS DE MONTAJE
+
+sda      8:0    0   10G  0 disk
+
+├─sda1 8:1 0 1M 0 parte ├─sda2 8:2 0 200M 0 parte /boot/efi └─sda3 8:3 0 9.8G 0 parte /
+
+sdb      8:16   0    5G  0 disk
+sdc      8:32   0    5G  0 disk
+sdd      8:48   0    5G  0 disk
+sr0     11:0    1  514K  0 rom
+
+El tamaño de la partición ayuda a identificar el dispositivo cuando se desconoce el nombre de la partición. Por ejemplo, considerando el resultado anterior, si el tamaño de la partición identificada es 9,8 GB, monte la partición /dev/sda3. Montaje de un sistema de archivos con el nombre de partición El siguiente ejemplo monta la partición /dev/sda3 en el punto de montaje /mnt/data.
+
+
+
+
+
+8.3. Montaje y desmontaje de sistemas de archivos
+
+root@host:~# mount /dev/sda3 /mnt/data
+
+El directorio del punto de montaje debe existir antes de montar el sistema de archivos. El directorio /mnt existe para su uso como directorio temporal.
+
+mount point.
+
+Importante Si un directorio que se utilizará como punto de montaje no está vacío, los archivos existentes estarán ocultos y no se podrá acceder a ellos cuando se monte un sistema de archivos allí. Se puede acceder nuevamente a los archivos originales después de desmontar el sistema de archivos montado. El orden de detección de dispositivos y el nombre de los dispositivos de almacenamiento pueden cambiar cuando se agregan o eliminan dispositivos en un sistema. Una buena práctica es utilizar un identificador de dispositivo que no cambie para montar sistemas de archivos de forma coherente. Montaje de un sistema de archivos con UUID de partición Un identificador estable asociado con un sistema de archivos es su identificador único universal (UUID). Este UUID se almacena en el superbloque del sistema de archivos y permanece igual hasta que se vuelve a crear el sistema de archivos. El comando lsblk -fp enumera la ruta completa del dispositivo, los UUID y los puntos de montaje, y el tipo de sistema de archivos de la partición. El punto de montaje está en blanco cuando el sistema de archivos no está montado.
+
+root@host:~# lsblk -fp
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sda ├─/dev/sda1 ├─/dev/sda2 vfat FAT16 7B77-95E7 191.4M 4% /boot/efi └─/dev/sda3 xfs root 15507695-...-...95983f 7.4G 24% / /dev/sdb /dev/sdc /dev/sdd /dev/sr0 iso9660 Joliet Extension config-2 2025-06-12-05-06-37-00 Monte el sistema de archivos mediante el UUID del sistema de archivos.
+
+root@host:~# mount UUID="15507695-22bb-4c65-94e6-a438e095983f" /mnt/data
+
+Montaje automático de dispositivos de almacenamiento extraíbles Con el entorno de escritorio gráfico, el sistema monta automáticamente medios de almacenamiento extraíbles cuando se detecta la presencia de medios. El dispositivo de almacenamiento extraíble se monta en la ubicación /run/media/USERNAME/LABEL. USERNAME es el nombre del usuario que ha iniciado sesión en el entorno gráfico. LABEL es un identificador, que normalmente es la etiqueta del medio de almacenamiento. Para desconectar de forma segura un dispositivo extraíble, primero desmonte manualmente todos los sistemas de archivos del dispositivo. Desmontaje de sistemas de archivos Los procedimientos de apagado y reinicio del sistema se utilizan para desmontar todos los sistemas de archivos automáticamente. Todos los datos del sistema de archivos se descargan en el dispositivo de almacenamiento para garantizar la integridad de los datos del sistema de archivos.
+
+
+
+
+
+8.3. Montaje y desmontaje de sistemas de archivos Advertencia Los datos del sistema de archivos utilizan la memoria caché durante el funcionamiento normal. Debe desmontar los sistemas de archivos de una unidad extraíble antes de desconectar la unidad. El procedimiento de desmontaje vacía los datos en el disco antes de liberar la unidad. El comando umount utiliza el punto de montaje como argumento para desmontar un sistema de archivos.
+
+root@host:~# umount /mnt/data
+
+No es posible desmontarlo cuando el sistema de archivos montado está en uso. Para que el comando umount tenga éxito, todos los procesos deben dejar de acceder a los datos bajo el punto de montaje. En el siguiente ejemplo, el comando umount falla porque el shell usa el directorio /mnt/data como directorio de trabajo actual y, por lo tanto, genera un mensaje de error.
+
+root@host:~# cd /mnt/data
+root@host:~# umount /mnt/data
+umount: /mnt/data: target is busy.
+
+El comando lsof enumera todos los archivos abiertos y los procesos que acceden al sistema de archivos. La lista ayuda a identificar qué procesos impiden que el sistema de archivos se desmonte correctamente.
+
+root@host:~# lsof /mnt/data
+
+COMANDO PID USUARIO TIPO FD TAMAÑO DEL DISPOSITIVO/OFF NOMBRE DEL NODO bash 1593 root cwd DIR 253,17 6 128 /mnt/data lsof 2532 root cwd DIR 253,17 19 128 /mnt/data lsof 2533 root cwd DIR 253,17 19 128 /mnt/data Identifica y espera a que se completen los procesos, o envía la señal SIGTERM o SIGKILL para finalizarlos. En este caso, puede cambiar a un directorio de trabajo actual que esté fuera del punto de montaje.
+
+root@host:~# cd
+root@host:~# umount /mnt/data
+
+Referencias
+
+lsblk(8), mount(8), umount(8), and lsof(8) man pages
+
+
+
+
+
+8.4. Ejercicio guiado Montar y desmontar un sistema de archivos 8.4. Ejercicio guiado Montar y desmontar un sistema de archivos Montar y desmontar un sistema de archivos que se encuentra en un medio extraíble. Resultados Identificar y montar un nuevo sistema de archivos en un punto de montaje específico y luego desmontar el sistema de archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-mount
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Se agrega una nueva partición con un sistema de archivos al disco /dev/sdb en la máquina del servidor. Monte la partición recién disponible utilizando el UUID en el punto de montaje /mnt/part1. 2. Cree el directorio /mnt/part1.
+
+[root@servera ~]# mkdir /mnt/part1
+
+2.1. Consulta el UUID del dispositivo /dev/sdb1.
+
+[root@servera ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE ... UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 2dfe4a17-d529-480a-a53e-9c28ff49545e El UUID del dispositivo puede ser diferente en su entorno. El resultado anterior omite algunas columnas no esenciales, por lo que su resultado puede diferir. 2.2. Monte el sistema de archivos utilizando el UUID en el directorio /mnt/part1. Utilice el UUID /dev/sdb1 del resultado del comando anterior.
+
+[root@servera ~]# mount \
+
+UUID="2dfe4a17-d529-480a-a53e-9c28ff49545e" /mnt/part1 2.3. Verifique que el dispositivo /dev/sdb1 esté montado en el directorio /mnt/part1. 2.4.
+
+
+
+
+

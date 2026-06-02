@@ -1,0 +1,196 @@
+# 10.3. Servicios del sistema de control
+# Tipo: theory
+# Capítulo: Capítulo 10. Control de servicios y demonios
+
+10.3. Servicios del sistema de control 10.3. Control de los servicios del sistema Objetivos Controlar los demonios del sistema y los servicios de red con el comando systemctl. Iniciar y detener servicios Puede iniciar, detener o recargar servicios manualmente para actualizar el servicio, actualizar el archivo de configuración, desinstalar el servicio o administrar manualmente un servicio que se utiliza con poca frecuencia. Para verificar el estado de un servicio, incluido si el servicio se está ejecutando o detenido, use el estado systemctl
+
+command:
+root@host:~# systemctl status sshd.service
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:47:33 UTC; 7h ago
+
+...salida omitida... Para iniciar un servicio, utilice el comando systemctl start como usuario root (con el comando sudo si es necesario). Si ejecuta el comando systemctl start solo con el nombre del servicio (sin el tipo de servicio), entonces el servicio systemd busca archivos .service.
+
+root@host:~# systemctl start sshd
+
+Para detener un servicio en ejecución, utilice la opción de detención del comando systemctl. El siguiente ejemplo detiene el
+
+sshd.service service:
+root@host:~# systemctl stop sshd.service
+
+Reinicio y recarga de servicios Cuando reinicia un servicio en ejecución, el servicio primero se detiene y luego se reinicia. Al reiniciar el servicio, el nuevo proceso obtiene una nueva ID durante el inicio y, por lo tanto, la ID del proceso cambia. Para reiniciar un servicio en ejecución, use la opción de reinicio del comando systemctl. El siguiente ejemplo reinicia el sshd
+
+service:
+root@host:~# systemctl restart sshd.service
+
+Algunos servicios pueden recargar sus archivos de configuración sin necesidad de reiniciar, lo que se denomina recarga del servicio. Recargar un servicio no cambia el ID de proceso asociado con varios procesos de servicio. Para recargar un servicio en ejecución, use la opción de recarga del comando systemctl. El siguiente ejemplo muestra cómo recargar el servicio sshd.service
+
+after configuration changes:
+root@host:~# systemctl reload sshd.service
+
+Si no está seguro de si el servicio tiene la función para recargar los cambios del archivo de configuración, use la opción recargar o reiniciar del comando systemctl. El comando recarga los cambios de configuración si la función de recarga está
+
+available. Otherwise, the command restarts the service to implement the new configuration changes:
+
+
+
+
+
+10.3. Servicios del sistema de control
+
+root@host:~# systemctl reload-or-restart sshd.service
+
+Listado de dependencias de unidades Algunos servicios requieren que otros servicios se ejecuten primero, lo que crea dependencias en los otros servicios. Algunos servicios se inician sólo a pedido, en lugar de en el momento del arranque. En ambos casos, los comandos systemd y systemctl inician los servicios según sea necesario, ya sea para resolver la dependencia o para iniciar un servicio que se utiliza con poca frecuencia. Deshabilitar el servicio deshabilita las dependencias. Para ver una asignación jerárquica de dependencias para iniciar una unidad de servicio, utilice el comando systemctl list-dependencies UNIT. El siguiente ejemplo enumera las dependencias para el servicio sshd.service:
+
+root@host:~# systemctl list-dependencies sshd.service
+
+sshd.service ○ ├─ssh-host-keys-migration.service ● ├─system.slice ● ├─sshd-keygen.target ○ │ ├─sshd-keygen@ecdsa.service ○ │ ├─sshd-keygen@ed25519.service ○ │ └─sshd-keygen@rsa.service ● └─sysinit.target ...salida omitida... Para enumerar dependencias inversas (unidades que dependen de la unidad especificada), use la opción --reverse con el comando. Este ejemplo enumera los servicios que dependen del servicio NetworkManager:
+
+root@host:~# systemctl list-dependencies --reverse NetworkManager.service
+
+NetworkManager.service ● ├─NetworkManager-wait-online.service ● └─multi-user.target ● └─graphical.target Servicios de enmascaramiento y desenmascaramiento Al administrar un sistema Linux, es posible que algunos servicios entren en conflicto entre sí. Un ejemplo común es cuando dos servicios requieren el mismo puerto de red. Por ejemplo, tanto el servidor HTTP Apache como el servidor web nginx utilizan el puerto 80 para escuchar el tráfico HTTP. Para evitar conflictos, puede enmascarar uno de los servicios utilizando el comando systemctl mask. Enmascarar un servicio crea un enlace simbólico desde la unidad de servicio al archivo /dev/null, lo que impide que un administrador inicie el servicio. El siguiente ejemplo enmascara el servicio httpd:
+
+root@host:~# systemctl mask httpd.service
+
+Enlace simbólico creado '/etc/systemd/system/httpd.service' → '/dev/null'. Después de enmascarar un servicio, puedes verificar su estado:
+
+
+
+
+
+10.3. Servicios del sistema de control
+
+root@host:~# systemctl status httpd.service
+
+○ httpd.servicio
+
+     Loaded: masked (Reason: Unit httpd.service is masked.)
+     Active: inactive (dead)
+
+...salida omitida...
+
+root@host:~# systemctl list-unit-files httpd.service
+
+UNIT FILE STATE PRESET httpd.service enmascarado deshabilitado El intento de iniciar una unidad de servicio enmascarada falla con el siguiente resultado:
+
+root@host:~# systemctl start httpd.service
+
+No se pudo iniciar httpd.service: la unidad httpd.service está enmascarada. Si desea ejecutar un servicio enmascarado, primero debe usar el comando systemctl unmask para desenmascarar la unidad. Luego podrás iniciar el servicio como de costumbre.
+
+root@host:~# systemctl unmask httpd.service
+
+Se eliminó '/etc/systemd/system/httpd.service'.
+
+root@host:~# systemctl start httpd.service
+
+Importante Un servicio deshabilitado no se inicia automáticamente al iniciar, pero aún puede iniciarlo manualmente. Un servicio enmascarado no se puede iniciar en absoluto, ni automática ni manualmente. Habilitar servicios para que se inicien o se detengan al arrancar Iniciar un servicio en un sistema en ejecución no garantiza que el servicio se inicie automáticamente cuando se reinicie el sistema. De manera similar, detener un servicio en un sistema en ejecución no impide que se reinicie cuando el sistema se reinicie. La creación de enlaces en los directorios de configuración de systemd permite que el servicio se inicie en el arranque. Puede crear o eliminar estos enlaces utilizando el comando systemctl con la opción habilitar o deshabilitar.
+
+root@root:~# systemctl enable sshd.service
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/sshd.service' → '/usr/lib/systemd/system/sshd.service'. Este comando crea un enlace simbólico desde el archivo de la unidad de servicio, generalmente en el directorio /usr/lib/systemd/system, a la ubicación del disco donde el comando systemd busca archivos, en el directorio /etc/systemd/system/TARGETNAME.target.wants. Habilitar un servicio no inicia el servicio en la sesión actual. Para iniciar el servicio y permitir que se inicie automáticamente durante el arranque, puede ejecutar tanto el
+
+systemctl start and systemctl enable commands, or use the equivalent systemctl enable --now
+
+dominio.
+
+root@root:~# systemctl enable --now sshd.service
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/sshd.service' → '/usr/lib/systemd/system/sshd.service'. Para impedir que el servicio se inicie automáticamente, utilice el comando systemctl enable, que elimina el enlace simbólico que se creó al habilitar un servicio. Deshabilitar un servicio no lo detiene si se está ejecutando actualmente. Para deshabilitar y detener un servicio, puede ejecutar los comandos systemctl stop y systemctl enable, o usar el comando systemctl enable --now equivalente.
+
+
+
+
+
+10.3. Servicios del sistema de control
+
+root@host:~# systemctl disable --now sshd.service
+
+Se eliminó '/etc/systemd/system/multi-user.target.wants/sshd.service'. Para verificar si el servicio está habilitado o deshabilitado, use el comando systemctl is-enabled.
+
+root@host:~# systemctl is-enabled sshd.service
+
+enable Resumen de comandos systemctl Puede iniciar y detener servicios en un sistema en ejecución y habilitarlos o deshabilitarlos para un inicio automático en el momento del arranque. Tabla 15. Comandos útiles de gestión de servicios
+
+systemctl status UNIT
+
+Ver información detallada sobre el estado de una unidad.
+
+systemctl stop UNIT
+
+Detener un servicio en un sistema en ejecución.
+
+systemctl start UNIT
+
+Inicie un servicio en un sistema en ejecución.
+
+systemctl restart UNIT
+
+Reinicie un servicio en un sistema en ejecución.
+
+systemctl reload UNIT
+
+Vuelva a cargar el archivo de configuración de un servicio en ejecución.
+
+systemctl mask UNIT
+
+Deshabilite el inicio de un servicio, tanto manualmente como durante el arranque.
+
+systemctl unmask UNIT
+
+Poner a disposición un servicio enmascarado.
+
+systemctl enable UNIT
+
+Configure un servicio para que se inicie en el momento del arranque. Utilice la opción --now para iniciar también el servicio.
+
+systemctl disable UNIT
+
+Deshabilite el inicio de un servicio en el momento del arranque. Utilice la opción --now para detener también el servicio. Hace referencia a las páginas de manual systemd(1), systemd.unit(5), systemd.service(5), systemd.socket(5) y systemctl(1). Para obtener más información, consulte la guía Uso de archivos unitarios systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+tarea de comando single/using_systemd_unit_files_to_customize_and_optimize_your_system
+
+
+
+
+
+10.4. Servicios del Sistema de Control del Ejercicio Guiado 10.4. Ejercicio guiado Servicios del sistema de control Controle los demonios del sistema y los servicios de red con el comando systemctl. Resultados Utilice el comando systemctl para controlar los servicios systemd. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start services-control
+
+Instrucciones Reinicie y vuelva a cargar el servicio sshd en la máquina del servidor y observe los resultados. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Muestra el estado del servicio sshd. Tenga en cuenta el ID del proceso del demonio sshd.
+
+[root@servera ~]# systemctl status sshd
+
+● sshd.service: demonio del servidor OpenSSH
+
+     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2025-05-22 14:48:13 UTC; 7h ago
+
+Invocación: 8dfdf690e8134f4b9e317b91fe84ebda
+
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+   Main PID: 1403 (sshd)
+      Tasks: 1 (limit: 9897)
+     Memory: 6.5M (peak: 9.8M)
+
+...salida omitida... Presione Q para salir del comando. 1.2. Reinicie el servicio sshd y vea el estado. En este ejemplo, el ID de proceso del demonio cambia de 1403 a 23088. 1.3.
+
+
+
+
+

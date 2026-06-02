@@ -1,0 +1,113 @@
+# Cuestionario: Descripción de la estructura del rol
+# Tipo: quiz
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Cuestionario
+Descripción de la estructura del rol
+Elija las respuestas correctas para las siguientes preguntas:
+ 1.
+¿Cuál de las siguientes declaraciones describe mejor los roles?
+a. Configuración que permite que usuarios específicos ejecuten playbooks de Ansible.
+b. Playbooks para un centro de datos.
+c. Recopilación de archivos de tareas YAML e ítems complementarios dispuestos en una
+estructura específica.
+ 2. ¿Qué subdirectorio de roles contiene archivos Jinja2 a los que hacen referencia las
+tareas de los roles?
+a. Manejadores
+b. Archivos
+c. Plantillas
+d. Variables
+e. Meta
+ 3. ¿Cómo se usa un rol en un play para que sus variables de rol y las variables
+predeterminadas estén expuestas al resto del play?
+a. Use la palabra clave pre_tasks.
+b. Use la palabra clave post_tasks.
+c. Use el módulo ansible.builtin.import_role.
+d. Use el módulo ansible.builtin.include_role.
+ 4. ¿Qué archivo en la jerarquía de directorio de un rol debe contener los valores
+predeterminados de variables que se pueden usar como parámetros para el rol?
+a. defaults/main.yml
+b. meta/main.yml
+c. vars/main.yml
+d. El archivo del inventario del host.
+286
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Solución
+Descripción de la estructura del rol
+Elija las respuestas correctas para las siguientes preguntas:
+ 1.
+¿Cuál de las siguientes declaraciones describe mejor los roles?
+a. Configuración que permite que usuarios específicos ejecuten playbooks de Ansible.
+b. Playbooks para un centro de datos.
+c. Recopilación de archivos de tareas YAML e ítems complementarios dispuestos en una
+estructura específica.
+ 2. ¿Qué subdirectorio de roles contiene archivos Jinja2 a los que hacen referencia las
+tareas de los roles?
+a. Manejadores
+b. Archivos
+c. Plantillas
+d. Variables
+e. Meta
+ 3. ¿Cómo se usa un rol en un play para que sus variables de rol y las variables
+predeterminadas estén expuestas al resto del play?
+a. Use la palabra clave pre_tasks.
+b. Use la palabra clave post_tasks.
+c. Use el módulo ansible.builtin.import_role.
+d. Use el módulo ansible.builtin.include_role.
+ 4. ¿Qué archivo en la jerarquía de directorio de un rol debe contener los valores
+predeterminados de variables que se pueden usar como parámetros para el rol?
+a. defaults/main.yml
+b. meta/main.yml
+c. vars/main.yml
+d. El archivo del inventario del host.
+RH294-RHEL9.0-es-3-20240620
+287
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Creación de roles
+Objetivos
+• Cree un rol en el directorio de proyectos de un playbook y ejecútelo como parte de uno de los
+plays del playbook.
+El proceso de creación de roles
+Crear roles en Ansible no requiere herramientas de desarrollo especiales.
+Crear y usar un rol es un proceso de tres pasos:
+1.
+Cree la estructura del directorio de roles.
+2.
+Defina el contenido de los roles.
+3.
+Use el rol en un playbook.
+Creación de la estructura del directorio de roles
+Ansible busca roles en un subdirectorio llamado roles en el directorio que contiene el playbook
+de Ansible. Cada rol tiene su propio directorio con una estructura de directorios estandarizada.
+Esta estructura le permite almacenar roles con el playbook y otros archivos de soporte.
+Por ejemplo, la siguiente estructura de directorio contiene los archivos que definen el rol motd.
+[user@host ~]$ tree roles/
+roles/
+└── motd
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    ├── meta
+    │   └── main.yml
+    ├── README.md
+    ├── tasks
+    │   └── main.yml
+    └── templates
+        └── motd.j2
+README.md proporciona, en términos legibles para el ser humano, una descripción básica del
+rol, documentación y ejemplos de cómo usarlo, y todos los requisitos de roles ajenos a Ansible. El
+subdirectorio meta contiene un archivo main.yml que especifica información sobre el autor, la
+licencia, la compatibilidad y las dependencias del módulo.
+El subdirectorio files contiene archivos de contenido fijo y el subdirectorio templates contiene
+plantillas que puede implementar el rol.
+288
+RH294-RHEL9.0-es-3-20240620
+
+

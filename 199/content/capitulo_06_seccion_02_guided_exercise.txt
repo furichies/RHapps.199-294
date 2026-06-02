@@ -1,0 +1,47 @@
+# Ejercicio Guiado: Ejercicio guiado Editar archivos de texto desde la línea de comandos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 3. Edición de archivos de texto
+
+3.2. Ejercicio guiado Editar archivos de texto desde la línea de comandos 3.2. Ejercicio guiado Editar archivos de texto desde la línea de comandos Cree, vea y edite archivos de texto usando el editor Vim. Resultados Adquiera competencia en Vim utilizando el comando vimtutor. Editar archivos con Vim. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start edit-file
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Ejecute el comando vimtutor. Lea la pantalla de bienvenida y realice la Lección 1.1. Nota Al ejecutar el comando vimtutor, es posible que vea un mensaje que indica que no existe una versión localizada del archivo del tutorial. Se espera este comportamiento. Vim usa automáticamente la versión en inglés predeterminada y puedes continuar con el tutorial. En la presentación, las teclas de flecha del teclado ayudan a navegar por la ventana. Inicialmente, cuando se desarrolló el editor vi, los usuarios no podían confiar en tener teclas de flecha o asignaciones de teclado funcionales para que las teclas de flecha movieran el cursor. Por lo tanto, el editor vi fue diseñado inicialmente para mover el cursor mediante el uso de comandos con teclas de caracteres estándar, como H, J, K y L, convenientemente agrupados. Aquí hay una manera de recordarlos: quedarse atrás, saltar hacia abajo, patear, saltar hacia adelante.
+
+[student@servera ~]$ vimtutor
+
+2. En la ventana de vimtutor, realice la Lección 1.2. Esta lección le enseña cómo salir sin conservar los cambios no deseados. Todos los cambios se pierden. En algunos casos, perder los cambios es una opción más segura que dejar un archivo crítico en un estado incorrecto. 3. En la ventana de vimtutor, realice la Lección 1.3. 4.
+
+
+
+
+
+3.2. Ejercicio guiado Editar archivos de texto desde la línea de comandos Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish edit-file
+
+Vim tiene pulsaciones de teclas rápidas y eficientes para eliminar una cantidad exacta de palabras, líneas, oraciones o párrafos. Cualquier edición es posible con la tecla X para eliminar un solo carácter. En la ventana de vimtutor, realice la Lección 1.4. Para la mayoría de las tareas de edición, primero se presiona la tecla I (insertar). 5. En la ventana de vimtutor, realice la Lección 1.5. La conferencia anterior enseñó solo el comando de tecla I para ingresar al modo de inserción (o edición). Esta lección demuestra otras pulsaciones de teclas disponibles para cambiar la ubicación del cursor en el modo de inserción. En el modo de inserción, cualquier texto escrito cambia el contenido del archivo. 6. En la ventana de vimtutor, realice la Lección 1.6. Escriba el comando :wq para guardar el archivo y salir del editor. 7. En la ventana de vimtutor, lea el Resumen de la Lección 1. El comando vimtutor incluye seis lecciones más de varios pasos. Estas lecciones no se asignan como parte de este curso, pero siéntase libre de explorarlas para aprender más. 8. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+9.
+
+
+
+
+
+3.3. Resumen 3.3. Resumen En esta lección, aprendió a crear, ver y editar archivos de texto desde la línea de comandos. Red Hat recomienda aprender a editar archivos con el editor de texto Vim porque está disponible en la mayoría de las distribuciones de Linux. Puede utilizar varias pulsaciones de teclas para editar un archivo de texto en un editor de texto de línea de comandos. Puede utilizar el comando vimtutor para aprender las funciones principales de Vim. Puede configurar el comportamiento del editor Vim para todo el sistema o para un usuario específico en los archivos de configuración /etc/vimrc y ~/.vimrc, respectivamente.
+
+
+
+
+

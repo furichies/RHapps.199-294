@@ -1,0 +1,62 @@
+# Introducción
+
+## Vía rápida RHCSA
+
+Introducción Introducción RHCSA Rapid Track Opere, administre y mantenga un sistema Red Hat Enterprise Linux y realice un conjunto básico de tareas de administración del sistema, como instalación, almacenamiento y configuración de red, y administración de software. Objetivos Registre un sistema utilizando su cuenta de Red Hat para obtener los servicios de soporte y el software que proporciona Red Hat. Copie, mueva, cree, elimine y organice archivos desde la línea de comandos. Cree, vea y edite archivos de texto desde la línea de comando. Obtener acceso de superusuario a un sistema; crear, administrar y eliminar usuarios y grupos locales; y administrar políticas de contraseñas locales. Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Instale, actualice y utilice el software de escritorio proporcionado desde el catálogo de ecosistemas de Red Hat mediante Flatpak. Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Controlar y monitorear los servicios del sistema y los demonios que inicia systemd. Configure interfaces y ajustes de red en servidores Red Hat Enterprise Linux. Programe los programas del sistema que deben ejecutarse de forma recurrente para admitir demonios o funciones del sistema operativo. Localice e interprete registros del sistema para solucionar problemas y garantice marcas de tiempo precisas para los eventos de registro. Proteja los sistemas y administre la seguridad utilizando SELinux. Administre dispositivos de almacenamiento creando particiones, sistemas de archivos y espacios de intercambio desde la línea de comandos. Utilice Logical Volume Manager (LVM) para administrar volúmenes lógicos que pueden contener sistemas de archivos y espacios de intercambio. Administre cómo se inicia el sistema para controlar qué servicios se inician y para solucionar y reparar problemas de tiempo de inicio. Obtenga acceso administrativo a un sistema cuando la contraseña de superusuario sea desconocida o esté bloqueada. Controle las conexiones de red a los servicios mediante el firewall del sistema y los servicios de red que pueden vincularse a puertos particulares mediante SELinux. Acceda al almacenamiento conectado a la red que se proporciona mediante el protocolo Network File System (NFS), ya sea manualmente o mediante el montador automático. Pruebe los conocimientos que adquirió en el curso Red Hat System Administration II (RH134) y prepárese para el examen Red Hat Certified System Administrator (EX200). Audiencia Administradores de sistemas, ingenieros de plataformas, desarrolladores y otros profesionales de TI que tengan un conocimiento básico de la línea de comandos de Linux y busquen aprender tareas clave para administrar un sistema Red Hat Enterprise Linux.
+
+
+
+
+
+Introducción Requisitos previos Familiaridad con los conceptos fundamentales de informática de Linux, experiencia como usuario de Linux y preparación para realizar tareas de administración del sistema. Se recomienda una experiencia de campo significativa trabajando con Linux como administrador de sistemas. Orientación al entorno del aula En este curso, el principal sistema informático que se utiliza para las actividades de aprendizaje práctico es la máquina de la estación de trabajo. También utiliza otras tres máquinas para estas actividades: las máquinas servera, serverb y serverc. Estas máquinas están en el dominio DNS lab.example.com. Figura 1. Entorno del aula Tabla 1. Máquinas del aula aula.ejemplo.com contenido.ejemplo.com materiales.ejemplo.com 172.25.252.254 172.25.254.254 Servidor que aloja los materiales necesarios para el aula utilidad.lab.ejemplo.com 172.25.250.8 Servidor que aloja los servicios de soporte específicos del curso estación de trabajo.lab.ejemplo.com 172.25.250.9 Estación de trabajo gráfica que usan los estudiantes servera.lab.example.com 172.25.250.10 Servidor administrado "A" serverb.lab.example.com 172.25.250.11 Servidor administrado "B" Nombre de la máquina Direcciones IP Rol
+
+
+
+
+
+
+
+## Orientación al ambiente del aula
+
+Introducción Requisitos previos Familiaridad con los conceptos fundamentales de informática de Linux, experiencia como usuario de Linux y preparación para realizar tareas de administración del sistema. Se recomienda una experiencia de campo significativa trabajando con Linux como administrador de sistemas. Orientación al entorno del aula En este curso, el principal sistema informático que se utiliza para las actividades de aprendizaje práctico es la máquina de la estación de trabajo. También utiliza otras tres máquinas para estas actividades: las máquinas servera, serverb y serverc. Estas máquinas están en el dominio DNS lab.example.com. Figura 1. Entorno del aula Tabla 1. Máquinas del aula aula.ejemplo.com contenido.ejemplo.com materiales.ejemplo.com 172.25.252.254 172.25.254.254 Servidor que aloja los materiales necesarios para el aula utilidad.lab.ejemplo.com 172.25.250.8 Servidor que aloja los servicios de soporte específicos del curso estación de trabajo.lab.ejemplo.com 172.25.250.9 Estación de trabajo gráfica que usan los estudiantes servera.lab.example.com 172.25.250.10 Servidor administrado "A" serverb.lab.example.com 172.25.250.11 Servidor administrado "B" Nombre de la máquina Direcciones IP Rol
+
+
+
+
+
+Introducción serverc.lab.example.com 172.25.250.12 Servidor administrado "C" Realización de ejercicios de laboratorio Es posible que vea los siguientes tipos de actividades de laboratorio en este curso: Un ejercicio guiado es un ejercicio práctico que sigue a una sección de presentación. Le guía a través de un procedimiento a realizar, paso a paso. Un cuestionario se utiliza normalmente para comprobar el aprendizaje basado en conocimientos o cuando una actividad práctica no resulta práctica por algún otro motivo. Un laboratorio de final de capítulo es una actividad práctica calificable que le ayudará a comprobar su aprendizaje. Trabaja a través de un conjunto de pasos de alto nivel, basados ​​en los ejercicios guiados de ese capítulo, pero los pasos no lo guían a través de cada comando. Se proporciona una solución con un recorrido paso a paso. Para preparar su entorno de laboratorio al comienzo de cada actividad práctica, ejecute el comando de inicio de laboratorio con un nombre de actividad específico de las instrucciones de la actividad. Del mismo modo, al final de cada actividad práctica, ejecute el comando de finalización del laboratorio con el mismo nombre de actividad para limpiar después de la actividad. Cada actividad práctica tiene un nombre único dentro de un curso. La sintaxis para ejecutar un guión de ejercicio es la siguiente:
+
+student@workstation:~$ lab action exercise
+
+La acción es una elección de las acciones instalar, seleccionar, enumerar, iniciar, calificar o finalizar. Todos los ejercicios apoyan el inicio y el final. Solo los laboratorios de final de capítulo y los laboratorios de revisión integral respaldan la acción de calificación. instalar La acción de instalación instala los archivos de ejercicios para el curso o lección especificado. seleccionar La acción de selección ayuda a seleccionar un curso o una lección de varios paquetes instalados. list Esta acción enumera todos los paquetes actualmente instalados en su entorno de laboratorio. inicio La acción de inicio verifica los recursos necesarios para comenzar un ejercicio. Podría incluir configurar ajustes, crear recursos, verificar servicios de requisitos previos y verificar los resultados necesarios de ejercicios anteriores. Normalmente, puedes realizar un ejercicio en cualquier momento, incluso sin realizar los ejercicios anteriores. En ocasiones puede ser necesaria una actividad previa. calificación Para actividades calificables, la acción de calificación indica al comando de laboratorio que evalúe su trabajo y muestra una lista de criterios de calificación con el estado PASA o FALLA para cada uno. Para lograr el estado APROBADO para todos los criterios, corrija las fallas y vuelva a ejecutar la acción de calificación. Nombre de la máquina Direcciones IP Función
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Realizar ejercicios de laboratorio
+
+Introducción serverc.lab.example.com 172.25.250.12 Servidor administrado "C" Realización de ejercicios de laboratorio Es posible que vea los siguientes tipos de actividades de laboratorio en este curso: Un ejercicio guiado es un ejercicio práctico que sigue a una sección de presentación. Le guía a través de un procedimiento a realizar, paso a paso. Un cuestionario se utiliza normalmente para comprobar el aprendizaje basado en conocimientos o cuando una actividad práctica no resulta práctica por algún otro motivo. Un laboratorio de final de capítulo es una actividad práctica calificable que le ayudará a comprobar su aprendizaje. Trabaja a través de un conjunto de pasos de alto nivel, basados ​​en los ejercicios guiados de ese capítulo, pero los pasos no lo guían a través de cada comando. Se proporciona una solución con un recorrido paso a paso. Para preparar su entorno de laboratorio al comienzo de cada actividad práctica, ejecute el comando de inicio de laboratorio con un nombre de actividad específico de las instrucciones de la actividad. Del mismo modo, al final de cada actividad práctica, ejecute el comando de finalización del laboratorio con el mismo nombre de actividad para limpiar después de la actividad. Cada actividad práctica tiene un nombre único dentro de un curso. La sintaxis para ejecutar un guión de ejercicio es la siguiente:
+
+student@workstation:~$ lab action exercise
+
+La acción es una elección de las acciones instalar, seleccionar, enumerar, iniciar, calificar o finalizar. Todos los ejercicios apoyan el inicio y el final. Solo los laboratorios de final de capítulo y los laboratorios de revisión integral respaldan la acción de calificación. instalar La acción de instalación instala los archivos de ejercicios para el curso o lección especificado. seleccionar La acción de selección ayuda a seleccionar un curso o una lección de varios paquetes instalados. list Esta acción enumera todos los paquetes actualmente instalados en su entorno de laboratorio. inicio La acción de inicio verifica los recursos necesarios para comenzar un ejercicio. Podría incluir configurar ajustes, crear recursos, verificar servicios de requisitos previos y verificar los resultados necesarios de ejercicios anteriores. Normalmente, puedes realizar un ejercicio en cualquier momento, incluso sin realizar los ejercicios anteriores. En ocasiones puede ser necesaria una actividad previa. calificación Para actividades calificables, la acción de calificación indica al comando de laboratorio que evalúe su trabajo y muestra una lista de criterios de calificación con el estado PASA o FALLA para cada uno. Para lograr el estado APROBADO para todos los criterios, corrija las fallas y vuelva a ejecutar la acción de calificación. Nombre de la máquina Direcciones IP Función
+
+
+
+
+
+Introducción finalizar La acción finalizar limpia los recursos que se configuraron durante el ejercicio. Puedes realizar un ejercicio tantas veces como quieras. El comando lab admite la finalización con tabuladores. Por ejemplo, para enumerar todos los ejercicios que puede iniciar, ingrese inicio de laboratorio y luego presione Tab dos veces.
+
+
+
+
+
+Capítulo 1. Registro de sistemas para soporte de Red Hat Objetivo Registre un sistema utilizando su cuenta de Red Hat para obtener los servicios de soporte y el software que proporciona Red Hat. Secciones Registro de sistemas para soporte de Red Hat (y cuestionario)
+
+
+
+
+

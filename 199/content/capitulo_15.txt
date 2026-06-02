@@ -1,0 +1,722 @@
+# Capítulo 12. Programación de tareas del sistema
+
+## 12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd
+
+12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd 12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd Objetivos Investigar, interpretar y gestionar tareas recurrentes del sistema que están programadas como unidades de temporizador systemd. Temporizador Systemd A partir de Red Hat Enterprise Linux 10, el demonio y administrador de servicios systemd reemplaza al demonio cron tradicional para la mayoría de las tareas del sistema de programación, a través de las unidades de temporizador systemd. Una unidad de temporizador systemd se define mediante un archivo de configuración de unidad con un nombre de archivo que termina en .timer. Las unidades temporizadoras activan una unidad de otro tipo, que suele ser un servicio. De forma predeterminada, el nombre de la unidad coincide con el nombre de la unidad del temporizador. Las unidades de temporizador permiten la activación basada en temporizador de otras unidades y describen cuándo ejecutar otra unidad. La unidad de temporizador systemd registra los eventos del temporizador en los diarios del sistema para facilitar la depuración. Nota Una discusión más completa sobre las unidades de temporizador systemd está fuera del alcance de esta sección. Para obtener más información, consulte la página del comando man systemd(1). Listar unidades de temporizador Para enumerar todas las unidades de temporizador que están cargadas en la memoria, utilice el comando systemctl list-units. Este comando enumera las unidades de temporizador que están activas, pendientes o fallidas. Puede utilizar la opción --all para incluir unidades de temporizador inactivas.
+
+root@host:~# systemctl list-units -t timer
+  UNIT                         LOAD   ACTIVE SUB     DESCRIPTION
+  dnf-makecache.timer          loaded active waiting dnf makecache --timer
+  fstrim.timer                 loaded active waiting Discard unused ...
+  fwupd-refresh.timer          loaded active waiting Refresh fwupd ...
+  logrotate.timer              loaded active waiting Daily rotation ...
+  plocate-updatedb.timer       loaded active waiting Update the plocate ...
+  raid-check.timer             loaded active waiting Weekly RAID setup ...
+  systemd-tmpfiles-clean.timer loaded active waiting Daily Cleanup ...
+
+...salida omitida... Los encabezados de las columnas son los siguientes: UNIDAD El nombre completo de la unidad. LOAD Indica si se cargó la definición de unidad. ACTIVO Indica si la unidad está activa en un nivel alto. SUB Muestra el estado detallado de la unidad, específico del tipo de unidad; Los valores posibles varían según el tipo de unidad. DESCRIPCIÓN Una breve descripción del propósito de la unidad.
+
+
+
+
+
+12.1. Gestión de trabajos repetidos mediante el uso de Systemd Unidades de temporizador Lista de archivos de unidades de temporizador Puede enumerar todos los archivos de unidades de temporizador instalados con el comando systemctl list-unit-files. En contraste con el
+
+systemctl list-units command, the systemctl list-unit-files command also includes unit templates.
+root@host:~# systemctl list-unit-files -t timer
+
+PREAJUSTE DEL ESTADO DEL ARCHIVO DE LA UNIDAD
+
+dnf-makecache.timer            enabled  enabled
+
+fstrim.timer habilitado habilitado fwupd-refresh.timer habilitado habilitado insights-client.timer deshabilitado deshabilitado logrotate.timer habilitado habilitado mdadm-last-resort@.timer estático - mdcheck_continue.timer deshabilitado deshabilitado mdcheck_start.timer deshabilitado deshabilitado mdmonitor-oneshot.timer deshabilitado deshabilitado plocate-updatedb.timer habilitado habilitado podman-auto-update.timer deshabilitado deshabilitado raid-check.timer habilitado habilitado rhc-canonical-facts.timer deshabilitado deshabilitado systemd-sysupdate-reboot.timer deshabilitado deshabilitado systemd-sysupdate.timer deshabilitado deshabilitado systemd-tmpfiles-clean.timer estático - 16 archivos de unidad enumerados. Los encabezados de las columnas son los siguientes: ARCHIVO DE UNIDAD El nombre completo del archivo de unidad. ESTADO Indica el estado de habilitación actual de la unidad. PRESET Indica si la unidad está habilitada por defecto. Iniciar y detener unidades de temporizador Systemd Utilice el comando systemctl start para iniciar una unidad de temporizador. Para iniciar la unidad del temporizador de rotación de registros llamada logrotate, use
+
+the following command:
+root@host:~# systemctl start logrotate.timer
+
+Utilice el comando systemctl stop para detener una unidad de temporizador. Para detener la unidad del temporizador de rotación de registros llamada logrotate, use
+
+the following command:
+root@host:~# systemctl stop logrotate.timer
+
+Habilitar y deshabilitar unidades de temporizador Systemd Utilice el comando systemctl enable para habilitar una unidad de temporizador systemd en el momento del inicio del sistema. Para habilitar el registro
+
+rotation timer unit named logrotate, use the following command:
+
+
+
+
+
+12.1. Gestión de trabajos repetidos mediante el uso de unidades de temporizador Systemd
+
+root@host:~# systemctl enable logrotate.timer
+
+El comando systemctl enable por sí solo no inicia la unidad systemd. Para habilitar e iniciar la unidad systemd en
+
+one step, include the --now switch:
+root@host:~# systemctl enable --now logrotate.timer
+
+Utilice el comando systemctl enable para desactivar una unidad de temporizador en el momento del inicio del sistema. Para desactivar el temporizador de rotación de registros
+
+unit named logrotate, use the following command:
+root@host:~# systemctl disable logrotate.timer
+
+El comando systemctl enable por sí solo no detiene la unidad systemd. Para deshabilitar y detener la unidad systemd en
+
+one step, include the --now switch:
+root@host:~# systemctl disable --now logrotate.timer
+
+Estado de la unidad del temporizador Puede utilizar el comando systemctl status para mostrar el estado actual de una unidad del temporizador y su unidad de servicio correspondiente. Para mostrar el estado actual del temporizador logrotate y las unidades de servicio, utilice el siguiente comando:
+
+root@host:~# systemctl status logrotate.timer
+
+● logrotate.timer: rotación diaria de archivos de registro
+
+     Loaded: loaded (/usr/lib/.../logrotate.timer; enabled; preset: enabled)
+     Active: active (waiting) since Wed 2025-05-28 23:28:22 UTC; 54min ago
+
+Invocación: 3a95de54d4c04c539d43b3808c27e99a
+
+    Trigger: Fri 2025-05-30 00:48:43 UTC; 24h left
+   Triggers: ● logrotate.service
+       Docs: man:logrotate(8)
+             man:logrotate.conf(5)
+
+28 de mayo... estación de trabajo systemd[1]: Se inició logrotate.timer - Diario... Ejemplo de archivo de configuración de unidad de temporizador El paquete sysstat proporciona la unidad de temporizador systemd, que es el servicio sysstat-collect.timer, para recopilar estadísticas del sistema cada 10 minutos. El siguiente resultado muestra el contenido de /usr/lib/systemd/system/sysstat-collect.timer
+
+configuration file:
+
+...salida omitida... [Unidad] Descripción=Ejecute la herramienta de contabilidad de actividad del sistema cada 10 minutos [Temporizador] OnCalendar=*:00/10 [Instalación] WantedBy=sysstat.service Las secciones [Unidad] e [Instalación] contienen elementos de configuración que son comunes a todas las unidades systemd. El
+
+timer-specific options are defined in the [Timer] section.
+
+
+
+
+
+12.1. Gestión de trabajos repetidos mediante unidades de temporizador Systemd En este ejemplo, la opción OnCalendar=*:00/10 significa que esta unidad de temporizador activa la unidad de servicio sysstat-collect.service correspondiente cada 10 minutos. Puede especificar intervalos de tiempo más complejos. Por ejemplo, cuando la opción OnCalendar se establece en un valor de 2025-07- * 12:35,37,39:16, la unidad de temporizador activa la unidad de servicio correspondiente a las 12:35:16, 12:37:16 y 12:39:16, todos los días de julio de 2025. También puede especificar temporizadores relativos utilizando la opción OnUnitActiveSec. Por ejemplo, cuando la opción OnUnitActiveSec se establece en un valor de 15 minutos, la unidad del temporizador activa la unidad de servicio correspondiente para que se inicie 15 minutos después de la última vez que se activó la unidad de servicio. Para obtener más información sobre las opciones de la unidad del temporizador, consulte la página del comando man systemd.timer(5). Importante No modifique ningún archivo de configuración de la unidad en el directorio /usr/lib/systemd/system. La unidad systemd anula todos los cambios de configuración que se realizan en el directorio /usr/lib/systemd/system. Para modificar la configuración de una unidad systemd, copie su archivo de configuración de unidad desde el directorio /usr/lib/systemd/system al directorio /etc/systemd/system y luego modifique el archivo copiado para evitar que cualquier actualización del paquete del proveedor anule los cambios. Si existen dos archivos con el mismo nombre en los directorios /usr/lib/systemd/system y /etc/systemd/system, entonces la unidad de temporizador systemd analiza el archivo en el directorio /etc/systemd/system. Después de cambiar el archivo de configuración de la unidad del temporizador, use el comando systemctl daemon-reload para asegurarse de que la unidad del temporizador systemd cargue los cambios.
+
+root@host:~# systemctl daemon-reload
+
+Después de recargar la configuración del demonio systemd, use el comando systemctl para habilitar y activar inmediatamente la unidad del temporizador.
+
+root@host:~# systemctl enable --now UNITNAME.timer
+
+Referencias
+
+systemctl(1), systemd.directives(7), systemd.time(7), systemd.timer(5), systemd.syntax(7),
+
+y páginas man systemd.unit(5) Para obtener más información sobre los archivos de unidades systemd, consulte la guía Uso de archivos de unidades Systemd para personalizar y optimizar su sistema en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_systemd_unit_files_to_customize_and_optimize_your_system/index Sitio del proyecto systemd ascendente: https://systemd.io/
+
+
+
+
+
+12.2. Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd 12.2. Ejercicio guiado Administre trabajos repetidos mediante el uso de unidades de temporizador Systemd Programe e inspeccione las tareas recurrentes del sistema que están programadas como unidades de temporizador systemd. Resultados Actualice la unidad del temporizador systemd que recopila datos de actividad del sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-timers
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale el paquete sysstat. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system. Examine el archivo de la unidad de temporizador sysstat-collect.timer. 2. Instale el paquete sysstat.
+
+[root@servera ~]# dnf install sysstat
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! 2.1. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system.
+
+[root@servera ~]# ls -1 /usr/lib/systemd/system/sysstat*
+
+/usr/lib/systemd/system/sysstat-collect.service /usr/lib/systemd/system/sysstat-collect.timer /usr/lib/systemd/system/sysstat-rotate.service /usr/lib/systemd/system/sysstat-rotate.timer /usr/lib/systemd/system/sysstat-summary.service /usr/lib/systemd/system/sysstat-summary.timer /usr/lib/systemd/system/sysstat.service 2.2. Examine el archivo de la unidad de temporizador sysstat-collect.timer en el directorio /usr/lib/systemd/system. La unidad de temporizador denominada sysstat-collect.timer activa la unidad de servicio correspondiente denominada sysstat-collect.service cada 10 minutos. 2.3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd
+
+12.2. Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd 12.2. Ejercicio guiado Administre trabajos repetidos mediante el uso de unidades de temporizador Systemd Programe e inspeccione las tareas recurrentes del sistema que están programadas como unidades de temporizador systemd. Resultados Actualice la unidad del temporizador systemd que recopila datos de actividad del sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-timers
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale el paquete sysstat. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system. Examine el archivo de la unidad de temporizador sysstat-collect.timer. 2. Instale el paquete sysstat.
+
+[root@servera ~]# dnf install sysstat
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! 2.1. Enumere los archivos de unidad systemd para el paquete sysstat que se instalaron en el directorio /usr/lib/systemd/system.
+
+[root@servera ~]# ls -1 /usr/lib/systemd/system/sysstat*
+
+/usr/lib/systemd/system/sysstat-collect.service /usr/lib/systemd/system/sysstat-collect.timer /usr/lib/systemd/system/sysstat-rotate.service /usr/lib/systemd/system/sysstat-rotate.timer /usr/lib/systemd/system/sysstat-summary.service /usr/lib/systemd/system/sysstat-summary.timer /usr/lib/systemd/system/sysstat.service 2.2. Examine el archivo de la unidad de temporizador sysstat-collect.timer en el directorio /usr/lib/systemd/system. La unidad de temporizador denominada sysstat-collect.timer activa la unidad de servicio correspondiente denominada sysstat-collect.service cada 10 minutos. 2.3.
+
+
+
+
+
+12.2. Ejercicio guiado Gestión de trabajos repetidos mediante unidades de temporizador Systemd
+
+# /usr/lib/systemd/system/sysstat-collect.timer
+# (C) 2014 Tomasz Torcz <tomek@pipebreaker.pl>
+
+#
+
+# sysstat-12.7.6 systemd unit file:
+#        Activates activity collector every 10 minutes
+
+[Unidad] Descripción=Ejecute la herramienta de contabilidad de actividad del sistema cada 10 minutos [Temporizador] OnCalendar=*:00/10 [Instalación] WantedBy=sysstat.service Examine el archivo de unidad de servicio sysstat-collect.service coincidente en el directorio /usr/lib/systemd/system. El archivo de la unidad de servicio denominado sysstat-collect.service recopila datos de actividad del sistema con el script de shell /usr/lib64/sa/sa1.
+
+# /usr/lib/systemd/system/sysstat-collect.service
+# (C) 2014 Tomasz Torcz <tomek@pipebreaker.pl>
+
+#
+
+# sysstat-12.7.6 systemd unit file:
+#        Collects system activity data
+#        Activated by sysstat-collect.timer unit
+
+[Unidad] Descripción=herramienta de contabilidad de actividad del sistema Documentación=man:sa1(8) Después=sysstat.service [Servicio] Tipo=oneshot Usuario=root ExecStart=/usr/lib64/sa/sa1 1 1 2.4. Los archivos de unidad en el directorio /etc/systemd/system anulan los archivos de unidad que están instalados en el directorio /usr/lib/systemd/system. Copie el archivo de configuración de la unidad de temporizador sysstat-collect.timer en el directorio /usr/lib/systemd/system al directorio /etc/systemd/system. Edite el archivo de configuración de la unidad del temporizador en el directorio /etc/systemd/system para que los datos de actividad del sistema se recopilen cada dos minutos. Notifique al demonio systemd de los cambios. 3. Copie el archivo /usr/lib/systemd/system/sysstat-collect.timer al archivo /etc/systemd/system/sysstat-collect.timer.
+
+[root@servera ~]# cp /usr/lib/systemd/system/sysstat-collect.timer \
+
+/etc/systemd/system/sysstat-collect.timer 3.1. Edite el archivo de configuración de la unidad del temporizador /etc/systemd/system/sysstat-collect.timer para que los datos de actividad del sistema se recopilen cada dos minutos. Utilice el comando vim para editar el archivo de configuración. Reemplace cualquier aparición de la cadena de 10 minutos por 2 minutos en todo el archivo de configuración de la unidad, incluida cualquier aparición en líneas comentadas. 3.2.
+
+
+
+
+
+12.2. Ejercicio guiado Administrar trabajos repetidos mediante unidades de temporizador Systemd Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish systasks-timers
+
+...salida omitida...
+
+# Activates activity collector every 2 minutes
+
+[Unidad] Descripción=Ejecute la herramienta de contabilidad de actividad del sistema cada 2 minutos [Temporizador] OnCalendar=*:00/2 [Instalación] WantedBy=sysstat.service Notifique al demonio systemd de los cambios recargando el demonio.
+
+[root@servera ~]# systemctl daemon-reload
+
+3.3. Habilite y active la unidad sysstat-collect.timer.
+
+[root@servera ~]# systemctl enable --now sysstat-collect.timer
+
+3.4. La unidad de servicio sysstat-collect.service recopila los datos de actividad del sistema en un archivo binario en el directorio /var/log/sa. Verifique que el archivo binario en ese directorio se modifique en dos minutos. 4. Espere hasta que se cree el archivo binario en el directorio /var/log/sa. El comando while, ls /var/log/sa | wc -l, devuelve 0 cuando el archivo no existe o devuelve 1 cuando el archivo existe. El comando while se detiene durante un segundo cuando el archivo no existe. El bucle while sale cuando el archivo existe.
+
+[root@servera ~]# while [ $(ls /var/log/sa | wc -l) -eq 0 ];  \
+do sleep 1s; done
+
+4.1. Verifique que el archivo binario en el directorio /var/log/sa se modifique en dos minutos.
+
+[root@servera ~]# ls -l /var/log/sa
+
+total 4 -rw-r--r--. 1 raíz raíz 2540 5 de abril 04:08 sa05 4.2. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+12.3. Gestión de archivos temporales 12.3. Gestión de archivos temporales Objetivos Configurar software que utilice una unidad de temporizador para programar tareas para borrar archivos temporales en el sistema o para garantizar que existan ciertos archivos o directorios. La herramienta Systemd-tempfiles La mayoría de las aplicaciones y servicios críticos utilizan archivos y directorios temporales. Algunas aplicaciones y usuarios usan el directorio /tmp para almacenar datos de trabajo transitorios, mientras que otras aplicaciones usan ubicaciones específicas de tareas, como directorios volátiles específicos de demonios y usuarios bajo el directorio /run, que existen solo en la memoria. Cuando el sistema se reinicia o se corta la energía, los sistemas de archivos basados ​​en memoria se limpian automáticamente. Normalmente, los demonios y scripts funcionan correctamente sólo cuando existen los archivos y directorios temporales esperados. Además, es necesario eliminar archivos temporales en el almacenamiento persistente para evitar problemas de espacio en disco o datos de trabajo obsoletos. Red Hat Enterprise Linux incluye la herramienta systemd-tmpfiles, que proporciona un método estructurado y configurable para administrar directorios y archivos temporales. Al iniciar el sistema, una de las primeras unidades de servicio systemd que se inicia es el servicio systemd-tmpfiles-setup. Este servicio ejecuta el comando systemd-tmpfiles, que lee las instrucciones de los archivos de configuración /usr/lib/tmpfiles.d/*.conf, /run/tmpfiles.d/*.conf y /etc/tmpfiles.d/*.conf. Estos archivos de configuración enumeran archivos y directorios que el servicio systemd-tmpfiles-setup debe crear, eliminar o proteger con permisos. Limpiar archivos temporales con un temporizador Systemd Para evitar que los sistemas de larga ejecución llenen sus discos con datos obsoletos, una unidad de temporizador systemd llamada systemd-tmpfiles-clean.timer activa a intervalos regulares la unidad systemd-tmpfiles-clean.service, que ejecuta el comando systemd-tmpfiles --clean. La configuración de una unidad de temporizador systemd tiene una sección [Temporizador] para indicar cómo iniciar el servicio con el mismo nombre que el temporizador. Utilice el siguiente comando systemctl para ver el contenido de la unidad systemd-tmpfiles-clean.timer
+
+configuration file:
+
+
+
+
+
+
+
+## 12.3. Administrar archivos temporales
+
+12.3. Gestión de archivos temporales 12.3. Gestión de archivos temporales Objetivos Configurar software que utilice una unidad de temporizador para programar tareas para borrar archivos temporales en el sistema o para garantizar que existan ciertos archivos o directorios. La herramienta Systemd-tempfiles La mayoría de las aplicaciones y servicios críticos utilizan archivos y directorios temporales. Algunas aplicaciones y usuarios usan el directorio /tmp para almacenar datos de trabajo transitorios, mientras que otras aplicaciones usan ubicaciones específicas de tareas, como directorios volátiles específicos de demonios y usuarios bajo el directorio /run, que existen solo en la memoria. Cuando el sistema se reinicia o se corta la energía, los sistemas de archivos basados ​​en memoria se limpian automáticamente. Normalmente, los demonios y scripts funcionan correctamente sólo cuando existen los archivos y directorios temporales esperados. Además, es necesario eliminar archivos temporales en el almacenamiento persistente para evitar problemas de espacio en disco o datos de trabajo obsoletos. Red Hat Enterprise Linux incluye la herramienta systemd-tmpfiles, que proporciona un método estructurado y configurable para administrar directorios y archivos temporales. Al iniciar el sistema, una de las primeras unidades de servicio systemd que se inicia es el servicio systemd-tmpfiles-setup. Este servicio ejecuta el comando systemd-tmpfiles, que lee las instrucciones de los archivos de configuración /usr/lib/tmpfiles.d/*.conf, /run/tmpfiles.d/*.conf y /etc/tmpfiles.d/*.conf. Estos archivos de configuración enumeran archivos y directorios que el servicio systemd-tmpfiles-setup debe crear, eliminar o proteger con permisos. Limpiar archivos temporales con un temporizador Systemd Para evitar que los sistemas de larga ejecución llenen sus discos con datos obsoletos, una unidad de temporizador systemd llamada systemd-tmpfiles-clean.timer activa a intervalos regulares la unidad systemd-tmpfiles-clean.service, que ejecuta el comando systemd-tmpfiles --clean. La configuración de una unidad de temporizador systemd tiene una sección [Temporizador] para indicar cómo iniciar el servicio con el mismo nombre que el temporizador. Utilice el siguiente comando systemctl para ver el contenido de la unidad systemd-tmpfiles-clean.timer
+
+configuration file:
+
+
+
+
+
+12.3. Administrar archivos temporales
+
+user@host:~$ systemctl cat systemd-tmpfiles-clean.timer
+# /usr/lib/systemd/system/systemd-tmpfiles-clean.timer
+#  SPDX-License-Identifier: LGPL-2.1-or-later
+
+#
+
+#  This file is part of systemd.
+
+...salida omitida... [Unidad] Descripción=Limpieza diaria de directorios temporales Documentación=man:tmpfiles.d(5) man:systemd-tmpfiles(8) ConditionPathExists=!/etc/initrd-release [Temporizador] OnBootSec=15min OnUnitActiveSec=1d En la configuración anterior, el parámetro OnBootSec=15min indica que systemd-tmpfiles-
+
+clean.service unit gets triggered 15 minutes after the system boots up. The OnUnitActiveSec=1d parameter
+
+indica que cualquier activación adicional de la unidad systemd-tmpfiles-clean.service ocurre 24 horas después de que la unidad de servicio se activó por última vez. Cambie los parámetros en el archivo de configuración de la unidad systemd-tmpfiles-clean.timer para cumplir con sus requisitos. Por ejemplo, un valor de 30 minutos para el parámetro OnUnitActiveSec activa la unidad systemd-tmpfiles-clean.service 30 minutos después de que se activó por última vez. Como resultado, la unidad systemd-tmpfiles-clean.service se activa cada 30 minutos después de que se reconocen los cambios. Después de cambiar el archivo de configuración de la unidad del temporizador, use el comando systemctl daemon-reload para asegurarse de que el demonio systemd cargue la nueva configuración.
+
+root@host:~# systemctl daemon-reload
+
+Puede ver el estado de la unidad del temporizador, incluso si está cargado en la memoria o activo, usando systemctl
+
+status command:
+root@host:~# systemctl status systemd-tmpfiles-clean.timer
+
+● systemd-tmpfiles-clean.timer: limpieza diaria de directorios temporales
+
+     Loaded: loaded (/usr/lib/.../systemd-tmpfiles-clean.timer; static)
+     Active: active (waiting) since Fri 2025-05-30 13:59:31 UTC; 19min ago
+
+Invocación: 497008f1a6594041812a660b64f3c550
+
+    Trigger: Sat 2025-05-31 14:14:31 UTC; 23h left
+   Triggers: ● systemd-tmpfiles-clean.service
+       Docs: man:tmpfiles.d(5)
+             man:systemd-tmpfiles(8)
+
+30 de mayo 13:59:31 host systemd[1]: iniciado systemd-tmpfiles-clean... Limpiar archivos temporales manualmente El comando systemd-tmpfiles --clean analiza los mismos archivos de configuración que systemd-tmpfiles --
+
+create command; instead of creating files and directories, it purges all files that were not accessed, changed, or
+
+modificado más recientemente que la antigüedad máxima definida en el archivo de configuración. Para obtener información detallada sobre el formato de los archivos de configuración para el servicio systemd-tmpfiles, consulte la página del comando man tmpfiles.d(5). La sintaxis consta de las siguientes columnas: Tipo, Ruta, Modo, UID, GID, Edad y Argumento. El tipo se refiere a la acción que debe realizar el servicio systemd-tmpfiles; por ejemplo, la opción d para crear un directorio si no existe, o
+
+
+
+
+
+12.3. Administrar archivos temporales la opción Z para restaurar recursivamente contextos SELinux, permisos de archivos y propiedad. El siguiente ejemplo purga una configuración en el directorio /run/systemd/seats: d /run/systemd/seats 0755 root root: crea el directorio /run/systemd/seats si no existe. Si el directorio existe, no realiza ninguna acción. Establece el usuario raíz y el grupo raíz como propietarios. Establece los permisos del archivo en 0755 (rwxr-xr-x). No establece una edad ni ningún argumento adicional. El servicio systemd-tmpfiles no borra este directorio automáticamente. El siguiente ejemplo elimina archivos del directorio /home/student a los que no se accedió, no se modificó ni se modificó.
+
+for more than one day:
+
+D /home/student 0700 estudiante estudiante 1d Crea el directorio /home/student si no existe. Si el directorio existe, elimina todo su contenido. Establece el usuario estudiante y el grupo de estudiantes como propietarios. Establece los permisos del archivo en 0700 (rwx------). Establece la edad en un día. No establece ningún argumento adicional. Cuando el sistema ejecuta el comando systemd-tmpfiles --clean, todos los archivos a los que no accedió, cambió o modificó durante más de un día se eliminan del directorio /home/student. El siguiente ejemplo crea un enlace simbólico al directorio /etc/fstab: L /run/fstablink - raíz raíz - /etc/fstab Crea el enlace simbólico /run/fstablink para apuntar al directorio /etc/fstab. Establece el usuario raíz y el grupo raíz como propietarios. Nunca purga automáticamente esta línea. No establece los permisos ni la edad. Establece el argumento en /etc/fstab para indicar el origen del enlace. Precedencia de archivos de configuración Los archivos de configuración del servicio systemd-tmpfiles-clean pueden existir en tres lugares: /etc/tmpfiles.d/*.conf /run/tmpfiles.d/*.conf /usr/lib/tmpfiles.d/*.conf Utilice los archivos en el directorio /etc/tmpfiles.d/ para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor. Los archivos en el directorio /run/tmpfiles.d/ son archivos volátiles, que los demonios normalmente usan para administrar sus propios archivos temporales de tiempo de ejecución. Los paquetes RPM relevantes proporcionan los archivos en /usr/lib/tmpfiles.d/
+
+directory; therefore do not edit these files.
+
+
+
+
+
+12.3. Administrar archivos temporales Si un archivo en el directorio /run/tmpfiles.d/ tiene el mismo nombre de archivo que un archivo en el directorio /usr/lib/tmpfiles.d/, entonces el servicio usa el archivo en el directorio /run/tmpfiles.d/. Si un archivo en el directorio /etc/tmpfiles.d/ tiene el mismo nombre de archivo que un archivo en los directorios /run/tmpfiles.d/ o /usr/lib/tmpfiles.d/, entonces el servicio usa el archivo en el directorio /etc/tmpfiles.d/. Dadas estas reglas de precedencia, puede anular la configuración proporcionada por el proveedor copiando el archivo relevante al directorio /etc/tmpfiles.d/ y editándolo. Al utilizar estas ubicaciones de configuración correctamente, puede administrar las configuraciones configuradas por el administrador desde un sistema de administración de configuración central, y las actualizaciones de paquetes no sobrescriben sus configuraciones configuradas. Nota Al probar configuraciones nuevas o modificadas, aplique solo los comandos de un único archivo de configuración a la vez. Especifique el nombre del archivo de configuración único en la línea de comando systemd-tmpfiles. Referencias a las páginas man systemd-tmpfiles(8), tmpfiles.d(5), stat(1), stat(2) y systemd.timer(5)
+
+
+
+
+
+12.4. Ejercicio guiado Gestionar archivos temporales 12.4. Ejercicio guiado Administrar archivos temporales Utilice una unidad de temporizador para programar una tarea que borre archivos temporales en el sistema. Resultados Configure systemd-tmpfiles para eliminar archivos temporales no utilizados del directorio /tmp. Configure systemd-tmpfiles para borrar periódicamente archivos de otro directorio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-tempfiles
+
+Instrucciones Inicie sesión en el sistema servera como usuario estudiante y cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio systemd-tmpfiles para limpiar el directorio /tmp de cualquier archivo no utilizado de los últimos cinco días. Asegúrese de que una actualización del paquete no sobrescriba los archivos de configuración. 2. Copie el archivo /usr/lib/tmpfiles.d/tmp.conf al directorio /etc/tmpfiles.d.
+
+[root@servera ~]# cp /usr/lib/tmpfiles.d/tmp.conf \
+
+/etc/tmpfiles.d/tmp.conf 2.1. Reemplace la antigüedad existente de los archivos temporales en la línea de configuración relevante con la nueva antigüedad de 5 días (5d). Asegúrese de que todas las demás líneas se eliminen del archivo y que solo esté presente la siguiente línea: En la configuración, el tipo q es el mismo que el tipo d. Al utilizar el tipo q o d, el servicio systemd-tmpfiles crea el directorio /tmp si no existe. Los permisos octales del directorio deben establecerse en 1777. Tanto el usuario propietario como el grupo del directorio /tmp deben configurarse como usuario raíz. El directorio /tmp no debe contener ningún archivo temporal no utilizado de los últimos cinco días. q /tmp 1777 raíz raíz 5d 2.2. Utilice el comando systemd-tmpfiles --clean para verificar la configuración del archivo /etc/tmpfiles.d/tmp.conf. Si el código de salida es 0, entonces los ajustes de configuración son correctos. 2.3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar archivos temporales
+
+12.4. Ejercicio guiado Gestionar archivos temporales 12.4. Ejercicio guiado Administrar archivos temporales Utilice una unidad de temporizador para programar una tarea que borre archivos temporales en el sistema. Resultados Configure systemd-tmpfiles para eliminar archivos temporales no utilizados del directorio /tmp. Configure systemd-tmpfiles para borrar periódicamente archivos de otro directorio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-tempfiles
+
+Instrucciones Inicie sesión en el sistema servera como usuario estudiante y cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio systemd-tmpfiles para limpiar el directorio /tmp de cualquier archivo no utilizado de los últimos cinco días. Asegúrese de que una actualización del paquete no sobrescriba los archivos de configuración. 2. Copie el archivo /usr/lib/tmpfiles.d/tmp.conf al directorio /etc/tmpfiles.d.
+
+[root@servera ~]# cp /usr/lib/tmpfiles.d/tmp.conf \
+
+/etc/tmpfiles.d/tmp.conf 2.1. Reemplace la antigüedad existente de los archivos temporales en la línea de configuración relevante con la nueva antigüedad de 5 días (5d). Asegúrese de que todas las demás líneas se eliminen del archivo y que solo esté presente la siguiente línea: En la configuración, el tipo q es el mismo que el tipo d. Al utilizar el tipo q o d, el servicio systemd-tmpfiles crea el directorio /tmp si no existe. Los permisos octales del directorio deben establecerse en 1777. Tanto el usuario propietario como el grupo del directorio /tmp deben configurarse como usuario raíz. El directorio /tmp no debe contener ningún archivo temporal no utilizado de los últimos cinco días. q /tmp 1777 raíz raíz 5d 2.2. Utilice el comando systemd-tmpfiles --clean para verificar la configuración del archivo /etc/tmpfiles.d/tmp.conf. Si el código de salida es 0, entonces los ajustes de configuración son correctos. 2.3.
+
+
+
+
+
+12.4. Ejercicio guiado Administrar archivos temporales
+
+[root@servera ~]# systemd-tmpfiles --clean /etc/tmpfiles.d/tmp.conf
+[root@servera ~]# echo $?
+
+0 Agregue un nuevo archivo de configuración /etc/tmpfiles.d/momentary.conf que garantice que el directorio /run/momentary exista y que la propiedad esté configurada para el usuario raíz y el grupo raíz. Los permisos octales para el directorio deben ser 0700. La configuración debe eliminar de este directorio todos los archivos que no se hayan utilizado en los últimos 30 segundos. 3. Cree el archivo /etc/tmpfiles.d/momentary.conf con el siguiente contenido. d /run/momentary 0700 raíz raíz 30s 3.1. Verifique la configuración del archivo /etc/tmpfiles.d/momentary.conf. El comando crea el directorio /run/momentary si no existe. Si el comando no devuelve ningún error, entonces los ajustes de configuración son correctos.
+
+[root@servera ~]# systemd-tmpfiles --create /etc/tmpfiles.d/momentary.conf
+[root@servera ~]# echo $?
+
+0 3.2. Verifique que el comando systemd-tmpfiles cree el directorio /run/momentary con los permisos, el propietario y el propietario del grupo adecuados. El permiso octal para el directorio /run/momentary se establece en 0700 y la propiedad del usuario y del grupo se establece en root.
+
+[root@servera ~]# ls -ld /run/momentary
+drwx------. 2 root root 40 Apr  4 06:35 /run/momentary
+
+3.3. Verifique que el comando systemd-tmpfiles --clean elimine cualquier archivo del directorio /run/momentary que no se haya utilizado en los últimos 30 segundos, según la configuración de systemd-tmpfiles para el directorio. 4. Cree un archivo /run/momentary/test vacío.
+
+[root@servera ~]# touch /run/momentary/test
+
+4.1. Configure su indicador de shell para que no regrese durante 30 segundos.
+
+[root@servera ~]# sleep 30
+
+4.2. Después de que regrese el indicador de shell, limpie todos los archivos obsoletos en el directorio /run/momentary, según la regla a la que se hace referencia en el archivo de configuración /etc/tmpfiles.d/momentary.conf. El comando elimina el archivo /run/momentary/test porque no se utiliza durante 30 segundos. Este comportamiento se basa en la regla a la que se hace referencia en el archivo de configuración /etc/tmpfiles.d/momentary.conf.
+
+[root@servera ~]# systemd-tmpfiles --clean /etc/tmpfiles.d/momentary.conf
+
+4.3. Verifique que el archivo /run/momentary/test no exista. 4.4.
+
+
+
+
+
+12.4. Ejercicio guiado Administrar archivos temporales Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish systasks-tempfiles
+[root@servera ~]# ls -l /run/momentary/test
+ls: cannot access '/run/momentary/test': No such file or directory
+
+Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+12.5. Programación de tareas recurrentes del sistema con Cron 12.5. Programación de tareas recurrentes del sistema con objetivos de Cron Programe los comandos para que se ejecuten de forma recurrente utilizando el archivo crontab del sistema y los directorios de Cron. Trabajos recurrentes del sistema Los administradores del sistema a menudo necesitan ejecutar trabajos recurrentes. Es mejor ejecutar estos trabajos desde cuentas del sistema en lugar de cuentas de usuario. Programe estos trabajos con archivos crontab de todo el sistema en lugar de con el comando crontab. Las entradas de trabajo en los archivos crontab de todo el sistema son similares a las entradas crontab de los usuarios. Los archivos crontab de todo el sistema tienen un campo adicional antes del campo de comando para especificar el usuario que ejecuta el comando. El archivo /etc/crontab tiene un diagrama de sintaxis en los comentarios. SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root
+
+# For details see man 4 crontabs
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue...
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+
+El archivo /etc/crontab y otros archivos en el directorio /etc/cron.d definen los trabajos recurrentes del sistema. Cree siempre archivos crontab personalizados en el directorio /etc/cron.d para programar trabajos recurrentes del sistema. Coloque el archivo crontab personalizado en el directorio /etc/cron.d para evitar que una actualización del paquete sobrescriba el archivo /etc/crontab. Los paquetes que requieren trabajos recurrentes del sistema colocan sus archivos crontab en el directorio /etc/cron.d con las entradas del trabajo. Los administradores también utilizan esta ubicación para agrupar trabajos relacionados en un solo archivo. El sistema crontab también incluye repositorios de scripts que se ejecutan cada hora, día, semana o mes. Estos repositorios se colocan en los directorios /etc/cron.hourly, /etc/cron.daily, /etc/cron.weekly o /etc/cron.monthly. Estos directorios contienen scripts de shell ejecutables, no archivos crontab. Nota Utilice el comando chmod +x script_name para convertir un script en ejecutable. Un script debe ser ejecutable para ejecutarse. Archivos Crontab del sistema predeterminados Cada script en el directorio /etc/cron.hourly es un trabajo que se ejecuta a través del archivo crontab del sistema secundario /etc/cron.d/0hourly. Este archivo crontab indica al demonio crond que ejecute el comando run-parts en el directorio /etc/cron.hourly, como usuario root, un minuto después de cada hora. El comando run-parts ejecuta todos los archivos ejecutables que encuentra dentro del directorio.
+
+
+
+
+
+
+
+## 12.5. Programar tareas recurrentes del sistema con Cron
+
+12.5. Programación de tareas recurrentes del sistema con Cron 12.5. Programación de tareas recurrentes del sistema con objetivos de Cron Programe los comandos para que se ejecuten de forma recurrente utilizando el archivo crontab del sistema y los directorios de Cron. Trabajos recurrentes del sistema Los administradores del sistema a menudo necesitan ejecutar trabajos recurrentes. Es mejor ejecutar estos trabajos desde cuentas del sistema en lugar de cuentas de usuario. Programe estos trabajos con archivos crontab de todo el sistema en lugar de con el comando crontab. Las entradas de trabajo en los archivos crontab de todo el sistema son similares a las entradas crontab de los usuarios. Los archivos crontab de todo el sistema tienen un campo adicional antes del campo de comando para especificar el usuario que ejecuta el comando. El archivo /etc/crontab tiene un diagrama de sintaxis en los comentarios. SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root
+
+# For details see man 4 crontabs
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue...
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+
+El archivo /etc/crontab y otros archivos en el directorio /etc/cron.d definen los trabajos recurrentes del sistema. Cree siempre archivos crontab personalizados en el directorio /etc/cron.d para programar trabajos recurrentes del sistema. Coloque el archivo crontab personalizado en el directorio /etc/cron.d para evitar que una actualización del paquete sobrescriba el archivo /etc/crontab. Los paquetes que requieren trabajos recurrentes del sistema colocan sus archivos crontab en el directorio /etc/cron.d con las entradas del trabajo. Los administradores también utilizan esta ubicación para agrupar trabajos relacionados en un solo archivo. El sistema crontab también incluye repositorios de scripts que se ejecutan cada hora, día, semana o mes. Estos repositorios se colocan en los directorios /etc/cron.hourly, /etc/cron.daily, /etc/cron.weekly o /etc/cron.monthly. Estos directorios contienen scripts de shell ejecutables, no archivos crontab. Nota Utilice el comando chmod +x script_name para convertir un script en ejecutable. Un script debe ser ejecutable para ejecutarse. Archivos Crontab del sistema predeterminados Cada script en el directorio /etc/cron.hourly es un trabajo que se ejecuta a través del archivo crontab del sistema secundario /etc/cron.d/0hourly. Este archivo crontab indica al demonio crond que ejecute el comando run-parts en el directorio /etc/cron.hourly, como usuario root, un minuto después de cada hora. El comando run-parts ejecuta todos los archivos ejecutables que encuentra dentro del directorio.
+
+
+
+
+
+12.5. Programar tareas recurrentes del sistema con Cron
+
+root@host:~# cat /etc/cron.d/0hourly
+# Run the hourly jobs
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root 01 * * * * root run-parts /etc/cron.hourly Creación de una tarea cron del sistema Para configurar una tarea cron del sistema, agregue un archivo crontab en el directorio /etc/cron.d. Por ejemplo, el siguiente archivo crontab llamado /etc/cron.d/timestamp_example agrega un archivo temporal llamado /tmp/timestamp_example.txt con la salida del comando de fecha cada dos minutos.
+
+# Example timestamp cronjob
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root */2 * * * * fecha raíz >> /tmp/timestamp_example.txt La notación */2 indica un valor de paso de dos. En el campo de los minutos, esta notación se interpreta como "cada dos minutos". Después de varios minutos, el archivo /tmp/timestamp_example.txt muestra evidencia de que se está ejecutando el comando de fecha.
+
+executed every two minutes:
+root@host:~# cat /tmp/timestamp_example.txt
+
+Viernes 30 de mayo 15:48:01 UTC 2025 Viernes 30 de mayo 15:50:01 UTC 2025 Viernes 30 de mayo 15:52:01 UTC 2025 Viernes 30 de mayo 15:54:01 UTC 2025 ... salida omitida... Importante Aparte de los comentarios, el archivo /etc/crontab está vacío de forma predeterminada. Nunca edites el /etc/crontab
+
+file directly; use this file solely as a reference. Place individual crontab files in the /etc/cron.d directory
+
+en cambio. Los paquetes del sistema también pueden instalar archivos crontab relacionados en el directorio /etc/cron.d. Para reducir el cambio de una colisión de nombre de archivo, incluya una cadena en el nombre del archivo crontab que lo identifique de forma única. Ejecute comandos periódicos con Anacron El comando anacron utiliza el script run-parts para ejecutar trabajos diarios, semanales o mensuales desde el archivo de configuración /etc/anacrontab de forma recurrente. Además, el comando anacron es responsable de ejecutar trabajos del sistema estandarizados en horarios predefinidos. Mientras que el demonio crond puede ejecutar tareas urgentes en sistemas que se supone que siempre están en ejecución, el comando anacron garantiza que las tareas programadas siempre se ejecuten y no se omitan accidentalmente porque el sistema se apagó o hibernó. Por ejemplo, cuando un trabajo del sistema que se ejecuta diariamente no se ejecutó a una hora específica porque el sistema se estaba reiniciando, el trabajo se completa cuando el sistema está listo. Es posible que se produzca un retraso antes de que comience el trabajo, si se especifica en el parámetro Retraso en minutos del archivo /etc/anacrontab.
+
+
+
+
+
+12.5. La programación de tareas recurrentes del sistema con archivos Cron en el directorio /var/spool/anacron determina los trabajos diarios, semanales o mensuales. Cuando el demonio crond inicia un trabajo desde el archivo /etc/anacrontab, actualiza las marcas de tiempo de esos archivos. Con esta marca de tiempo, puede determinar la última vez que se ejecutó el trabajo. La sintaxis del archivo /etc/anacrontab es diferente de la de los archivos de configuración crontab normales. El archivo /etc/anacrontab contiene cuatro campos por línea, como se muestra en el siguiente ejemplo:
+
+# /etc/anacrontab: configuration file for anacron
+# See anacron(8) and anacrontab(5) for details.
+
+SHELL=/bin/sh PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root
+
+# the maximal random delay added to the base delay of the jobs
+
+RANDOM_DELAY=45
+
+# the jobs will be started during the following hours only
+
+START_HOURS_RANGE=3-22 #período en días retraso en minutos comando identificador de trabajo 1 5 cron.daily nice run-parts /etc/cron.daily 7 25 cron.weekly nice run-parts /etc/cron.weekly @monthly 45 cron.monthly nice run-parts /etc/cron.monthly Período en días Define el intervalo en días para que el trabajo se ejecute en un cronograma recurrente. Este campo acepta un valor entero o macro. Por ejemplo, la macro @daily equivale al número entero 1, que ejecuta el trabajo diariamente. De manera similar, la macro @weekly equivale al número entero 7, que ejecuta el trabajo semanalmente. Retraso en minutos Define el tiempo que el demonio crond debe esperar antes de comenzar el trabajo. Identificador de trabajo Identifica el nombre exclusivo del trabajo en los mensajes de registro. Comando El comando que se ejecutará. El archivo /etc/anacrontab también contiene declaraciones de variables de entorno con la sintaxis NOMBRE=valor. La variable START_HOURS_RANGE especifica el intervalo de tiempo para que se ejecuten los trabajos. Los trabajos no comienzan fuera de este rango. Si un trabajo no se ejecuta dentro de este intervalo de tiempo en un día determinado, entonces el trabajo debe esperar hasta el día siguiente para su ejecución. Relación entre Cron y Anacron El servicio de programación de comandos crond.service y el comando anacron funcionan juntos de la siguiente manera: Recuerde que el directorio /etc/cron.d incluye un archivo crontab de 0 horas que, cada hora y un minuto, ejecuta el comando run-parts /etc/cron.hourly como usuario raíz. El directorio /etc/cron.hourly contiene un script de shell llamado 0anacron que, a su vez, ejecuta condicionalmente el comando /usr/sbin/anacron -s. Cuando se ejecuta, el comando /usr/sbin/anacron -s lee el archivo de configuración /etc/anacrontab y ejecuta el comando nice run-parts en los archivos /etc/cron.daily, /etc/cron.weekly y /etc/cron.monthly en intervalos de tiempo particulares, incluido un retraso aleatorio de hasta 45 minutos.
+
+
+
+
+
+12.5. Programación de tareas recurrentes del sistema con Cron Nota El comando crontabs es un nombre heredado para el script run-parts y el crontab del sistema. Referencias a las páginas man de crontab(5), crontabs(4), anacron(8), anacrontab(5) y crond(8)
+
+
+
+
+
+12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron 12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron Programe una tarea recurrente del sistema utilizando el archivo crontab del sistema en el directorio Cron. Resultados Programe un trabajo recurrente del sistema para contar la cantidad de usuarios activos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-syscron
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree un archivo crontab llamado usercount en el directorio /etc/cron.d que genere un mensaje de registro para indicar la cantidad de usuarios activos en el sistema. Configure el archivo crontab para que se ejecute como usuario root cada tres minutos. Utilice el comando del registrador "Hay usuarios activos `w -h | wc -l`" para generar el mensaje de registro. Confirme que el mensaje se está registrando utilizando tail -f /var/log/messages | grep --line- comando "Hay" almacenado en búfer. 2. Cree el archivo crontab /etc/cron.d/usercount con el siguiente contenido. El `w -h | El comando wc -l` recupera una lista de usuarios activos en el sistema y luego los cuenta.
+
+# Log the number of active users
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root */3 * * * * registrador raíz "Hay usuarios activos `w -h | wc -l`" 2.1. Espere al menos tres minutos y confirme que el mensaje se esté registrando. Utilice la cola -f /var/log/messages | grep --line-buffered comando "Hay". La cantidad de usuarios activos puede diferir en su sistema.
+
+[root@servera ~]# tail -f /var/log/messages |\
+grep --line-buffered "There are"
+
+30 de mayo 17:39:01 raíz de la estación de trabajo [5750]: Hay 4 usuarios activos 2.2. Regrese a la máquina de la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Programar una tarea recurrente del sistema con Cron
+
+12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron 12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron Programe una tarea recurrente del sistema utilizando el archivo crontab del sistema en el directorio Cron. Resultados Programe un trabajo recurrente del sistema para contar la cantidad de usuarios activos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-syscron
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree un archivo crontab llamado usercount en el directorio /etc/cron.d que genere un mensaje de registro para indicar la cantidad de usuarios activos en el sistema. Configure el archivo crontab para que se ejecute como usuario root cada tres minutos. Utilice el comando del registrador "Hay usuarios activos `w -h | wc -l`" para generar el mensaje de registro. Confirme que el mensaje se está registrando utilizando tail -f /var/log/messages | grep --line- comando "Hay" almacenado en búfer. 2. Cree el archivo crontab /etc/cron.d/usercount con el siguiente contenido. El `w -h | El comando wc -l` recupera una lista de usuarios activos en el sistema y luego los cuenta.
+
+# Log the number of active users
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root */3 * * * * registrador raíz "Hay usuarios activos `w -h | wc -l`" 2.1. Espere al menos tres minutos y confirme que el mensaje se esté registrando. Utilice la cola -f /var/log/messages | grep --line-buffered comando "Hay". La cantidad de usuarios activos puede diferir en su sistema.
+
+[root@servera ~]# tail -f /var/log/messages |\
+grep --line-buffered "There are"
+
+30 de mayo 17:39:01 raíz de la estación de trabajo [5750]: Hay 4 usuarios activos 2.2. Regrese a la máquina de la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+
+12.6. Ejercicio guiado Programar una tarea recurrente del sistema con finalización cron En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish systasks-syscron
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+12.7. Programación de pruebas de tareas de usuario 12.7. Prueba de programación de tareas de usuario Elija las respuestas correctas a las siguientes preguntas: ¿Qué directorio se utiliza para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor para el servicio systemd-tmpfiles-clean? 1. /usr/lib/tmpfiles.d/ a. /var/tmpfiles.d/ b. /etc/tmpfiles.d/ c. /run/tmpfiles.d/ d. ¿Qué archivo de configuración define las configuraciones para los trabajos del sistema que se ejecutan diariamente, semanalmente y mensualmente? 2. /etc/crontab a. /etc/anacrontab b. /etc/inittab c. /etc/sysconfig/crond d. ¿Qué unidad systemd activa periódicamente la limpieza de archivos temporales? 3. systemd-tmpfiles-clean.timer a. systemd-tmpfiles-clean.servicio b.
+
+dnf-makecache.timer
+
+do. temporizador-anclaje-independiente d. ¿Qué comando habilita e inicia una unidad systemd en un solo paso? 4. systemd --enable --start a.
+
+systemctl --now
+
+b.
+
+systemctl enable --now
+
+do. system.d habilitar --start d. ¿Qué comando garantiza que el demonio systemd cargue una nueva configuración? 5. recarga de sysctl a.
+
+systemctl daemon --reload
+
+b. demonio de recarga systemd c.
+
+systemctl daemon-reload
+
+d. ¿En qué directorio se colocan los archivos crontab personalizados? 6. /etc/crontab.d a. /etc/cron.db. /etc/cron.personalizado c. /etc/crontab d.
+
+
+
+
+
+
+
+## Cuestionario: Tareas de usuario de programación de pruebas
+
+12.7. Programación de pruebas de tareas de usuario 12.7. Prueba de programación de tareas de usuario Elija las respuestas correctas a las siguientes preguntas: ¿Qué directorio se utiliza para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor para el servicio systemd-tmpfiles-clean? 1. /usr/lib/tmpfiles.d/ a. /var/tmpfiles.d/ b. /etc/tmpfiles.d/ c. /run/tmpfiles.d/ d. ¿Qué archivo de configuración define las configuraciones para los trabajos del sistema que se ejecutan diariamente, semanalmente y mensualmente? 2. /etc/crontab a. /etc/anacrontab b. /etc/inittab c. /etc/sysconfig/crond d. ¿Qué unidad systemd activa periódicamente la limpieza de archivos temporales? 3. systemd-tmpfiles-clean.timer a. systemd-tmpfiles-clean.servicio b.
+
+dnf-makecache.timer
+
+do. temporizador-anclaje-independiente d. ¿Qué comando habilita e inicia una unidad systemd en un solo paso? 4. systemd --enable --start a.
+
+systemctl --now
+
+b.
+
+systemctl enable --now
+
+do. system.d habilitar --start d. ¿Qué comando garantiza que el demonio systemd cargue una nueva configuración? 5. recarga de sysctl a.
+
+systemctl daemon --reload
+
+b. demonio de recarga systemd c.
+
+systemctl daemon-reload
+
+d. ¿En qué directorio se colocan los archivos crontab personalizados? 6. /etc/crontab.d a. /etc/cron.db. /etc/cron.personalizado c. /etc/crontab d.
+
+
+
+
+
+12.7. Programación de pruebas Tareas de usuario ¿Qué notación de archivo crontab indica un valor de paso de 7? 7. */7a. siete b. 7c. 7 * * * * re.
+
+
+
+
+
+12.7. Prueba Programación de tareas de usuario Solución ¿Qué directorio se utiliza para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor para el servicio systemd-tmpfiles-clean? 1. /usr/lib/tmpfiles.d/ a. /var/tmpfiles.d/ b. /etc/tmpfiles.d/ c. /run/tmpfiles.d/ d. ¿Qué archivo de configuración define las configuraciones para los trabajos del sistema que se ejecutan diariamente, semanalmente y mensualmente? 2. /etc/crontab a. /etc/anacrontab b. /etc/inittab c. /etc/sysconfig/crond d. ¿Qué unidad systemd activa periódicamente la limpieza de archivos temporales? 3. systemd-tmpfiles-clean.timer a. systemd-tmpfiles-clean.servicio b.
+
+dnf-makecache.timer
+
+do. temporizador-anclaje-independiente d. ¿Qué comando habilita e inicia una unidad systemd en un solo paso? 4. systemd --enable --start a.
+
+systemctl --now
+
+b.
+
+systemctl enable --now
+
+do. system.d habilitar --start d. ¿Qué comando garantiza que el demonio systemd cargue una nueva configuración? 5. recarga de sysctl a.
+
+systemctl daemon --reload
+
+b. demonio de recarga systemd c.
+
+systemctl daemon-reload
+
+d. ¿En qué directorio se colocan los archivos crontab personalizados? 6. /etc/crontab.d a. /etc/cron.db. /etc/cron.personalizado c. /etc/crontab d.
+
+
+
+
+
+12.7. Programación de pruebas Tareas de usuario ¿Qué notación de archivo crontab indica un valor de paso de 7? 7. */7a. siete b. 7c. 7 * * * * re.
+
+
+
+
+
+12.8. Resumen 12.8. Resumen En esta lección, aprendió sobre los métodos que se utilizan para ejecutar tareas recurrentes del sistema automáticamente. La mayoría de las tareas recurrentes del sistema ahora utilizan unidades de temporizador systemd. Las unidades temporizadoras activan otros tipos de unidades, generalmente unidades de servicio, para realizar tareas en fechas y horas o intervalos específicos. La herramienta systemd-tmpfiles proporciona una forma estructurada de administrar directorios y archivos temporales. Limpiar y mantener archivos temporales es crucial para ayudar a prevenir problemas de espacio en disco y mantener actualizados los datos de trabajo. El demonio crond monitorea los archivos crontab para ejecutar tareas recurrentes y urgentes en sistemas que siempre están en ejecución. El demonio crond también está configurado para usar el comando anacron para ayudar a garantizar que los trabajos programados no se omitan debido a que el sistema no se ejecuta en un momento específico y, en general, para ejecutar trabajos estandarizados del sistema en un cronograma preestablecido.
+
+
+
+
+
+
+
+## Resumen
+
+12.8. Resumen 12.8. Resumen En esta lección, aprendió sobre los métodos que se utilizan para ejecutar tareas recurrentes del sistema automáticamente. La mayoría de las tareas recurrentes del sistema ahora utilizan unidades de temporizador systemd. Las unidades temporizadoras activan otros tipos de unidades, generalmente unidades de servicio, para realizar tareas en fechas y horas o intervalos específicos. La herramienta systemd-tmpfiles proporciona una forma estructurada de administrar directorios y archivos temporales. Limpiar y mantener archivos temporales es crucial para ayudar a prevenir problemas de espacio en disco y mantener actualizados los datos de trabajo. El demonio crond monitorea los archivos crontab para ejecutar tareas recurrentes y urgentes en sistemas que siempre están en ejecución. El demonio crond también está configurado para usar el comando anacron para ayudar a garantizar que los trabajos programados no se omitan debido a que el sistema no se ejecuta en un momento específico y, en general, para ejecutar trabajos estandarizados del sistema en un cronograma preestablecido.
+
+
+
+
+
+Capítulo 13. Análisis y almacenamiento de registros Objetivo Localizar e interpretar los registros del sistema para solucionar problemas y garantizar marcas de tiempo precisas para los eventos de registro. Secciones Arquitectura de registros del sistema (y cuestionario) Interpretación y gestión de eventos Syslog (y ejercicio guiado) Búsqueda e interpretación de entradas de registro del diario del sistema (y ejercicio guiado) Configuración de un diario del sistema persistente (y ejercicio guiado) Mantenimiento de tiempo sincronizado (y ejercicio guiado) Análisis y almacenamiento de registros de laboratorio
+
+
+
+
+

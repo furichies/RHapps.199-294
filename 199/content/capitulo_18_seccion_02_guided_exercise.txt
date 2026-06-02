@@ -1,0 +1,124 @@
+# Ejercicio Guiado: Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar
+# Tipo: guided_exercise
+# Capítulo: Capítulo 15. Gestión del almacenamiento básico
+
+15.2. Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar 15.2. Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar Cree particiones de almacenamiento, formatéelas con sistemas de archivos y monte los sistemas de archivos cuando se inicie la computadora. Resultados Cree una partición utilizando el esquema de partición MBR. Formatee la partición con el sistema de archivos XFS. Montar persistentemente el sistema de archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start storage-partitions
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree el esquema de partición MBR en el dispositivo /dev/sdb.
+
+[root@servera ~]# parted /dev/sdb mklabel msdos
+
+Información: Es posible que necesite actualizar /etc/fstab. 2. Cree una partición primaria de 1 GB. Para una alineación correcta, inicie la partición en el sector 2048. Establezca el tipo de sistema de archivos de partición en XFS. Utilice el comando parted en modo interactivo para crear la partición. Alternativamente, puede realizar la misma operación usando el comando no interactivo parted /dev/sdb mkpart primario xfs 2048s 1001 MB. 3. Utilice el comando parted para crear la partición en el disco /dev/sdb.
+
+[root@servera ~]# parted /dev/sdb
+
+GNU Parted 3.6 Usando /dev/sdb ¡Bienvenido a GNU Parted! Escriba "ayuda" para ver una lista de comandos. 3.1. Utilice el subcomando mkpart para crear una partición primaria. (partido) mkpart ¿Tipo de partición?  primario/extendido? primaria 3.2. Establezca la etiqueta de tipo de sistema de archivos en xfs. 3.3.
+
+
+
+
+
+15.2. Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar ¿Tipo de sistema de archivos?  [ext2]? xfs Inicie la partición en el sector 2048s. ¿Comenzar? 2048 3.4. Debido a que la partición comienza en el sector 2048, establezca la posición final en 1001 MB para configurar un tamaño de partición de 1000 MB (1 GB). ¿Fin? 1001MB 3.5. Salga del comando separado. (separado) salir Información: Es posible que necesite actualizar /etc/fstab. 3.6. Verifique su trabajo enumerando las particiones en el dispositivo /dev/sdb.
+
+[root@servera ~]# parted /dev/sdb print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5369 MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: msdos Banderas de disco: Número Inicio Fin Tamaño Tipo Sistema de archivos Banderas 1 1049 kB 1001 MB 1000 MB principal 4. Utilice el comando udevadm asentamiento para esperar hasta que el archivo del dispositivo que representa la nueva partición esté disponible en el directorio /dev.
+
+[root@servera ~]# udevadm settle
+
+5. Formatee la nueva partición con el sistema de archivos XFS.
+
+[root@servera ~]# mkfs.xfs /dev/sdb1
+meta-data=/dev/sdb1         isize=512    agcount=4, agsize=61056 blks
+         =                  sectsz=512   attr=2, projid32bit=1
+         =                  crc=1        finobt=1, sparse=1, rmapbt=1
+         =                  reflink=1    bigtime=1 inobtcount=1 nrext64=1
+         =                  exchange=0
+data     =                  bsize=4096   blocks=244224, imaxpct=25
+         =                  sunit=0      swidth=0 blks
+naming   =version 2         bsize=4096   ascii-ci=0, ftype=1, parent=0
+log      =internal log      bsize=4096   blocks=16384, version=2
+         =                  sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none              extsz=4096   blocks=0, rtextents=0
+
+Descartando bloques... Listo. 6. Configure el nuevo sistema de archivos para que se monte de forma persistente en el directorio /archive. 7. Cree el directorio /archivo.
+
+[root@servera ~]# mkdir /archive
+
+7.1. Imprima el UUID del dispositivo /dev/sdb1 y anote el UUID para pasos futuros. El UUID del dispositivo puede ser diferente en su sistema. 7.2.
+
+
+
+
+
+15.2. Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar
+
+[root@servera ~]# lsblk --fs /dev/sdb
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID ... sdb └─sdb1 xfs 291bb68e-91b9-4522-8566-7cc1d848babd Agregue una entrada al archivo /etc/fstab. Reemplace el UUID con el que recuperó en el paso anterior. ...salida omitida... UUID=291bb68e-91b9-4522-8566-7cc1d848babd /archive xfs defaults 0 0 7.3. Actualice el demonio systemd para que el sistema registre la configuración del archivo /etc/fstab.
+
+[root@servera ~]# systemctl daemon-reload
+
+7.4. Monte el nuevo sistema de archivos que agregó al archivo /etc/fstab.
+
+[root@servera ~]# mount /archive
+
+7.5. Verifique que el nuevo sistema de archivos esté montado en el directorio /archive.
+
+[root@servera ~]# mount | grep /archive
+/dev/sdb1 on /archive type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+7.6. Reinicie la máquina del servidor. Inicie sesión en la máquina del servidor como usuario estudiante. Verifique que la partición /dev/sdb1 esté montada en el directorio /archive. Nota Después de reiniciar, los nombres de los dispositivos bloqueados, como /dev/sdb, pueden cambiar. Este comportamiento es poco común pero válido, debido a cómo el kernel de Linux enumera dinámicamente los dispositivos. Si el UUID es correcto en el archivo /etc/fstab, entonces el montaje seguirá funcionando correctamente independientemente del cambio de nombre del dispositivo. 8. Reinicie el servidor en una máquina.
+
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+8.1. Espere a que la máquina del servidor se reinicie e inicie sesión como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 8.2. Verifique que la partición /dev/sdb1 esté montada en el directorio /archive. Para mostrar la salida del
+
+mount command, do not provide a trailing slash with the partition.
+[student@servera ~]$ mount | grep /archive
+/dev/sdb1 on /archive type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+8.3. Regrese a la máquina de la estación de trabajo como usuario estudiante. 9.
+
+
+
+
+
+15.2. Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish storage-partitions
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+15.3. Gestión del espacio de intercambio 15.3. Gestión de objetivos del espacio de intercambio Crear y activar un espacio de intercambio para complementar la memoria física. Conceptos de espacio de intercambio Un espacio de intercambio es un área de un disco bajo el control del subsistema de administración de memoria del kernel de Linux. El kernel utiliza espacio de intercambio para complementar la RAM del sistema manteniendo páginas inactivas en la memoria. La memoria virtual de un sistema abarca la RAM del sistema combinada y el espacio de intercambio. Cuando el uso de memoria en un sistema excede un límite definido, el kernel busca en la RAM páginas de memoria inactivas asignadas a procesos. El kernel escribe las páginas inactivas en el área de intercambio y reasigna las páginas RAM a otros procesos. Si un programa requiere acceso a una página en el disco, entonces el núcleo localiza otra página de memoria inactiva, la escribe en el disco y recupera la página requerida del área de intercambio. Como las áreas de intercambio están en el disco, el intercambio es lento en comparación con la RAM. Aunque el espacio de intercambio aumenta la RAM del sistema, no considere el espacio de intercambio como una solución sostenible para la RAM insuficiente para su carga de trabajo. Cálculo del espacio de intercambio Los administradores deben dimensionar el espacio de intercambio según la carga de trabajo de la memoria del sistema. Los proveedores de aplicaciones a veces ofrecen recomendaciones para calcular el espacio de intercambio. La siguiente tabla proporciona orientación basada en la memoria física total. Tabla 21. Recomendaciones de RAM y espacio de intercambio 2 GB o menos El doble de RAM Tres veces la RAM Entre 2 GB y 8 GB Igual que la RAM El doble de RAM Entre 8 GB y 64 GB Al menos 4 GB 1,5 veces la RAM Más de 64 GB Al menos 4 GB No se recomienda la hibernación La función de hibernación de la computadora portátil y de escritorio utiliza el espacio de intercambio para guardar el contenido de la RAM antes de apagar el sistema. Cuando vuelve a encender el sistema, el kernel restaura el contenido de la RAM desde el espacio de intercambio y no requiere un inicio completo. Para esos sistemas, el espacio de intercambio debe ser mayor que la cantidad de RAM. Para obtener más información sobre el tamaño del espacio de intercambio, consulte el artículo de la base de conocimiento ¿Cuál es el tamaño de intercambio recomendado para las plataformas Red Hat? RAM Intercambiar espacio Intercambiar espacio si permite la hibernación
+
+
+
+
+

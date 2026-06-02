@@ -1,0 +1,99 @@
+# 12.5. Programar tareas recurrentes del sistema con Cron
+# Tipo: theory
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.5. Programación de tareas recurrentes del sistema con Cron 12.5. Programación de tareas recurrentes del sistema con objetivos de Cron Programe los comandos para que se ejecuten de forma recurrente utilizando el archivo crontab del sistema y los directorios de Cron. Trabajos recurrentes del sistema Los administradores del sistema a menudo necesitan ejecutar trabajos recurrentes. Es mejor ejecutar estos trabajos desde cuentas del sistema en lugar de cuentas de usuario. Programe estos trabajos con archivos crontab de todo el sistema en lugar de con el comando crontab. Las entradas de trabajo en los archivos crontab de todo el sistema son similares a las entradas crontab de los usuarios. Los archivos crontab de todo el sistema tienen un campo adicional antes del campo de comando para especificar el usuario que ejecuta el comando. El archivo /etc/crontab tiene un diagrama de sintaxis en los comentarios. SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root
+
+# For details see man 4 crontabs
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue...
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+
+El archivo /etc/crontab y otros archivos en el directorio /etc/cron.d definen los trabajos recurrentes del sistema. Cree siempre archivos crontab personalizados en el directorio /etc/cron.d para programar trabajos recurrentes del sistema. Coloque el archivo crontab personalizado en el directorio /etc/cron.d para evitar que una actualización del paquete sobrescriba el archivo /etc/crontab. Los paquetes que requieren trabajos recurrentes del sistema colocan sus archivos crontab en el directorio /etc/cron.d con las entradas del trabajo. Los administradores también utilizan esta ubicación para agrupar trabajos relacionados en un solo archivo. El sistema crontab también incluye repositorios de scripts que se ejecutan cada hora, día, semana o mes. Estos repositorios se colocan en los directorios /etc/cron.hourly, /etc/cron.daily, /etc/cron.weekly o /etc/cron.monthly. Estos directorios contienen scripts de shell ejecutables, no archivos crontab. Nota Utilice el comando chmod +x script_name para convertir un script en ejecutable. Un script debe ser ejecutable para ejecutarse. Archivos Crontab del sistema predeterminados Cada script en el directorio /etc/cron.hourly es un trabajo que se ejecuta a través del archivo crontab del sistema secundario /etc/cron.d/0hourly. Este archivo crontab indica al demonio crond que ejecute el comando run-parts en el directorio /etc/cron.hourly, como usuario root, un minuto después de cada hora. El comando run-parts ejecuta todos los archivos ejecutables que encuentra dentro del directorio.
+
+
+
+
+
+12.5. Programar tareas recurrentes del sistema con Cron
+
+root@host:~# cat /etc/cron.d/0hourly
+# Run the hourly jobs
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root 01 * * * * root run-parts /etc/cron.hourly Creación de una tarea cron del sistema Para configurar una tarea cron del sistema, agregue un archivo crontab en el directorio /etc/cron.d. Por ejemplo, el siguiente archivo crontab llamado /etc/cron.d/timestamp_example agrega un archivo temporal llamado /tmp/timestamp_example.txt con la salida del comando de fecha cada dos minutos.
+
+# Example timestamp cronjob
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root */2 * * * * fecha raíz >> /tmp/timestamp_example.txt La notación */2 indica un valor de paso de dos. En el campo de los minutos, esta notación se interpreta como "cada dos minutos". Después de varios minutos, el archivo /tmp/timestamp_example.txt muestra evidencia de que se está ejecutando el comando de fecha.
+
+executed every two minutes:
+root@host:~# cat /tmp/timestamp_example.txt
+
+Viernes 30 de mayo 15:48:01 UTC 2025 Viernes 30 de mayo 15:50:01 UTC 2025 Viernes 30 de mayo 15:52:01 UTC 2025 Viernes 30 de mayo 15:54:01 UTC 2025 ... salida omitida... Importante Aparte de los comentarios, el archivo /etc/crontab está vacío de forma predeterminada. Nunca edites el /etc/crontab
+
+file directly; use this file solely as a reference. Place individual crontab files in the /etc/cron.d directory
+
+en cambio. Los paquetes del sistema también pueden instalar archivos crontab relacionados en el directorio /etc/cron.d. Para reducir el cambio de una colisión de nombre de archivo, incluya una cadena en el nombre del archivo crontab que lo identifique de forma única. Ejecute comandos periódicos con Anacron El comando anacron utiliza el script run-parts para ejecutar trabajos diarios, semanales o mensuales desde el archivo de configuración /etc/anacrontab de forma recurrente. Además, el comando anacron es responsable de ejecutar trabajos del sistema estandarizados en horarios predefinidos. Mientras que el demonio crond puede ejecutar tareas urgentes en sistemas que se supone que siempre están en ejecución, el comando anacron garantiza que las tareas programadas siempre se ejecuten y no se omitan accidentalmente porque el sistema se apagó o hibernó. Por ejemplo, cuando un trabajo del sistema que se ejecuta diariamente no se ejecutó a una hora específica porque el sistema se estaba reiniciando, el trabajo se completa cuando el sistema está listo. Es posible que se produzca un retraso antes de que comience el trabajo, si se especifica en el parámetro Retraso en minutos del archivo /etc/anacrontab.
+
+
+
+
+
+12.5. La programación de tareas recurrentes del sistema con archivos Cron en el directorio /var/spool/anacron determina los trabajos diarios, semanales o mensuales. Cuando el demonio crond inicia un trabajo desde el archivo /etc/anacrontab, actualiza las marcas de tiempo de esos archivos. Con esta marca de tiempo, puede determinar la última vez que se ejecutó el trabajo. La sintaxis del archivo /etc/anacrontab es diferente de la de los archivos de configuración crontab normales. El archivo /etc/anacrontab contiene cuatro campos por línea, como se muestra en el siguiente ejemplo:
+
+# /etc/anacrontab: configuration file for anacron
+# See anacron(8) and anacrontab(5) for details.
+
+SHELL=/bin/sh PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root
+
+# the maximal random delay added to the base delay of the jobs
+
+RANDOM_DELAY=45
+
+# the jobs will be started during the following hours only
+
+START_HOURS_RANGE=3-22 #período en días retraso en minutos comando identificador de trabajo 1 5 cron.daily nice run-parts /etc/cron.daily 7 25 cron.weekly nice run-parts /etc/cron.weekly @monthly 45 cron.monthly nice run-parts /etc/cron.monthly Período en días Define el intervalo en días para que el trabajo se ejecute en un cronograma recurrente. Este campo acepta un valor entero o macro. Por ejemplo, la macro @daily equivale al número entero 1, que ejecuta el trabajo diariamente. De manera similar, la macro @weekly equivale al número entero 7, que ejecuta el trabajo semanalmente. Retraso en minutos Define el tiempo que el demonio crond debe esperar antes de comenzar el trabajo. Identificador de trabajo Identifica el nombre exclusivo del trabajo en los mensajes de registro. Comando El comando que se ejecutará. El archivo /etc/anacrontab también contiene declaraciones de variables de entorno con la sintaxis NOMBRE=valor. La variable START_HOURS_RANGE especifica el intervalo de tiempo para que se ejecuten los trabajos. Los trabajos no comienzan fuera de este rango. Si un trabajo no se ejecuta dentro de este intervalo de tiempo en un día determinado, entonces el trabajo debe esperar hasta el día siguiente para su ejecución. Relación entre Cron y Anacron El servicio de programación de comandos crond.service y el comando anacron funcionan juntos de la siguiente manera: Recuerde que el directorio /etc/cron.d incluye un archivo crontab de 0 horas que, cada hora y un minuto, ejecuta el comando run-parts /etc/cron.hourly como usuario raíz. El directorio /etc/cron.hourly contiene un script de shell llamado 0anacron que, a su vez, ejecuta condicionalmente el comando /usr/sbin/anacron -s. Cuando se ejecuta, el comando /usr/sbin/anacron -s lee el archivo de configuración /etc/anacrontab y ejecuta el comando nice run-parts en los archivos /etc/cron.daily, /etc/cron.weekly y /etc/cron.monthly en intervalos de tiempo particulares, incluido un retraso aleatorio de hasta 45 minutos.
+
+
+
+
+
+12.5. Programación de tareas recurrentes del sistema con Cron Nota El comando crontabs es un nombre heredado para el script run-parts y el crontab del sistema. Referencias a las páginas man de crontab(5), crontabs(4), anacron(8), anacrontab(5) y crond(8)
+
+
+
+
+
+12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron 12.6. Ejercicio guiado Programe una tarea recurrente del sistema con Cron Programe una tarea recurrente del sistema utilizando el archivo crontab del sistema en el directorio Cron. Resultados Programe un trabajo recurrente del sistema para contar la cantidad de usuarios activos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start systasks-syscron
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree un archivo crontab llamado usercount en el directorio /etc/cron.d que genere un mensaje de registro para indicar la cantidad de usuarios activos en el sistema. Configure el archivo crontab para que se ejecute como usuario root cada tres minutos. Utilice el comando del registrador "Hay usuarios activos `w -h | wc -l`" para generar el mensaje de registro. Confirme que el mensaje se está registrando utilizando tail -f /var/log/messages | grep --line- comando "Hay" almacenado en búfer. 2. Cree el archivo crontab /etc/cron.d/usercount con el siguiente contenido. El `w -h | El comando wc -l` recupera una lista de usuarios activos en el sistema y luego los cuenta.
+
+# Log the number of active users
+
+SHELL=/bin/bash PATH=/sbin:/bin:/usr/sbin:/usr/bin MAILTO=root */3 * * * * registrador raíz "Hay usuarios activos `w -h | wc -l`" 2.1. Espere al menos tres minutos y confirme que el mensaje se esté registrando. Utilice la cola -f /var/log/messages | grep --line-buffered comando "Hay". La cantidad de usuarios activos puede diferir en su sistema.
+
+[root@servera ~]# tail -f /var/log/messages |\
+grep --line-buffered "There are"
+
+30 de mayo 17:39:01 raíz de la estación de trabajo [5750]: Hay 4 usuarios activos 2.2. Regrese a la máquina de la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+

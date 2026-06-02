@@ -1,0 +1,164 @@
+# Cuestionario: Prueba de instalación y actualización de aplicaciones mediante Flatpak
+# Tipo: quiz
+# Capítulo: Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak
+
+7.5. Prueba de instalación y actualización de aplicaciones mediante Flatpak 7.5. Prueba Instalar y actualizar aplicaciones usando Flatpak Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando enumera todos los repositorios remotos de Flatpak que están configurados en su sistema? 1.
+
+flatpak remotes
+
+a.
+
+flatpak show-remotes
+
+b.
+
+flatpak get-remotes
+
+do.
+
+flatpak list-remotes
+
+d. ¿Cuál es el papel de un sandbox en Flatpak? 2. Para proporcionar acceso a la red. a. Para gestionar los permisos de los usuarios. b. Para mejorar el rendimiento de la ejecución. do. Aislar aplicaciones del sistema. d. ¿Qué comando agrega un repositorio remoto Flatpak? 3.
+
+flatpak remote-enable
+
+a.
+
+flatpak remote-add
+
+b.
+
+flatpak remote-install
+
+do.
+
+flatpak remote-set
+
+d. Está configurando un nuevo sistema Linux y desea instalar aplicaciones utilizando Flatpak. El Proyecto Fedora alberga un registro remoto que se puede utilizar en diferentes distribuciones. Usted decide agregar este repositorio y desea que esté disponible para todos los usuarios del sistema. ¿Qué comando agrega el repositorio de Fedora en todo el sistema? 4.
+
+flatpak remote-add fedora https://registry.fedoraproject.org
+
+a.
+
+flatpak remote-add --if-not-exists fedora
+oci+https://registry.fedoraproject.org
+
+b.
+
+flatpak remote-add --user fedora oci+https://registry.fedoraproject.org
+
+do.
+
+flatpak remote-add --system fedora oci+https://registry.fedoraproject.org
+
+d. Al agregar un repositorio remoto Flatpak, ¿qué opción evita sobrescribir un repositorio existente? 5. --saltar-existente a. --sobrescribir b. --si-no-existe c. --sin reemplazo d. Está solucionando problemas en un sistema Linux donde un usuario deshabilitó el repositorio Fedora Flatpak. Debe volver a habilitar el repositorio para actualizar algunos paquetes. ¿Qué comando vuelve a habilitar el repositorio de Fedora? 6.
+
+flatpak remote-modify --activate fedora
+
+a.
+
+flatpak remote-modify --add fedora
+
+b.
+
+flatpak remote-modify --enable fedora
+
+do.
+
+flatpak remote-modify --start fedora
+
+d.
+
+
+
+
+
+7.5. Prueba Instalar y actualizar aplicaciones mediante Flatpak ¿Cuál es la convención de nomenclatura para los identificadores de aplicaciones Flatpak? 7. Dominio.de.la.organización.de.la aplicación a. dominio.organización.Aplicación b. organización.dominio.Aplicación c. Aplicación.dominio.organización d. ¿A qué se refiere la rama en un triple identificador Flatpak? 8. El desarrollador de la aplicación a. Diferentes versiones del mismo objeto b. La arquitectura de la aplicación c. El tipo de licencia de la aplicación d. ¿Cuál es el propósito del comando de máscara Flatpak? 9. Para instalar nuevos objetos Flatpak. a. Para actualizar objetos Flatpak. b. Para desinstalar objetos Flatpak. do. Para evitar actualizaciones no deseadas de ciertos objetos. d. Al utilizar el comando de desinstalación de Flatpak, ¿qué opción garantiza que los datos de la aplicación también se eliminen? 10. --purgar-datos a. --eliminar-datos b. --eliminar-datos c. --datos limpios d.
+
+
+
+
+
+7.5. Prueba Instalar y actualizar aplicaciones mediante la solución Flatpak ¿Qué comando enumera todos los repositorios remotos de Flatpak que están configurados en su sistema? 1.
+
+flatpak remotes
+
+a.
+
+flatpak show-remotes
+
+b.
+
+flatpak get-remotes
+
+do.
+
+flatpak list-remotes
+
+d. ¿Cuál es el papel de un sandbox en Flatpak? 2. Para proporcionar acceso a la red. a. Para gestionar los permisos de los usuarios. b. Para mejorar el rendimiento de la ejecución. do. Aislar aplicaciones del sistema. d. ¿Qué comando agrega un repositorio remoto Flatpak? 3.
+
+flatpak remote-enable
+
+a.
+
+flatpak remote-add
+
+b.
+
+flatpak remote-install
+
+do.
+
+flatpak remote-set
+
+d. Está configurando un nuevo sistema Linux y desea instalar aplicaciones utilizando Flatpak. El Proyecto Fedora alberga un registro remoto que se puede utilizar en diferentes distribuciones. Usted decide agregar este repositorio y desea que esté disponible para todos los usuarios del sistema. ¿Qué comando agrega el repositorio de Fedora en todo el sistema? 4.
+
+flatpak remote-add fedora https://registry.fedoraproject.org
+
+a.
+
+flatpak remote-add --if-not-exists fedora
+oci+https://registry.fedoraproject.org
+
+b.
+
+flatpak remote-add --user fedora oci+https://registry.fedoraproject.org
+
+do.
+
+flatpak remote-add --system fedora oci+https://registry.fedoraproject.org
+
+d. Al agregar un repositorio remoto Flatpak, ¿qué opción evita sobrescribir un repositorio existente? 5. --saltar-existente a. --sobrescribir b. --si-no-existe c. --sin reemplazo d. Está solucionando problemas en un sistema Linux donde un usuario deshabilitó el repositorio Fedora Flatpak. Debe volver a habilitar el repositorio para actualizar algunos paquetes. ¿Qué comando vuelve a habilitar el repositorio de Fedora? 6.
+
+flatpak remote-modify --activate fedora
+
+a.
+
+flatpak remote-modify --add fedora
+
+b.
+
+flatpak remote-modify --enable fedora
+
+do.
+
+flatpak remote-modify --start fedora
+
+d.
+
+
+
+
+
+7.5. Prueba Instalar y actualizar aplicaciones mediante Flatpak ¿Cuál es la convención de nomenclatura para los identificadores de aplicaciones Flatpak? 7. Dominio.de.la.organización.de.la aplicación a. dominio.organización.Aplicación b. organización.dominio.Aplicación c. Aplicación.dominio.organización d. ¿A qué se refiere la rama en un triple identificador Flatpak? 8. El desarrollador de la aplicación a. Diferentes versiones del mismo objeto b. La arquitectura de la aplicación c. El tipo de licencia de la aplicación d. ¿Cuál es el propósito del comando de máscara Flatpak? 9. Para instalar nuevos objetos Flatpak. a. Para actualizar objetos Flatpak. b. Para desinstalar objetos Flatpak. do. Para evitar actualizaciones no deseadas de ciertos objetos. d. Al utilizar el comando de desinstalación de Flatpak, ¿qué opción garantiza que los datos de la aplicación también se eliminen? 10. --purgar-datos a. --eliminar-datos b. --eliminar-datos c. --datos limpios d.
+
+
+
+
+
+7.6. Resumen 7.6. Resumen En esta lección, aprendió a configurar Flatpak y lo utilizó para administrar software. Flatpak utiliza repositorios remotos que almacenan las aplicaciones y los tiempos de ejecución necesarios para ejecutar esas aplicaciones en un entorno de ejecución aislado. Los repositorios remotos permiten la resolución automática de dependencias. Puede utilizar la interfaz de línea de comandos para instalar, actualizar, enumerar, eliminar y obtener información de metadatos sobre aplicaciones Flatpak y dependencias de tiempo de ejecución. Al utilizar la herramienta gráfica del software GNOME, puede instalar y desinstalar aplicaciones Flatpak como lo haría con los paquetes RPM.
+
+
+
+
+

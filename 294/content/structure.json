@@ -1,0 +1,718 @@
+{
+  "chapters": [
+    {
+      "number": 1,
+      "title": "Capítulo 1. Presentación de Ansible",
+      "file": "capitulo_01.txt",
+      "start_page": 23,
+      "end_page": 42,
+      "sections": [
+        {
+          "title": "Automatización de la administración de Linux con Ansible",
+          "type": "theory",
+          "file": "capitulo_01_seccion_01_theory.txt",
+          "start_page": 24,
+          "end_page": 29,
+          "chars": 17144
+        },
+        {
+          "title": "Cuestionario: Automatización de la administración de Linux con Ansible",
+          "type": "quiz",
+          "file": "capitulo_01_seccion_02_quiz.txt",
+          "start_page": 30,
+          "end_page": 31,
+          "chars": 3992
+        },
+        {
+          "title": "Instalación de Ansible",
+          "type": "theory",
+          "file": "capitulo_01_seccion_03_theory.txt",
+          "start_page": 32,
+          "end_page": 38,
+          "chars": 17632
+        },
+        {
+          "title": "Ejercicio Guiado: Instalación de Ansible",
+          "type": "guided_exercise",
+          "file": "capitulo_01_seccion_04_guided_exercise.txt",
+          "start_page": 39,
+          "end_page": 40,
+          "chars": 4463
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_01_seccion_05_summary.txt",
+          "start_page": 41,
+          "end_page": 42,
+          "chars": 2650
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Capítulo 2. Implementación de un playbook de Ansible",
+      "file": "capitulo_02.txt",
+      "start_page": 43,
+      "end_page": 104,
+      "sections": [
+        {
+          "title": "Compilación de un inventario de Ansible",
+          "type": "theory",
+          "file": "capitulo_02_seccion_01_theory.txt",
+          "start_page": 44,
+          "end_page": 49,
+          "chars": 12481
+        },
+        {
+          "title": "Ejercicio Guiado: Compilación de un inventario de Ansible",
+          "type": "guided_exercise",
+          "file": "capitulo_02_seccion_02_guided_exercise.txt",
+          "start_page": 50,
+          "end_page": 54,
+          "chars": 9054
+        },
+        {
+          "title": "Administración de archivos de configuración de Ansible",
+          "type": "theory",
+          "file": "capitulo_02_seccion_03_theory.txt",
+          "start_page": 55,
+          "end_page": 60,
+          "chars": 15466
+        },
+        {
+          "title": "Ejercicio Guiado: Administración de archivos de configuración de Ansible",
+          "type": "guided_exercise",
+          "file": "capitulo_02_seccion_04_guided_exercise.txt",
+          "start_page": 61,
+          "end_page": 67,
+          "chars": 14400
+        },
+        {
+          "title": "Escritura y ejecución de playbooks",
+          "type": "theory",
+          "file": "capitulo_02_seccion_05_theory.txt",
+          "start_page": 68,
+          "end_page": 75,
+          "chars": 19475
+        },
+        {
+          "title": "Ejercicio Guiado: Escritura y ejecución de playbooks",
+          "type": "guided_exercise",
+          "file": "capitulo_02_seccion_06_guided_exercise.txt",
+          "start_page": 76,
+          "end_page": 80,
+          "chars": 11400
+        },
+        {
+          "title": "Implementación de varios plays",
+          "type": "theory",
+          "file": "capitulo_02_seccion_07_theory.txt",
+          "start_page": 81,
+          "end_page": 89,
+          "chars": 21251
+        },
+        {
+          "title": "Ejercicio Guiado: Implementación de varios plays",
+          "type": "guided_exercise",
+          "file": "capitulo_02_seccion_08_guided_exercise.txt",
+          "start_page": 90,
+          "end_page": 96,
+          "chars": 15783
+        },
+        {
+          "title": "Trabajo de laboratorio: Implementación de un playbook de Ansible",
+          "type": "lab",
+          "file": "capitulo_02_seccion_09_lab.txt",
+          "start_page": 97,
+          "end_page": 103,
+          "chars": 13972
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_02_seccion_10_summary.txt",
+          "start_page": 104,
+          "end_page": 104,
+          "chars": 2144
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Capítulo 3. Administración de variables y datos",
+      "file": "capitulo_03.txt",
+      "start_page": 105,
+      "end_page": 162,
+      "sections": [
+        {
+          "title": "Gestión de variables",
+          "type": "theory",
+          "file": "capitulo_03_seccion_01_theory.txt",
+          "start_page": 106,
+          "end_page": 114,
+          "chars": 17683
+        },
+        {
+          "title": "Ejercicio Guiado: Gestión de variables",
+          "type": "guided_exercise",
+          "file": "capitulo_03_seccion_02_guided_exercise.txt",
+          "start_page": 115,
+          "end_page": 120,
+          "chars": 11410
+        },
+        {
+          "title": "Gestión de secretos",
+          "type": "theory",
+          "file": "capitulo_03_seccion_03_theory.txt",
+          "start_page": 121,
+          "end_page": 126,
+          "chars": 14350
+        },
+        {
+          "title": "Ejercicio Guiado: Gestión de secretos",
+          "type": "guided_exercise",
+          "file": "capitulo_03_seccion_04_guided_exercise.txt",
+          "start_page": 127,
+          "end_page": 129,
+          "chars": 7844
+        },
+        {
+          "title": "Gestión de datos",
+          "type": "theory",
+          "file": "capitulo_03_seccion_05_theory.txt",
+          "start_page": 130,
+          "end_page": 139,
+          "chars": 21498
+        },
+        {
+          "title": "Ejercicio Guiado: Gestión de datos",
+          "type": "guided_exercise",
+          "file": "capitulo_03_seccion_06_guided_exercise.txt",
+          "start_page": 140,
+          "end_page": 146,
+          "chars": 14482
+        },
+        {
+          "title": "Trabajo de laboratorio: Administración de variables y datos",
+          "type": "lab",
+          "file": "capitulo_03_seccion_07_lab.txt",
+          "start_page": 147,
+          "end_page": 160,
+          "chars": 26648
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_03_seccion_08_summary.txt",
+          "start_page": 161,
+          "end_page": 162,
+          "chars": 1587
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Capítulo 4. Implementación del control de tareas",
+      "file": "capitulo_04.txt",
+      "start_page": 163,
+      "end_page": 212,
+      "sections": [
+        {
+          "title": "Escritura de bucles y tareas condicionales",
+          "type": "theory",
+          "file": "capitulo_04_seccion_01_theory.txt",
+          "start_page": 164,
+          "end_page": 175,
+          "chars": 25942
+        },
+        {
+          "title": "Ejercicio Guiado: Escritura de bucles y tareas condicionales",
+          "type": "guided_exercise",
+          "file": "capitulo_04_seccion_02_guided_exercise.txt",
+          "start_page": 176,
+          "end_page": 179,
+          "chars": 8589
+        },
+        {
+          "title": "Implementación de manejadores",
+          "type": "theory",
+          "file": "capitulo_04_seccion_03_theory.txt",
+          "start_page": 180,
+          "end_page": 182,
+          "chars": 6744
+        },
+        {
+          "title": "Ejercicio Guiado: Implementación de manejadores",
+          "type": "guided_exercise",
+          "file": "capitulo_04_seccion_04_guided_exercise.txt",
+          "start_page": 183,
+          "end_page": 189,
+          "chars": 13652
+        },
+        {
+          "title": "Manejo de fallas de tareas",
+          "type": "theory",
+          "file": "capitulo_04_seccion_05_theory.txt",
+          "start_page": 190,
+          "end_page": 194,
+          "chars": 10806
+        },
+        {
+          "title": "Ejercicio Guiado: Manejo de fallas de tareas",
+          "type": "guided_exercise",
+          "file": "capitulo_04_seccion_06_guided_exercise.txt",
+          "start_page": 195,
+          "end_page": 202,
+          "chars": 18101
+        },
+        {
+          "title": "Trabajo de laboratorio: Implementación del control de tareas",
+          "type": "lab",
+          "file": "capitulo_04_seccion_07_lab.txt",
+          "start_page": 203,
+          "end_page": 211,
+          "chars": 17061
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_04_seccion_08_summary.txt",
+          "start_page": 212,
+          "end_page": 212,
+          "chars": 1715
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Capítulo 5. Implementación de archivos en hosts gestionados",
+      "file": "capitulo_05.txt",
+      "start_page": 213,
+      "end_page": 248,
+      "sections": [
+        {
+          "title": "Modificación y copia de archivos a hosts",
+          "type": "theory",
+          "file": "capitulo_05_seccion_01_theory.txt",
+          "start_page": 214,
+          "end_page": 219,
+          "chars": 13279
+        },
+        {
+          "title": "Ejercicio Guiado: Modificación y copia de archivos a hosts",
+          "type": "guided_exercise",
+          "file": "capitulo_05_seccion_02_guided_exercise.txt",
+          "start_page": 220,
+          "end_page": 228,
+          "chars": 18896
+        },
+        {
+          "title": "Implementación de archivos personalizados con plantillas Jinja2",
+          "type": "theory",
+          "file": "capitulo_05_seccion_03_theory.txt",
+          "start_page": 229,
+          "end_page": 234,
+          "chars": 12623
+        },
+        {
+          "title": "Ejercicio Guiado: Implementación de archivos personalizados con plantillas Jinja2",
+          "type": "guided_exercise",
+          "file": "capitulo_05_seccion_04_guided_exercise.txt",
+          "start_page": 235,
+          "end_page": 238,
+          "chars": 8970
+        },
+        {
+          "title": "Trabajo de laboratorio: Implementación de archivos en hosts gestionados",
+          "type": "lab",
+          "file": "capitulo_05_seccion_05_lab.txt",
+          "start_page": 239,
+          "end_page": 246,
+          "chars": 15503
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_05_seccion_06_summary.txt",
+          "start_page": 247,
+          "end_page": 248,
+          "chars": 1670
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "title": "Capítulo 6. Administración de plays y playbooks complejos",
+      "file": "capitulo_06.txt",
+      "start_page": 249,
+      "end_page": 298,
+      "sections": [
+        {
+          "title": "Selección de hosts con patrones de hosts",
+          "type": "theory",
+          "file": "capitulo_06_seccion_01_theory.txt",
+          "start_page": 250,
+          "end_page": 258,
+          "chars": 16405
+        },
+        {
+          "title": "Ejercicio Guiado: Selección de hosts con patrones de hosts",
+          "type": "guided_exercise",
+          "file": "capitulo_06_seccion_02_guided_exercise.txt",
+          "start_page": 259,
+          "end_page": 274,
+          "chars": 30620
+        },
+        {
+          "title": "Inclusión e importación de archivos",
+          "type": "theory",
+          "file": "capitulo_06_seccion_03_theory.txt",
+          "start_page": 275,
+          "end_page": 280,
+          "chars": 14120
+        },
+        {
+          "title": "Ejercicio Guiado: Inclusión e importación de archivos",
+          "type": "guided_exercise",
+          "file": "capitulo_06_seccion_04_guided_exercise.txt",
+          "start_page": 281,
+          "end_page": 286,
+          "chars": 11302
+        },
+        {
+          "title": "Trabajo de laboratorio: Administración de plays y playbooks complejos",
+          "type": "lab",
+          "file": "capitulo_06_seccion_05_lab.txt",
+          "start_page": 287,
+          "end_page": 296,
+          "chars": 18081
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_06_seccion_06_summary.txt",
+          "start_page": 297,
+          "end_page": 298,
+          "chars": 2057
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections",
+      "file": "capitulo_07.txt",
+      "start_page": 299,
+      "end_page": 382,
+      "sections": [
+        {
+          "title": "Descripción de la estructura del rol",
+          "type": "theory",
+          "file": "capitulo_07_seccion_01_theory.txt",
+          "start_page": 300,
+          "end_page": 307,
+          "chars": 18065
+        },
+        {
+          "title": "Cuestionario: Descripción de la estructura del rol",
+          "type": "quiz",
+          "file": "capitulo_07_seccion_02_quiz.txt",
+          "start_page": 308,
+          "end_page": 309,
+          "chars": 4168
+        },
+        {
+          "title": "Creación de roles",
+          "type": "theory",
+          "file": "capitulo_07_seccion_03_theory.txt",
+          "start_page": 310,
+          "end_page": 315,
+          "chars": 13733
+        },
+        {
+          "title": "Ejercicio Guiado: Creación de roles",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_04_guided_exercise.txt",
+          "start_page": 316,
+          "end_page": 322,
+          "chars": 16895
+        },
+        {
+          "title": "Implementación de roles desde fuentes externas de contenido",
+          "type": "theory",
+          "file": "capitulo_07_seccion_05_theory.txt",
+          "start_page": 323,
+          "end_page": 330,
+          "chars": 17183
+        },
+        {
+          "title": "Ejercicio Guiado: Implementación de roles desde fuentes externas de contenido",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_06_guided_exercise.txt",
+          "start_page": 331,
+          "end_page": 337,
+          "chars": 14697
+        },
+        {
+          "title": "Obtención de roles y módulos de las colecciones de contenido",
+          "type": "theory",
+          "file": "capitulo_07_seccion_07_theory.txt",
+          "start_page": 338,
+          "end_page": 344,
+          "chars": 19236
+        },
+        {
+          "title": "Ejercicio Guiado: Obtención de roles y módulos de las colecciones de contenido",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_08_guided_exercise.txt",
+          "start_page": 345,
+          "end_page": 353,
+          "chars": 18794
+        },
+        {
+          "title": "Reutilización de contenido con roles de sistema",
+          "type": "theory",
+          "file": "capitulo_07_seccion_09_theory.txt",
+          "start_page": 354,
+          "end_page": 362,
+          "chars": 21421
+        },
+        {
+          "title": "Ejercicio Guiado: Reutilización de contenido con roles de sistema",
+          "type": "guided_exercise",
+          "file": "capitulo_07_seccion_10_guided_exercise.txt",
+          "start_page": 363,
+          "end_page": 368,
+          "chars": 13372
+        },
+        {
+          "title": "Trabajo de laboratorio: Simplificación de playbooks con roles y Ansible Content Collections",
+          "type": "lab",
+          "file": "capitulo_07_seccion_11_lab.txt",
+          "start_page": 369,
+          "end_page": 381,
+          "chars": 29856
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_07_seccion_12_summary.txt",
+          "start_page": 382,
+          "end_page": 382,
+          "chars": 2035
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "title": "Capítulo 8. Solución de problemas de Ansible",
+      "file": "capitulo_08.txt",
+      "start_page": 383,
+      "end_page": 426,
+      "sections": [
+        {
+          "title": "Solución de problemas de playbooks",
+          "type": "theory",
+          "file": "capitulo_08_seccion_01_theory.txt",
+          "start_page": 384,
+          "end_page": 393,
+          "chars": 20259
+        },
+        {
+          "title": "Ejercicio Guiado: Solución de problemas de playbooks",
+          "type": "guided_exercise",
+          "file": "capitulo_08_seccion_02_guided_exercise.txt",
+          "start_page": 394,
+          "end_page": 400,
+          "chars": 13694
+        },
+        {
+          "title": "Solución de problemas en hosts gestionados de Ansible",
+          "type": "theory",
+          "file": "capitulo_08_seccion_03_theory.txt",
+          "start_page": 401,
+          "end_page": 408,
+          "chars": 20091
+        },
+        {
+          "title": "Ejercicio Guiado: Solución de problemas en hosts gestionados de Ansible",
+          "type": "guided_exercise",
+          "file": "capitulo_08_seccion_04_guided_exercise.txt",
+          "start_page": 409,
+          "end_page": 415,
+          "chars": 16741
+        },
+        {
+          "title": "Trabajo de laboratorio: Solución de problemas de Ansible",
+          "type": "lab",
+          "file": "capitulo_08_seccion_05_lab.txt",
+          "start_page": 416,
+          "end_page": 424,
+          "chars": 18206
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_08_seccion_06_summary.txt",
+          "start_page": 425,
+          "end_page": 426,
+          "chars": 2267
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Capítulo 9. Automatización de tareas de administración de Linux",
+      "file": "capitulo_09.txt",
+      "start_page": 427,
+      "end_page": 520,
+      "sections": [
+        {
+          "title": "Administración de software y suscripciones",
+          "type": "theory",
+          "file": "capitulo_09_seccion_01_theory.txt",
+          "start_page": 429,
+          "end_page": 438,
+          "chars": 21179
+        },
+        {
+          "title": "Ejercicio Guiado: Administración de software y suscripciones",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_02_guided_exercise.txt",
+          "start_page": 439,
+          "end_page": 446,
+          "chars": 16813
+        },
+        {
+          "title": "Administración de usuarios y autenticación",
+          "type": "theory",
+          "file": "capitulo_09_seccion_03_theory.txt",
+          "start_page": 447,
+          "end_page": 453,
+          "chars": 17040
+        },
+        {
+          "title": "Ejercicio Guiado: Administración de usuarios y autenticación",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_04_guided_exercise.txt",
+          "start_page": 454,
+          "end_page": 461,
+          "chars": 15584
+        },
+        {
+          "title": "Administración del proceso de arranque y procesos programados",
+          "type": "theory",
+          "file": "capitulo_09_seccion_05_theory.txt",
+          "start_page": 462,
+          "end_page": 467,
+          "chars": 12075
+        },
+        {
+          "title": "Ejercicio Guiado: Administración del proceso de arranque y procesos programados",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_06_guided_exercise.txt",
+          "start_page": 468,
+          "end_page": 477,
+          "chars": 18992
+        },
+        {
+          "title": "Administración del almacenamiento",
+          "type": "theory",
+          "file": "capitulo_09_seccion_07_theory.txt",
+          "start_page": 478,
+          "end_page": 486,
+          "chars": 18081
+        },
+        {
+          "title": "Ejercicio Guiado: Administración del almacenamiento",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_08_guided_exercise.txt",
+          "start_page": 487,
+          "end_page": 491,
+          "chars": 11579
+        },
+        {
+          "title": "Administración de la configuración de red",
+          "type": "theory",
+          "file": "capitulo_09_seccion_09_theory.txt",
+          "start_page": 492,
+          "end_page": 500,
+          "chars": 16194
+        },
+        {
+          "title": "Ejercicio Guiado: Administración de la configuración de red",
+          "type": "guided_exercise",
+          "file": "capitulo_09_seccion_10_guided_exercise.txt",
+          "start_page": 501,
+          "end_page": 505,
+          "chars": 11174
+        },
+        {
+          "title": "Trabajo de laboratorio: Automatización de tareas de administración de Linux",
+          "type": "lab",
+          "file": "capitulo_09_seccion_11_lab.txt",
+          "start_page": 506,
+          "end_page": 518,
+          "chars": 24639
+        },
+        {
+          "title": "Resumen",
+          "type": "summary",
+          "file": "capitulo_09_seccion_12_summary.txt",
+          "start_page": 519,
+          "end_page": 520,
+          "chars": 1471
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "title": "Capítulo 10. Revisión exhaustiva",
+      "file": "capitulo_10.txt",
+      "start_page": 521,
+      "end_page": 566,
+      "sections": [
+        {
+          "title": "Revisión exhaustiva",
+          "type": "theory",
+          "file": "capitulo_10_seccion_01_theory.txt",
+          "start_page": 522,
+          "end_page": 524,
+          "chars": 8231
+        },
+        {
+          "title": "Trabajo de laboratorio: Implementación de Ansible",
+          "type": "lab",
+          "file": "capitulo_10_seccion_02_lab.txt",
+          "start_page": 525,
+          "end_page": 534,
+          "chars": 20957
+        },
+        {
+          "title": "Trabajo de laboratorio: Creación de playbooks",
+          "type": "lab",
+          "file": "capitulo_10_seccion_03_lab.txt",
+          "start_page": 535,
+          "end_page": 542,
+          "chars": 14909
+        },
+        {
+          "title": "Trabajo de laboratorio: Administración de hosts de Linux y uso de roles del sistema",
+          "type": "lab",
+          "file": "capitulo_10_seccion_04_lab.txt",
+          "start_page": 543,
+          "end_page": 557,
+          "chars": 27475
+        },
+        {
+          "title": "Trabajo de laboratorio: Creación de roles",
+          "type": "lab",
+          "file": "capitulo_10_seccion_05_lab.txt",
+          "start_page": 558,
+          "end_page": 566,
+          "chars": 11964
+        }
+      ]
+    }
+  ]
+}

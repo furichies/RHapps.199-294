@@ -1,0 +1,136 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar permisos predeterminados y permisos especiales
+# Tipo: guided_exercise
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales 5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales Controle los permisos predeterminados de los archivos creados por el usuario y explique los permisos especiales sobre los archivos. Resultados Crear un directorio compartido donde el grupo de operadores posee automáticamente nuevos archivos. Configure el directorio para que solo el propietario del archivo (y el usuario raíz) puedan eliminar archivos. Cambie temporalmente la configuración de umask. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-default
+
+Instrucciones En este ejercicio guiado, la configuración de umask se estableció en 0007, que es diferente del valor predeterminado 0022. Este cambio de configuración le permite inspeccionar los permisos establecidos para nuevos archivos y directorios. Inicie sesión en el sistema servera como usuario operador1.
+
+student@workstation:~$ ssh operator1@servera
+
+...salida omitida... [operador1@servera ~]$ 1. Cree el directorio /tmp/operators y cambie su grupo propietario a operadores. Verifique la propiedad del nuevo grupo. 2. Cree el directorio /tmp/operators.
+
+[operator1@servera ~]$ mkdir /tmp/operators
+
+2.1. Cambie la propiedad del grupo del directorio /tmp/operators al grupo de operadores.
+
+[operator1@servera ~]$ chown :operators /tmp/operators/
+
+2.2. Verifique que la propiedad del grupo de /tmp/operators/ se aplique correctamente.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrwx---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+2.3. Verifique el valor de máscara de usuario predeterminado del usuario operator1 y enumere los permisos del directorio /tmp/operators. 3. Enumere el valor de máscara de usuario predeterminado del usuario operador1. 3.1.
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales
+
+[operator1@servera ~]$ umask
+
+0007 Esta configuración de umask otorga permisos a todos los usuarios y grupos, y evita que otros tengan permisos sobre nuevos archivos o directorios. Verifique que los permisos del directorio /tmp/operators sean consistentes con el valor umask 0007.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrwx---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+El conjunto de permisos rwxrwx--- coincide con la regla umask. 3.2. Asegúrese de que los archivos creados en el directorio /tmp/operators sean propiedad del grupo de operadores. Luego, verifique la propiedad. 4. Utilice notación simbólica para configurar el permiso especial setgid en el directorio /tmp/operators para que el grupo de operadores sea el propietario del grupo de archivos nuevos.
+
+[operator1@servera ~]$ chmod g+s /tmp/operators/
+
+4.1. Verifique que haya configurado correctamente el permiso setgid en el directorio /tmp/operators.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrws---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+4.2. Asegúrese de que los usuarios con acceso de escritura al directorio /tmp/operators puedan eliminar solo los archivos de su propiedad. Luego, verifique el cambio. 5. Utilice el método octal para configurar el bit adhesivo en el directorio /tmp/operators y conservar los permisos existentes. El modo de permiso actual es 2770 (drwxrws---).
+
+[operator1@servera ~]$ chmod 3770 /tmp/operators/
+
+5.1. Verifique que haya aplicado correctamente el bit adhesivo al directorio /tmp/operators.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrws--T. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+5.2. Cree un archivo llamado ops_file1.txt en el directorio /tmp/operators/. Enumere la propiedad y los permisos del archivo ops_file1.txt. 6. Cree un archivo llamado ops_file1.txt en el directorio /tmp/operators/.
+
+[operator1@servera ~]$ touch /tmp/operators/ops_file1.txt
+
+6.1. Cambie al directorio /tmp/operators/. Enumere la propiedad y los permisos del archivo ops_file1.txt.
+
+[operator1@servera ~]$ cd /tmp/operators/
+[operator1@servera operators]$ ls -l ops_file1.txt
+
+-rw-rw----. 1 operador1 operadores 0 4 de junio 03:28 ops_file1.txt 6.2. Cambie temporalmente la umask a 0022 para el usuario operador1. Cree un segundo archivo llamado ops_file2.txt en el directorio /tmp/operators/. Luego, indique la propiedad y los permisos de ops_file1.txt y 7.
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. archivos ops_file2.txt. Cambie la umask a 0022 para el usuario operador1.
+
+[operator1@servera operators]$ umask 0022
+
+Esta configuración de umask permite al usuario leer y escribir archivos nuevos, pero el grupo y otros solo pueden leer esos archivos. 7.1. Cree un archivo llamado ops_file2.txt en el directorio /tmp/operators/.
+
+[operator1@servera operators]$ touch ops_file2.txt
+
+7.2. Enumere la propiedad y los permisos de los archivos ops_file1.txt y ops_file2.txt.
+
+[operator1@servera operators]$ ls -l ops_file{1,2}.txt
+
+-rw-rw----. 1 operador1 operadores 0 4 de junio 03:28 ops_file1.txt -rw-r--r--. 1 operador1 operadores 0 4 de junio 03:34 ops_file2.txt Los permisos en el archivo ops_file2.txt coinciden con los permisos de la configuración de umask 0022. El archivo ops_file1.txt mantiene los permisos anteriores porque el archivo se creó antes del cambio de umask. 7.3. Inicie sesión como usuario operador2 e intente eliminar un archivo creado por el usuario operador1. No debería poder eliminar el archivo ops_file1.txt como usuario operator2 porque el directorio /tmp/operators/ está configurado con el permiso de bit adhesivo. 8. Cambie al usuario operador2. Utilice redhat como contraseña.
+
+[operator1@servera operators]$ su - operator2
+
+Contraseña: redhat ...salida omitida... [operator2@servera ~]$ 8.1. Intente eliminar el archivo /tmp/operators/ops_file1.txt, que fue creado por el usuario operator1.
+
+[operator2@servera ~]$ rm /tmp/operators/ops_file1.txt
+rm: cannot remove '/tmp/operators/ops_file1.txt': Operation not permitted
+
+Como era de esperar, la operación de eliminación falla porque el permiso del bit adhesivo impide que los usuarios eliminen archivos propiedad de otros usuarios. 8.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[operator2@servera ~]$ exit
+
+cerrar sesión
+
+[operator1@servera operators]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+9.
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales
+
+student@workstation:~$ lab finish perms-default
+
+
+
+
+
+5.7. Control de acceso al laboratorio de archivos 5.7. Lab Control de acceso a archivos Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Resultados Crear un directorio donde los usuarios puedan trabajar colaborativamente en archivos. Cree la estructura de archivos y directorios requerida, asignando derechos de acceso según lo solicitado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-review
+
+Instrucciones El comando de inicio de laboratorio crea los usuarios dev1 y dev2, que son miembros del grupo techdocs. El comando también crea el usuario dbadmin1, que no pertenece a este grupo. En esta actividad, creará el directorio colaborativo techdocs y lo configurará de la siguiente manera: En el directorio techdocs, los usuarios agregan archivos y subdirectorios para uso exclusivo del grupo techdocs. Otros usuarios del sistema no pueden tener acceso al directorio. Todo el contenido nuevo creado en el directorio debe heredar la propiedad del grupo techdocs. El directorio techdocs debe configurarse para que solo el propietario de un archivo pueda eliminarlo. Asegúrese de que la máscara de creación de archivos de usuario esté configurada de forma persistente para los usuarios dev1 y dev2 para permitir la colaboración grupal y prohibir que todos los demás usuarios accedan a sus datos. Para validar su configuración del directorio techdocs, cree los siguientes subdirectorios y archivos como dev1 y
+
+dev2 users to ensure that their level of access complies with requirements:
+
+dev1 dev1 techdocs dev1.txt dev1.log dev1.cfg Archivos del grupo del propietario del directorio
+
+
+
+
+

@@ -1,0 +1,769 @@
+# Capítulo 20. Acceso al almacenamiento conectado a la red
+
+## 20.1. Montaje de sistemas de archivos NFS
+
+20.1. Montaje de sistemas de archivos NFS 20.1. Montaje de sistemas de archivos NFS Objetivos Buscar, montar y desmontar exportaciones NFS remotas. Acceso a directorios NFS exportados El sistema de archivos de red es un protocolo estándar de Internet que Linux, UNIX y sistemas operativos similares utilizan como su sistema de archivos de red nativo. NFS es un estándar abierto que admite permisos nativos de Linux y atributos del sistema de archivos. De forma predeterminada, Red Hat Enterprise Linux 10 usa NFS versión 4.2. RHEL 10 es totalmente compatible con los protocolos NFSv3 y NFSv4. NFSv3 puede utilizar un protocolo de transporte TCP o UDP. NFSv4 solo admite conexiones TCP. Los servidores NFS exportan directorios. Los clientes NFS montan directorios exportados en un directorio de punto de montaje local existente. Los clientes NFS pueden montar directorios exportados utilizando uno de los siguientes métodos: Monte manualmente el directorio exportado utilizando el comando mount. Monte persistentemente el directorio en el arranque utilizando el archivo /etc/fstab. Montaje automático del directorio estáticamente bajo demanda mediante el servicio autofs. El comando mount no monta el directorio exportado para que persista después de un reinicio. El archivo /etc/fstab monta el directorio exportado de forma persistente para permanecer montado después de un reinicio. Al montar
+
+exported directories by using the /etc/fstab file, the following issues might occur, for example:
+
+Los tiempos de espera de almacenamiento pueden aumentar si ocurren problemas de red. Los tiempos de espera también aumentan cuando los sistemas de archivos NFS afectados no están en uso. Es posible que se produzcan problemas con el tiempo de arranque si la red no funciona o no se puede acceder a ella. El montaje automático del directorio exportado se analiza en la siguiente sección de este capítulo. Debe instalar el paquete nfs-utils para el montaje manual o el montaje automático de los directorios NFS exportados.
+
+root@host:~# dnf install nfs-utils
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! RHEL 10 también admite el montaje de directorios compartidos desde sistemas Microsoft Windows utilizando los mismos métodos que el protocolo NFS, utilizando los protocolos Server Message Block (SMB) o Common Internet File System (CIFS). Las opciones de montaje son específicas del protocolo y dependen de la configuración de su servidor Windows o Samba. El montaje de directorios compartidos desde sistemas Microsoft Windows está fuera del alcance de este curso. Consultar directorios NFS exportados El protocolo NFS cambió significativamente entre NFSv3 y NFSv4. El método para consultar un servidor para ver las exportaciones disponibles es diferente para cada versión del protocolo.
+
+
+
+
+
+20.1. Montaje de sistemas de archivos NFS NFSv3 utiliza el protocolo de llamada a procedimiento remoto (RPC), que requiere un servidor de archivos que admita conexiones NFSv3 para ejecutar el servicio rpcbind. Un cliente NFSv3 se conecta al servicio rpcbind a través del puerto 111 en el servidor NFS. El servidor responde con el puerto actual para el servicio NFS. Utilice el comando showmount para consultar las exportaciones disponibles en un servidor NFSv3 basado en RPC.
+
+root@host:~# showmount --exports server
+
+Lista de exportación para el servidor /shares/test1 /shares/test2 El protocolo NFSv4 elimina el uso del protocolo RPC heredado para transacciones NFS. NFSv4 introduce un árbol de exportación que contiene todas las rutas de los directorios exportados del servidor. Para ver todos los directorios exportados, monte la raíz (/) del árbol de exportación del servidor.
+
+root@host:~# mount server:/export mountpoint
+
+Montar el árbol de exportación proporciona rutas de navegación para todos los directorios exportados, pero no monta ninguno de los directorios exportados.
+
+root@host:~# ls mountpoint
+
+Para montar una exportación NFSv4 al explorar el árbol de exportación montado, cambie el directorio actual a una ruta de directorio exportada. Alternativamente, use el comando de montaje con el nombre de ruta completo de un directorio exportado para montar un único directorio exportado. Los directorios exportados que utilizan seguridad Kerberos no permiten montar ni acceder a un directorio al explorar un árbol de exportación, aunque puede ver el nombre de la ruta de exportación. El montaje de recursos compartidos protegidos por Kerberos requiere una configuración adicional del servidor y el uso de credenciales de usuario de Kerberos, que se analizan en el curso de capacitación Red Hat Security: gestión de identidades e integración de Active Directory (RH362). Montar manualmente directorios NFS exportados Después de identificar la exportación NFS para montar, cree un punto de montaje local si aún no existe. Aunque el directorio /mnt está disponible para su uso como punto de montaje temporal, la práctica recomendada es no utilizar /mnt para montaje persistente o a largo plazo.
+
+root@host:~# mkdir mountpoint
+
+Al igual que con los sistemas de archivos de volumen local, monte la exportación NFS para acceder a su contenido. Los recursos compartidos NFS pueden montarse de forma temporal o permanente, y sólo por un usuario privilegiado.
+
+root@host:~# mount -t nfs -o rw,sync server:/export mountpoint
+
+La opción -t nfs especifica el tipo de sistema de archivos NFS. Sin embargo, cuando el comando mount detecta la sintaxis server:/export, el comando utiliza de forma predeterminada el tipo NFS. Con la opción -o, puede agregar una lista de opciones separadas por comas al comando de montaje. En el ejemplo, la opción rw especifica que el sistema de archivos exportado está montado con acceso de lectura/escritura. La opción de sincronización especifica transacciones sincrónicas con el sistema de archivos exportado. Este método se recomienda encarecidamente para todos los montajes de redes de producción donde las transacciones deben completarse o regresar como fallidas. Los montajes manuales son útiles para proporcionar acceso temporal a un directorio exportado o para probar la exportación NFS antes de montarlo de forma persistente.
+
+
+
+
+
+20.1. Montaje de sistemas de archivos NFS Montaje persistente de directorios NFS exportados Utilice el archivo /etc/fstab para montar persistentemente una exportación NFS. Este archivo utiliza una sintaxis similar al montaje manual. ...salida omitida...
+
+server:/export  mountpoint  nfs  rw,sync  0 0
+
+El comando mount obtiene el servidor NFS y las opciones de montaje del archivo /etc/fstab.
+
+root@host:~# mount mountpoint
+
+Desmontar directorios NFS exportados Como usuario privilegiado, desmonte una exportación NFS con el comando umount.
+
+root@host:~# umount mountpoint
+
+Desmontar un recurso compartido no elimina la entrada de exportación NFS del archivo /etc/fstab. Las entradas en el archivo /etc/fstab son persistentes y se vuelven a montar durante el arranque. En ocasiones, un directorio montado puede no poder desmontarse y devolver un error de que el dispositivo está ocupado. El dispositivo puede estar ocupado porque una aplicación tiene un archivo abierto o un shell tiene un directorio de trabajo en el sistema de archivos montado. Para resolver el error, cierre la aplicación que tiene un archivo abierto o verifique las ventanas de shell activas y use el comando cd para salir del sistema de archivos montado. Si los intentos posteriores de desmontar el sistema de archivos aún fallan, utilice el comando lsof para consultar el punto de montaje. El comando lsof devuelve una lista de nombres de archivos abiertos y el proceso que impide desmontar el directorio exportado.
+
+root@host:~# lsof mountpoint
+
+COMANDO PID USUARIO TIPO FD TAMAÑO DEL DISPOSITIVO/OFF NOMBRE DEL NODO programa 5534 txt de usuario REG 252.4 910704 128 /home/user/program Con esta información, cierre elegantemente cualquier proceso que esté usando archivos en este sistema de archivos y vuelva a intentar el desmontaje. Sólo en escenarios críticos, cuando una aplicación no se puede cerrar correctamente, finalice el proceso para cerrar el archivo. Alternativamente, use la opción -f del comando umount para forzar el desmontaje, lo que puede causar la pérdida de datos no escritos para todos los archivos abiertos. Referencias
+
+mount(8), umount(8), showmount(8), fstab(5), mount.nfs(8), nfsconf(8), and rpcbind(8) man pages
+
+
+
+
+
+20.2. Ejercicio guiado Montaje de sistemas de archivos NFS 20.2. Ejercicio guiado Montar sistemas de archivos NFS Busque, monte y desmonte exportaciones NFS remotas. Resultados Montar manualmente el directorio de exportación NFS. Monte el directorio de exportación NFS de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-nfs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. En la máquina servera, monte manualmente el servidor NFS serverb:/shares/public en el directorio /public y luego desmóntelo. 2. Cree el punto de montaje /public en la máquina del servidor.
+
+[root@servera ~]# mkdir /public
+
+2.1. Monte manualmente la exportación NFS /shares/public desde la máquina serverb en el directorio /public.
+
+[root@servera ~]# mount -t nfs serverb:/shares/public /public
+
+2.2. Enumere el contenido de la exportación NFS montada.
+
+[root@servera ~]# ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 2.3. Muestre las opciones del comando de montaje para la exportación NFS montada.
+
+[root@servera ~]# mount | grep public
+serverb:/shares/public on /public type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+2.4. Desmonte la exportación NFS. 2.5.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Montaje de sistemas de archivos NFS
+
+20.2. Ejercicio guiado Montaje de sistemas de archivos NFS 20.2. Ejercicio guiado Montar sistemas de archivos NFS Busque, monte y desmonte exportaciones NFS remotas. Resultados Montar manualmente el directorio de exportación NFS. Monte el directorio de exportación NFS de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-nfs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. En la máquina servera, monte manualmente el servidor NFS serverb:/shares/public en el directorio /public y luego desmóntelo. 2. Cree el punto de montaje /public en la máquina del servidor.
+
+[root@servera ~]# mkdir /public
+
+2.1. Monte manualmente la exportación NFS /shares/public desde la máquina serverb en el directorio /public.
+
+[root@servera ~]# mount -t nfs serverb:/shares/public /public
+
+2.2. Enumere el contenido de la exportación NFS montada.
+
+[root@servera ~]# ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 2.3. Muestre las opciones del comando de montaje para la exportación NFS montada.
+
+[root@servera ~]# mount | grep public
+serverb:/shares/public on /public type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+2.4. Desmonte la exportación NFS. 2.5.
+
+
+
+
+
+20.2. Ejercicio guiado Montar sistemas de archivos NFS Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que
+
+[root@servera ~]# umount /public
+
+Monte de forma persistente la exportación serverb:/shares/public NFS en el directorio /public utilizando el archivo /etc/fstab. 3. Agregue una entrada al archivo /etc/fstab para que serverb:/shares/public export se monte en el directorio /public. Monte la exportación NFS para montar la exportación sincrónicamente con permiso de lectura/escritura.
+
+serverb:/shares/public /public nfs rw,sync 0 0
+
+3.1. Cargue el demonio systemd con la nueva configuración.
+
+[root@servera ~]# systemctl daemon-reload
+
+3.2. Monte la exportación NFS.
+
+[root@servera ~]# mount /public
+
+3.3. Enumere el contenido del directorio exportado.
+
+[root@servera ~]# ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 3.4. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+3.5. Después de que la máquina del servidor termine de reiniciarse, inicie sesión como usuario estudiante y pruebe la exportación NFS montada persistentemente. 4. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+[student@workstation ~]$ ssh student@servera
+
+[estudiante@servera ~]$ 4.1. Pruebe la exportación NFS que está montada en el directorio /public.
+
+[student@servera ~]$ ls -l /public
+
+total 4 -rw-r--r--. 1 raíz raíz 14 11 de julio 22:12 hola 4.2. Muestra el contenido del archivo /public/hello.
+
+[student@servera ~]$ cat /public/hello
+
+¡Hola Mundo! 4.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[admin1@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada. 5.
+
+
+
+
+
+20.2. Ejercicio guiado Los recursos de montaje de sistemas de archivos NFS de ejercicios anteriores no afectan los próximos ejercicios.
+
+student@workstation:~$ lab finish nfsclient-nfs
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento 20.3. Montaje automático de dispositivos de almacenamiento Objetivos Montar automáticamente dispositivos de almacenamiento cuando se accede a ellos y desmontarlos cuando ya no estén en uso activo, configurando el montador automático. Montar exportaciones NFS con Automounter El automounter (autofs) es un servicio que monta automáticamente sistemas de archivos y exportaciones NFS según demanda, y los desmonta automáticamente cuando los recursos montados ya no están en uso. La función de montaje automático se creó para resolver el problema de que los usuarios sin privilegios no tienen permisos suficientes para usar el comando de montaje. Sin utilizar el comando de montaje, los usuarios sin privilegios no pueden acceder a medios extraíbles como CD, DVD y unidades de disco extraíbles. Además, si un sistema de archivos local o remoto no se monta en el arranque mediante el archivo /etc/fstab, entonces un usuario sin privilegios no puede montar ni acceder a esos sistemas de archivos desmontados. Los archivos de configuración del montador automático se completan con información de montaje del sistema de archivos, de manera similar a las entradas del archivo /etc/fstab. Aunque el archivo /etc/fstab monta los sistemas de archivos durante el arranque del sistema y permanecen
+
+mounted until system shutdown or other intervention, the automounter does not necessarily mount during system boot.
+
+El montador automático monta sistemas de archivos según demanda, cuando un usuario o una aplicación intenta ingresar al punto de montaje del sistema de archivos para acceder a los archivos. Beneficios de Automounter Automounter utiliza recursos equivalentes a los sistemas de archivos que se montan en el arranque, porque un sistema de archivos utiliza recursos sólo cuando un programa lee o escribe archivos abiertos. Los sistemas de archivos montados e inactivos, y los sistemas de archivos desmontados, casi no utilizan recursos. La ventaja de un montador automático es que, al desmontar el sistema de archivos cada vez que ya no está en uso, el sistema de archivos está protegido contra daños inesperados cuando está abierto. Cuando se indica al sistema de archivos que se monte nuevamente, el servicio autofs usa la configuración de montaje más actual, a diferencia del archivo /etc/fstab, que aún puede usar una configuración que se montó hace meses durante el último arranque del sistema. Además, si la configuración de su servidor NFS incluye rutas y servidores redundantes, el montador automático puede seleccionar la conexión más rápida cada vez que se solicita un nuevo sistema de archivos. El servicio Automounter El servicio Automounter admite los mismos sistemas de archivos locales y remotos que el archivo /etc/fstab, incluidos los protocolos de intercambio de archivos NFS y SMB, y admite las mismas opciones de montaje específicas del protocolo, incluidos los parámetros de seguridad. Los sistemas de archivos que se montan mediante el montador automático están disponibles de forma predeterminada para todos los usuarios, pero pueden restringirse mediante opciones de permiso de acceso. Debido a que el montador automático es una configuración del lado del cliente que utiliza los comandos estándar montar y desmontar para administrar sistemas de archivos, los sistemas de archivos montados automáticamente en uso exhiben el mismo comportamiento que los sistemas de archivos que se montan usando el archivo /etc/fstab. La diferencia es que un sistema de archivos de montaje automático permanece desmontado hasta que se accede al punto de montaje, lo que hace que el sistema de archivos se monte inmediatamente y permanezca montado cuando el sistema de archivos está en uso. Cuando todos los archivos del sistema de archivos están cerrados y todos los usuarios y procesos abandonan el directorio del punto de montaje, el montador automático desmontará el sistema de archivos después de un tiempo de espera mínimo.
+
+
+
+
+
+
+
+## 20.3. Dispositivos de almacenamiento de montaje automático
+
+20.3. Montaje automático de dispositivos de almacenamiento 20.3. Montaje automático de dispositivos de almacenamiento Objetivos Montar automáticamente dispositivos de almacenamiento cuando se accede a ellos y desmontarlos cuando ya no estén en uso activo, configurando el montador automático. Montar exportaciones NFS con Automounter El automounter (autofs) es un servicio que monta automáticamente sistemas de archivos y exportaciones NFS según demanda, y los desmonta automáticamente cuando los recursos montados ya no están en uso. La función de montaje automático se creó para resolver el problema de que los usuarios sin privilegios no tienen permisos suficientes para usar el comando de montaje. Sin utilizar el comando de montaje, los usuarios sin privilegios no pueden acceder a medios extraíbles como CD, DVD y unidades de disco extraíbles. Además, si un sistema de archivos local o remoto no se monta en el arranque mediante el archivo /etc/fstab, entonces un usuario sin privilegios no puede montar ni acceder a esos sistemas de archivos desmontados. Los archivos de configuración del montador automático se completan con información de montaje del sistema de archivos, de manera similar a las entradas del archivo /etc/fstab. Aunque el archivo /etc/fstab monta los sistemas de archivos durante el arranque del sistema y permanecen
+
+mounted until system shutdown or other intervention, the automounter does not necessarily mount during system boot.
+
+El montador automático monta sistemas de archivos según demanda, cuando un usuario o una aplicación intenta ingresar al punto de montaje del sistema de archivos para acceder a los archivos. Beneficios de Automounter Automounter utiliza recursos equivalentes a los sistemas de archivos que se montan en el arranque, porque un sistema de archivos utiliza recursos sólo cuando un programa lee o escribe archivos abiertos. Los sistemas de archivos montados e inactivos, y los sistemas de archivos desmontados, casi no utilizan recursos. La ventaja de un montador automático es que, al desmontar el sistema de archivos cada vez que ya no está en uso, el sistema de archivos está protegido contra daños inesperados cuando está abierto. Cuando se indica al sistema de archivos que se monte nuevamente, el servicio autofs usa la configuración de montaje más actual, a diferencia del archivo /etc/fstab, que aún puede usar una configuración que se montó hace meses durante el último arranque del sistema. Además, si la configuración de su servidor NFS incluye rutas y servidores redundantes, el montador automático puede seleccionar la conexión más rápida cada vez que se solicita un nuevo sistema de archivos. El servicio Automounter El servicio Automounter admite los mismos sistemas de archivos locales y remotos que el archivo /etc/fstab, incluidos los protocolos de intercambio de archivos NFS y SMB, y admite las mismas opciones de montaje específicas del protocolo, incluidos los parámetros de seguridad. Los sistemas de archivos que se montan mediante el montador automático están disponibles de forma predeterminada para todos los usuarios, pero pueden restringirse mediante opciones de permiso de acceso. Debido a que el montador automático es una configuración del lado del cliente que utiliza los comandos estándar montar y desmontar para administrar sistemas de archivos, los sistemas de archivos montados automáticamente en uso exhiben el mismo comportamiento que los sistemas de archivos que se montan usando el archivo /etc/fstab. La diferencia es que un sistema de archivos de montaje automático permanece desmontado hasta que se accede al punto de montaje, lo que hace que el sistema de archivos se monte inmediatamente y permanezca montado cuando el sistema de archivos está en uso. Cuando todos los archivos del sistema de archivos están cerrados y todos los usuarios y procesos abandonan el directorio del punto de montaje, el montador automático desmontará el sistema de archivos después de un tiempo de espera mínimo.
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento Casos de uso de mapas directos e indirectos El servicio autofs admite el mapeo de puntos de montaje directo e indirecto para manejar los dos tipos de montaje. Un montaje directo es cuando un sistema de archivos se monta en una ubicación de punto de montaje conocida y que no cambia. Un punto de montaje directo existe como directorio permanente. Un montaje indirecto es cuando la ubicación del punto de montaje no se conoce hasta que se produce la demanda de montaje. Aunque indirecto
+
+mount points appear to exist, the autofs service creates them when the mount demand occurs, and deletes them
+
+nuevamente cuando finalizó la demanda y se desmontó el sistema de archivos. Configure el servicio Automounter Para utilizar el servicio autofs, debe instalar los paquetes autofs y nfs-utils.
+
+root@host:~# dnf install autofs nfs-utils
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! El archivo de mapa maestro El servicio autofs utiliza el archivo /etc/auto.master como archivo de configuración del mapa maestro predeterminado. Puede utilizar el archivo /etc/autofs.conf para cambiar el archivo de mapa para el servicio autofs. Utilice el directorio /etc/auto.master.d para configurar el archivo de mapa maestro. Este archivo identifica el directorio base para
+
+mount points, and identifies the mapping file to create the automounts.
+
+El nombre del archivo de mapa maestro es en su mayor parte arbitrario (aunque normalmente tiene sentido) y debe tener la extensión .autofs para que el subsistema lo reconozca. Puede colocar varias entradas en un único archivo de mapa maestro; Como alternativa, puede crear varios archivos de mapas maestros, cada uno con sus propias entradas agrupadas lógicamente. El mapa maestro utiliza el siguiente formato para el montaje automático:
+
+root@host:~# cat /etc/auto.master.d/demo.autofs
+mountpoint     map-file
+
+Reemplace la variable de punto de montaje con el directorio que se utilizará como punto de montaje. Reemplace la variable de archivo de mapa con el archivo que se utilizará como archivo de mapa. El archivo de mapa debe crearse antes de iniciar el servicio autofs. Los archivos de mapa configuran las propiedades de puntos de montaje individuales bajo demanda. El montador automático crea los directorios si no existen. Si los directorios existen antes de que se inicie el montador automático, el montador automático no los elimina cuando sale. Si se especifica un tiempo de espera, el directorio se desmonta automáticamente si no se accede al directorio durante el período de tiempo de espera. Si utiliza un único nombre de directorio para el punto de montaje, el directorio se monta como un montaje indirecto. Si utiliza la ruta completa para el punto de montaje, entonces el directorio se monta como montaje directo.
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento El archivo de mapa utiliza el siguiente formato para el montaje automático:
+
+root@host:~# cat /etc/auto.demo
+mountpoint     mount-options     source-location
+
+Reemplace la variable de punto de montaje con el directorio que se utilizará como punto de montaje. Reemplace la variable mount-options con las opciones que se utilizarán para montar el montaje automático. Reemplace la variable de ubicación de origen con la ubicación de origen del montaje. Crear un archivo de mapa directo Un archivo de mapa directo asigna una exportación NFS a un punto de montaje de ruta absoluta. Sólo es necesario un archivo de mapa directo y puede contener cualquier número de mapas directos. Para utilizar puntos de montaje asignados directamente, incluya el siguiente contenido en el archivo de mapa maestro:
+
+root@host:~# cat /etc/direct.autofs
+
+/- /etc/auto.direct La convención de nomenclatura para un archivo de mapa es /etc/auto.name, donde nombre refleja el contenido del mapa. Todas las entradas de mapas directos utilizan la ruta /- como directorio base. En este caso, el archivo de mapeo /etc/auto.direct contiene los detalles del montaje. El siguiente ejemplo muestra una entrada de muestra en el archivo de mapa:
+
+root@host:~# cat /etc/auto.direct
+/mnt/docs  -rw,sync  hosta:/shares/docs
+
+El punto de montaje es siempre una ruta absoluta. El resto del archivo de mapeo usa la misma estructura. En este ejemplo, el directorio /mnt existe y el servicio autofs no lo administra. El servicio autofs crea y elimina el directorio completo /mnt/docs automáticamente. Crear un archivo de mapa indirecto Cada archivo de mapeo identifica el punto de montaje, las opciones de montaje y la ubicación de origen para montar un conjunto de montajes automáticos. Para el montaje automático indirecto, incluya el siguiente contenido en el archivo de mapa maestro:
+
+root@host:~# cat /etc/auto.master.d/indirect.autofs
+
+/shares /etc/auto.indirect Esta entrada utiliza el directorio /shares como punto de montaje base para el montaje automático indirecto. El archivo de mapa /etc/auto.indirect contiene los detalles del montaje. El siguiente ejemplo muestra una entrada de muestra en el archivo de mapa:
+
+root@host:~# cat /etc/auto.indirect
+work  -rw,sync  hosta:/shares/work
+
+La convención de nomenclatura para un archivo de mapa es /etc/auto.name, donde nombre refleja el contenido del mapa.
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento El punto de montaje completo es el directorio /shares/work. El servicio autofs crea y elimina los directorios /shares y /shares/work según sea necesario. En este ejemplo, el punto de montaje local refleja la estructura de directorios del servidor. Sin embargo, esta duplicación no es necesaria; el punto de montaje local puede tener un nombre arbitrario. El servicio autofs no impone una estructura de nombres específica en el cliente. Las opciones de montaje comienzan con un guión (-) y están separadas por comas y sin espacios en blanco. Las opciones de montaje del sistema de archivos para montaje manual también están disponibles durante el montaje automático. En este ejemplo, el montador automático monta la exportación con acceso de lectura/escritura (opción rw) y el servidor se sincroniza inmediatamente durante las operaciones de escritura (opción de sincronización). Las opciones útiles específicas del montador automático incluyen las opciones -fstype= o -strict. Utilice la opción fstype para especificar el tipo de sistema de archivos, por ejemplo NFS4 o XFS, y utilice la opción estricta para tratar los errores como fatales al montar sistemas de archivos. La ubicación de origen para las exportaciones NFS sigue el patrón host:/pathname, en este ejemplo hosta:/shares/work. Para que este montaje automático tenga éxito, el servidor NFS, hosta, debe exportar el directorio con acceso de lectura/escritura, y el usuario que solicita acceso debe tener permisos de archivo estándar de Linux en el directorio. Si la máquina hosta exporta el directorio con acceso de solo lectura, entonces el cliente obtiene acceso de solo lectura incluso si el cliente solicitó acceso de lectura/escritura. Uso de comodines en archivos de mapas Cuando un servidor NFS exporta múltiples subdirectorios dentro de un directorio, el montador automático se puede configurar para acceder a cualquiera de esos subdirectorios con una única entrada de mapeo. Continuando con el ejemplo anterior, si la exportación hosta:/shares contiene dos o más subdirectorios y están
+
+accessible with the same mount options, then the entry for the /etc/auto.indirect file might appear as follows:
+root@host:~# cat /etc/auto.indirect
+
+* -rw,sync hosta:/shares/& El punto de montaje (o clave) es un carácter de asterisco (*) y el subdirectorio en la ubicación de origen es un carácter comercial (&). Todo lo demás en la entrada es igual. Cuando un usuario intenta acceder al directorio /shares/work, la tecla * (que en este ejemplo funciona) reemplaza la
+
+ampersand in the source location, and the hosta:/shares/work export is mounted. As with the indirect map file
+
+Por ejemplo, el servicio autofs crea y elimina el directorio de trabajo automáticamente. Inicie el servicio Automounter Después de haber configurado el mapa maestro y los archivos del mapa, use el comando systemctl para iniciar y habilitar el servicio autofs.
+
+root@host:~# systemctl enable --now autofs
+
+Enlace simbólico creado /etc/systemd/system/multi-user.target.wants/autofs.service → /usr/lib/systemd/system/autofs.service. El método alternativo de montaje automático El demonio systemd puede crear automáticamente archivos unitarios para las entradas en el archivo /etc/fstab que incluyen la opción x-systemd.automount. Utilice el comando systemctl daemon-reload para actualizar el demonio systemd de
+
+
+
+
+
+20.3. Montaje automático de dispositivos de almacenamiento el nuevo archivo de configuración. Luego, use el comando systemctl start unit.automount para habilitar la configuración de montaje automático. El nombre de la unidad se basa en su ubicación de montaje. Por ejemplo, si el punto de montaje es /remote/finance, entonces el archivo de la unidad se denominará remote-finance.automount. El demonio systemd monta el sistema de archivos cuando se accede inicialmente al directorio /remote/finance. Este método puede ser más sencillo que instalar y configurar el servicio autofs. Sin embargo, una unidad systemd.automount solo puede admitir puntos de montaje de ruta absoluta, similar a los mapas directos autofs. Referencias a las páginas man autofs(5), automount(8), auto.master(5), mount.nfs(8) y systemd.automount(5) Para obtener más información, consulte el capítulo Montaje de sistemas de archivos bajo demanda en Gestión de sistemas de archivos.
+
+guide at https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/managing_file_systems/index#montaje-de-sistemas-de-archivos-bajo-demanda
+
+
+
+
+
+20.4. Ejercicio guiado de dispositivos de almacenamiento con montaje automático 20.4. Ejercicio guiado Montaje automático de dispositivos de almacenamiento Monte automáticamente dispositivos de almacenamiento cuando se acceda a ellos y desmóntelos cuando ya no estén en uso activo, configurando el montador automático. Resultados Instale los paquetes necesarios para el montador automático. Configure mapas de montaje automático directos e indirectos, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-autofs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante e instale el paquete autofs. Utilice estudiante como contraseña. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. Instale el paquete autofs. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo dnf install autofs
+
+[sudo] contraseña para estudiante: estudiante...salida omitida... ¿Está bien? [y/N]: y...salida omitida... ¡Completa! 1.2. Monte manualmente la exportación serverb:/shares NFS en el directorio /home/student/nfs. Utilice el comando grep para ver todas las instancias del texto RED en el directorio /home/student/nfs. 2. Monte manualmente la exportación NFS serverb:/shares en el directorio /home/student/nfs.
+
+[student@servera ~]$ sudo mount -t nfs serverb:/shares /home/student/nfs
+
+2.1. Busque todas las instancias del texto ROJO en el directorio /home/student/nfs. 2.2.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Dispositivos de almacenamiento con montaje automático de ejercicios guiados
+
+20.4. Ejercicio guiado de dispositivos de almacenamiento con montaje automático 20.4. Ejercicio guiado Montaje automático de dispositivos de almacenamiento Monte automáticamente dispositivos de almacenamiento cuando se acceda a ellos y desmóntelos cuando ya no estén en uso activo, configurando el montador automático. Resultados Instale los paquetes necesarios para el montador automático. Configure mapas de montaje automático directos e indirectos, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-autofs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante e instale el paquete autofs. Utilice estudiante como contraseña. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. Instale el paquete autofs. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo dnf install autofs
+
+[sudo] contraseña para estudiante: estudiante...salida omitida... ¿Está bien? [y/N]: y...salida omitida... ¡Completa! 1.2. Monte manualmente la exportación serverb:/shares NFS en el directorio /home/student/nfs. Utilice el comando grep para ver todas las instancias del texto RED en el directorio /home/student/nfs. 2. Monte manualmente la exportación NFS serverb:/shares en el directorio /home/student/nfs.
+
+[student@servera ~]$ sudo mount -t nfs serverb:/shares /home/student/nfs
+
+2.1. Busque todas las instancias del texto ROJO en el directorio /home/student/nfs. 2.2.
+
+
+
+
+
+20.4. Dispositivos de almacenamiento con montaje automático de ejercicios guiados
+
+[student@servera ~]$ grep -r RED /home/student/nfs
+/home/student/nfs/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/nfs/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/nfs/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno!
+
+/home/student/nfs/south/house.txt:You are facing the south side of a RED house. There is no door 
+
+Aquí, y todas las ventanas están tapiadas. Cree un montaje autofs directo e indirecto para la exportación NFS serverb:/shares. El montaje directo debe
+
+mount on the /home/student/direct directory. The indirect mount must mount on the
+
+/home/estudiante/directorio indirecto. Monte sincrónicamente ambos soportes en modo lectura/escritura. 3. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 3.1. Agregue el siguiente contenido en el archivo /etc/auto.master: /- /etc/auto.direct /home/student/indirect /etc/auto.indirect 3.2. Configure un archivo de mapa para montar la exportación NFS serverb:/shares para el montaje automático directo. Crea el
+
+/etc/auto.direct file with the following content:
+/home/student/direct -fstype=nfs,rw,sync serverb:/shares
+
+3.3. Configure un archivo de mapa para montar la exportación NFS serverb:/shares para el montaje automático indirecto. Crea el
+
+/etc/auto.indirect file with the following content:
+
+* -fstype=nfs,rw,servidor de sincronizaciónb:/shares/& 3.4. Inicie y habilite el servicio autofs.
+
+[root@servera ~]# systemctl enable --now autofs
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/autofs.service' → '/usr/lib/systemd/system/autofs.service'. 3.5. Regrese a la máquina del servidor como usuario estudiante.
+
+[root@servera ~]# exit
+
+[estudiante@servera ~]$ 3.6. En el directorio /home/student/direct, vea todas las instancias del texto ROJO. La exportación NFS no se monta hasta que acceda a los archivos dentro del montaje. 4. Verifique que no haya exportaciones en la máquina del servidorb montadas en el directorio directo. 4.1.
+
+
+
+
+
+20.4. Dispositivos de almacenamiento con montaje automático de ejercicios guiados
+
+[student@servera ~]$ mount | grep serverb
+serverb:/shares on /home/student/nfs type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/south on /home/student/nfs/south type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/west on /home/student/nfs/west type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+Busque todas las instancias del texto ROJO en el directorio /home/student/direct.
+
+[student@servera ~]$ grep -r RED /home/student/direct
+/home/student/direct/south/house.txt:You are facing the south side of a RED house. There is no door 
+
+Aquí, y todas las ventanas están tapiadas.
+
+/home/student/direct/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/direct/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/direct/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno! 4.2. Verifique que las exportaciones NFS ahora estén montadas.
+
+[student@servera ~]$ mount | grep serverb
+serverb:/shares on /home/student/nfs type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/south on /home/student/nfs/south type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/west on /home/student/nfs/west type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares on /home/student/direct type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/south on /home/student/direct/south type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/west on /home/student/direct/west type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+4.3. En el directorio /home/student/indirect, busque todas las instancias del texto RED. No puede encontrar el texto ROJO en los directorios a los que aún no se ha accedido. 5. Busque todas las instancias del texto ROJO antes de acceder a cualquier directorio en la exportación NFS. No se produce ningún resultado porque el montaje automático no montó la exportación NFS.
+
+[student@servera ~]$ grep -r RED /home/student/indirect
+
+5.1. Acceda al directorio /home/student/indirect/west enumerando el contenido del directorio.
+
+[student@servera ~]$ ls /home/student/indirect/west
+
+Buzón de campo.txt 5.2. Encuentra las instancias del texto ROJO. No puede encontrar instancias del texto RED en el directorio /home/student/indirect/south. 5.3.
+
+
+
+
+
+20.4. Ejercicio guiado Montaje automático de dispositivos de almacenamiento Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish nfsclient-autofs
+[student@servera ~]$ grep -r RED /home/student/indirect
+/home/student/indirect/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/indirect/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/indirect/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno! Acceda al directorio /home/student/indirect/south enumerando el contenido del directorio.
+
+[student@servera ~]$ ls /home/student/indirect/south
+
+casa.txt 5.4. Verifique que se muestren todas las instancias del texto ROJO.
+
+[student@servera ~]$ grep -r RED /home/student/indirect
+/home/student/indirect/south/house.txt:You are facing the south side of a `RED house. There is no 
+
+puerta aquí, y todas las ventanas están tapiadas.
+
+/home/student/indirect/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/indirect/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/indirect/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno! 5.5. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada. 6.
+
+
+
+
+
+20.5. Almacenamiento conectado a la red de acceso al laboratorio 20.5. Acceso al laboratorio Almacenamiento conectado a la red Acceda al almacenamiento conectado a la red que proporciona el protocolo NFS, ya sea manualmente o mediante el montador automático. Resultados Instale los paquetes necesarios para configurar el montador automático. Configure un mapa indirecto del montador automático, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-review
+
+Instrucciones Una empresa de soporte de TI utiliza la máquina serverb para compartir los subdirectorios de administración, producción y operación del directorio /shares. Configure la máquina del servidor para acceder a los directorios exportados en el directorio /remote. Los usuarios de los grupos de administradores, producción y operadores deben tener permisos de lectura/escritura en los directorios exportados /shares/management, /shares/production y /shares/operation, respectivamente. El usuario manager1 pertenece al grupo de administradores, dbuser1 pertenece al grupo de producción y el usuario contratista1 pertenece al grupo de operadores. En la máquina del servidor, instale el paquete autofs. 1. En la máquina del servidor, monte manualmente la exportación NFS serverb:/shares en el directorio /mnt. Esta tarea le ayuda a verificar que las exportaciones estén configuradas con el acceso y los permisos correctos. Desmonte el directorio /mnt. 2. En la máquina del servidor, cree un mapa indirecto de montaje automático para montar las exportaciones NFS junto con todos los subdirectorios en el directorio /remote. Utilice el archivo /etc/auto.master.d/shares.autofs para el mapa maestro y el archivo /etc/auto.shares para
+
+the mapping file. Synchronously mount the serverb:/shares/& NFS export in the read/write mode.
+
+Inicie el servicio autofs y configúrelo para que se inicie automáticamente. 3. Como usuario manager1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/management. Enumere el contenido del directorio /remote/management y vea el contenido del archivo /remote/management/Welcome.txt. Luego, cree el archivo /remote/management/test.txt con TEST1 como texto. Regrese como usuario root en la máquina del servidor. 4. Como usuario dbuser1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/production. 5.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Almacenamiento conectado a la red de acceso al laboratorio
+
+20.5. Almacenamiento conectado a la red de acceso al laboratorio 20.5. Acceso al laboratorio Almacenamiento conectado a la red Acceda al almacenamiento conectado a la red que proporciona el protocolo NFS, ya sea manualmente o mediante el montador automático. Resultados Instale los paquetes necesarios para configurar el montador automático. Configure un mapa indirecto del montador automático, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-review
+
+Instrucciones Una empresa de soporte de TI utiliza la máquina serverb para compartir los subdirectorios de administración, producción y operación del directorio /shares. Configure la máquina del servidor para acceder a los directorios exportados en el directorio /remote. Los usuarios de los grupos de administradores, producción y operadores deben tener permisos de lectura/escritura en los directorios exportados /shares/management, /shares/production y /shares/operation, respectivamente. El usuario manager1 pertenece al grupo de administradores, dbuser1 pertenece al grupo de producción y el usuario contratista1 pertenece al grupo de operadores. En la máquina del servidor, instale el paquete autofs. 1. En la máquina del servidor, monte manualmente la exportación NFS serverb:/shares en el directorio /mnt. Esta tarea le ayuda a verificar que las exportaciones estén configuradas con el acceso y los permisos correctos. Desmonte el directorio /mnt. 2. En la máquina del servidor, cree un mapa indirecto de montaje automático para montar las exportaciones NFS junto con todos los subdirectorios en el directorio /remote. Utilice el archivo /etc/auto.master.d/shares.autofs para el mapa maestro y el archivo /etc/auto.shares para
+
+the mapping file. Synchronously mount the serverb:/shares/& NFS export in the read/write mode.
+
+Inicie el servicio autofs y configúrelo para que se inicie automáticamente. 3. Como usuario manager1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/management. Enumere el contenido del directorio /remote/management y vea el contenido del archivo /remote/management/Welcome.txt. Luego, cree el archivo /remote/management/test.txt con TEST1 como texto. Regrese como usuario root en la máquina del servidor. 4. Como usuario dbuser1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/production. 5.
+
+
+
+
+
+20.5. Acceso al laboratorio Evaluación de almacenamiento conectado a la red Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade nfsclient-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish nfsclient-review
+
+Enumere el contenido del directorio /remote/production y vea el contenido del archivo /remote/production/Welcome.txt. Luego, cree el archivo /remote/production/test.txt con TEST2 como texto. Regrese como usuario root en la máquina del servidor. Como usuario contratista1 en la máquina del servidor, verifique que pueda acceder al directorio /remoto/operación. Enumere el contenido del directorio /remote/operation y vea el contenido del archivo /remote/operation/Welcome.txt. Luego, cree el archivo /remote/operation/test.txt con TEST3 como texto. Regrese como usuario root en la máquina del servidor. 6. Verifique que las exportaciones NFS ahora estén montadas porque accedió a los directorios exportados. 7. Regrese a la máquina de la estación de trabajo como usuario estudiante. 8.
+
+
+
+
+
+20.5. Lab Access Solución de almacenamiento conectado a la red Acceda al almacenamiento conectado a la red que proporciona el protocolo NFS, ya sea manualmente o mediante el montaje automático. Resultados Instale los paquetes necesarios para configurar el montador automático. Configure un mapa indirecto del montador automático, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-review
+
+Instrucciones Una empresa de soporte de TI utiliza la máquina serverb para compartir los subdirectorios de administración, producción y operación del directorio /shares. Configure la máquina del servidor para acceder a los directorios exportados en el directorio /remote. Los usuarios de los grupos de administradores, producción y operadores deben tener permisos de lectura/escritura en los directorios exportados /shares/management, /shares/production y /shares/operation, respectivamente. El usuario manager1 pertenece al grupo de administradores, dbuser1 pertenece al grupo de producción y el usuario contratista1 pertenece al grupo de operadores. En la máquina del servidor, instale el paquete autofs. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Instale el paquete autofs.
+
+[root@servera ~]# dnf install autofs
+
+...salida omitida... ¿Está bien? [s/N]: y ...salida omitida... ¡Completa! 1.2. En la máquina del servidor, monte manualmente la exportación NFS serverb:/shares en el directorio /mnt. Esta tarea le ayuda a verificar que las exportaciones estén configuradas con el acceso y los permisos correctos. Desmonte el directorio /mnt. 2. En la máquina del servidor, monte la exportación NFS serverb:/shares en el directorio /mnt. 2.1.
+
+
+
+
+
+20.5. Almacenamiento conectado a la red de acceso al laboratorio
+
+[root@servera ~]# mount -t nfs serverb:/shares /mnt
+
+Enumere el contenido del directorio /mnt.
+
+[root@servera ~]# ls -l /mnt
+
+total 0
+
+drwxrws---. 2 root  managers   25 Mar 17 05:19 management
+drwxrws---. 2 root  operators  25 Mar 17 05:19 operation
+drwxrws---. 2 root  production 25 Mar 17 05:19 production
+
+2.2. Desmonta la exportación.
+
+[root@servera ~]# umount /mnt
+
+2.3. En la máquina del servidor, cree un mapa indirecto de montaje automático para montar las exportaciones NFS junto con todos los subdirectorios en el directorio /remote. Utilice el archivo /etc/auto.master.d/shares.autofs para el mapa maestro y el archivo /etc/auto.shares para
+
+the mapping file. Synchronously mount the serverb:/shares/& NFS export in the read/write mode.
+
+Inicie el servicio autofs y configúrelo para que se inicie automáticamente. 3. Cree un archivo de mapa maestro llamado /etc/auto.master.d/shares.autofs con el siguiente contenido: /remote /etc/auto.shares 3.1. Cree un archivo de mapa indirecto llamado /etc/auto.shares con el siguiente contenido: * -rw,sync,fstype=nfs4 serverb:/shares/& 3.2. Inicie y habilite el servicio autofs.
+
+[root@servera ~]# systemctl enable --now autofs
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/autofs.service' → '/usr/lib/systemd/system/autofs.service'. 3.3. Verifique que aún no haya ningún directorio exportado montado. Los directorios se montan cuando accede a ellos.
+
+[root@servera ~]# mount | grep nfs
+
+rpc_pipefs en /var/lib/nfs/rpc_pipefs escriba rpc_pipefs (rw,relatime) 3.4. Como usuario manager1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/management. Enumere el contenido del directorio /remote/management y vea el contenido del archivo /remote/management/Welcome.txt. Luego, cree el archivo /remote/management/test.txt con TEST1 como texto. Regrese como usuario root en la máquina del servidor. 4. Cambie al usuario manager1.
+
+[root@servera ~]# su - manager1
+
+4.1. Enumere el contenido del directorio /remote/management. 4.2.
+
+
+
+
+
+20.5. Almacenamiento conectado a la red de acceso al laboratorio
+
+[manager1@servera ~]$ ls -l /remote/management
+
+total 4 -rw-r--r--. 1 administradores raíz 58 14 de julio 20:23 Welcome.txt Verifique que puede mostrar el contenido del archivo /remote/management/Welcome.txt.
+
+[manager1@servera ~]$ cat /remote/management/Welcome.txt
+
+### Bienvenido al Directorio Exportado de Gestión en SERVERB ### 4.3. Verifique el permiso de escritura creando el archivo /remote/management/test.txt.
+
+[manager1@servera ~]$ echo TEST1 > /remote/management/test.txt
+
+4.4. Salir de la sesión del usuario manager1.
+
+[manager1@servera ~]$ exit
+
+cerrar sesión [root@servera ~]# 4.5. Como usuario dbuser1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/production. Enumere el contenido del directorio /remote/production y vea el contenido del archivo /remote/production/Welcome.txt. Luego, cree el archivo /remote/production/test.txt con TEST2 como texto. Regrese como usuario root en la máquina del servidor. 5. Inicie sesión como usuario dbuser en la máquina servera.
+
+[root@servera ~]# su - dbuser1
+
+5.1. Enumere el contenido del directorio /remote/production.
+
+[dbuser1@servera ~]$ ls -l /remote/production
+
+total 4 -rw-r--r--. 1 producción de raíces 46 14 de julio 20:23 Bienvenido.txt 5.2. Verifique que pueda mostrar el contenido del archivo /remote/production/Welcome.txt.
+
+[dbuser1@servera ~]$ cat /remote/production/Welcome.txt
+
+### Bienvenido a la carpeta de producción en SERVERB ### 5.3. Verifique el permiso de escritura creando el archivo /remote/production/test.txt.
+
+[dbuser1@servera ~]$ echo TEST2 > /remote/production/test.txt
+
+5.4. Regrese a la máquina del servidor como usuario root.
+
+[dbuser1@servera ~]$ exit
+
+cerrar sesión [root@servera ~]# 5.5. Como usuario contratista1 en la máquina del servidor, verifique que pueda acceder al directorio /remoto/operación. 6.
+
+
+
+
+
+20.5. Acceso al laboratorio Evaluación de almacenamiento conectado a la red Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Enumere el contenido del directorio /remote/operation y vea el contenido del archivo /remote/operation/Welcome.txt. Luego, cree el archivo /remote/operation/test.txt con TEST3 como texto. Regrese como usuario root en la máquina del servidor. Inicie sesión como usuario contratista1 en la máquina del servidor.
+
+[root@servera ~]# su - contractor1
+
+6.1. Enumere el contenido del directorio /remote/operation.
+
+[contractor1@servera ~]$ ls -l /remote/operation
+
+total 4 -rw-r--r--. 1 operadores raíz 45 14 de julio 01:13 Bienvenido.txt 6.2. Verifique que puede mostrar el contenido del archivo /remote/operation/Welcome.txt.
+
+[contractor1@servera ~]$ cat /remote/operation/Welcome.txt
+
+### Bienvenido a la carpeta de operaciones en SERVERB ### 6.3. Verifique el permiso de escritura creando el archivo /remote/operation/test.txt.
+
+[contractor1@servera ~]$ echo TEST3 > /remote/operation/test.txt
+
+6.4. Regrese a la máquina del servidor como usuario root.
+
+[contractor1@servera ~]$ exit
+
+cerrar sesión [root@servera ~]# 6.5. Verifique que las exportaciones NFS ahora estén montadas porque accedió a los directorios exportados.
+
+[root@servera ~]# mount | grep nfs
+
+rpc_pipefs en /var/lib/nfs/rpc_pipefs escriba rpc_pipefs (rw,relatime)
+
+serverb:/shares/management on /remote/management type nfs4 
+
+(rw,relatime,sync,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/production on /remote/production type nfs4 
+
+(rw,relatime,sync,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/operation on /remote/operation type nfs4 
+
+(rw,relatime,sync,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+7. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada. 8.
+
+
+
+
+
+20.5. Almacenamiento conectado a la red de acceso al laboratorio
+
+student@workstation:~$ lab grade nfsclient-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish nfsclient-review
+
+
+
+
+
+20.6. Resumen 20.6. Resumen En esta lección, aprendió sobre Network File System y cómo montar y desmontar sistemas de archivos de forma manual y persistente. Un servidor NFS exporta directorios para montaje remoto. Un cliente NFS monta directorios exportados en un directorio de punto de montaje local. El servicio de montaje automático (autofs) monta y desmonta sistemas de archivos y exportaciones NFS según demanda. El servicio autofs brinda soporte a los usuarios que no tienen permiso para montar recursos compartidos NFS. El montador automático desmonta los sistemas de archivos cuando ya no están en uso para protegerlos de daños inesperados. El servicio autofs admite el mapeo de puntos de montaje directo e indirecto. Un montaje directo es una ubicación conocida con un punto de montaje permanente. Un montaje indirecto es una ubicación de montaje que no se conoce hasta que se produce la demanda de montaje.
+
+
+
+
+
+
+
+## Resumen
+
+20.6. Resumen 20.6. Resumen En esta lección, aprendió sobre Network File System y cómo montar y desmontar sistemas de archivos de forma manual y persistente. Un servidor NFS exporta directorios para montaje remoto. Un cliente NFS monta directorios exportados en un directorio de punto de montaje local. El servicio de montaje automático (autofs) monta y desmonta sistemas de archivos y exportaciones NFS según demanda. El servicio autofs brinda soporte a los usuarios que no tienen permiso para montar recursos compartidos NFS. El montador automático desmonta los sistemas de archivos cuando ya no están en uso para protegerlos de daños inesperados. El servicio autofs admite el mapeo de puntos de montaje directo e indirecto. Un montaje directo es una ubicación conocida con un punto de montaje permanente. Un montaje indirecto es una ubicación de montaje que no se conoce hasta que se produce la demanda de montaje.
+
+
+
+
+
+Capítulo 21. Tareas de revisión integral de objetivos de RHCSA Rapid Track. Secciones Revisión completa Solucionar problemas de arranque y mantener servidores (laboratorio de laboratorio) Configurar y administrar sistemas de archivos y almacenamiento (laboratorio de laboratorio) Configurar y administrar la seguridad del servidor (laboratorio de laboratorio) Solucionar problemas de arranque y mantener servidores Configurar y administrar sistemas de archivos y almacenamiento Configurar y administrar la seguridad del servidor
+
+
+
+
+

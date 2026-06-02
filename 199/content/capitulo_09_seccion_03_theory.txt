@@ -1,0 +1,300 @@
+# 6.3. Instalación y actualización de paquetes con DNF
+# Tipo: theory
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.3. Instalación y actualización de paquetes con DNF 6.3. Instalación y actualización de paquetes con DNF Objetivos Buscar, instalar y actualizar paquetes de software con DNF. Administrar paquetes de software con DNF A partir de Red Hat Enterprise Linux 9, DNF (Dandified YUM) reemplaza a YUM como administrador de paquetes. Los comandos DNF son funcionalmente iguales que los comandos YUM. Por compatibilidad, los comandos YUM todavía existen como enlaces simbólicos.
+
+to DNF:
+user@host:~$ ls -l /usr/bin/yum*
+
+lrwxrwxrwx. 1 raíz raíz 5 7 de febrero de 2025 /usr/bin/yum -> dnf-3 lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-builddep -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-config-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-groups-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yumdownloader -> ../libexec/dnf-utils Red Hat recomienda usar el comando dnf. Es posible que parte de la documentación aún haga referencia al comando yum, pero los archivos son el mismo comando vinculado. El comando rpm de bajo nivel se puede utilizar para instalar paquetes, pero no está diseñado para funcionar con repositorios de paquetes ni para resolver dependencias de múltiples fuentes automáticamente. DNF mejora la instalación y las actualizaciones de software basado en RPM. Con el comando dnf, puede instalar, actualizar, eliminar y obtener información sobre paquetes de software y sus dependencias. Puede obtener un historial de transacciones y trabajar con múltiples repositorios de software de Red Hat y de terceros. Los repositorios de BaseOS y Application Stream Red Hat Enterprise Linux 10 distribuye contenido a través de dos repositorios de software principales: BaseOS y Application Stream (AppStream). Tanto BaseOS como AppStream son partes necesarias de un sistema Red Hat Enterprise Linux 10. El repositorio de BaseOS proporciona el contenido principal del sistema operativo para Red Hat Enterprise Linux como paquetes RPM. Los componentes de BaseOS tienen el mismo ciclo de vida que el contenido de versiones anteriores de Red Hat Enterprise Linux. Application Stream contiene partes necesarias del sistema, así como una amplia gama de aplicaciones que anteriormente estaban disponibles como parte de Red Hat Software Collections y otros productos y programas. Cada flujo de aplicaciones tiene un ciclo de vida que es el mismo que Red Hat Enterprise Linux 10 o más corto. Las versiones anteriores de Red Hat Enterprise Linux distribuyen algunos flujos de paquetes para aplicaciones populares como módulos, como los sistemas de gestión de bases de datos. En RHEL 10, Red Hat ya no proporciona módulos DNF en el repositorio de AppStream. Búsqueda de software con DNF El comando de ayuda dnf muestra información de uso. El comando dnf list muestra los paquetes instalados y disponibles. El siguiente ejemplo utiliza un carácter comodín para enumerar los paquetes instalados y disponibles que comienzan con la palabra clave http.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ dnf list 'http*'
+
+Paquetes disponibles httpcomponents-client.noarch 4.5.14-9.el10 rhel-10.0-for-x86_64-appstream-rpms httpcomponents-core.noarch 4.4.16-9.el10 rhel-10.0-for-x86_64-appstream-rpms httpd.x86_64 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-core.x86_64 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-devel.x86_64 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-filesystem.noarch 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-manual.noarch 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-tools.x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms El comando dnf search KEYWORD enumera los paquetes por palabras clave que se encuentran únicamente en los campos de nombre y resumen. Para buscar paquetes con "servidor web" en sus campos de nombre, resumen y descripción, utilice buscar todo con la web
+
+server keyword:
+user@host:~$ dnf search all 'web server'
+
+Última verificación de vencimiento de metadatos: hace 0:11:50 el miércoles 11 de junio a las 18:59:21 de 2025. ================== Resumen y descripción Coincidencia: servidor web ====================
+
+nginx.x86_64 : A high performance web server and reverse proxy server
+pcp-pmda-weblog.x86_64 : Performance Co-Pilot (PCP) metrics from web server logs
+python3-tornado.x86_64 : Scalable, non-blocking web server and tools
+
+========================= Resumen coincidente: servidor web ===========================
+
+libcurl.x86_64 : A library for getting files from web servers
+
+======================= Descripción Coincidente: servidor web =========================
+
+freeradius.x86_64 : High-performance and highly configurable free RADIUS server
+git-instaweb.noarch : Repository browser in gitweb
+httpd.x86_64 : Apache HTTP Server
+mod_auth_openidc.x86_64 : OpenID Connect auth module for Apache HTTP Server
+varnish.x86_64 : High-performance HTTP accelerator
+
+El comando dnf info PACKAGENAME devuelve información detallada sobre un paquete, incluido el disco necesario.
+
+space for installation. For example, the following command retrieves information about the httpd package:
+user@host:~$ dnf info httpd
+
+Nombre de paquetes disponibles: httpd Versión: 2.4.63 Versión: 1.el10 Arquitectura: x86_64 Tamaño: 53 k Fuente: httpd-2.4.63-1.el10.src.rpm Repositorio: rhel-10.0-for-x86_64-appstream-rpms Resumen: Apache HTTP Server URL: https://httpd.apache.org/ Licencia: Apache-2.0 AND (BSD-3-Cláusula Y metamail Y HPND-sell-variante
+
+             : AND Spencer-94)
+
+Descripción: El servidor HTTP Apache es un servidor potente, eficiente y extensible.
+
+             : web server.
+
+El comando dnf proporciona PATHNAME muestra paquetes que coinciden con el nombre de ruta especificado (los nombres de ruta a menudo incluyen caracteres comodín). Por ejemplo, el siguiente comando busca paquetes que proporcionan la
+
+/var/www/html directory:
+user@host:~$ dnf provides /var/www/html
+
+...salida omitida...
+
+httpd-filesystem-2.4.63-1.el10.noarch : The basic directory layout for the
+                                      : Apache HTTP Server
+
+Repositorio: rhel-10.0-for-x86_64-appstream-rpms Coincidencia de: Nombre de archivo: /var/www/html Instalación, actualización y eliminación de software con DNF
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF El comando dnf install PACKAGENAME obtiene e instala un paquete de software, incluidas las dependencias.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ sudo dnf install httpd
+
+Dependencias resueltas. ========================================================================================== Paquete Versión Arch Tamaño del repositorio ================================================================================== Instalación: httpd x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 53 k Instalando dependencias: apr x86_64 1.7.5-2.el10 rhel-10.0-for-x86_64-appstream-rpms 132 k apr-util x86_64 1.6.3-21.el10 rhel-10.0-para-x86_64-appstream-rpms 101 k apr-util-lmdb x86_64 1.6.3-21.el10 rhel-10.0-para-x86_64-appstream-rpms 16 k httpd-core x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 1,5 M sistema de archivos httpd
+
+                 noarch 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms  17 k
+
+httpd-tools x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 87 k redhat-logos-httpd
+
+                 noarch 100.0-2.el10  rhel-10.0-for-x86_64-appstream-rpms  18 k
+
+Instalación de dependencias débiles: apr-util-openssl
+
+                 x86_64 1.6.3-21.el10 rhel-10.0-for-x86_64-appstream-rpms  18 k
+
+mod_http2 x86_64 2.0.29-2.el10 rhel-10.0-for-x86_64-appstream-rpms 169 k mod_lua x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 61 k Resumen de transacciones ================================================================================================= Instalar 11 paquetes Tamaño total de descarga: 2,2 M Tamaño instalado: 6,0 M ¿Está bien [s/n]: y Descargando Paquetes: (1/11): apr-util-1.6.3-21.el10.x86_64.rpm 5,1 MB/s | 101 kB 00:00 (2/11): abr-util-lmdb-1.6.3-21.el10.x86_64.rpm 697 kB/s |  16 kB 00:00 (3/11): abr-1.7.5-2.el10.x86_64.rpm 4,2 MB/s | 132 kB 00:00 (4/11): abr-util-openssl-1.6.3-21.el10.x86_64.r 1,7 MB/s |  18 kB 00:00 (5/11): httpd-2.4.63-1.el10.x86_64.rpm 817 kB/s |  53 kB 00:00 (6/11): httpd-filesystem-2.4.63-1.el10.noarch.r 275 kB/s |  17 kB 00:00 (7/11): httpd-tools-2.4.63-1.el10.x86_64.rpm 12 MB/s |  87 kB 00:00 (8/11): httpd-core-2.4.63-1.el10.x86_64.rpm 9,0 MB/s | 1,5 MB 00:00 (11/9): mod_lua-2.4.63-1.el10.x86_64.rpm 615 kB/s |  61 kB 00:00 (10/11): mod_http2-2.0.29-2.el10.x86_64.rpm 1,5 MB/s | 169 kB 00:00 (11/11): redhat-logos-httpd-100.0-2.el10.noarch 208 kB/s |  18KB 00:00
+
+--------------------------------------------------------------------------------
+
+Total de 7,5 MB/s | 2.2 MB 00:00 Ejecutando verificación de transacción La verificación de transacción fue exitosa. Ejecutando prueba de transacción La prueba de transacción fue exitosa. Transacción en ejecución
+
+  Preparing        :                                                        1/1
+  Installing       : apr-1.7.5-2.el10.x86_64                               1/11
+
+...salida omitida...
+
+  Installing       : httpd-2.4.63-1.el10.x86_64                           11/11
+  Running scriptlet: httpd-2.4.63-1.el10.x86_64                           11/11
+
+Instalado:
+
+  apr-1.7.5-2.el10.x86_64                 apr-util-1.6.3-21.el10.x86_64
+  apr-util-lmdb-1.6.3-21.el10.x86_64      apr-util-openssl-1.6.3-21.el10.x86_64
+  httpd-2.4.63-1.el10.x86_64              httpd-core-2.4.63-1.el10.x86_64
+
+...salida omitida... ¡Completo! El comando dnf update PACKAGENAME obtiene e instala una versión posterior del paquete especificado, incluidas las dependencias. Generalmente, el proceso intenta conservar los archivos de configuración en su lugar, pero en algunos casos, esos archivos pueden
+
+
+
+
+
+6.3. Se cambiará el nombre de Instalación y actualización de paquetes con DNF si el empaquetador determina que el nombre del archivo anterior no funcionará después de la actualización. Si no se especifica ningún nombre de paquete, el comando instala todas las actualizaciones de paquetes disponibles.
+
+user@host:~$ sudo dnf upgrade
+
+Debido a que un nuevo kernel sólo puede probarse arrancando con ese kernel, el paquete admite específicamente la instalación de múltiples versiones al mismo tiempo. Si el nuevo kernel no arranca, entonces el kernel anterior todavía está disponible. ejecutando el
+
+dnf upgrade kernel command installs the new kernel.
+
+Utilice el comando dnf list kernel para enumerar todos los kernels instalados y disponibles. Para ver el kernel que se está ejecutando actualmente, use el comando uname. La opción del comando uname -r muestra solo la versión y la versión del kernel, y la opción -a del comando uname muestra la versión del kernel e información adicional.
+
+user@host:~$ dnf list kernel
+
+Paquetes instalados kernel.x86_64 6.12.0-55.9.1.el10_0 @System kernel.x86_64 6.12.0-55.12.1.el10_0 @rhel-10-for-x86_64-baseos-rpms
+
+user@host:~$ uname -r
+
+6.12.0-55.12.1.el10_0.x86_64
+
+user@host:~$ uname -a
+
+Estación de trabajo Linux 6.12.0-55.12.1.el10_0.x86_64 #1 SMP PREEMPT_DYNAMIC martes 13 de mayo 02:51:44 EDT 2025 x86_64 GNU/Linux El comando dnf remove PACKAGENAME elimina un paquete de software instalado, incluidos los paquetes compatibles.
+
+user@host:~$ sudo dnf remove httpd
+
+Advertencia El comando dnf remove elimina los paquetes enumerados y cualquier paquete que los requiera (y los paquetes que los requieran, etc.). Este comando puede provocar la eliminación inesperada de paquetes, por lo que debe revisar detenidamente la lista de paquetes que se eliminarán. Instalación y eliminación de grupos de software con DNF Con DNF, también puede instalar y eliminar grupos, que son colecciones de software relacionado que se instalan juntos. En Red Hat Enterprise Linux, el comando dnf puede instalar dos tipos de grupos de paquetes. Los grupos regulares son colecciones de paquetes. Los grupos de entornos son colecciones de grupos regulares. Los paquetes o grupos que proporcionan estas colecciones pueden aparecer como obligatorios (deben instalarse si el grupo está instalado), predeterminados (normalmente instalados si el grupo está instalado) u opcionales (no instalados cuando el grupo está instalado, a menos que se solicite específicamente). Similar al comando dnf list, el comando dnf group list muestra los nombres de los grupos instalados y disponibles.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ dnf group list
+
+Grupos de entorno disponibles:
+
+   Server with GUI
+   Server
+   Minimal Install
+
+...salida omitida... Grupos disponibles:
+
+   Legacy UNIX Compatibility
+   Smart Card Support
+   Console Internet Tools
+   Development Tools
+
+...salida omitida... Algunos grupos se instalan a través de grupos de entorno y están ocultos de forma predeterminada. Enumere estos grupos ocultos con el
+
+dnf group list hidden command.
+
+El comando dnf group info muestra información sobre un grupo. Incluye una lista de nombres de paquetes obligatorios, predeterminados y opcionales.
+
+user@host:~$ dnf group info 'Security Tools'
+
+Grupo: Herramientas de Seguridad Descripción: Herramientas de seguridad para verificación de integridad y confianza. Paquetes predeterminados:
+
+   scap-security-guide
+
+Paquetes opcionales:
+
+   aide
+   hmaccalc
+   openscap
+   openscap-engine-sce
+   openscap-utils
+   scap-security-guide-doc
+   tpm2-tools
+   tss2
+   udica
+
+El comando dnf group install instala un grupo que instala sus paquetes obligatorios y predeterminados y sus paquetes dependientes.
+
+user@host:~$ sudo dnf group install 'System Tools'
+
+...salida omitida... Instalación de grupos: Herramientas del sistema Resumen de transacciones ========================================================== Instalar 11 paquetes Tamaño total de descarga: 13 M Tamaño instalado: 44 M ¿Está bien? [s/N]: y ...salida omitida... ¡Completo! Visualización del historial de transacciones Todas las transacciones de instalación y eliminación se registran en el archivo /var/log/dnf.rpm.log.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ tail -5 /var/log/dnf.rpm.log
+
+2025-06-11T20:19:56+0000 SUBDEBUG Instalado: samba-client-4.21.3-102.el10.x86_64 2025-06-11T20:19:56+0000 SUBDEBUG Instalado: nmap-4:7.92-3.el10.x86_64 2025-06-11T20:19:56+0000 SUBDEBUG Instalado: zsh-5.9-15.el10.x86_64 2025-06-11T20:19:57+0000 SUBDEBUG Instalado: setserial-2.17-63.el10.x86_64 2025-06-11T20:19:57+0000 SUBDEBUG Instalado: openldap-clients-2.6.8.el10.x86_64 El comando dnf History muestra un resumen de las transacciones de instalación y eliminación.
+
+user@host:~$ dnf history
+
+identificación | Línea de comando | Fecha y hora | Acción(es) | alterado
+
+--------------------------------------------------------------------------------
+    11 | group install System Tool | 2025-06-11 20:19 | Install        |   12 EE
+    10 | install httpd             | 2025-06-11 19:40 | Install        |   11
+     9 | install bind              | 2025-06-10 09:42 | Install        |    2
+
+...resultado omitido... Resumen de comandos DNF Los paquetes se pueden ubicar, instalar, actualizar y eliminar por nombre o por grupos de paquetes.
+
+dnf list [NAME-PATTERN]
+
+Enumere los paquetes instalados y disponibles por nombre.
+
+dnf group list
+
+Listar grupos instalados y disponibles.
+
+dnf search KEYWORD
+
+Busque un paquete por palabra clave.
+
+dnf info PACKAGENAME
+
+Mostrar detalles de un paquete.
+
+dnf install PACKAGENAME
+
+Instalar un paquete.
+
+dnf group install GROUPNAME
+
+Instalar un grupo de paquetes.
+
+dnf upgrade
+
+Actualice todos los paquetes.
+
+dnf remove PACKAGENAME
+
+Quitar un paquete.
+
+dnf history
+
+Mostrar el historial de transacciones. Referencias
+
+dnf(1) and dnf.conf(5) man pages
+
+Para obtener más información, consulte la guía Administración de software con la herramienta DNF en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/managing_software_with_the_dnf_tool Comando: Tarea:
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF 6.4. Ejercicio guiado Instalar y actualizar paquetes con DNF Encuentre, instale y actualice paquetes de software con DNF. Resultados Instalar y eliminar paquetes con dependencias. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-dnf
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale y luego elimine el paquete nmap. 2. Primero, intente utilizar el paquete nmap ejecutando el comando nmap.
+
+[root@servera ~]# nmap
+
+-bash: nmap: comando no encontrado El paquete nmap no está instalado. 2.1. Busque paquetes con nmap como parte de su nombre o resumen.
+
+[root@servera ~]# dnf search nmap
+
+...salida omitida... ========================== Nombre que coincide exactamente: nmap ===========================
+
+nmap.x86_64 : Network exploration tool and security scanner
+
+========================= Nombre y resumen coincidentes: nmap ==========================
+
+nmap-ncat.x86_64 : Nmap's Netcat replacement
+
+2.2. Obtenga más información sobre el paquete nmap. 2.3.
+
+
+
+
+

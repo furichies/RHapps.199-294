@@ -1,0 +1,35 @@
+# Cuestionario: Prueba sobre sustitución de volúmenes físicos y gestión de LVM
+# Tipo: quiz
+# Capítulo: Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+16.6. Prueba sobre sustitución de volúmenes físicos y gestión de LVM 16.6. Cuestionario Reemplazo de volúmenes físicos y administración de LVM Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando agrega un PV a un VG existente para aumentar su capacidad? 1. vgexpand /dev/vg01 /dev/sdb3 a. vgextend /dev/sdb3 /dev/vg01 b. vgextend /dev/vg01 /dev/sdb3 c. vggrow /dev/sdb3 /dev/vg01 d. ¿Qué hace el comando pvmove? 2. Elimina todos los metadatos de un PV. a. Elimina un PV de un VG. b. Elimina un PV del sistema. do. Mueve datos de extensiones en un PV a extensiones en otro PV. d. ¿Qué comando elimina un PV de un VG para reducir su capacidad? 3. vgreduce /dev/vg01 /dev/sdb3 a. vgremove /dev/vg01 /dev/sdb3 b. vgreduce /dev/sdb3 c. vgrecall /dev/vg01 /dev/sdb3 d. Verdadero o falso: los comandos lvremove, vgremove y pvremove son operaciones reversibles. 4. Verdadero a. Depende del tipo de componente LVM. b. Falso c. ¿Cuál es el orden correcto para eliminar toda la estructura de componentes de LVM? 5.
+
+umount > lvremove > vgremove > pvremove
+
+a. lvremove > desmontar > pvremove > vgremove b. vgremove > pvremove > lvremove > desmontar c. pvremove > vgremove > lvremove > desmontar d.
+
+
+
+
+
+16.6. Cuestionario Reemplazo de volúmenes físicos y administración de la solución LVM ¿Qué comando agrega un PV a un VG existente para aumentar su capacidad? 1. vgexpand /dev/vg01 /dev/sdb3 a. vgextend /dev/sdb3 /dev/vg01 b. vgextend /dev/vg01 /dev/sdb3 c. vggrow /dev/sdb3 /dev/vg01 d. ¿Qué hace el comando pvmove? 2. Elimina todos los metadatos de un PV. a. Elimina un PV de un VG. b. Elimina un PV del sistema. do. Mueve datos de extensiones en un PV a extensiones en otro PV. d. ¿Qué comando elimina un PV de un VG para reducir su capacidad? 3. vgreduce /dev/vg01 /dev/sdb3 a. vgremove /dev/vg01 /dev/sdb3 b. vgreduce /dev/sdb3 c. vgrecall /dev/vg01 /dev/sdb3 d. Verdadero o falso: los comandos lvremove, vgremove y pvremove son operaciones reversibles. 4. Verdadero a. Depende del tipo de componente LVM. b. Falso c. ¿Cuál es el orden correcto para eliminar toda la estructura de componentes de LVM? 5.
+
+umount > lvremove > vgremove > pvremove
+
+a. lvremove > desmontar > pvremove > vgremove b. vgremove > pvremove > lvremove > desmontar c. pvremove > vgremove > lvremove > desmontar d.
+
+
+
+
+
+16.7. Laboratorio Administrar almacenamiento con Logical Volume Manager 16.7. Práctica de laboratorio Administrar almacenamiento con Logical Volume Manager Cree, administre y amplíe volúmenes lógicos que puedan contener sistemas de archivos y espacios de intercambio. Resultados Crear un volumen lógico (LV) con un sistema de archivos XFS. Cambie el tamaño de un volumen lógico a un tamaño específico. Sube persistentemente el volumen. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-review
+
+Instrucciones En la máquina del servidor, el directorio /storage/data1 se está quedando sin espacio en disco. El grupo de volúmenes (VG) vg_01_serverb no tiene espacio suficiente para ampliar el volumen lógico (LV) lv_01_serverb. Para ampliar VG, primero debe crear una partición secundaria de 1024 MiB en el disco /dev/sdb. El VG no debe exceder los 2048 MiB. Luego, extienda el LV lv_01_serverb a 1024 MiB. Asegúrese de que lv_01_serverb LV permanezca montado de forma persistente en el directorio /storage/data1. Finalmente, cree el LV lv_02_serverb con 512 MiB en el VG vg_01_serverb. Cree el sistema de archivos XFS en el volumen recién creado. Monte de forma persistente el volumen lógico recién creado en el directorio /storage/data2. Tenga en cuenta especialmente la especificación del tamaño de la partición en MiB (220 bytes). Si crea la partición en MB (106 bytes), no cumple con los criterios de evaluación, porque 1 MiB = 1,048576 MB. Aunque la unidad predeterminada cuando se utiliza el comando parted es MB, puede verificar el tamaño de las particiones en unidades MiB utilizando la opción unidad MiB. En la máquina del servidor, cree la partición secundaria de 1024 MiB en el disco /dev/sdb. Registre la partición con el kernel. 1. Inicialice la partición secundaria como un volumen físico. 2. Amplíe el grupo de volúmenes vg_01_serverb para usar la partición secundaria. 3. Amplíe el volumen lógico lv_01_serverb a 1024 MiB y cambie el tamaño del sistema de archivos XFS. 4. En el grupo de volúmenes vg_01_serverb, cree el volumen lógico lv_02_serverb con 512 MiB. Agregue un sistema de archivos XFS y móntelo de forma persistente en el directorio /storage/data2. 5. Verifique que los LV lv_01_serverb y lv_02_serverb estén montados con el tamaño previsto. 6. Regrese a la máquina de la estación de trabajo como usuario estudiante. 7.
+
+
+
+
+

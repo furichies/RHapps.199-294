@@ -1,0 +1,273 @@
+# Ejercicio Guiado: Compilación de un inventario de Ansible
+# Tipo: guided_exercise
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Compilación de un inventario de Ansible
+Crear un nuevo inventario estático que contenga hosts y grupos.
+Resultados
+• Deberá ser capaz de crear inventarios estáticos predeterminados y personalizados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-inventory
+Instrucciones
+ 1.
+Cambie al directorio /home/student/playbook-inventory/.
+[student@workstation ~]$ cd playbook-inventory
+[student@workstation playbook-inventory]$
+ 2.
+Cree un archivo de inventario estático personalizado denominado inventory en el
+directorio de trabajo /home/student/playbook-inventory.
+En la siguiente tabla, se encuentra la información sobre sus cuatro hosts gestionados.
+Asigne cada host a varios grupos con fines de administración según el propósito del host, la
+ciudad donde se encuentra ubicado y el entorno de implementación al que pertenece.
+Además, los grupos para ciudades de Estados Unidos (Raleigh y Mountain View) deben
+configurarse como elementos secundarios del grupo us para que los hosts de Estados
+Unidos puedan ser gestionados como un grupo.
+Especificaciones de inventario del servidor
+Nombre de host
+Propósito
+Ubicación
+Entorno
+servera.lab.example.com
+Servidor web
+Raleigh
+Desarrollo
+serverb.lab.example.com
+Servidor web
+Raleigh
+Prueba
+serverc.lab.example.com
+Servidor web
+Mountain View
+Producción
+serverd.lab.example.com
+Servidor web
+Londres
+Producción
+28
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+2.1.
+Cree un archivo inventory en el directorio de trabajo /home/student/
+playbook-inventory. Con la tabla de especificaciones de inventario del servidor
+como guía, edite el archivo inventory para que incluya el siguiente contenido:
+[webservers]
+server[a:d].lab.example.com
+[raleigh]
+servera.lab.example.com
+serverb.lab.example.com
+[mountainview]
+serverc.lab.example.com
+[london]
+serverd.lab.example.com
+[development]
+servera.lab.example.com
+[testing]
+serverb.lab.example.com
+[production]
+serverc.lab.example.com
+serverd.lab.example.com
+[us:children]
+raleigh
+mountainview
+ 3.
+Use variaciones del comando ansible-navigator inventory para verificar los
+grupos y hosts gestionados en el archivo de inventario /home/student/playbook-
+inventory/inventory personalizado.
+Importante
+Su comando ansible-navigator inventory debe incluir la opción -i para
+especificar la ubicación de su archivo de inventario, como se muestra en los
+siguientes pasos.
+3.1.
+Enumere todos los hosts gestionados en el inventario mediante el comando
+ansible-navigator inventory -i inventory -m stdout --list.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --list
+{
+    "_meta": {
+        "hostvars": {}
+    },
+    "all": {
+        "children": [
+            "development",
+RH294-RHEL9.0-es-3-20240620
+29
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+            "london",
+            "production",
+            "testing",
+            "ungrouped",
+            "us",
+            "webservers"
+        ]
+    },
+    "development": {
+        "hosts": [
+            "servera.lab.example.com"
+        ]
+    },
+    "london": {
+        "hosts": [
+            "serverd.lab.example.com"
+        ]
+    },
+    "mountainview": {
+        "hosts": [
+            "serverc.lab.example.com"
+        ]
+    },
+    "production": {
+        "hosts": [
+            "serverc.lab.example.com",
+            "serverd.lab.example.com"
+        ]
+    },
+    "raleigh": {
+        "hosts": [
+            "servera.lab.example.com",
+            "serverb.lab.example.com"
+        ]
+    },
+    "testing": {
+        "hosts": [
+            "serverb.lab.example.com"
+        ]
+    },
+    "us": {
+        "children": [
+            "mountainview",
+            "raleigh"
+        ]
+    },
+    "webservers": {
+        "hosts": [
+            "servera.lab.example.com",
+            "serverb.lab.example.com",
+            "serverc.lab.example.com",
+30
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+            "serverd.lab.example.com"
+        ]
+    }
+}
+3.2.
+Represente gráficamente todos los hosts gestionados en el archivo de inventario,
+pero que no forman parte de un grupo con el comando ansible-navigator
+inventory -i inventory -m stdout --graph ungrouped. No existen hosts
+gestionados sin grupo en este archivo de inventario.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph ungrouped
+@ungrouped:
+3.3.
+Represente gráficamente todos los hosts gestionados en el grupo development con
+el comando ansible-navigator inventory -i inventory -m stdout --
+graph development.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph development
+@development:
+  |--servera.lab.example.com
+3.4.
+Represente gráficamente todos los hosts gestionados en el grupo testing con el
+comando ansible-navigator inventory -i inventory -m stdout --
+graph testing.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph testing
+@testing:
+  |--serverb.lab.example.com
+3.5.
+Represente gráficamente todos los hosts gestionados en el grupo production con
+el comando ansible-navigator inventory -i inventory -m stdout --
+graph production.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph production
+@production:
+  |--serverc.lab.example.com
+  |--serverd.lab.example.com
+3.6.
+Represente gráficamente todos los hosts gestionados en el grupo us con el comando
+ansible-navigator inventory -i inventory -m stdout --graph us.
+RH294-RHEL9.0-es-3-20240620
+31
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory -m stdout --graph us
+@us:
+  |--@mountainview:
+  |  |--serverc.lab.example.com
+  |--@raleigh:
+  |  |--servera.lab.example.com
+  |  |--serverb.lab.example.com
+3.7.
+Ejecute ansible-navigator inventory -i inventory en modo interactivo.
+Explore las entradas de grupos y hosts gestionados en el archivo de inventario.
+Escriba :0 para explorar grupos. Escriba :1 para explorar hosts. Escriba :q para salir
+de ansible-navigator.
+[student@workstation playbook-inventory]$ ansible-navigator inventory \
+> -i inventory
+  Title              Description
+0│Browse groups      Explore each inventory group and group members members
+1│Browse hosts       Explore the inventory with a list of all hosts
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-inventory
+32
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Administración de archivos de
+configuración de Ansible
+Objetivos
+• Describir dónde se encuentran los archivos de configuración de Ansible, cómo los selecciona
+Ansible y editarlos para aplicar los cambios a la configuración predeterminada.
+Configuración de Ansible
+Puede crear y editar dos archivos en cada uno de los directorios de su proyecto Ansible que
+configuran el comportamiento de Ansible y el comando ansible-navigator. Un directorio de
+proyectos de Ansible es un directorio desde el cual ejecuta sus playbooks mediante el comando
+ansible-navigator.
+• ansible.cfg, que configura el comportamiento de varias herramientas de Ansible.
+• ansible-navigator.yml, que cambia las opciones predeterminadas para el comando
+ansible-navigator.
+Gestión de la configuración de Ansible
+Cree un archivo de configuración ansible.cfg en cada uno de sus directorios de proyectos de
+Ansible. El archivo de configuración de Ansible consiste en varias secciones; cada sección contiene
+parámetros definidos como pares de clave-valor. Los títulos de las secciones se incluyen entre
+paréntesis. Para la operación básica, use las siguientes dos secciones:
+• [defaults], que establece valores predeterminados para la operación de Ansible
+• [privilege_escalation], que configura el modo en que Ansible realiza el aumento de
+privilegios en hosts gestionados
+El siguiente es un archivo ansible.cfg de muestra:
+[defaults]
+inventory = ./inventory 
+remote_user = user 
+ask_pass = false 
+[privilege_escalation]
+become = true 
+become_method = sudo 
+become_user = root 
+become_ask_pass = false 
+El parámetro inventory especifica la ruta a un archivo de inventario estático o a un
+directorio que contenga múltiples archivos de inventario estático y scripts de inventario
+dinámico.
+El parámetro remote_user especifica el nombre de usuario que Ansible usa para
+conectarse a los hosts gestionados. En un entorno de ejecución de automatización
+RH294-RHEL9.0-es-3-20240620
+33
+
+

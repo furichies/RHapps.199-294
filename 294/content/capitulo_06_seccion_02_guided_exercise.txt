@@ -1,0 +1,828 @@
+# Ejercicio Guiado: Selección de hosts con patrones de hosts
+# Tipo: guided_exercise
+# Capítulo: Capítulo 6. Administración de plays y playbooks complejos
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Ejercicio Guiado
+Selección de hosts con patrones de hosts
+Explorar el modo en que pueden usarse los patrones de hosts para especificar hosts de
+inventario para plays. Se le proporcionarán varios ejemplos de inventario para explorar
+patrones de host.
+Resultados
+• Use diferentes patrones de hosts para acceder a diversos hosts en un inventario.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-host
+Instrucciones
+ 1.
+Cambie al directorio /home/student/projects-host y revise el playbook y los archivos
+de inventario en el directorio.
+[student@workstation ~]$ cd ~/projects-host
+[student@workstation projects-host]$
+1.1.
+Enumere el contenido del directorio.
+[student@workstation projects-host]$ ls
+ansible.cfg inventory1 inventory2 playbook.yml
+1.2.
+Inspeccione el primer archivo de inventario de ejemplo, inventory1. Observe cómo
+está organizado el inventario. Identifique los hosts que se encuentran en el inventario
+y los dominios que se usan.
+srv1.example.com
+srv2.example.com
+s1.lab.example.com
+s2.lab.example.com
+[web]
+jupiter.lab.example.com
+saturn.example.com
+[db]
+RH294-RHEL9.0-es-3-20240620
+237
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+db1.example.com
+db2.example.com
+db3.example.com
+[lb]
+lb1.lab.example.com
+lb2.lab.example.com
+[boston]
+db1.example.com
+jupiter.lab.example.com
+lb2.lab.example.com
+[london]
+db2.example.com
+db3.example.com
+file1.lab.example.com
+lb1.lab.example.com
+[dev]
+web1.lab.example.com
+db3.example.com
+[stage]
+file2.example.com
+db2.example.com
+[prod]
+lb2.lab.example.com
+db1.example.com
+jupiter.lab.example.com
+[function:children]
+web
+db
+lb
+city
+[city:children]
+boston
+london
+environments
+[environments:children]
+dev
+stage
+prod
+new
+[new]
+172.25.252.23
+172.25.252.44
+172.25.252.32
+238
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+1.3.
+Inspeccione el segundo archivo de inventario de ejemplo, inventory2. Observe
+cómo está organizado este inventario. Identifique los hosts que se encuentran en el
+inventario y los dominios que se usan.
+workstation.lab.example.com
+[london]
+servera.lab.example.com
+[berlin]
+serverb.lab.example.com
+[tokyo]
+serverc.lab.example.com
+[atlanta]
+serverd.lab.example.com
+[europe:children]
+london
+berlin
+1.4.
+Inspeccione el contenido del playbook, playbook.yml. Actualmente tiene
+db1.example.com como patrón host para su play. Observe cómo ese play usa
+el módulo ansible.builtin.debug para mostrar el nombre de cada host
+gestionado.
+- name: Resolve host patterns
+  hosts: db1.example.com
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+ 2.
+Ejecute el play playbook.yml usando el archivo de inventario inventory1 y revise la
+salida para verificar que el servidor db1.example.com esté presente en el archivo de
+inventario inventory1.
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+PLAY RECAP *********************************************************************
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+239
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ 3.
+Use un patrón de host en el playbook para hacer referencia a una dirección IP contenida en
+el archivo de inventario inventory1. Ejecute el playbook usando el archivo de inventario
+inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: 172.25.252.44
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+PLAY RECAP *********************************************************************
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 4.
+Modifique el patrón de host para usar el grupo all para enumerar todos los hosts
+gestionados en el archivo de inventario inventory1. Ejecute el playbook usando el
+archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+240
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [jupiter.lab.example.com] => {
+    "msg": "jupiter.lab.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [lb2.lab.example.com] => {
+    "msg": "lb2.lab.example.com"
+}
+ok: [file1.lab.example.com] => {
+    "msg": "file1.lab.example.com"
+}
+ok: [web1.lab.example.com] => {
+    "msg": "web1.lab.example.com"
+}
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+ok: [172.25.252.23] => {
+    "msg": "172.25.252.23"
+}
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+ok: [172.25.252.32] => {
+    "msg": "172.25.252.32"
+}
+PLAY RECAP *********************************************************************
+172.25.252.23              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.32              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+241
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file1.lab.example.com      : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+jupiter.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb2.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+web1.lab.example.com       : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 5.
+Modifique el patrón de host para usar el carácter de asterisco (*) para enumerar todos
+los hosts que terminan en example.com administrados en el archivo de inventario
+inventory1. Ejecute el playbook usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: '*example.com'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+ok: [s1.lab.example.com] => {
+242
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [jupiter.lab.example.com] => {
+    "msg": "jupiter.lab.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [lb2.lab.example.com] => {
+    "msg": "lb2.lab.example.com"
+}
+ok: [file1.lab.example.com] => {
+    "msg": "file1.lab.example.com"
+}
+ok: [web1.lab.example.com] => {
+    "msg": "web1.lab.example.com"
+}
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+PLAY RECAP *********************************************************************
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file1.lab.example.com      : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+jupiter.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb2.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+243
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+web1.lab.example.com       : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Como puede ver en la salida del comando anterior, el dominio *.example.com
+contiene 14 hosts. Modifique el patrón de host para que se ignoren los hosts del dominio
+*.lab.example.com. Ejecute el playbook usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: '*.example.com, !*.lab.example.com'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+PLAY RECAP *********************************************************************
+244
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 7.
+Sin acceder a los grupos en el archivo de inventario inventory1, modifique el patrón de
+host para enumerar estos tres hosts: lb1.lab.example.com, s1.lab.example.com y
+db1.example.com. Ejecute el playbook usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: lb1.lab.example.com,s1.lab.example.com,db1.example.com
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+PLAY RECAP *********************************************************************
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+245
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ 8.
+Use un patrón de host comodín para enumerar los hosts que comienzan con una dirección
+IP 172.25. en el archivo de inventario inventory1. Ejecute el playbook usando el archivo
+de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: '172.25.*'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [172.25.252.23] => {
+    "msg": "172.25.252.23"
+}
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+ok: [172.25.252.32] => {
+    "msg": "172.25.252.32"
+}
+PLAY RECAP *********************************************************************
+172.25.252.23              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.32              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 9.
+Use un patrón de host para enumerar todos los hosts del archivo de inventario
+inventory1 que comienzan con la letra "s". Ejecute el playbook usando el archivo de
+inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: 's*'
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+246
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [file2.example.com] => {
+    "msg": "file2.example.com"
+}
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [srv1.example.com] => {
+    "msg": "srv1.example.com"
+}
+ok: [srv2.example.com] => {
+    "msg": "srv2.example.com"
+}
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [saturn.example.com] => {
+    "msg": "saturn.example.com"
+}
+PLAY RECAP *********************************************************************
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+file2.example.com          : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+saturn.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv1.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+srv2.example.com           : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Observe los hosts file2.example.com y db2.example.com en la salida del comando
+anterior. Aparecen en la lista, ya que ambos son miembros de un grupo denominado stage,
+que también comienza con la letra "s".
+ 10. Con una lista y un patrón de host comodín, muestre todos los hosts en el inventario
+inventory1 del grupo prod, todos los hosts cuya dirección IP comienza con 172 y todos
+los hosts que contienen lab en su nombre. Ejecute el playbook usando el archivo de
+inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: 'prod,172*,*lab*'
+RH294-RHEL9.0-es-3-20240620
+247
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [lb2.lab.example.com] => {
+    "msg": "lb2.lab.example.com"
+}
+ok: [db1.example.com] => {
+    "msg": "db1.example.com"
+}
+ok: [jupiter.lab.example.com] => {
+    "msg": "jupiter.lab.example.com"
+}
+ok: [172.25.252.23] => {
+    "msg": "172.25.252.23"
+}
+ok: [172.25.252.44] => {
+    "msg": "172.25.252.44"
+}
+ok: [172.25.252.32] => {
+    "msg": "172.25.252.32"
+}
+ok: [s1.lab.example.com] => {
+    "msg": "s1.lab.example.com"
+}
+ok: [s2.lab.example.com] => {
+    "msg": "s2.lab.example.com"
+}
+ok: [lb1.lab.example.com] => {
+    "msg": "lb1.lab.example.com"
+}
+ok: [file1.lab.example.com] => {
+    "msg": "file1.lab.example.com"
+}
+ok: [web1.lab.example.com] => {
+    "msg": "web1.lab.example.com"
+}
+PLAY RECAP *********************************************************************
+172.25.252.23              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.32              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+172.25.252.44              : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db1.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+248
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+file1.lab.example.com      : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+jupiter.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb1.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+lb2.lab.example.com        : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s1.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+s2.lab.example.com         : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+web1.lab.example.com       : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 11.
+Enumere todos los hosts que pertenecen a los grupos db y london. Ejecute el playbook
+usando el archivo de inventario inventory1.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: db,&london
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory1
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [db2.example.com] => {
+    "msg": "db2.example.com"
+}
+ok: [db3.example.com] => {
+    "msg": "db3.example.com"
+}
+PLAY RECAP *********************************************************************
+db2.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+db3.example.com            : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+249
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+ 12. Modifique el valor de hosts en el archivo playbook.yml para que todos los servidores
+en el grupo london sean el objetivo. Ejecute el playbook usando el archivo de inventario
+inventory2.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: london
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [servera.lab.example.com] => {
+    "msg": "servera.lab.example.com"
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 13. Modifique el valor de hosts en el archivo playbook.yml para que todos los servidores
+en el grupo anidado europe sean el objetivo. Ejecute el playbook usando el archivo de
+inventario inventory2.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: europe
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [servera.lab.example.com] => {
+    "msg": "servera.lab.example.com"
+}
+ok: [serverb.lab.example.com] => {
+    "msg": "serverb.lab.example.com"
+}
+250
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 14. Modifique el valor hosts en el archivo playbook.yml para que todos los servidores que
+no pertenecen a ningún grupo sean el objetivo. Ejecute el playbook usando el archivo de
+inventario inventory2.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: ungrouped
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+PLAY [Resolve host patterns] ***************************************************
+TASK [Display managed hosts matching the host pattern] *************************
+ok: [workstation.lab.example.com] => {
+    "msg": "workstation.lab.example.com"
+}
+PLAY RECAP *********************************************************************
+workstation.lab.example.com : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 15. Modifique el valor hosts en el archivo playbook.yml para especificar un grupo que no
+existe en el archivo de inventario inventory2. Ejecute el playbook usando el archivo de
+inventario inventory2. Observe el mensaje en la salida de que no se encontró ninguna
+coincidencia para ese patrón de host.
+[student@workstation projects-host]$ cat playbook.yml
+---
+- name: Resolve host patterns
+  hosts: australia
+  gather_facts: false
+  tasks:
+  - name: Display managed hosts matching the host pattern
+    ansible.builtin.debug:
+      msg: "{{ inventory_hostname }}"
+[student@workstation projects-host]$ ansible-navigator run \
+> -m stdout playbook.yml -i inventory2
+RH294-RHEL9.0-es-3-20240620
+251
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+[WARNING]: Could not match supplied host pattern, ignoring: australia
+PLAY [Resolve host patterns] ***************************************************
+skipping: no hosts matched
+PLAY RECAP *********************************************************************
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio.
+Este paso es importante para garantizar que los recursos de ejercicios anteriores no impacten en
+los siguientes.
+[student@workstation ~]$ lab finish projects-host
+252
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Inclusión e importación de archivos
+Objetivos
+• Administrar playbooks grandes importando o incluyendo otros playbooks o tareas desde
+archivos externos, ya sea sin condiciones o sobre la base de una prueba condicional.
+Gestión de playbooks grandes
+Cuando un playbook se torna largo o complejo, puede dividirlo en archivos más pequeños para
+que sea más fácil de administrar. Puede combinar varios playbooks en un playbook principal o
+insertar listas de tareas de un archivo a un play. Esto puede facilitar la reutilización de plays o
+secuencias de tareas en diferentes proyectos.
+Inclusión o importación de archivos
+Ansible soporta dos operaciones para incorporar contenido en un playbook. Usted puede incluir
+contenido, o puede importar contenido.
+Cuando incluye contenido, es una operación dinámica. Los procesos de Ansible incluyeron
+contenido durante la ejecución del playbook, a medida que se abordaba el contenido.
+Cuando importa contenido, es una operación estática. Los preprocesos de Ansible importaron
+contenido cuando se analizó inicialmente el playbook, antes de que comience la ejecución.
+Importación de playbooks
+Use el módulo ansible.builtin.import_playbook para importar archivos externos que
+contienen listas de plays en un playbook. En otras palabras, puede tener un playbook principal que
+importa uno o más playbooks adicionales.
+Debido a que el contenido que se importa es un playbook completo, el módulo
+ansible.builtin.import_playbook solo se puede usar en el nivel superior de un playbook
+y no se puede usar dentro de un play. Si importa varios playbooks, se importarán y ejecutarán en
+orden.
+A continuación, se muestra un ejemplo simple de un playbook principal que importa dos playbooks
+adicionales:
+- name: Prepare the web server
+  ansible.builtin.import_playbook: web.yml
+- name: Prepare the database server
+  ansible.builtin.import_playbook: db.yml
+También puede intercalar plays en su playbook principal con playbooks importados.
+---
+- name: Play 1
+  hosts: localhost
+RH294-RHEL9.0-es-3-20240620
+253
+
+

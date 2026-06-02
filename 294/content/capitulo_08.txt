@@ -1,0 +1,1702 @@
+# Capítulo 8. Solución de problemas de Ansible
+
+capítulo 8
+Solución de problemas de
+Ansible
+Meta
+Solucionar problemas de playbooks y hosts
+gestionados.
+Objetivos
+•
+Solucionar problemas genéricos con un nuevo
+playbook y repararlos.
+•
+Solucionar fallas en hosts gestionados cuando
+se ejecuta un playbook.
+Secciones
+•
+Solución de problemas de playbooks (y
+ejercicio guiado)
+•
+Solución de problemas en hosts gestionados de
+Ansible (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Solución de problemas de Ansible
+RH294-RHEL9.0-es-3-20240620
+361
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Solución de problemas de playbooks
+Objetivos
+• Solucionar problemas genéricos con un nuevo playbook y repararlos.
+Playbooks de depuración
+La salida proporcionada por el comando ansible-navigator run es un buen punto de partida
+para solucionar problemas con sus plays y los hosts en los que se ejecutan.
+Considere la siguiente salida de la ejecución de un playbook:
+PLAY [Service Deployment] ***************************************************
+...output omitted...
+TASK: [Install a service] ***************************************************
+ok: [demoservera] => {
+    "msg": "demoservera"
+}
+ok: [demoserverb] => {
+    "msg": "demoserverb"
+}
+PLAY RECAP *********************************************************************
+demoservera    : ok=2    changed=0    unreachable=0    failed=0    skipped=0   
+ rescued=0    ignored=0
+demoserverb    : ok=2    changed=0    unreachable=0    failed=0    skipped=0   
+ rescued=0    ignored=0
+La salida anterior muestra el encabezado PLAY con el nombre del play que se ejecuta, seguido
+de uno o más encabezados TASK para las tareas en ese play. Cada uno de los encabezados TASK
+representa la tarea asociada en el play y se ejecuta en todos los hosts gestionados especificados
+por el parámetro hosts del play.
+A medida que cada host gestionado ejecuta cada una de las tareas, se muestra el nombre del
+host gestionado debajo del encabezado TASK, junto con el resultado de la tarea en ese host. Los
+resultados de la tarea pueden ser ok, fatal, changed o skipping.
+En la parte inferior de la salida de cada play, la sección PLAY RECAP muestra la cantidad de tareas
+ejecutadas para cada host gestionado, por resultado de la tarea.
+Puede aumentar el detalle de la salida de ansible-navigator run agregando una o más
+opciones -v. El comando ansible-navigator run -v aporta información de depuración
+adicional, con hasta cuatro niveles totales.
+Configuración de detalle
+Opción
+Descripción
+-v
+Aparecen los datos de la salida.
+362
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Opción
+Descripción
+-vv
+Aparecen tanto los datos de entrada como los de salida.
+-vvv
+Incluye información acerca de las conexiones a los hosts
+gestionados.
+-vvvv
+Incluye información adicional, como los scripts que se ejecutan en
+cada host remoto, y el usuario que ejecuta cada script.
+Examinar valores de variables con el módulo de
+depuración
+Puede usar el módulo ansible.builtin.debug para proporcionar una visión de lo que está
+sucediendo en el play. Puede crear una tarea que use este módulo para mostrar el valor de una
+variable determinada en un punto específico del play. Esto puede ayudarlo a depurar tareas que
+usan variables para comunicarse entre sí (por ejemplo, usando la salida de una tarea como dato
+para la siguiente).
+Los siguientes ejemplos usan las configuraciones msg y var dentro de las tareas
+ansible.builtin.debug. Este primer ejemplo muestra el valor en el tiempo de ejecución
+del dato ansible_facts['memfree_mb'] como parte de un mensaje impreso en la salida de
+ansible-navigator run.
+- name: Display free memory
+  ansible.builtin.debug:
+    msg: "Free memory for this system is {{ ansible_facts['memfree_mb'] }}"
+El segundo ejemplo muestra el valor de la variable output.
+- name: Display the "output" variable
+  ansible.builtin.debug:
+    var: output
+    verbosity: 2
+El parámetro verbosity controla cuándo se ejecuta el módulo ansible.builtin.debug.
+El valor se correlaciona con el número de opciones -v que se especifican cuando se ejecuta el
+playbook. Por ejemplo, si se especifica -vv y verbosity se establece en 2 para una tarea, esa
+tarea se incluye en la salida de depuración. El valor predeterminado para el parámetro verbosity
+es 0.
+Revisión de playbooks en busca de errores
+Varios problemas pueden ocurrir durante la ejecución de un playbook, muchos de ellos
+relacionados con la sintaxis del playbook o cualquiera de las plantillas que usa, o debido a
+problemas de conectividad con los hosts gestionados (por ejemplo, un error en el nombre del host
+gestionado en el archivo de inventario).
+Hay varias herramientas disponibles que puede usar para revisar su playbook en busca de errores
+de sintaxis y otros problemas antes de ejecutarlo.
+RH294-RHEL9.0-es-3-20240620
+363
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Comprobación de la sintaxis del playbook para ver si hay
+problemas
+El comando ansible-navigator run acepta la opción --syntax-check, que prueba su
+playbook en busca de errores de sintaxis en lugar de ejecutarlo.
+Es una buena práctica validar la sintaxis en su playbook antes de usarlo o si tiene problemas con él.
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+Comprobación de una tarea dada en un playbook
+Puede usar el comando ansible-navigator run con la opción --step para recorrer un
+playbook una tarea a la vez.
+El comando ansible-navigator run --step solicita de forma interactiva la confirmación de
+que desea que se ejecute cada tarea. Presione Y para confirmar que desea que se ejecute la tarea,
+N para omitir la tarea o C para continuar ejecutando las tareas restantes.
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --step --pae false
+PLAY [Managing errors playbook] **********************************************
+Perform task: TASK: Gathering Facts (N)o/(y)es/(c)ontinue:
+Importante
+Debido a que Ansible le solicita una entrada cuando usa la opción --step, debe
+deshabilitar los artefactos del playbook y usar el modo de salida estándar.
+También puede comenzar a ejecutar un playbook desde una tarea específica mediante la opción
+--start-at-task. Proporcione el nombre de una tarea como un argumento para el comando
+ansible-navigator run --start-at-task.
+Por ejemplo, supongamos que su playbook contiene una tarea denominada Ensure
+{{ web_service }} is started. Use el siguiente comando para ejecutar el playbook a partir
+de esa tarea:
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --start-at-task "Ensure {{ web_service }} is started"
+nota
+Puede usar el comando ansible-navigator run --list-tasks para
+enumerar los nombres de las tareas en su playbook.
+364
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Comprobación de playbooks en busca de problemas y
+seguimiento de las buenas prácticas
+Una de las mejores formas de facilitar la depuración de los playbooks es seguir las buenas
+prácticas al escribirlos en primer lugar. Estas son algunas de las prácticas recomendadas para el
+desarrollo de playbooks:
+• Use una descripción concisa del propósito del play o tarea para nombrar los plays y las tareas.
+El nombre del play o la tarea se muestra cuando se ejecuta el playbook. Esto también ayuda
+a documentar lo que se supone que debe lograr cada play o tarea, y posiblemente por qué se
+necesita.
+• Use comentarios para agregar documentación en línea adicional acerca de tareas.
+• Haga un uso eficaz del espacio en blanco vertical. En general, organice los atributos de las
+tareas verticalmente para que sean más fáciles de leer.
+• Una sangría horizontal consistente es fundamental. Use espacios, no tabulaciones, para evitar
+errores de sangría. Configure su editor de texto para insertar espacios cuando presione la tecla
+Tab para hacer esto más fácil.
+• Intente mantener el playbook lo más simple posible. Solo use las características que necesita.
+Algunos profesionales de Ansible en Red Hat han trabajado en un conjunto no oficial de prácticas
+recomendadas para crear contenido de automatización de Ansible, basándose en sus propias
+experiencias en el campo. Aunque no cuenta con el respaldo oficial de Red Hat en este momento,
+puede ser un buen comienzo para desarrollar sus propias buenas prácticas. Consulte  Buenas
+prácticas para Ansible  [https://redhat-cop.github.io/automation-good-practices/].
+Para ayudarlo a seguir buenas prácticas como estas, Red Hat Ansible Automation Platform 2
+proporciona una herramienta, ansible-lint, que usa un conjunto de reglas predefinidas para
+buscar posibles problemas con su playbook. No todos los problemas que informa rompen su
+playbook, pero un problema informado puede indicar la presencia de un error más grave.
+Importante
+El comando ansible-lint es una vista previa de la tecnología en Red Hat Ansible
+Automation Platform 2.2. Red Hat aún no es totalmente compatible con esta
+herramienta; para obtener más información detallada, consulte el artículo de la
+base de conocimiento "What does a 'Technology Preview' feature mean?" [https://
+access.redhat.com/solutions/21101].
+Por ejemplo, supongamos que tiene el siguiente playbook site.yml:
+- name: Configure servers with Ansible tools
+  hosts: all
+  tasks:
+    - name: Make sure tools are installed
+      package:
+        name:
+          - ansible-doc
+          - ansible-navigator
+Ejecute el comando ansible-lint site.yml para validarlo. Es posible que obtenga la
+siguiente salida como resultado:
+RH294-RHEL9.0-es-3-20240620
+365
+
+
+capítulo 8 |  Solución de problemas de Ansible
+WARNING  Overriding detected file kind 'yaml' with 'playbook' for given positional
+ argument: site.yml
+WARNING  Listing 4 violation(s) that are fatal
+yaml: trailing spaces (trailing-spaces) 
+site.yml:2
+fqcn-builtins: Use FQCN for builtin actions. 
+site.yml:5 Task/Handler: Make sure tools are installed
+yaml: trailing spaces (trailing-spaces) 
+site.yml:7
+yaml: too many blank lines (1 > 0) (empty-lines) 
+site.yml:10
+You can skip specific rules or tags by adding them to your configuration file:
+# .config/ansible-lint.yml
+warn_list:  # or 'skip_list' to silence them completely
+  - fqcn-builtins  # Use FQCN for builtin actions.
+  - yaml  # Violations reported by yamllint.
+Finished with 4 failure(s), 0 warning(s) on 1 files.
+Esta ejecución de ansible-lint encontró cuatro problemas de estilo:
+La línea 2 del playbook (hosts: all) aparentemente tiene un espacio en blanco al final,
+detectado por la regla yaml. No es un problema con el playbook directamente, pero muchos
+desarrolladores prefieren no tener espacios en blanco al final de los archivos almacenados
+en el control de versiones para evitar diferencias innecesarias a medida que se editan los
+archivos.
+La línea 5 del playbook (package:) no usa un FQCN para el nombre del módulo en esa
+tarea. En su lugar, debería ser ansible.builtin.package:. Esto fue detectado por la
+regla fqcn-builtins.
+La línea 7 del playbook aparentemente también tiene un espacio en blanco al final.
+El playbook finaliza con una o más líneas en blanco, detectadas por la regla yaml.
+La herramienta ansible-lint usa un archivo de configuración local, que es el archivo
+.ansible-lint o .config/ansible-lint.yml en el directorio actual. Puede editar este
+archivo de configuración para convertir las fallas de las reglas en advertencias (agregándolas como
+una lista a la directiva warn_list) u omitir las comprobaciones por completo (agregándolas
+como una lista a la directiva skip_list).
+Si tiene un error de sintaxis en el playbook, ansible-lint lo informa al igual que ansible-
+navigator run --syntax-check.
+Después de corregir estos problemas de estilo, el informe ansible-lint site.yml es el
+siguiente:
+WARNING  Overriding detected file kind 'yaml' with 'playbook' for given positional
+ argument: site.yml
+366
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Este es un mensaje de advertencia que puede ignorar, y la falta de otra salida indica que
+ansible-lint no detectó ningún otro problema de estilo.
+Para obtener más información sobre ansible-lint, consulte https://docs.ansible.com/lint.html
+y el comando ansible-lint --help.
+Importante
+El comando ansible-lint evalúa su playbook según el software de su estación
+de trabajo. No usa el contenedor del entorno de ejecución de automatización que
+usa ansible-navigator.
+El comando ansible-navigator tiene una opción experimental lint que
+ejecuta ansible-lint en su entorno de ejecución de automatización, pero la
+herramienta ansible-lint debe instalarse dentro de la imagen de contenedor
+del entorno de ejecución de automatización para que la opción funcione. Este no
+es el caso actualmente con el entorno de ejecución predeterminado. Necesita un
+entorno de ejecución personalizado para ejecutar ansible-navigator lint en
+este momento.
+Además, la versión de ansible-lint proporcionada con Red Hat Ansible
+Automation Platform 2.2 supone que sus playbooks usan Ansible Core 2.13, que es
+la versión que usa actualmente el entorno de ejecución predeterminado. No admite
+los playbooks anteriores de Ansible 2.9.
+Revisión de artefactos de playbook y archivos de
+registro
+Red Hat Ansible Automation Platform puede registrar la salida de las ejecuciones del playbook que
+realiza desde la línea de comandos de varias maneras diferentes.
+• ansible-navigator puede producir artefactos de playbooks que almacenan información
+sobre ejecuciones de playbooks en formato JSON.
+• Puede registrar información sobre las ejecuciones del playbook en un archivo de texto en una
+ubicación del sistema en la que puede escribir.
+Artefactos de playbook del navegador de contenido de
+automatización
+El comando ansible-navigator produce archivos de artefactos de playbook de forma
+predeterminada cada vez que lo usa para ejecutar un playbook. Estos archivos registran
+información sobre la ejecución del playbook y se pueden usar para revisar los resultados de
+la ejecución cuando se completa, para solucionar problemas o conservarse para fines de
+cumplimiento.
+Cada archivo de artefacto del playbook se nombra según el nombre del playbook que ejecutó,
+seguido de la palabra artifact, y luego la marca de tiempo de cuando se ejecutó la playbook,
+que termina con la extensión de archivo .json.
+Por ejemplo, si ejecuta el comando ansible-navigator run site.yml a las 20:00 UTC el 22
+de julio de 2022, el nombre de archivo resultante del archivo de artefactos podría ser:
+site-artifact-2022-07-22T20:00:04.019343+00:00.json
+RH294-RHEL9.0-es-3-20240620
+367
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Puede revisar el contenido de estos archivos con el comando ansible-navigator replay.
+Si incluye la opción -m stdout, la salida de la ejecución del playbook se imprime en su terminal
+como si acabara de ejecutarse. Sin embargo, si omite esa opción, puede examinar los resultados
+de la ejecución de forma interactiva.
+Por ejemplo, ejecuta el siguiente playbook, site.yml, y falla, pero no sabe por qué. Ejecuta
+ansible-navigator run site.yml --syntax-check y el comando ansible-lint, pero
+ninguno de los comandos informa ningún problema.
+- name: Configure servers with Ansible tools
+  hosts: all
+  tasks:
+    - name: Make sure tools are installed
+      ansible.builtin.package:
+        name:
+          - ansible-doc
+          - ansible-navigator
+Para solucionar más problemas, ejecute ansible-navigator replay en modo interactivo en
+el archivo de artefactos resultante, que abre la siguiente salida en su terminal:
+Figura 8.1: Pantalla de reproducción inicial
+Si ingresa :0 para ver el play, se imprime la siguiente salida:
+368
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Figura 8.2: Reproducir resultados por máquina y tarea
+Parece que la tarea Make sure tools are installed falló en los hosts
+server-1.example.com y server-2.example.com. Al ingresar :2, puede ver el error del
+host server-2.example.com:
+Figura 8.3: Resultados de la tarea para una máquina específica
+La tarea está intentando usar el módulo ansible.builtin.package para instalar el paquete
+ansible-doc y ese paquete no está disponible en los repositorios de paquetes RPM usados
+por el host server-2.example.com, por lo que la tarea falló. (Es posible que descubra que
+el comando ansible-doc ahora se proporciona como parte del paquete RPM ansible-
+navigator con el comando ansible-navigator doc y, al cambiar la tarea, se corrige el
+problema).
+Otra cosa útil que debe saber es que puede ver los resultados de una tarea Gathering Facts
+correcta y la salida de depuración incluye los valores de todos los datos que se recopilaron:
+RH294-RHEL9.0-es-3-20240620
+369
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Figura 8.4: Resultados de la tarea para una recopilación correcta de datos
+Esto puede ayudarlo a depurar problemas relacionados con datos de Ansible sin agregar una tarea
+al play que usa el módulo ansible.builtin.debug para imprimir valores de datos.
+Importante
+Es posible que no desee guardar los artefactos del playbook por varias razones.
+• Le preocupa que la información confidencial se guarde en el archivo de registro.
+• Necesita proporcionar una entrada interactiva, como una contraseña, a
+ansible-navigator por alguna razón.
+• No desea que los archivos llenen el directorio del proyecto.
+Puede evitar que se generen los archivos creando un archivo ansible-
+navigator.yml en el directorio del proyecto que deshabilita los artefactos del
+playbook:
+ansible-navigator:
+  playbook-artifact:
+    enable: false
+Registro de salida en un archivo de texto
+Ansible aporta una infraestructura de registro incorporada, la cual se puede configurar mediante
+el parámetro log_path en la sección default del archivo de configuración ansible.cfg o a
+través de la variable de entorno $ANSIBLE_LOG_PATH. La variable de entorno tiene prioridad
+sobre el archivo de configuración si ambos están configurados. Si se configura una ruta de
+registro, Ansible almacena la salida de los comandos ansible-navigator como texto en el
+archivo especificado. Este mecanismo también funciona con herramientas anteriores como
+ansible-playbook.
+Si configura Ansible para escribir archivos de registro en el directorio /var/log, Red Hat
+recomienda que configure logrotate para gestionarlos.
+370
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Referencias
+Configuración de Ansible: documentación de Ansible
+https://docs.ansible.com/ansible/latest/installation_guide/intro_configuration.html
+Módulo ansible.builtin.debug: imprima las declaraciones durante la ejecución:
+documentación de Ansible
+https://docs.ansible.com/ansible/latest/modules/debug_module.html
+Consejos y trucos: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html
+Buenas prácticas para Ansible
+https://redhat-cop.github.io/automation-good-practices/
+Documentación de Ansible Lint
+https://docs.ansible.com/lint.html
+RH294-RHEL9.0-es-3-20240620
+371
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Ejercicio Guiado
+Solución de problemas de playbooks
+Solucionar los problemas de un playbook que le fue dado y que no funciona correctamente.
+Resultados
+• Debe ser capaz de solucionar problemas y resolver problemas en los playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-playbook
+Instrucciones
+ 1.
+Cambie al directorio /home/student/troubleshoot-playbook/.
+[student@workstation ~]$ cd ~/troubleshoot-playbook/
+[student@workstation troubleshoot-playbook]$
+ 2.
+Cree un archivo denominado ansible.cfg en el directorio actual. Configure el parámetro
+log_path para escribir registros Ansible en el archivo /home/student/troubleshoot-
+playbook/ansible.log. Configure el parámetro inventory para usar el archivo /
+home/student/troubleshoot-playbook/inventory implementado por el script de
+laboratorio.
+El archivo ansible.cfg completo debe incluir el siguiente contenido:
+[defaults]
+log_path = /home/student/troubleshoot-playbook/ansible.log
+inventory = /home/student/troubleshoot-playbook/inventory
+ 3.
+Ejecute el playbook samba.yml. Fallará con un error.
+Este playbook configuraría un servidor Samba si todo estuviera correcto. Sin embargo,
+la ejecución falla porque la definición de la variable random_var no está entre comillas
+dobles. (Si los dos puntos forman parte de un valor, el valor debe estar protegido por
+comillas simples o dobles). Lea el mensaje de error para ver cómo ansible-navigator
+run informa del problema. Observe que a la variable random_var se le asigna un valor que
+contiene dos puntos y no está protegida por comillas dobles.
+372
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  mapping values are not allowed in this context
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 8, column 30, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+    install_state: installed
+    random_var: This is colon: test
+                             ^ here
+ 4.
+Confirme que ansible-navigator haya registrado el error en el archivo /home/
+student/troubleshoot-playbook/ansible.log.
+[student@workstation troubleshoot-playbook]$ tail ansible.log
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 8, column 30, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+    install_state: installed
+    random_var: This is colon: test
+                             ^ here
+ 5.
+Edite el playbook samba.yml y corrija el error agregando comillas dobles a todo el valor
+que se está asignando a random_var. La versión corregida del playbook debería incluir el
+siguiente contenido:
+...output omitted...
+  vars:
+    install_state: installed
+    random_var: "This is colon: test"
+...output omitted...
+RH294-RHEL9.0-es-3-20240620
+373
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ 6.
+Verifique la sintaxis del playbook usando la opción --syntax-check. El comando
+ansible-navigator emite otro error porque hay demasiado espacio en blanco de
+sangría en la última tarea, Deliver samba config.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  did not find expected '-' indicator
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 38, column 6, but may
+be elsewhere in the file depending on the exact syntax problem.
+The offending line appears to be:
+     - name: Deliver samba config
+     ^ here
+Please review the log for errors.
+ 7.
+Edite el playbook y elimine el espacio adicional para todas las líneas en esa tarea. El
+playbook corregido debe aparecer de la siguiente manera:
+...output omitted...
+    - name: Configure firewall for samba
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: samba
+    - name: Deliver samba config
+      ansible.builtin.template:
+        src: samba.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: 0644
+ 8.
+Ejecute el playbook usando la opción --syntax-check. El comando ansible-
+navigator emite un error porque la variable install_state se usa como parámetro
+en la tarea Install samba y no está entre comillas. (Si una expresión Jinja2 está al
+comienzo de un valor, el valor debe estar protegido por comillas dobles).
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+374
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Syntax Error while loading YAML.
+  found unacceptable key (unhashable type: 'AnsibleMapping')
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 14, column 17, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+        name: samba
+        state: {{ install_state }}
+                ^ here
+We could be wrong, but this one looks like it might be an issue with missing
+ quotes. Always quote template expression brackets when they start a value. For
+ instance:
+    with_items:
+      - {{ foo }}
+Should be written as:
+    with_items:
+      - "{{ foo }}"
+Please review the log for errors.
+ 9.
+Edite el playbook y corrija la tarea Install samba. La referencia a la variable
+install_state debe estar entre comillas dobles. El archivo resultante debe contar con el
+siguiente contenido:
+...output omitted...
+  tasks:
+    - name: Install samba
+      ansible.builtin.dnf:
+        name: samba
+        state: "{{ install_state }}"
+...output omitted...
+ 10. Ejecute el playbook usando la opción --syntax-check. Ahora debería mostrar errores de
+sintaxis adicionales.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml --syntax-check
+playbook: /home/student/troubleshoot-playbook/samba.yml
+ 11.
+Ejecute el playbook nuevamente. La tarea Debug install_state variable devuelve
+el mensaje The state for the samba service is installed. Esta tarea hace uso
+del módulo ansible.builtin.debug y muestra el valor de la variable install_state.
+Un error también se muestra en la tarea Deliver samba config, ya que no se dispone
+RH294-RHEL9.0-es-3-20240620
+375
+
+
+capítulo 8 |  Solución de problemas de Ansible
+de ningún archivo samba.j2 en el directorio /home/student/troubleshoot-
+playbook/.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install samba] ***********************************************************
+changed: [servera.lab.example.com]
+TASK [Install firewalld] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Debug install_state variable] ********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The state for the samba service is installed"
+}
+TASK [Start firewalld] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Configure firewall for samba] ********************************************
+changed: [servera.lab.example.com]
+TASK [Deliver samba config] ****************************************************
+An exception occurred during task execution. To see the full traceback, use -vvv.
+ The error was: If you are using a module and expect the file to exist on the
+ remote, see the remote_src option
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg": "Could not
+ find or access 'samba.j2'\nSearched in:\n\t/home/student/troubleshoot-playbook/
+templates/samba.j2\n\t/home/student/troubleshoot-playbook/samba.j2\n\t/home/
+student/troubleshoot-playbook/templates/samba.j2\n\t/home/student/troubleshoot-
+playbook/samba.j2 on the Ansible Controller.\nIf you are using a module and expect
+ the file to exist on the remote, see the remote_src option"}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=2    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+376
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ 12. Edite el playbook y corrija el parámetro src en la tarea Deliver samba config para que
+sea samba.conf.j2. El archivo finalizado debe incluir el siguiente contenido:
+...output omitted...
+    - name: Deliver samba config
+      ansible.builtin.template:
+        src: samba.conf.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+...output omitted...
+ 13. Ejecute el playbook nuevamente y todas las tareas deberían realizarse correctamente.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install samba] ***********************************************************
+ok: [servera.lab.example.com]
+TASK [Install firewalld] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Debug install_state variable] ********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The state for the samba service is installed"
+}
+TASK [Start firewalld] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Configure firewall for samba] ********************************************
+ok: [servera.lab.example.com]
+TASK [Deliver samba config] ****************************************************
+changed: [servera.lab.example.com]
+TASK [Start samba] *************************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+RH294-RHEL9.0-es-3-20240620
+377
+
+
+capítulo 8 |  Solución de problemas de Ansible
+[student@workstation ~]$ lab finish troubleshoot-playbook
+378
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Solución de problemas en hosts
+gestionados de Ansible
+Objetivos
+• Solucionar fallas en hosts gestionados cuando se ejecuta un playbook.
+Solución de problemas de conexiones
+Muchos problemas comunes al usar Ansible para administrar hosts están asociados con
+conexiones al host y con problemas de configuración relacionados con el usuario remoto y el
+aumento de privilegios.
+Problemas de autenticación en hosts gestionados
+Si tiene problemas para autenticarse en un host gestionado, asegúrese de tener remote_user
+correctamente configurado en el archivo de configuración o en el play.
+Por ejemplo, es posible que vea la siguiente salida al ejecutar un playbook diseñado para
+conectarse a la cuenta de usuario remota root:
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+fatal: [host.lab.example.com]: UNREACHABLE! => {"changed": false, "msg":
+ "Failed to connect to the host via ssh: developer@host: Permission denied
+ (publickey,gssapi-keyex,gssapi-with-mic,password).", "unreachable": true}
+PLAY RECAP *********************************************************************
+host.lab.example.com    : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+En este caso, ansible-navigator está intentando conectarse como la cuenta de usuario
+developer, de acuerdo con la salida anterior. Una razón por la que esto puede suceder es si
+se ha configurado ansible.cfg en el proyecto para establecer el remote_user en el usuario
+developer en lugar del usuario root.
+Otra razón por la que puede ver un error de "permiso denegado" como este es si no tiene
+configuradas las claves SSH correctas o no proporcionó la contraseña correcta para ese usuario.
+[root@controlnode ~]# ansible-navigator run \
+> -m stdout playbook.yml
+TASK [Gathering Facts] *********************************************************
+fatal: [host.lab.example.com]: UNREACHABLE! => {"changed": false, "msg": "Failed
+ to connect to the host via ssh: root@host: Permission denied (publickey,gssapi-
+keyex,gssapi-with-mic).", "unreachable": true}
+RH294-RHEL9.0-es-3-20240620
+379
+
+
+capítulo 8 |  Solución de problemas de Ansible
+PLAY RECAP *********************************************************************
+host    : ok=0    changed=0    unreachable=1    failed=0    skipped=0    rescued=0
+    ignored=0
+Please review the log for errors.
+En el ejemplo anterior, el playbook intenta conectarse a la máquina host con el usuario root,
+pero la clave SSH para el usuario root en la máquina controlnode no se ha agregado al archivo
+authorized_keys para el usuario root en la máquina host.
+nota
+Para resumir, puede ver errores similares de "permiso denegado" en las siguientes
+situaciones:
+• Intenta conectarse como el remote_user incorrecto para sus credenciales de
+autenticación
+• Se conecta como el remote_user correcto, pero faltan las credenciales de
+autenticación o son incorrectas
+Problemas con la resolución de nombres o direcciones
+Un problema más sutil tiene que ver con la configuración del inventario. Para un servidor complejo
+con varias direcciones de red, es posible que deba usar una dirección particular o un nombre
+DNS al conectarse a ese sistema. Es posible que no desee utilizar esa dirección como nombre de
+inventario de la máquina para una mejor legibilidad. Puede configurar una variable de inventario
+de host, ansible_host, que anule el nombre del inventario con un nombre o una dirección IP
+diferente y será usado por Ansible para conectarse a ese host. Esta variable podría configurarse en
+el archivo o directorio host_vars para ese host o en el propio archivo de inventario.
+Por ejemplo, la siguiente entrada de inventario configura Ansible para conectarse a 192.0.2.4 al
+procesar el host web4.phx.example.com:
+web4.phx.example.com ansible_host=192.0.2.4
+Esta es una forma útil de controlar cómo Ansible se conecta a los hosts gestionados. Sin embargo,
+también puede causar problemas si el valor de ansible_host es incorrecto.
+Problemas con el aumento de privilegios
+Si su playbook se conecta como remote_user y luego usa el aumento de privilegios para
+convertirse en el usuario root (o algún otro usuario), asegúrese de que become esté configurado
+correctamente y de que esté usando el valor correcto para la directiva become_user. La
+configuración de become_user es root de forma predeterminada.
+Si el usuario remoto debe proporcionar una contraseña sudo, usted debe confirmar que está
+ingresando la contraseña sudo correcta y que sudo en el host gestionado esté configurado
+correctamente.
+[user@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+380
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+TASK [Gathering Facts] *********************************************************
+fatal: [host]: FAILED! => {"msg": "Missing sudo password"}
+PLAY RECAP *********************************************************************
+host             : ok=0    changed=0    unreachable=0    failed=1    skipped=0   
+ rescued=0    ignored=0
+Please review the log for errors.
+En el ejemplo anterior, el playbook intenta ejecutar sudo en la máquina host, pero falla. El
+remote_user no está configurado para ejecutar comandos sudo sin una contraseña en la
+máquina host. O bien sudo en la máquina host no está configurado correctamente, o se supone
+que requiere una contraseña sudo y usted se olvidó de proporcionar una al ejecutar el playbook.
+Importante
+Normalmente, ansible-navigator se ejecuta como root dentro de su entorno
+de ejecución de automatización. Sin embargo, el usuario root en el contenedor
+tiene acceso a las claves SSH proporcionadas por el usuario que ejecutó ansible-
+navigator en la estación de trabajo. Esto puede ser un poco confuso cuando
+intenta depurar las directivas remote_user y become, especialmente si está
+acostumbrado al comando ansible-playbook anterior que se ejecuta como el
+usuario en la estación de trabajo.
+Problemas con Python en hosts gestionados
+Para un funcionamiento normal, Ansible requiere que se instale un intérprete de Python en los
+hosts gestionados que ejecutan Linux. Ansible intenta ubicar un intérprete de Python en cada host
+gestionado de Linux la primera vez que se ejecuta un módulo en ese host.
+[user@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+TASK [Gathering Facts] *********************************************************
+fatal: [host]: FAILED! => {"ansible_facts": {}, "changed": false,
+ "failed_modules": {"ansible.legacy.setup": {"ansible_facts":
+ {"discovered_interpreter_python": "/usr/bin/python"}, "failed": true,
+ "module_stderr": "Shared connection to host closed.\r\n", "module_stdout": "/
+bin/sh: 1: /usr/bin/python: not found\r\n", "msg": "The module failed to execute
+ correctly, you probably need to set the interpreter.\nSee stdout/stderr for the
+ exact error", "rc": 127, "warnings": ["No python interpreters found for host
+ host (tried ['python3.10', 'python3.9', 'python3.8', 'python3.7', 'python3.6',
+ 'python3.5', '/usr/bin/python3', '/usr/libexec/platform-python', 'python2.7',
+ 'python2.6', '/usr/bin/python', 'python'])"]}}, "msg": "The following modules
+ failed to execute: ansible.legacy.setup\n"}
+PLAY RECAP *********************************************************************
+host    : ok=0    changed=0    unreachable=0    failed=1    skipped=0    rescued=0
+    ignored=0
+Please review the log for errors.
+En el ejemplo anterior, el playbook falla porque Ansible no puede encontrar un intérprete de
+Python adecuado en la máquina host.
+RH294-RHEL9.0-es-3-20240620
+381
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Uso del modo de verificación como herramienta de
+prueba
+Puede usar el comando ansible-navigator run --check para ejecutar "pruebas de
+humo" en un playbook. Esta opción ejecuta el playbook y se conecta a los hosts gestionados
+normalmente, pero sin realizar cambios en ellos.
+Si un módulo usado dentro del playbook soporta el "modo de verificación", se muestran los
+cambios que se habrían realizado en los hosts gestionados (pero que no se hicieron). Si un módulo
+no soporta el modo de verificación, ansible-navigator no muestra los cambios previstos, pero
+el módulo aún no realiza ninguna acción.
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --check
+Importante
+El comando ansible-navigator run --check podría no funcionar
+correctamente si las tareas usan condicionales. Una razón para esto podría ser
+que los condicionales dependen de alguna tarea anterior en el play que se está
+ejecutando realmente para que la condición se evalúe correctamente.
+Puede forzar que las tareas se ejecuten siempre en modo de verificación o que siempre se
+ejecuten normalmente con la configuración check_mode. Si una tarea tiene check_mode:
+true establecida, siempre se ejecuta en su modo de verificación y no realiza ninguna acción,
+incluso si no pasa la opción --check a ansible-navigator. Del mismo modo, si una tarea tiene
+configurado check_mode: false, siempre se ejecuta normalmente, incluso si pasa --check a
+ansible-navigator.
+La siguiente tarea siempre se ejecuta en modo de verificación y no realiza cambios a los hosts
+gestionados.
+  tasks:
+    - name: task always in check mode
+      ansible.builtin.shell: uname -a
+      check_mode: true
+La siguiente tarea siempre se ejecuta normalmente, incluso cuando se inicia con ansible-
+navigator run --check.
+  tasks:
+    - name: task always runs even in check mode
+      ansible.builtin.shell: uname -a
+      check_mode: false
+Esto puede ser útil porque puede ejecutar la mayor parte de un playbook normalmente y probar
+tareas individuales con check_mode: true. Muchos plays usan datos o establecen variables
+para ejecutar tareas de manera condicional. Las tareas condicionales pueden fallar si un dato o
+una variable no está definida, debido a que la tarea que las recopila o establece no se ejecuta
+en un nodo administrado. Puede usar check_mode: false en tareas que recopilan datos
+o establecen variables, pero que no cambian el nodo administrado. Esto permite que el play
+continúe cuando se usa el modo --check.
+382
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Una tarea puede determinar si el playbook se está ejecutando en modo de verificación probando
+el valor de la variable mágica ansible_check_mode. Esta variable booleana se establece en
+true si el playbook se está ejecutando en modo de verificación.
+Advertencia
+Las tareas que tienen configurado check_mode: false se ejecutarán incluso
+cuando el playbook se ejecute con ansible-navigator run --check. Por lo
+tanto, no se puede confiar en que la opción --check no realizará cambios en los
+hosts gestionados, sin inspeccionar el playbook y los roles o tareas asociados con
+este.
+nota
+Si tiene playbooks más antiguos que usan always_run: true para forzar a las
+tareas a ejecutarse normalmente, incluso en el modo de verificación, tendrá que
+reemplazar ese código con check_mode: false en Ansible 2.6 y posteriores.
+El comando ansible-navigator también proporciona una opción --diff. Esta opción informa
+los cambios realizados a los archivos de plantillas en hosts gestionados. Si se usan con la opción
+--check, estos cambios se muestran en la salida del comando, pero no se realizan.
+[student@demo ~]$ ansible-navigator run \
+> -m stdout playbook.yml --check --diff
+Pruebas con módulos
+Algunos módulos pueden brindar información adicional acerca de cuál es el estado de un host
+gestionado. La siguiente lista incluye algunos de los módulos de Ansible que se pueden usar para
+probar y depurar problemas en hosts gestionados.
+El módulo ansible.builtin.uri aporta una forma de verificar que una RESTful API esté
+devolviendo el contenido requerido.
+  tasks:
+    - ansible.builtin.uri:
+        url: http://api.myapp.example.com
+        return_content: true
+      register: apiresponse
+    - ansible.builtin.fail:
+        msg: 'version was not provided'
+      when: "'version' not in apiresponse.content"
+El módulo ansible.builtin.script ejecuta un script en hosts gestionados y falla si el código
+de retorno para el script es diferente a cero. El script debe estar en el proyecto de Ansible y se
+transferirá y ejecutará en el host gestionado.
+  tasks:
+    - ansible.builtin.script: scripts/check_free_memory --min 2G
+RH294-RHEL9.0-es-3-20240620
+383
+
+
+capítulo 8 |  Solución de problemas de Ansible
+El módulo ansible.builtin.stat recopila datos para un archivo muy similar al comando
+stat. Puede usarlo para registrar una variable y luego hacer una prueba para determinar si
+el archivo existe, o para obtener otra información sobre el archivo. Si el archivo no existe, la
+tarea ansible.builtin.stat no fallará, pero su variable registrada informará false para
+*['stat']['exists'].
+En este ejemplo, todavía se está ejecutando una aplicación si existe /var/run/app.lock, en
+cuyo caso el play deberá abortar.
+  tasks:
+    - name: Check if /var/run/app.lock exists
+      ansible.builtin.stat:
+        path: /var/run/app.lock
+      register: lock
+    - name: Fail if the application is running
+      ansible.builtin.fail:
+      when: lock['stat']['exists']
+El módulo ansible.builtin.assert es una alternativa al módulo ansible.builtin.fail.
+El módulo ansible.builtin.assert soporta una opción that que toma una lista de
+condicionales. Si alguno de esos condicionales es falso, la tarea falla. Puedes usar las opciones
+success_msg y fail_msg para personalizar el mensaje que imprime si informa éxito o fracaso.
+El siguiente ejemplo repite el anterior, pero usa ansible.builtin.assert en lugar de
+ansible.builtin.fail.
+  tasks:
+    - name: Check if /var/run/app.lock exists
+      ansible.builtin.stat:
+        path: /var/run/app.lock
+      register: lock
+    - name: Fail if the application is running
+      ansible.builtin.assert:
+        that:
+          - not lock['stat']['exists']
+Ejecución de comandos ad hoc con Ansible
+Un comando ad hoc es una manera de ejecutar una sola tarea de Ansible con rapidez; una que no
+necesite guardar para ejecutarse nuevamente más tarde. Son operaciones simples, en línea, que
+pueden ejecutarse sin escribir un playbook.
+Los comandos ad hoc no se ejecutan dentro de un contenedor de entorno de ejecución de
+automatización. En su lugar, se ejecutan con el software, los roles y las colecciones de Ansible
+instalados directamente en su estación de trabajo. Para usar comandos ad hoc de Ansible
+Core 2.13, debe instalar el paquete RPM ansible-core en su estación de trabajo.
+Importante
+El paquete RPM ansible-core proporciona solo los módulos en Ansible Content
+Collection ansible.builtin. Si necesita módulos de otras colecciones, debe
+instalarlos en su estación de trabajo por separado.
+384
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Los comandos ad hoc son útiles para pruebas rápidas y solucionar problemas. Por ejemplo, puede
+usar un comando ad hoc para asegurarse de que los hosts sean accesibles mediante el módulo
+ansible.builtin.ping. Puede usar otro comando ad hoc para ver el uso de recursos en un
+grupo de hosts usando el módulo ansible.builtin.command.
+Los comandos ad hoc tienen sus límites y, en general, se recomienda usar playbooks de Ansible
+para desarrollar la potencia máxima de Ansible.
+Use el comando ansible para ejecutar comandos ad hoc:
+[user@controlnode ~]$ ansible host-pattern -m module [-a 'module arguments'] \
+> [-i inventory]
+El argumento host-pattern se usa para especificar los hosts gestionados en los cuales se
+debería ejecutar el comando ad hoc. La opción -i se usa para especificar una ubicación diferente
+del inventario para usar en lugar de la predeterminada en el archivo de configuración actual de
+Ansible. La opción -m especifica el módulo que Ansible debería ejecutar en los hosts de destino.
+La opción -a toma una lista de argumentos para el módulo como cadena entre comillas.
+nota
+Si usa el comando ansible, pero no especifica un módulo con la opción -m, el
+módulo ansible.builtin.command se usa de manera predeterminada. Siempre
+es mejor especificar el módulo que desea usar, incluso si tiene la intención de usar el
+módulo ansible.builtin.command.
+Los comandos ad hoc de Ansible pueden ser útiles, pero deben mantenerse para la resolución
+de problemas y los casos de uso únicos. Por ejemplo, si tiene conocimiento de varios cambios de
+red pendientes, es más eficiente crear un playbook con una tarea ansible.builtin.ping que
+puede ejecutar varias veces, en comparación con escribir un comando ad hoc de uso único varias
+veces.
+Prueba de hosts gestionados con comandos ad hoc
+En los siguientes ejemplos, se ilustran algunas pruebas que pueden realizarse en un host
+gestionado mediante comandos ad hoc.
+Ha usado el módulo ansible.builtin.ping para probar si puede conectarse a hosts
+gestionados. Dependiendo de las opciones que pase, también puede usarlo para probar si el
+aumento de privilegios y las credenciales están configurados correctamente.
+[student@demo ~]$ ansible demohost -m ansible.builtin.ping
+demohost | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+[student@demo ~]$ ansible demohost -m ansible.builtin.ping --become
+demohost | FAILED! => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+RH294-RHEL9.0-es-3-20240620
+385
+
+
+capítulo 8 |  Solución de problemas de Ansible
+    "changed": false,
+    "module_stderr": "sudo: a password is required\n",
+    "module_stdout": "",
+    "msg": "MODULE FAILURE\nSee stdout/stderr for the exact error",
+    "rc": 1
+}
+Este ejemplo devuelve el espacio actual disponible en los discos configurados en el host
+gestionado demohost. Eso puede ser útil para confirmar que el sistema de archivos en el host
+gestionado no está lleno.
+[student@demo ~]$ ansible demohost -m ansible.builtin.command -a 'df'
+Este ejemplo devuelve la memoria libre actualmente disponible en el host gestionado demohost.
+[student@demo ~]$ ansible demohost -m ansible.builtin.command -a 'free -m'
+Referencias
+Modo de verificación ("simulacro"): documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_checkmode.html
+Estrategias de prueba: documentación de Ansible
+https://docs.ansible.com/ansible/latest/reference_appendices/test_strategies.html
+386
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Ejercicio Guiado
+Solución de problemas en hosts
+gestionados de Ansible
+Resolver las fallas de tareas que se produzcan en uno de sus hosts gestionados cuando
+ejecuta un playbook.
+Resultados
+• Debería poder solucionar problemas de los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-host
+Instrucciones
+ 1.
+Cambie al directorio /home/student/troubleshoot-host/.
+[student@workstation ~]$ cd ~/troubleshoot-host/
+[student@workstation troubleshoot-host]$
+ 2.
+Ejecute el playbook mailrelay.yml en modo de verificación.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout mailrelay.yml --check
+PLAY [Create mail relay servers] ***********************************************
+...output omitted...
+TASK [Check main.cf file] ******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify main.cf file exists] **********************************************
+ok: [servera.lab.example.com]  => {
+    "msg": "The main.cf file exists"
+}
+...output omitted...
+TASK [Start and enable mail services] ******************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg": "Could not
+ find the requested service postfix: host"}
+RH294-RHEL9.0-es-3-20240620
+387
+
+
+capítulo 8 |  Solución de problemas de Ansible
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=2    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+La tarea Verify main.cf file exists usa el módulo ansible.builtin.stat.
+Confirma que main.cf existe en el host servera.lab.example.com.
+La tarea Start and enable mail services falló. No pudo iniciar el servicio postfix
+porque ejecutó el playbook usando el modo de verificación y, por lo tanto, el play no instaló
+el paquete postfix.
+Importante
+La tarea falló porque las tareas anteriores en el play no aseguraron que postfix
+estuviera instalado en el host servera, porque ejecutó el playbook en el modo de
+verificación. Este error ocurrió porque el playbook en realidad no realizó cambios en
+el host que normalmente haría si lo ejecutara normalmente.
+ 3.
+Vuelva a ejecutar el playbook, pero no especifique el modo de verificación. El error en la
+tarea Start and enable mail services debería desaparecer y el playbook debería
+ejecutarse correctamente.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout mailrelay.yml
+PLAY [Create mail relay servers] ***********************************************
+...output omitted...
+TASK [Check main.cf file] ******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify main.cf file exists] **********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The main.cf file exists"
+}
+TASK [Start and enable mail services] ******************************************
+changed: [servera.lab.example.com]
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=5    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+388
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ 4.
+Edite el playbook mailrelay.yml y agregue una tarea para habilitar el servicio smtp en el
+firewall. Agregue la tarea como la última tarea, antes de los controladores.
+...output omitted...
+    - name: Postfix firewalld config
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: smtp
+...output omitted...
+ 5.
+Ejecute el playbook mailrelay.yml. La tarea Postfix firewalld config se ejecuta
+sin errores.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout mailrelay.yml
+PLAY [Create mail relay servers] ***********************************************
+...output omitted...
+TASK [Postfix firewalld config] ************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=2    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+ 6.
+Use telnet para probar si el servicio SMTP está escuchando en el puerto TCP/25 en el
+host servera.lab.example.com. Desconéctese cuando haya terminado.
+[student@workstation troubleshoot-host]$ telnet servera.lab.example.com 25
+Trying 172.25.250.10...
+Connected to servera.lab.example.com.
+Escape character is '^]'.
+220 servera.lab.example.com ESMTP Postfix
+quit
+221 2.0.0 Bye
+Connection closed by foreign host.
+ 7.
+Ejecute el playbook samba.yml. La primera tarea falla con un error relacionado con un
+problema de conexión SSH.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+fatal: [servera.lab.exammple.com]: UNREACHABLE! => {"changed": false,
+ "msg": "Failed to connect to the host via ssh: ssh: connect to host
+ servera.lab.exammple.com port 22: Connection timed out", "unreachable": true}
+RH294-RHEL9.0-es-3-20240620
+389
+
+
+capítulo 8 |  Solución de problemas de Ansible
+PLAY RECAP *********************************************************************
+servera.lab.exammple.com   : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+ 8.
+Asegúrese de que puede conectarse al host gestionado servera.lab.example.com
+como el usuario devops usando SSH, y que las claves SSH correctas estén instaladas.
+Vuelva a cerrar la sesión cuando haya terminado.
+[student@workstation troubleshoot-host]$ ssh devops@servera.lab.example.com
+...output omitted...
+[devops@servera ~]$ exit
+logout
+Connection to servera.lab.example.com closed.
+Eso está funcionando normalmente.
+ 9.
+Pruebe para ver si puede ejecutar módulos en el host gestionado
+servera.lab.example.com mediante un comando ad hoc que ejecuta el módulo
+ansible.builtin.ping.
+[student@workstation troubleshoot-host]$ ansible servera.lab.example.com \
+> -m ansible.builtin.ping
+servera.lab.example.com | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+Según la salida anterior, eso también funciona y se conecta correctamente al host
+gestionado.
+Esto debería sugerirle que el problema no está con la configuración y las credenciales
+de SSH, ni con el comando ad hoc que usó. Entonces, la pregunta ahora es por qué el
+comando ad hoc funcionó y el comando ansible-navigator no. Puede haber un
+problema con el play en el playbook o con el inventario.
+ 10. Vuelva a ejecutar el playbook samba.yml con -vvvv para obtener más información
+acerca de la ejecución. Se emite un error, ya que no se puede acceder al host gestionado
+servera.lab.example.com.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout -vvvv samba.yml
+ansible-playbook [core 2.13.0]
+  config file = /home/student/troubleshoot-host/ansible.cfg
+  configured module search path = ['/home/runner/.ansible/plugins/modules', '/usr/
+share/ansible/plugins/modules']
+  ansible python module location = /usr/lib/python3.9/site-packages/ansible
+  ansible collection location = /home/runner/.ansible/collections:/usr/share/
+ansible/collections
+  executable location = /usr/bin/ansible-playbook
+390
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+  python version = 3.9.7 (default, Sep 13 2021, 08:18:39) [GCC 8.5.0 20210514 (Red
+ Hat 8.5.0-3)]
+  jinja version = 3.0.3
+  libyaml = True
+Using /home/student/troubleshoot-host/ansible.cfg as config file
+...output omitted...
+PLAYBOOK: samba.yml ************************************************************
+Positional arguments: /home/student/troubleshoot-host/samba.yml
+verbosity: 4
+connection: smart
+timeout: 10
+become_method: sudo
+tags: ('all',)
+inventory: ('/home/student/troubleshoot-host/inventory',)
+forks: 5
+1 plays in /home/student/troubleshoot-host/samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+task path: /home/student/troubleshoot-host/samba.yml:2
+<servera.lab.exammple.com> ESTABLISH SSH CONNECTION FOR USER: devops
+...output omitted...
+fatal: [servera.lab.exammple.com]: UNREACHABLE! => {
+    "changed": false,
+    "msg": "Failed to connect to the host via ssh: OpenSSH_8.0p1, OpenSSL 1.1.1k
+  FIPS 25 Mar 2021\r\ndebug1: Reading configuration data /home/runner/.ssh/
+config\r\ndebug1: /home/runner/.ssh/config line 1: Applying options for *\r
+\ndebug1: Reading configuration data /etc/ssh/ssh_config\r\ndebug3: /etc/ssh/
+ssh_config line 52: Including file /etc/ssh/ssh_config.d/05-redhat.conf depth
+ 0\r\ndebug1: Reading configuration data /etc/ssh/ssh_config.d/05-redhat.conf\r
+\ndebug2: checking match for 'final all' host servera.lab.exammple.com originally
+ servera.lab.exammple.com\r\ndebug3: /etc/ssh/ssh_config.d/05-redhat.conf
+ line 3: not matched 'final'\r\ndebug2: match not found\r\ndebug3: /etc/ssh/
+ssh_config.d/05-redhat.conf line 5: Including file /etc/crypto-policies/back-
+ends/openssh.config depth 1 (parse only)\r\ndebug1: Reading configuration
+ data /etc/crypto-policies/back-ends/openssh.config\r\ndebug3: gss kex names ok:
+ [gss-curve25519-sha256-,gss-nistp256-sha256-,gss-group14-sha256-,gss-group16-
+sha512-,gss-gex-sha1-,gss-group14-sha1-]\r\ndebug3: kex names ok: [curve25519-
+sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-
+sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-
+sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-
+hellman-group-exchange-sha1,diffie-hellman-group14-sha1]\r\ndebug1: configuration
+ requests final Match pass\r\ndebug1: re-parsing configuration\r\ndebug1: Reading
+ configuration data /home/runner/.ssh/config\r\ndebug1: /home/runner/.ssh/
+config line 1: Applying options for *\r\ndebug2: add_identity_file: ignoring
+ duplicate key ~/.ssh/lab_rsa\r\ndebug1: Reading configuration data /etc/ssh/
+ssh_config\r\ndebug3: /etc/ssh/ssh_config line 52: Including file /etc/ssh/
+ssh_config.d/05-redhat.conf depth 0\r\ndebug1: Reading configuration data /etc/
+ssh/ssh_config.d/05-redhat.conf\r\ndebug2: checking match for 'final all' host
+ servera.lab.exammple.com originally servera.lab.exammple.com\r\ndebug3: /etc/
+ssh/ssh_config.d/05-redhat.conf line 3: matched 'final'\r\ndebug2: match found
+\r\ndebug3: /etc/ssh/ssh_config.d/05-redhat.conf line 5: Including file /etc/
+crypto-policies/back-ends/openssh.config depth 1\r\ndebug1: Reading configuration
+RH294-RHEL9.0-es-3-20240620
+391
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ data /etc/crypto-policies/back-ends/openssh.config\r\ndebug3: gss kex names ok:
+ [gss-curve25519-sha256-,gss-nistp256-sha256-,gss-group14-sha256-,gss-group16-
+sha512-,gss-gex-sha1-,gss-group14-sha1-]\r\ndebug3: kex names ok: [curve25519-
+sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-
+sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-
+sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-
+group-exchange-sha1,diffie-hellman-group14-sha1]\r\ndebug1: auto-mux: Trying
+ existing master\r\ndebug1: Control socket \"/home/runner/.ansible/cp/d4775f48c9\"
+ does not exist\r\ndebug2: resolving \"servera.lab.exammple.com\" port 22\r
+\ndebug2: ssh_connect_direct\r\ndebug1: Connecting to servera.lab.exammple.com
+ [3.130.253.23] port 22.\r\ndebug2: fd 3 setting O_NONBLOCK\r\ndebug1: connect
+ to address 3.130.253.23 port 22: Connection timed out\r\ndebug1: Connecting
+ to servera.lab.exammple.com [3.130.204.160] port 22.\r\ndebug2: fd 3 setting
+ O_NONBLOCK\r\ndebug1: connect to address 3.130.204.160 port 22: Connection timed
+ out\r\nssh: connect to host servera.lab.exammple.com port 22: Connection timed
+ out",
+    "unreachable": true
+}
+PLAY RECAP *********************************************************************
+servera.lab.exammple.com   : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+ 11.
+Investigue el archivo inventory en busca de errores.
+Si observa el grupo [samba_servers], servera.lab.example.com está mal escrito
+(con un m adicional). Corrija este error como se muestra a continuación:
+[samba_servers]
+servera.lab.example.com
+...output omitted...
+ 12. Ejecute el playbook nuevamente y todas las tareas deberían realizarse correctamente.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install samba] ***********************************************************
+changed: [servera.lab.example.com]
+TASK [Install firewalld] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Debug install_state variable] ********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The state for the samba service is installed"
+}
+392
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+TASK [Start firewalld] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Configure firewall for samba] ********************************************
+changed: [servera.lab.example.com]
+TASK [Deliver samba config] ****************************************************
+changed: [servera.lab.example.com]
+TASK [Start samba] *************************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish troubleshoot-host
+RH294-RHEL9.0-es-3-20240620
+393
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Trabajo de laboratorio
+Solución de problemas de Ansible
+Solucionar los problemas que surjan cuando intente ejecutar un playbook que se le
+proporcionó.
+Resultados
+• Solucionar problemas de playbooks.
+• Solucionar problemas de hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-review
+Este comando garantiza que Ansible esté instalado en la máquina workstation. También
+crea el directorio /home/student/troubleshoot-review/ y lo completa con los
+archivos ansible.cfg, inventory, index.html, secure-web.yml y vhosts.conf.
+Instrucciones
+En el directorio /home/student/troubleshoot-review, hay un playbook denominado
+secure-web.yml. Este playbook contiene un play que se supone que configura Apache
+HTTPD con TLS/SSL para los hosts en el grupo webservers. Se supone que el nodo
+serverb.lab.example.com es el único host en el grupo webservers en este momento.
+Ansible puede conectarse a ese host mediante la cuenta remota devops y las claves SSH que ya
+se han configurado. Ese usuario también puede convertirse en root en el host gestionado sin una
+contraseña sudo.
+Desafortunadamente, existen varios problemas que debe corregir antes de poder ejecutar
+correctamente el playbook.
+1.
+Desde el directorio /home/student/troubleshoot-review, valide la sintaxis del
+playbook secure-web.yml. Corrija el problema que se informa.
+2.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Todavía tiene un problema.
+Corrija el problema que se informa.
+3.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Se detecta otro problema.
+Corrija el problema que se informa.
+4.
+Valide la sintaxis del playbook secure-web.yml por cuarta vez. No debería mostrar errores
+de sintaxis.
+394
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+5.
+Ejecute el playbook secure-web.yml. Ansible no puede conectarse al host
+serverb.lab.example.com. Dos problemas impiden una conexión correcta. Corrija
+ambos problemas.
+Importante
+Si resuelve estos problemas sin buscar la solución, es posible que resuelva ambos
+problemas al mismo tiempo o en un orden diferente al que se muestra en la
+solución.
+6.
+Ejecute el playbook secure-web.yml nuevamente. La conexión con el host
+serverb.lab.example.com funciona ahora, pero hay un problema nuevo. Corrija el
+problema que se informa.
+7.
+Ejecute el playbook secure-web.yml una vez más. Se debe completar correctamente.
+Use un comando ad hoc para verificar que el servicio httpd esté funcionando en el host
+serverb.lab.example.com.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade troubleshoot-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish troubleshoot-review
+RH294-RHEL9.0-es-3-20240620
+395
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Solución
+Solución de problemas de Ansible
+Solucionar los problemas que surjan cuando intente ejecutar un playbook que se le
+proporcionó.
+Resultados
+• Solucionar problemas de playbooks.
+• Solucionar problemas de hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-review
+Este comando garantiza que Ansible esté instalado en la máquina workstation. También
+crea el directorio /home/student/troubleshoot-review/ y lo completa con los
+archivos ansible.cfg, inventory, index.html, secure-web.yml y vhosts.conf.
+Instrucciones
+En el directorio /home/student/troubleshoot-review, hay un playbook denominado
+secure-web.yml. Este playbook contiene un play que se supone que configura Apache
+HTTPD con TLS/SSL para los hosts en el grupo webservers. Se supone que el nodo
+serverb.lab.example.com es el único host en el grupo webservers en este momento.
+Ansible puede conectarse a ese host mediante la cuenta remota devops y las claves SSH que ya
+se han configurado. Ese usuario también puede convertirse en root en el host gestionado sin una
+contraseña sudo.
+Desafortunadamente, existen varios problemas que debe corregir antes de poder ejecutar
+correctamente el playbook.
+1.
+Desde el directorio /home/student/troubleshoot-review, valide la sintaxis del
+playbook secure-web.yml. Corrija el problema que se informa.
+1.1.
+Cambie al directorio /home/student/troubleshoot-review.
+[student@workstation ~]$ cd ~/troubleshoot-review/
+[student@workstation troubleshoot-review]$
+1.2.
+Valide la sintaxis del playbook secure-web.yml. Este playbook configura Apache
+HTTPD con TLS/SSL para los hosts del grupo webservers cuando todo es correcto.
+396
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  mapping values are not allowed in this context
+The error appears to be in '/home/student/troubleshoot-review/secure-web.yml':
+ line 7, column 30, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+  vars:
+    random_var: This is colon: test
+                             ^ here
+1.3.
+En el valor de una variable, los dos puntos deben protegerse entre comillas. Corrija el
+problema de sintaxis en la definición de la variable random_var agregando comillas
+dobles a la cadena This is colon: test. El cambio resultante debe aparecer de la
+siguiente manera:
+...output omitted...
+  vars:
+    random_var: "This is colon: test"
+...output omitted...
+2.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Todavía tiene un problema.
+Corrija el problema que se informa.
+2.1.
+Valide la sintaxis de secure-web.yml con ansible-navigator run -m stdout
+--syntax-check nuevamente.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  did not find expected '-' indicator
+The error appears to be in '/home/student/troubleshoot-review/secure-web.yml':
+ line 38, column 10, but may be elsewhere in the file depending on the exact
+ syntax problem.
+The offending line appears to be:
+RH294-RHEL9.0-es-3-20240620
+397
+
+
+capítulo 8 |  Solución de problemas de Ansible
+         - name: Start and enable web services
+         ^ here
+2.2.
+Corrija los problemas de sintaxis en la sangría. Quite el espacio adicional al comienzo
+de los elementos de la tarea Start and enable web services. El cambio resultante debe
+aparecer de la siguiente manera:
+...output omitted...
+          args:
+            creates: /etc/pki/tls/certs/serverb.lab.example.com.crt
+        - name: Start and enable web services
+          ansible.builtin.service:
+            name: httpd
+            state: started
+            enabled: true
+        - name: Deliver content
+          ansible.builtin.copy:
+            dest: /var/www/vhosts/serverb-secure
+            src: html/
+...output omitted...
+3.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Se detecta otro problema.
+Corrija el problema que se informa.
+3.1.
+Valide la sintaxis del playbook secure-web.yml.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  found unacceptable key (unhashable type: 'AnsibleMapping')
+The error appears to be in '/home/student/troubleshoot-review/secure-web.yml':
+ line 13, column 20, but may
+be elsewhere in the file depending on the exact syntax problem.
+The offending line appears to be:
+          ansible.builtin.dnf:
+            name: {{ item }}
+                   ^ here
+We could be wrong, but this one looks like it might be an issue with
+missing quotes. Always quote template expression brackets when they
+start a value. For instance:
+    with_items:
+      - {{ foo }}
+398
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Should be written as:
+    with_items:
+      - "{{ foo }}"
+3.2.
+Corrija la variable item en la tarea Install web server packages. Un valor debe
+estar protegido por comillas dobles si aparecen llaves al comienzo de un valor. Agregue
+comillas dobles a {{ item }}. El cambio resultante debe aparecer de la siguiente
+manera:
+...output omitted...
+        - name: Install web server packages
+          ansible.builtin.dnf:
+            name: "{{ item }}"
+            state: latest
+          notify:
+            - Restart services
+          loop:
+            - httpd
+            - mod_ssl
+...output omitted...
+4.
+Valide la sintaxis del playbook secure-web.yml por cuarta vez. No debería mostrar errores
+de sintaxis.
+4.1.
+Revise la sintaxis del playbook secure-web.yml. No debería mostrar errores de
+sintaxis.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml --syntax-check
+playbook: /home/student/troubleshoot-review/secure-web.yml
+5.
+Ejecute el playbook secure-web.yml. Ansible no puede conectarse al host
+serverb.lab.example.com. Dos problemas impiden una conexión correcta. Corrija
+ambos problemas.
+Importante
+Si resuelve estos problemas sin buscar la solución, es posible que resuelva ambos
+problemas al mismo tiempo o en un orden diferente al que se muestra en la
+solución.
+5.1.
+Ejecute el playbook secure-web.yml. Fallará con un error.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml
+PLAY [Create secure web service] ***********************************************
+TASK [Gathering Facts] *********************************************************
+RH294-RHEL9.0-es-3-20240620
+399
+
+
+capítulo 8 |  Solución de problemas de Ansible
+fatal: [serverb.lab.example.com]: UNREACHABLE! => {"changed": false, "msg":
+ "Failed to connect to the host via ssh: students@serverc.lab.example.com:
+ Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password).",
+ "unreachable": true}
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+Por alguna razón, cuando ansible-navigator intentó conectarse al
+host serverb.lab.example.com, en su lugar intentó conectarse al host
+serverc.lab.example.com como el usuario students.
+5.2.
+Ejecute el playbook secure-web.yml nuevamente, agregando el parámetro -vvv
+para aumentar el nivel de detalle de la salida de depuración.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml -vvv
+...output omitted...
+TASK [Gathering Facts] *********************************************************
+task path: /home/student/troubleshoot-review/secure-web.yml:3
+<serverc.lab.example.com> ESTABLISH SSH CONNECTION FOR USER: students
+<serverc.lab.example.com> SSH: EXEC ssh -C -o ControlMaster=auto -o
+ ControlPersist=60s -o StrictHostKeyChecking=no -o KbdInteractiveAuthentication=no
+ -o PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey
+ -o PasswordAuthentication=no -o 'User="students"' -o ConnectTimeout=10 -o
+ 'ControlPath="/home/runner/.ansible/cp/bc0c05136a"' serverc.lab.example.com '/
+bin/sh -c '"'"'echo ~students && sleep 0'"'"''
+<serverc.lab.example.com> (255, b'', b'students@serverc.lab.example.com:
+ Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password).\r\n')
+...output omitted...
+Puede identificar dos problemas a partir de la salida de depuración detallada.
+• El comando ansible-navigator está intentando conectarse con el usuario
+students, cuando debería usar el usuario devops.
+• El comando ansible-navigator está intentando conectarse al host
+serverc.lab.example.com en lugar del host serverb.lab.example.com.
+5.3.
+Inspeccione el archivo inventory. Establece una variable de host ansible_host
+que hace que las conexiones para el host gestionado serverb.lab.example.com se
+dirijan incorrectamente al host gestionado serverc.lab.example.com.
+Elimine la variable del host ansible_host para que el archivo tenga el siguiente
+contenido:
+[webservers]
+serverb.lab.example.com
+5.4.
+Edite el playbook secure-web.yml para asegurarse de que devops sea el
+remote_user para el play. Las primeras líneas del playbook deberían aparecer de la
+siguiente manera:
+400
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+---
+# start of secure web server playbook
+- name: Create secure web service
+  hosts: webservers
+  remote_user: devops
+...output omitted...
+6.
+Ejecute el playbook secure-web.yml nuevamente. La conexión con el host
+serverb.lab.example.com funciona ahora, pero hay un problema nuevo. Corrija el
+problema que se informa.
+6.1.
+Ejecute el playbook secure-web.yml, agregando el parámetro -vvv para aumentar
+el nivel de detalle de la salida de depuración.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml -vvv
+...output omitted...
+failed: [serverb.lab.example.com] (item=mod_ssl) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+...output omitted...
+    },
+    "item": "mod_ssl",
+    "msg": "This command has to be run under the root user.",
+    "results": []
+}
+...output omitted...
+El play no se ejecuta con aumento de privilegios.
+6.2.
+Edite el play para asegurarse de tener configurado become: true. El cambio
+resultante debe aparecer de la siguiente manera:
+---
+# start of secure web server playbook
+- name: Create secure web service
+  hosts: webservers
+  remote_user: devops
+  become: true
+...output omitted...
+7.
+Ejecute el playbook secure-web.yml una vez más. Se debe completar correctamente.
+Use un comando ad hoc para verificar que el servicio httpd esté funcionando en el host
+serverb.lab.example.com.
+7.1.
+Ejecute el playbook secure-web.yml.
+[student@workstation troubleshoot-review]$ ansible-navigator run \
+> -m stdout secure-web.yml
+PLAY [Create secure web service] ***********************************************
+...output omitted...
+RH294-RHEL9.0-es-3-20240620
+401
+
+
+capítulo 8 |  Solución de problemas de Ansible
+TASK [Install web server packages] *********************************************
+ok: [serverb.lab.example.com] => (item=httpd)
+ok: [serverb.lab.example.com] => (item=mod_ssl)
+...output omitted...
+TASK [Httpd_conf_syntax variable] **********************************************
+ok: [serverb.lab.example.com] => {
+    "msg": "The httpd_conf_syntax variable value is {'changed': True, 'stdout':
+ '', 'stderr': 'Syntax OK', 'rc': 0, 'cmd': ['/sbin/httpd', '-t'], 'start':
+ '2022-07-14 17:39:51.096013', 'end': '2022-07-14 17:39:51.134925', 'delta':
+ '0:00:00.038912', 'msg': '', 'stdout_lines': [], 'stderr_lines': ['Syntax OK'],
+ 'failed': False, 'failed_when_result': False}"
+}
+...output omitted...
+RUNNING HANDLER [Restart services] *********************************************
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=11   changed=7    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.2.
+Use un comando ad hoc para determinar el estado del servicio httpd en los hosts
+gestionados en el grupo de hosts webservers. El servicio httpd ahora debería estar
+ejecutándose en el host serverb.lab.example.com.
+[student@workstation troubleshoot-review]$ ansible webservers -u devops -b \
+> -m command -a 'systemctl status httpd'
+serverb.lab.example.com | CHANGED | rc=0 >>
+● httpd.service - The Apache HTTP Server
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; vendor
+ preset: disabled)
+     Active: active (running) since Thu 2022-07-14 17:39:53 EDT; 3min 11s
+...output omitted...
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade troubleshoot-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish troubleshoot-review
+402
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Resumen
+• El comando ansible-navigator puede producir archivos de artefactos de playbooks que
+almacenan información sobre ejecuciones en formato JSON.
+• Use el comando ansible-navigator replay para revisar la ejecución del play.
+• El módulo ansible.builtin.debug puede proporcionar información adicional de depuración
+al tiempo que ejecuta un playbook (por ejemplo, el valor actual para una variable).
+• Puede especificar la opción -v del comando ansible-navigator run una o más veces para
+proporcionar varios niveles de detalle de salida adicional. Esto es útil para la depuración de las
+tareas de Ansible al ejecutar un playbook.
+• La opción --check habilita los módulos de Ansible que soportan el modo de verificación para
+que se muestren los cambios que se deben realizar, en lugar de aplicar estos cambios a los hosts
+gestionados.
+RH294-RHEL9.0-es-3-20240620
+403
+
+
+404
+RH294-RHEL9.0-es-3-20240620
+
+

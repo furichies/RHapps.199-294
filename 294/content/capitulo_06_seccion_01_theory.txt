@@ -1,0 +1,405 @@
+# Selección de hosts con patrones de hosts
+# Tipo: theory
+# Capítulo: Capítulo 6. Administración de plays y playbooks complejos
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Selección de hosts con patrones de hosts
+Objetivos
+• Escribir patrones de host sofisticados para seleccionar hosts de manera eficiente para un play.
+Referencias a hosts de inventario
+Los patrones de host se usan para especificar los hosts en los que se ejecuta su play. En su forma
+más simple, el nombre de un host gestionado o un grupo de hosts en el inventario es un patrón de
+hosts que especifica ese host o grupo de hosts.
+Ya ha usado patrones de hosts en este curso. En un play, la directiva hosts especifica los hosts
+gestionados respecto de los cuales se ejecutará el play.
+En general, es más fácil controlar a qué hosts apunta un play usando cuidadosamente patrones de
+hosts y teniendo grupos de inventario correctos en lugar de establecer condicionales complejos
+en las tareas del play. Por lo tanto, es importante tener una comprensión sólida de los patrones de
+host.
+El siguiente ejemplo de inventario se usa en esta sección para ilustrar patrones de hosts.
+[student@controlnode ~]$ cat myinventory
+web.example.com
+data.example.com
+[lab]
+labhost1.example.com
+labhost2.example.com
+[test]
+test1.example.com
+test2.example.com
+[datacenter1]
+labhost1.example.com
+test1.example.com
+[datacenter2]
+labhost2.example.com
+test2.example.com
+[datacenter:children]
+datacenter1
+datacenter2
+[new]
+192.168.2.1
+192.168.2.2
+228
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Para demostrar cómo se resuelven los patrones de host, los siguientes ejemplos ejecutan el
+playbook de Ansible playbook.yml, que contiene un play que se edita para tener diferentes
+patrones de host para identificar diferentes subconjuntos de hosts gestionados del anterior
+inventario de ejemplo.
+Hosts administrados
+El patrón de host más básico es el nombre de un solo host gestionado detallado en el inventario.
+Esto especifica que el host será el único en el inventario en el que se actuará mediante el comando
+ansible-navigator.
+Cuando se ejecuta el playbook, la primera tarea Gathering Facts debe ejecutarse en todos los
+hosts gestionados que coincidan con el patrón de host. Un error durante esta tarea puede hacer
+que el host gestionado se elimine del play.
+Solo puede usar una dirección IP en un patrón de host si aparece explícitamente en el inventario.
+Si la dirección IP no está en el inventario, no podrá usarla para especificar el host aun si la dirección
+IP se resuelve a ese nombre de host en el DNS.
+En el siguiente ejemplo, se muestra cómo se puede usar el patrón de host para hacer referencia a
+una dirección IP contenida en un inventario.
+[student@controlnode ~]$ cat playbook.yml
+---
+...output omitted...
+  hosts: 192.168.2.1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [192.168.2.1]
+...output omitted...
+nota
+Un problema al hacer referencia a hosts gestionados por medio de una dirección IP
+en el inventario es que puede resultar difícil recordar qué dirección IP corresponde
+a qué host para sus plays. Sin embargo, es posible que deba especificar el host por
+dirección IP para fines de conexión si el host no tiene un nombre de host que pueda
+resolver su entorno de ejecución.
+Puede apuntar a un alias en una dirección IP específica en su inventario si establece
+la variable de host ansible_host. Por ejemplo, podría tener un host en su
+inventario denominado host.example que puede usar para patrones de host,
+grupos de inventario y conexiones directas con ese nombre a la dirección IP
+192.168.2.1 mediante la creación de un archivo host_vars/host.example
+que contenga la siguiente variable de host:
+ansible_host: 192.168.2.1
+RH294-RHEL9.0-es-3-20240620
+229
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Especificar hosts usando un grupo
+Puede usar los nombres de los grupos de hosts de inventario como patrones de hosts. Cuando el
+nombre de un grupo se usa como patrón de host, especifica que el play actúa en los hosts que son
+miembros del grupo.
+[student@controlnode ~]$ cat playbook.yml
+---
+...output omitted...
+  hosts: lab
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [labhost2.example.com]
+...output omitted...
+Recuerde que hay un grupo especial llamado all que coincide con todos los hosts gestionados en
+el inventario.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: all
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [web.example.com]
+ok: [data.example.com]
+ok: [labhost1.example.com]
+ok: [192.168.2.1]
+ok: [test1.example.com]
+ok: [192.168.2.2]
+También hay un grupo especial llamado ungrouped que incluye todos los hosts gestionados en el
+inventario que no son miembros de ningún otro grupo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: ungrouped
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+230
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [web.example.com]
+ok: [data.example.com]
+Coincidencia con varios hosts con comodines
+Otro método de lograr lo mismo que con el patrón del host all es usar el carácter comodín
+asterisco (*), que coincide con cualquier cadena. Si el patrón de host es solo un asterisco entre
+comillas, entonces todos los hosts en el inventario coincidirán.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: '*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [web.example.com]
+ok: [data.example.com]
+ok: [labhost1.example.com]
+ok: [192.168.2.1]
+ok: [test1.example.com]
+ok: [192.168.2.2]
+Importante
+Algunos caracteres que se usan en los patrones de host también tienen significado
+para la shell. Si usa caracteres comodín o de lista especiales en un playbook de
+Ansible, debe colocar su patrón de host entre comillas simples para asegurarse de
+que se analice correctamente.
+  hosts: '!test1.example.com,development'
+El carácter de asterisco también se puede usar para que coincida con cualquier host gestionado o
+grupo que contenga una subcadena específica.
+Por ejemplo, el siguiente patrón de host comodín coincide con todos los nombres de inventario
+que finalizan en .example.com:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: '*.example.com'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+RH294-RHEL9.0-es-3-20240620
+231
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [web.example.com]
+ok: [data.example.com]
+El siguiente ejemplo usa un patrón de host comodín para coincidir con los nombres de hosts o
+grupos de hosts que comienzan con 192.168.2.:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: '192.168.2.*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [192.168.2.1]
+ok: [192.168.2.2]
+El siguiente ejemplo usa un patrón de host comodín para coincidir con los nombres de hosts o
+grupos de hosts que comienzan con datacenter.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: 'datacenter*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+232
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Importante
+Los patrones de host comodín coinciden con todos los nombres de inventario,
+hosts y grupos de hosts. No distinguen entre nombres que son nombres de DNS,
+direcciones IP o grupos, lo que puede generar ciertas coincidencias inesperadas.
+Por ejemplo, compare los resultados de especificar el patrón de host datacenter*
+del ejemplo anterior con los resultados del patrón de host data* basado en el
+inventario de ejemplo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: 'data*'
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [data.example.com]
+Listas
+Se puede hacer referencia a varias entradas en un inventario con listas lógicas. Una lista de
+patrones de hosts separados por comas coincide con todos los hosts que coinciden con cualquiera
+de esos patrones de hosts.
+Si usted proporciona una lista de hosts gestionados separados por comas, se apuntará a todos
+estos hosts gestionados:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: labhost1.example.com,test2.example.com,192.168.2.2
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test2.example.com]
+ok: [192.168.2.2]
+Si usted proporciona una lista de grupos separados por comas, se apuntará a todos estos hosts en
+cualquiera de esos grupos:
+RH294-RHEL9.0-es-3-20240620
+233
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: lab,datacenter1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [labhost2.example.com]
+ok: [test1.example.com]
+También puede combinar hosts gestionados, grupos de hosts y comodines, como se muestra más
+abajo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: lab,data*,192.168.2.2
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [labhost2.example.com]
+ok: [test1.example.com]
+ok: [test2.example.com]
+ok: [data.example.com]
+ok: [192.168.2.2]
+nota
+El carácter de dos puntos (:) puede usarse en lugar de una coma. Sin embargo, la
+coma es el separador preferido, en especial, cuando se trabaja con direcciones IPv6
+como nombres de hosts gestionados. Puede ver la sintaxis de los dos puntos en
+ejemplos anteriores.
+Si un ítem en una lista comienza con un carácter &, los hosts deben coincidir con ese ítem para
+coincidir con el patrón de host. Funciona de manera similar que un AND lógico.
+Por ejemplo, en nuestro ejemplo de inventario, el siguiente patrón de host coincidirá con las
+máquinas en el grupo lab solo si también se encuentran en el grupo datacenter1:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: lab,&datacenter1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+234
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+También podría especificar que las máquinas en el grupo datacenter1 coincidan
+solo si se encuentran en el grupo lab con los patrones de host &lab,datacenter1 o
+datacenter1,&lab.
+Puede excluir hosts que coincidan con un patrón de una lista si usa el signo de exclamación o
+carácter "bang" (!) delante del patrón de host. Esto funciona como un NOT lógico.
+Este ejemplo coincide con todos los hosts definidos en el grupo datacenter, con la excepción de
+test2.example.com, dado el inventario de ejemplo:
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: datacenter,!test2.example.com
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [labhost1.example.com]
+ok: [test1.example.com]
+ok: [labhost2.example.com]
+El patrón '!test2.example.com,datacenter' se podría haber usado en el ejemplo anterior
+para obtener el mismo resultado.
+El último ejemplo muestra el uso de un patrón de host que coincide con todos los hosts del
+inventario de prueba, con la excepción de los hosts gestionados en el grupo datacenter1.
+[student@controlnode ~]$ cat playbook.yml
+...output omitted...
+  hosts: all,!datacenter1
+...output omitted...
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Test Host Patterns] **************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [web.example.com]
+ok: [data.example.com]
+ok: [labhost2.example.com]
+ok: [test2.example.com]
+ok: [192.168.2.1]
+ok: [192.168.2.2]
+RH294-RHEL9.0-es-3-20240620
+235
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Referencias
+Patrones: hosts y grupos como destino: documentación Ansible
+https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
+How to build your inventory — Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+236
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Ejercicio Guiado
+Selección de hosts con patrones de hosts
+Explorar el modo en que pueden usarse los patrones de hosts para especificar hosts de
+inventario para plays. Se le proporcionarán varios ejemplos de inventario para explorar
+patrones de host.
+Resultados
+• Use diferentes patrones de hosts para acceder a diversos hosts en un inventario.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start projects-host
+Instrucciones
+ 1.
+Cambie al directorio /home/student/projects-host y revise el playbook y los archivos
+de inventario en el directorio.
+[student@workstation ~]$ cd ~/projects-host
+[student@workstation projects-host]$
+1.1.
+Enumere el contenido del directorio.
+[student@workstation projects-host]$ ls
+ansible.cfg inventory1 inventory2 playbook.yml
+1.2.
+Inspeccione el primer archivo de inventario de ejemplo, inventory1. Observe cómo
+está organizado el inventario. Identifique los hosts que se encuentran en el inventario
+y los dominios que se usan.
+srv1.example.com
+srv2.example.com
+s1.lab.example.com
+s2.lab.example.com
+[web]
+jupiter.lab.example.com
+saturn.example.com
+[db]
+RH294-RHEL9.0-es-3-20240620
+237
+
+

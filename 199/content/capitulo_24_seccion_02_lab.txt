@@ -1,0 +1,123 @@
+# Trabajo de laboratorio: oratorio para solucionar problemas de arranque y mantener servidores
+# Tipo: lab
+# Capítulo: Capítulo 21. Revisión integral
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener servidores 21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener servidores Solucione y repare problemas de arranque, actualice el destino de arranque predeterminado del sistema y programe tareas para que se ejecuten de forma recurrente como usuario sin privilegios. Resultados Diagnosticar problemas relacionados con el arranque. Cambie el destino de arranque predeterminado. Programe trabajos recurrentes para que se ejecuten como un usuario sin privilegios. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review1
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Sus deberes incluyen mantener la estabilidad del servidor, solucionar problemas e implementar automatización para respaldar las operaciones de los clientes. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1. Este script crea un problema con el proceso de arranque en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+Un cliente abrió un caso informando que la máquina del servidor no funciona después de reiniciarla durante las tareas de mantenimiento. La descripción del caso menciona que el servidor está bloqueado al arrancar con errores relacionados con
+
+mounting a partition. You have been asked to investigate and to fix the issue.
+
+Acceda a la consola de la máquina serverb e inicie en modo de emergencia para mantenimiento. Busque cualquier mensaje de error en la consola relacionado con un problema al montar una partición. Utilice sombrero rojo como
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener la contraseña de los servidores. Vuelva a montar el sistema de archivos raíz en modo lectura/escritura. Intente montar todos los demás sistemas de archivos e identifique el sistema de archivos que no se puede montar. Edite el archivo /etc/fstab para solucionar el problema. Elimine o comente la línea incorrecta. Reinicie la máquina del servidor y confirme que el sistema ahora arranca sin errores. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break2. Este script cambia el destino predeterminado del destino multiusuario al destino gráfico en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break2
+
+Para reducir el consumo innecesario de recursos de CPU y memoria en la máquina del servidor, se le ha pedido que se asegure de que el destino multiusuario sea el destino predeterminado. Determine el destino predeterminado en la máquina del servidor y cámbielo al destino multiusuario si no es el destino predeterminado. Asegúrese de que la configuración persista después del reinicio. En la máquina del servidor, el usuario estudiante almacena algunos documentos importantes en su directorio de inicio. Para evitar la pérdida de datos, se debe realizar una copia de seguridad del directorio de inicio del usuario estudiante. Se te ha asignado la tarea de
+
+scheduling a recurring job that meets the following criteria:
+
+Hay un script de respaldo disponible en el archivo /home/student/RH134/labs/compreview-review1/backup-home.sh. El script backup-home.sh realiza una copia de seguridad del directorio /home/student desde la máquina serverb a la máquina servera en el directorio /home/student/serverb-backup. Verifique los permisos del script backup-home.sh y asegúrese de que sea ejecutable. En la máquina del servidor, programe un trabajo recurrente como usuario estudiante que ejecute el script backup-home.sh cada hora entre las 7 p. m. y las 9 p. m. todos los días, excepto los sábados y domingos. Reinicie la máquina del servidor y espere a que se complete el inicio antes de calificar. Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review1
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener servidores
+
+student@workstation:~$ lab finish compreview-review1
+
+
+
+
+
+21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener la solución de servidores Solucione y repare problemas de arranque, actualice el destino de arranque predeterminado del sistema y programe tareas para que se ejecuten de forma recurrente como usuario sin privilegios. Resultados Diagnosticar problemas relacionados con el arranque. Cambie el destino de arranque predeterminado. Programe trabajos recurrentes para que se ejecuten como un usuario sin privilegios. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review1
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Sus deberes incluyen mantener la estabilidad del servidor, solucionar problemas e implementar automatización para respaldar las operaciones de los clientes. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1. Este script crea un problema con el proceso de arranque en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+Un cliente abrió un caso informando que la máquina del servidor no funciona después de reiniciarla durante las tareas de mantenimiento. La descripción del caso menciona que el servidor está bloqueado al arrancar con errores relacionados con
+
+mounting a partition. You have been asked to investigate and to fix the issue.
+
+Acceda a la consola de la máquina serverb e inicie en modo de emergencia para mantenimiento. Busque cualquier mensaje de error en la consola relacionado con un problema al montar una partición. Utilice redhat como contraseña.
+
+
+
+
+
+21.2. Práctica de laboratorio: solucionar problemas de arranque y mantener servidores. Vuelva a montar el sistema de archivos raíz en modo lectura/escritura. Intente montar todos los demás sistemas de archivos e identifique el sistema de archivos que no se puede montar. Edite el archivo /etc/fstab para solucionar el problema. Elimine o comente la línea incorrecta. Reinicie la máquina del servidor y confirme que el sistema ahora arranca sin errores. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break2. Este script cambia el destino predeterminado del destino multiusuario al destino gráfico en la máquina del servidor y luego reinicia la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break2
+
+Para reducir el consumo innecesario de recursos de CPU y memoria en la máquina del servidor, se le ha pedido que se asegure de que el destino multiusuario sea el destino predeterminado. Determine el destino predeterminado en la máquina del servidor y cámbielo al destino multiusuario si no es el destino predeterminado. Asegúrese de que la configuración persista después del reinicio. En la máquina del servidor, el usuario estudiante almacena algunos documentos importantes en su directorio de inicio. Para evitar la pérdida de datos, se debe realizar una copia de seguridad del directorio de inicio del usuario estudiante. Se te ha asignado la tarea de
+
+scheduling a recurring job that meets the following criteria:
+
+Hay un script de respaldo disponible en el archivo /home/student/RH134/labs/compreview-review1/backup-home.sh. El script backup-home.sh realiza una copia de seguridad del directorio /home/student desde la máquina serverb a la máquina servera en el directorio /home/student/serverb-backup. Verifique los permisos del script backup-home.sh y asegúrese de que sea ejecutable. En la máquina del servidor, programe un trabajo recurrente como usuario estudiante que ejecute el script backup-home.sh cada hora entre las 7 p. m. y las 9 p. m. todos los días, excepto los sábados y domingos. Reinicie la máquina del servidor y espere a que se complete el inicio antes de calificar. Solución Se proporciona una posible solución a este ejercicio. Podría utilizar un método diferente para lograr el resultado especificado. Para prepararlo mejor para los desafíos del mundo real, es posible que la solución proporcionada no incluya comandos, bloques de código o pasos para todas las tareas. Si el script de calificación falla, el sistema muestra una pista sobre qué contenido revisar. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break1 y espere a que se inicie la máquina del servidor.
+
+student@workstation:~$ bash /tmp/rhcsa-break1
+
+...salida omitida... 1. Abra la consola del servidor, donde la máquina arranca en modo de emergencia, y luego resuelva el problema de arranque. 2. Utilice el comando mount para volver a montar el sistema de archivos raíz en modo lectura/escritura. 2.1. Utilice el comando mount para montar los otros sistemas de archivos y encontrar el sistema de archivos que el sistema no puede
+
+mount.
+
+2.2.
+
+
+
+
+
+21.2. Laboratorio para solucionar problemas de arranque y mantener la evaluación de servidores. Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review1
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review1
+
+Edite el archivo /etc/fstab para eliminar la línea incorrecta y use el comando systemctl daemon-reload para actualizar el demonio systemd. 2.3. Reinicie la máquina del servidor y espere a que se complete el proceso de inicio. 2.4. En la máquina de la estación de trabajo, ejecute el script /tmp/rhcsa-break2 y espere a que la máquina del servidor se reinicie antes de continuar. 3. Establezca el destino multiusuario como destino predeterminado en la máquina del servidor. 4. Reinicie la máquina del servidor. 5. Espere hasta que se inicie la máquina del servidor y luego inicie sesión como usuario estudiante. 6. Haga ejecutable el script backup-home.sh.
+
+[student@serverb ~]$ chmod +x ~/RH134/labs/compreview-review1/backup-home.sh
+
+7. Edite el archivo crontab del usuario estudiante utilizando el comando crontab. 8. Agregue el siguiente contenido al archivo crontab: 0 19-21 * * Mon-Fri /home/student/RH134/labs/compreview-review1/backup-home.sh 9. Reinicie la máquina del servidor y espere a que se complete el proceso de inicio. 10.
+
+
+
+
+
+21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento 21.3. Práctica de laboratorio Configurar y administrar sistemas de archivos y almacenamiento Administre usuarios y grupos, use el Administrador de volúmenes lógicos (LVM) para crear volúmenes lógicos e intercambiar espacio, de manera persistente
+
+mount the Network File System (NFS) share, and schedule a task to clear temporary files on the system.
+
+Resultados Crear un volumen lógico. Montar un sistema de archivos de red. Cree una partición de intercambio que se active automáticamente en el arranque. Configure un directorio para almacenar archivos temporales. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review2
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Se le ha encomendado la tarea de implementar los siguientes cambios de infraestructura para mejorar la administración del almacenamiento, el acceso a los recursos de la red y los controles de acceso de los usuarios. La empresa requiere un espacio de almacenamiento dedicado, escalable y eficiente en la máquina del servidor para los nuevos activos del juego. Configure el almacenamiento para cumplir con las siguientes especificaciones. Utilice el disco /dev/sdb disponible para crear la partición para realizar la copia de seguridad del volumen físico. Elija un tamaño apropiado para que la partición cumpla con los demás requisitos. Cree un volumen lógico vol_home de 1 GiB en un nuevo grupo de volúmenes de 2 GiB denominado extra_storage. El grupo de volúmenes debe utilizar una partición creada en el disco /dev/sdb como volumen físico. El volumen lógico vol_home debe formatearse con un sistema de archivos XFS y montarse de forma persistente en el directorio /user-homes.
+
+
+
+
+

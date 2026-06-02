@@ -1,0 +1,700 @@
+# Capítulo 1. Presentación de Ansible
+
+capítulo 1
+Presentación de Ansible
+Meta
+Describir los conceptos fundamentales de Ansible
+y la forma de usarlo e instalar herramientas de
+desarrollo desde Red Hat Ansible Automation
+Platform.
+Objetivos
+•
+Describir la motivación para automatizar las
+tareas de administración de Linux con Ansible,
+los conceptos fundamentales de Ansible y la
+arquitectura básica de Ansible.
+•
+Instalar Ansible en un nodo de control y
+describir la distinción entre Ansible comunitario
+y Red Hat Ansible Automation Platform.
+Secciones
+•
+Automatización de la administración de Linux
+con Ansible (y cuestionario)
+•
+Instalación de Ansible (y ejercicio guiado)
+RH294-RHEL9.0-es-3-20240620
+1
+
+
+capítulo 1 |  Presentación de Ansible
+Automatización de la administración de
+Linux con Ansible
+Objetivos
+• Describir la motivación para automatizar las tareas de administración de Linux con Ansible, los
+conceptos fundamentales de Ansible y la arquitectura básica de Ansible.
+Automatización y administración de sistemas Linux
+Durante muchos años, la mayor parte de la administración de sistemas y de infraestructuras se
+ha basado en tareas manuales realizadas a través de interfaces de usuario tanto gráficas como
+de línea de comandos. Los administradores de sistemas suelen usar listas de verificación, otra
+documentación o una rutina memorizada para realizar tareas estándares.
+Este enfoque es propenso a errores. Es fácil que un administrador de sistemas omita un paso o
+cometa un error en un paso. A menudo, se hace una verificación limitada para comprobar que los
+pasos se hayan realizado correctamente o que produzcan el resultado esperado.
+Además, al administrar cada servidor de forma manual e independiente, es muy fácil que muchos
+servidores que se supone que deben tener una configuración idéntica tengan diferencias menores
+(o importantes). Esto puede dificultar el mantenimiento e introducir errores o inestabilidad en el
+entorno de TI.
+La automatización puede ayudar a evitar los problemas causados por la administración manual
+del sistema y la administración de la infraestructura. Como administrador de sistemas, puede usar
+la automatización para garantizar que todos sus sistemas se implementen y configuren de forma
+rápida y correcta. Por consiguiente, puede automatizar las tareas repetitivas de su cronograma
+diario a fin de tener más tiempo para enfocarse en tareas más importantes. Para su organización,
+la automatización puede ayudarlo a implementar más rápidamente la próxima versión de una
+aplicación o las actualizaciones de un servicio.
+Infraestructura como código
+Un buen sistema de automatización permite implementar prácticas de infraestructura como
+código. La infraestructura como código significa que puede usar un lenguaje de automatización
+legible por máquinas para definir y describir el estado de su infraestructura de TI. Idealmente, este
+lenguaje de automatización también debería ser fácil de leer para los humanos, lo que permite
+entender fácilmente el estado actual y modificarlo. Este código se aplica a su infraestructura para
+garantizar que realmente se encuentre en ese estado.
+Si el lenguaje de automatización se representa como archivos de texto simples, es fácil de
+administrar en un sistema de control de versiones. La ventaja de esto es que cada cambio se
+puede registrar en el sistema de control de versiones, lo que garantiza que tenga un historial
+constante de los cambios que realiza. Si quiere volver a una configuración anterior de eficacia
+comprobada, basta con revisar esa versión y aplicarla a su infraestructura.
+Esto crea la base para ayudarlo a seguir las prácticas recomendadas en DevOps. Los
+desarrolladores pueden definir su configuración deseada en el lenguaje de automatización. Los
+operadores pueden revisar esos cambios con mayor facilidad para proporcionar comentarios y
+usar esa automatización para garantizar de manera reproducible que los sistemas se encuentren
+en el estado que esperan los desarrolladores.
+2
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Mitigación del error humano
+Reducir la cantidad de tareas realizadas manualmente en los servidores mediante la
+automatización de tareas y las prácticas de infraestructura como código puede ayudar a garantizar
+que sus servidores tengan configuraciones coherentes con mayor frecuencia.
+Esto significa que debe acostumbrarse a hacer cambios actualizando el código de automatización
+en lugar de aplicarlos manualmente a los servidores. De lo contrario, corre el riesgo de perder los
+cambios aplicados manualmente la próxima vez que aplique cambios mediante la automatización.
+Puede usar la revisión de código, la revisión por varios colegas expertos en la materia y
+documentar el procedimiento en el contenido de automatización para reducir los riesgos
+operativos.
+En última instancia, puede hacer que los cambios en su infraestructura de TI se realicen a través de
+la automatización para mitigar los errores humanos.
+¿Qué es Ansible?
+Ansible es una plataforma de automatización de código abierto. Es un lenguaje de automatización
+simple que puede describir de manera correcta una infraestructura de aplicaciones de TI en los
+playbooks de Ansible. También es un motor de automatización que ejecuta playbooks de Ansible.
+Ansible puede administrar tareas de automatización potentes y puede adaptarse a muchos flujos
+de trabajo y entornos diferentes. Al mismo tiempo, los nuevos usuarios de Ansible pueden usarla
+muy rápidamente para volverse productivos.
+Ansible es simple
+Los playbooks de Ansible proporcionan automatización legible por el ojo humano. Esto significa
+que los playbooks son herramientas de automatización que también son fáciles de leer,
+comprender y cambiar para los humanos. No se necesitan habilidades de codificación especiales
+para escribirlas. Los playbooks ejecutan tareas en orden. La simplicidad del diseño del playbook
+hace que lo usen todos los equipos, lo que permite que las personas que nunca usaron Ansible se
+vuelvan productivas rápidamente.
+Ansible es potente
+Puede usar Ansible para implementar aplicaciones para la administración de la configuración,
+la automatización de flujos de trabajo y la automatización de redes. Puede usar Ansible para
+orquestar el ciclo de vida completo de la aplicación.
+Ansible no tiene agentes
+Ansible está diseñada alrededor de una arquitectura sin agentes. En general, Ansible se conecta
+con hosts que administra con OpenSSH o WinRM y ejecuta tareas, a menudo (pero no siempre)
+enviando pequeños programas denominados módulos Ansible a esos hosts. Estos programas se
+usan para colocar el sistema en un estado deseado específico. Todos los módulos enviados se
+eliminan cuando Ansible haya finalizado sus tareas. Puede comenzar a usar Ansible casi de forma
+inmediata, ya que no se necesita aprobar agentes especiales para usar y, luego, implementarlos en
+los hosts gestionados. Dado que no hay agentes ni una infraestructura de seguridad personalizada
+adicional, Ansible es más eficaz y más segura que otras alternativas.
+Ansible tiene varios puntos fuertes importantes:
+• Soporte para diversas plataformas: Ansible proporciona soporte sin agentes para Linux,
+Windows, UNIX y dispositivos de red, en entornos físicos, virtuales, de nube y en contenedores.
+RH294-RHEL9.0-es-3-20240620
+3
+
+
+capítulo 1 |  Presentación de Ansible
+• Automatización legible por el ojo humano: los playbooks de Ansible, escritos como archivos de
+texto YAML, son fáciles de leer y permiten garantizar que todos entiendan lo que harán.
+• Descripciones precisas de aplicaciones: los playbooks de Ansible pueden realizar todas las
+modificaciones, y se pueden describir y documentar todos los aspectos de su entorno de
+aplicaciones.
+• Fácil de administrar en el control de versiones: los playbooks de Ansible y los proyectos son
+texto sin formato. Puede considerarse código fuente y colocarse en su sistema de control de
+versiones existente.
+• Soporte para inventarios dinámicos: la lista de máquinas que administra Ansible puede
+actualizarse de forma dinámica desde fuentes externas para capturar la lista actual y correcta
+de todos los servidores gestionados todo el tiempo, independientemente de la infraestructura o
+la ubicación.
+• Orquestación que se integra fácilmente con otros sistemas: HP SA, Puppet, Jenkins, Red Hat
+Satellite, y otros sistemas que existen en su entorno, se pueden aprovechar e integrar en su
+workflow de Ansible.
+Ansible: El lenguaje de DevOps
+Figura 1.1: Ansible durante el ciclo de vida de la aplicación
+La comunicación es la clave de DevOps. Ansible es el primer lenguaje de automatización que se
+puede leer y escribir en TI.
+Conceptos y arquitectura de Ansible
+Hay dos tipos de máquinas en la arquitectura Ansible: nodos de control y hosts gestionados.
+Ansible se instala y se ejecuta desde un nodo de control, y esta máquina también tiene copias de
+sus archivos de proyecto de Ansible.
+Los hosts gestionados aparecen en un inventario, que también organiza estos sistemas en grupos
+para una administración colectiva más sencilla. Puede definir el inventario de manera estática en
+un archivo de texto o de manera dinámica mediante scripts que obtienen información de grupos y
+host de fuentes externas.
+En lugar de escribir scripts complejos, los usuarios de Ansible crean plays de alto nivel para
+asegurarse de que un host o grupo de hosts estén en un estado particular. Un play realiza una
+serie de tareas en los hosts, en el orden especificado por el play. Estas plays se expresan en
+formato YAML en un archivo de texto. Un archivo que contiene uno o más plays se denomina
+playbook.
+Cada tarea ejecuta un módulo, una pequeña parte de un código (escrito en Python, PowerShell
+o cualquier otro lenguaje), con argumentos específicos. Cada módulo es esencialmente una
+herramienta en su kit de herramientas. Ansible se envía con cientos de módulos útiles que pueden
+4
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+realizar una amplia variedad de tareas de automatización. Pueden actuar en archivos de sistemas,
+instalar software o realizar llamadas de API.
+Cuando se usa en una tarea, un módulo generalmente garantiza que un aspecto específico de la
+máquina tenga un estado específico. Por ejemplo, una tarea que usa un módulo puede garantizar
+que un archivo exista y tenga permisos y contenido específicos. Una tarea que usa un módulo
+diferente puede garantizar que se monte un sistema de archivos en particular. Si el sistema no
+tiene ese estado, la tarea debe colocarlo en ese estado o no hacer nada. Si una tarea falla, el
+comportamiento predeterminado de Ansible es cancelar el resto del playbook para los hosts que
+tuvieron una falla y continuar con los host restantes.
+Las tareas, los plays y playbooks están diseñados para ser idempotentes. Esto significa que puede
+ejecutar de forma segura un playbook en los mismos hosts varias veces. Cuando sus sistemas
+tienen el estado correcto, el playbook no realiza cambios cuando lo ejecuta. Hay múltiples
+módulos disponibles que puede usar para ejecutar comandos arbitrarios. Sin embargo, debe usar
+esos módulos con cuidado para asegurarse de que se ejecuten de forma idempotente.
+Ansible también usa complementos (plug-ins). Los complementos (plug-ins) son códigos que
+puede agregar a Ansible para ampliarla y adaptarla a los nuevos usos y las nuevas plataformas.
+La arquitectura de Ansible no tiene agentes. En general, cuando un administrador ejecuta un
+playbook de Ansible, el nodo de control se conecta con el host gestionado mediante SSH (de
+forma predeterminada) o WinRM. Esto significa que no necesita tener un agente específico de
+Ansible instalado en los hosts gestionados y no necesita permitir ninguna comunicación adicional
+entre el nodo de control y los hosts gestionados.
+Obtención de soporte para Ansible
+Red Hat Ansible Automation Platform es una versión totalmente compatible de Ansible que
+permite a las empresas gestionar su automatización a escala.
+Proporciona los siguientes beneficios:
+• Soporte oficial para el conjunto de herramientas central (core) de Ansible.
+• Ansible Content Collections certificadas por Red Hat para ayudarlo a acelerar la adopción de la
+automatización de Ansible con códigos compatibles.
+• Herramientas locales para ayudarlo a centralizar la entrega de contenido de automatización,
+administrar las tareas de automatización y escalar la distribución de la ejecución de la
+automatización.
+• Servicios en la nube para ayudarlo a descubrir contenido certificado de Ansible, facilitar la
+colaboración en equipo y proporcionar análisis operativos para automatizar entornos híbridos
+mixtos.
+Por ejemplo, el componente del controlador de automatización (antes llamado Red Hat Ansible
+Tower) es un marco empresarial que puede usar para controlar quién tiene acceso a la ejecución
+de playbooks y en qué hosts, compartir el uso de credenciales SSH sin permitir a los usuarios
+transferir o ver su contenido, registrar todos sus trabajos de Ansible y gestionar el inventario,
+entre muchas otras cosas. Proporciona una interfaz de usuario basada en un explorador (IU
+web) y una API RESTful. La comunidad upstream de Ansible no incluye automáticamente este
+componente con la distribución de Ansible comunitario, pero se desarrolla como código abierto, y
+se proporciona y se admite como parte del producto Red Hat Ansible Automation Platform.
+La manera de Ansible
+Los siguientes objetivos se usaron durante el diseño de Ansible.
+RH294-RHEL9.0-es-3-20240620
+5
+
+
+capítulo 1 |  Presentación de Ansible
+La complejidad mata la productividad
+Más sencillo es mejor. Ansible está diseñada de modo que sus herramientas sean simples de
+usar y la automatización sea simple de escribir y leer. Debería aprovechar esto para lograr la
+simplificación en el modo en que crea su automatización.
+Optimizar para brindar capacidad de lectura
+El lenguaje de automatización de Ansible se desarrolla alrededor de archivos de texto simples
+y declarativos que son fáciles para ser leídos por humanos. Al escribirse correctamente, los
+playbooks de Ansible pueden documentar claramente la automatización de su flujo de trabajo.
+Pensar de forma declarativa
+Ansible es un motor de estado deseado. Aborda el problema sobre el modo de automatizar
+las implementaciones de TI expresándolas en términos del estado que desea que tengan sus
+sistemas. El objetivo de Ansible es colocar sus sistemas en el estado deseado, haciendo solo los
+cambios que sean necesarios. Intentar tratar a Ansible como un lenguaje de creación de scripts no
+es el enfoque correcto.
+Casos de uso
+A diferencia de otras herramientas, Ansible combina la orquestación con la administración de la
+configuración, el aprovisionamiento y la implementación de aplicaciones en una plataforma fácil
+de usar.
+A continuación, se incluyen algunos casos prácticos para Ansible:
+Administración de configuraciones
+Centralizar la implementación y administración de archivos de configuración es un caso
+práctico común para Ansible, por lo que constituye el primer contacto de muchos usuarios
+avanzados con la plataforma de automatización de Ansible.
+Implementación de aplicaciones
+Al definir su aplicación con Ansible, y gestionar la implementación con el controlador de
+automatización, los equipos de desarrollo pueden gestionar con eficacia todo el ciclo de vida
+de la aplicación desde el desarrollo hasta la producción.
+Provisioning (Aprovisionamiento)
+Las aplicaciones deben implementarse o instalarse en los sistemas. Ansible y el controlador de
+automatización pueden ayudar a optimizar el proceso de los sistemas de aprovisionamiento,
+ya sea que esté arrancando servidores o máquinas virtuales sin sistema operativo (bare-
+metal) PXE, o que cree máquinas virtuales o instancias de nube a partir de plantillas.
+Entrega continua
+Crear un pipeline de CI/CD requiere la coordinación y la participación de numerosos equipos.
+No puede hacerlo sin una plataforma de automatización simple que pueden usar todos en
+su organización. Los playbooks de Ansible mantienen sus aplicaciones implementadas y
+administradas correctamente durante todo su ciclo de vida.
+Seguridad y conformidad
+Al definir su política de seguridad en los playbooks de Ansible, la detección y la corrección de
+posibles problemas de seguridad se pueden integrar en otros procesos automatizados. En
+lugar de ser algo secundario, es una parte integral de todo lo que se implementa.
+6
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Orquestación
+Las configuraciones en sí mismas no definen su entorno. Debe definir cómo interactúan
+los diferentes archivos de configuración y asegurarse de que las distintas piezas se puedan
+administrar como una sola.
+Referencias
+Ansible
+https://www.ansible.com
+Cómo funciona Ansible
+https://www.ansible.com/how-ansible-works
+Red Hat Ansible Automation Platform
+https://www.redhat.com/en/technologies/management/ansible
+Presentación de Ansible Automation Platform 2
+https://www.ansible.com/blog/introducing-ansible-automation-platform-2
+Announcing the Community Ansible 3.0.0 Package
+https://www.ansible.com/blog/announcing-the-community-ansible-3.0.0-package
+RH294-RHEL9.0-es-3-20240620
+7
+
+
+capítulo 1 |  Presentación de Ansible
+Cuestionario
+Automatización de la administración de
+Linux con Ansible
+Elija la respuesta correcta para las siguientes preguntas:
+ 1.
+¿Qué término describe mejor la arquitectura de Ansible?
+a. Sin agente
+b. Cliente/Servidor
+c. Basado en eventos
+d. Sin estado
+ 2. ¿Qué protocolo de red usa Ansible, de manera predeterminada, para comunicarse con
+nodos administrados?
+a. HTTP
+b. HTTPS
+c. SNMP
+d. SSH
+ 3. ¿Qué archivo define las acciones que realiza Ansible en nodos gestionados?
+a. Inventario de host
+b. Manifiesto
+c. Playbook
+d. Script
+ 4. ¿Qué sintaxis se usa para definir los playbooks de Ansible?
+a. Bash
+b. Perl
+c. Python
+d. YAML
+8
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Solución
+Automatización de la administración de
+Linux con Ansible
+Elija la respuesta correcta para las siguientes preguntas:
+ 1.
+¿Qué término describe mejor la arquitectura de Ansible?
+a. Sin agente
+b. Cliente/Servidor
+c. Basado en eventos
+d. Sin estado
+ 2. ¿Qué protocolo de red usa Ansible, de manera predeterminada, para comunicarse con
+nodos administrados?
+a. HTTP
+b. HTTPS
+c. SNMP
+d. SSH
+ 3. ¿Qué archivo define las acciones que realiza Ansible en nodos gestionados?
+a. Inventario de host
+b. Manifiesto
+c. Playbook
+d. Script
+ 4. ¿Qué sintaxis se usa para definir los playbooks de Ansible?
+a. Bash
+b. Perl
+c. Python
+d. YAML
+RH294-RHEL9.0-es-3-20240620
+9
+
+
+capítulo 1 |  Presentación de Ansible
+Instalación de Ansible
+Objetivos
+• Instalar Ansible en un nodo de control y describir la distinción entre Ansible comunitario y
+Red Hat Ansible Automation Platform.
+Ansible y Red Hat Ansible Automation Platform
+Puede obtener el software Ansible de diferentes formas, cada una con su propio nivel de soporte.
+• De la comunidad upstream
+• Como parte de Red Hat Enterprise Linux, con soporte limitado
+• Con el producto Red Hat Ansible Automation Platform con soporte completo
+Este curso se centra en el último de estos tres y usa las herramientas proporcionadas con Red Hat
+Ansible Automation Platform. Sin embargo, el lenguaje de Ansible y los conceptos básicos son los
+mismos sin importar cómo obtenga el software.
+Ansible comunitario
+La comunidad upstream de Ansible desarrolla Ansible y distribuye versiones de este de dos
+maneras.
+El primero de ellos es Ansible Core. Este es un componente minimalista que consta del tiempo de
+ejecución central (core) que puede interpretar el contenido de Ansible y un conjunto de módulos
+de Ansible de uso común (incluidos como Ansible Content Collections ansible.builtin). Este
+tiempo de ejecución está estructurado para que el nodo de control actúe como el entorno de
+ejecución para el código Ansible.
+El segundo es el Ansible comunitario. Esta es una distribución de Ansible Core más una selección
+de Ansible Content Collections seleccionadas por la comunidad de código abierto, agregando
+módulos y roles adicionales de Ansible.
+Ambos son proporcionados por los desarrolladores upstream como paquetes pip de Python;
+Red Hat no admite ninguna versión de la comunidad.
+Ansible Core en Red Hat Enterprise Linux
+Red Hat proporciona Ansible Core como un paquete RPM, ansible-core, incluido con Red Hat
+Enterprise Linux 9 en el repositorio de AppStream. Su objetivo es permitir el soporte para el
+código de automatización proporcionado o generado por Red Hat. Cuenta con soporte, pero el
+alcance de este se limita a cualquier playbook, rol o módulo de Ansible que se incluya o se genere
+con un producto de Red Hat, como los roles del sistema incluidos en el paquete rhel-system-
+roles, los playbooks de corrección de Red Hat Insights y los playbooks de Ansible que cumplen
+con OpenSCAP. Otros casos de uso, incluido el uso de otros módulos y complementos de Ansible
+incluidos con Ansible Core 2.13, están fuera del alcance del soporte.
+Para obtener más información, consulte el artículo de la base de conocimiento "Uso de Ansible en
+RHEL 9" [https://access.redhat.com/articles/6393321].
+10
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Red Hat Ansible Automation Platform
+Red Hat proporciona una versión totalmente compatible de Ansible a través de Red Hat Ansible
+Automation Platform. Ansible Automation Platform proporciona una versión soportada del
+conjunto de herramientas de Ansible Core, además de contenido, herramientas, componentes y
+servicios en la nube adicionales, certificados y soportados. Los clientes con una suscripción válida
+pueden usar su repositorio de RPM, instalar las herramientas adicionales y consumir contenido
+certificado de los servicios en la nube.
+Importante
+Este curso usa Red Hat Ansible Automation Platform 2.2, que incluye Ansible
+Core 2.13. Esta versión de Ansible Automation Platform es más o menos similar a la
+distribución comunitaria de Ansible 6, aunque Ansible Automation Platform incluye
+Ansible Content Collections diferentes y herramientas y componentes adicionales.
+El curso le enseña cómo escribir y ejecutar el código de automatización de Ansible,
+y las habilidades que aprenda aquí también lo ayudarán con el Ansible comunitario.
+La instalación de los componentes del servidor de Ansible Automation Platform,
+como el controlador de automatización y el centro de automatización, está fuera del
+alcance de este curso.
+Descripción general de Red Hat Ansible Automation
+Platform 2
+Red Hat Ansible Automation Platform 2 incluye una serie de componentes distintos que, en
+conjunto, proporcionan un conjunto completo e integrado de herramientas y recursos de
+automatización.
+Ansible Core
+Ansible Core proporciona la funcionalidad fundamental que se usa para ejecutar los playbooks
+de Ansible. Define el lenguaje de automatización que se usa para escribir playbooks de Ansible
+en archivos de texto YAML. Proporciona las funciones clave, como bucles, condicionales y otros
+imperativos de Ansible necesarios para el código de automatización. También proporciona
+el marco (framework) y las herramientas básicas de la línea de comandos para impulsar la
+automatización.
+Red Hat Ansible Automation Platform 2.2 proporciona Ansible Core 2.13 en el paquete RPM
+ansible-core y en sus entornos de ejecución de automatización ee-minimal-rhel8 y ee-
+supported-rhel8.
+Ansible Content Collections
+Históricamente, Ansible proporcionaba una gran cantidad de módulos como parte del paquete
+central (core); un enfoque conocido en la comunidad de Ansible como "baterías incluidas". Sin
+embargo, con el éxito y el rápido crecimiento de Ansible, la cantidad de módulos incluidos con
+Ansible creció exponencialmente. Esto generó ciertos desafíos con el soporte, especialmente
+porque los usuarios a veces querían usar versiones anteriores o posteriores de los módulos que
+estaban empaquetados con una versión particular de Ansible.
+Los desarrolladores upstream decidieron reorganizar la mayoría de los módulos en Ansible
+Content Collections independientes compuestas por módulos, roles y complementos (plug-ins)
+relacionados que son soportados por el mismo grupo de desarrolladores. Ansible Core en sí está
+RH294-RHEL9.0-es-3-20240620
+11
+
+
+capítulo 1 |  Presentación de Ansible
+limitado a un pequeño conjunto de módulos proporcionados por Ansible Content Collections
+ansible.builtin, que siempre forma parte de Ansible Core.
+Red Hat proporciona acceso a más de 120 colecciones certificadas de contenido con una
+suscripción a Red Hat Ansible Automation Platform 2. Muchas colecciones respaldadas por la
+comunidad también están disponibles en Ansible Galaxy.
+Navegador de contenido de automatización
+Red Hat Ansible Automation Platform 2 proporciona una nueva herramienta de alto nivel para
+desarrollar y probar los playbooks de Ansible, el navegador de contenido de automatización
+(ansible-navigator). Esta herramienta reemplaza y amplía la funcionalidad de varias
+utilidades de Ansible de la línea de comandos, incluidas ansible-playbook, ansible-
+inventory, ansible-config, etc.
+Además, separa el nodo de control en el que ejecuta Ansible del entorno de ejecución de
+automatización que lo ejecuta, ejecutando sus playbooks en un contenedor. Esto hace que sea
+más sencillo proporcionar un entorno de trabajo completo para su código de automatización para
+la implementación en producción.
+Entornos de ejecución de automatización
+Un entorno de ejecución de automatización es una imagen de contenedor que contiene Ansible
+Core, Ansible Content Collections y cualquier librería de Python, ejecutable u otras dependencias
+necesarias para ejecutar su playbook.
+Cuando ejecuta un playbook con ansible-navigator, puede seleccionar un entorno de
+ejecución de automatización para que lo use para ejecutar ese playbook. Cuando su código está
+funcionando, puede proporcionar el playbook y el entorno de ejecución de la automatización al
+controlador de automatización y saber que tiene todo lo necesario para ejecutar correctamente su
+playbook.
+Figura 1.2: Experiencia del usuario: adaptación de los entornos de ejecución a sus necesidades
+Controlador de automatización
+El controlador de automatización, anteriormente denominado Red Hat Ansible Tower, es el
+componente de Red Hat Ansible Automation Platform que proporciona un punto central de
+control para ejecutar el código de automatización de su empresa. Proporciona una interfaz de
+usuario web y una API REST que se pueden usar para configurar, ejecutar y evaluar sus trabajos de
+automatización.
+12
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Automation Hub
+Un servicio público en console.redhat.com brinda acceso a Ansible Content Collections
+certificadas por Red Hat que puede descargar y usar con ansible-galaxy (para ansible-
+navigator) y con el controlador de automatización.
+Preparación de un nodo de control
+Para ejecutar los playbooks de Ansible, instale el navegador de contenido de automatización
+(ansible-navigator) en su nodo de control y descargue un entorno de ejecución. Los hosts
+gestionados por Ansible no necesitan tener instalado ansible-navigator; solo necesita
+instalar esa herramienta en el nodo de control desde el cual ejecuta los playbooks de Ansible.
+Es necesario instalar Python 3.8 o posterior en el nodo de control antes de instalar el paquete
+ansible-core.
+Necesita una suscripción válida a Red Hat Ansible Automation Platform para instalar el navegador
+de contenido de automatización en su nodo de control.
+Si ha activado el acceso a contenido simple para su organización en el Portal de clientes de
+Red Hat, no es necesario que adjunte la suscripción a su sistema.
+El proceso de instalación es el siguiente:
+nota
+No necesita realizar estos pasos exactos en el entorno de su aula porque está
+preconfigurado para descargar el entorno de ejecución ee-supported-rhel8.
+• Instale el navegador de contenido de automatización en sus nodos de control.
+[user@controlnode ~]$ sudo dnf install ansible-navigator
+• Verifique que el navegador de contenido de automatización esté instalado en el sistema.
+[user@controlnode ~]$ ansible-navigator --version
+ansible-navigator 2.1.0
+• Inicie sesión en el registro de contenedores.
+[user@controlnode ~]$ podman login registry.redhat.io
+Username: your-registry-username
+Password: your-registry-password
+Login Succeeded!
+• Descargue la imagen del contenedor para el entorno de ejecución que planea usar con el
+navegador de contenido de automatización. (El navegador de contenido de automatización
+también puede descargar automáticamente el entorno de ejecución predeterminado cuando
+ejecuta el comando ansible-navigator).
+[user@controlnode ~]$ podman pull \
+> registry.redhat.io/ansible-automation-platform-22/ee-supported-rhel8:latest
+RH294-RHEL9.0-es-3-20240620
+13
+
+
+capítulo 1 |  Presentación de Ansible
+• Muestre la lista de imágenes de contenedor disponibles localmente para verificar que la imagen
+se descargó.
+[user@controlnode ~]$ ansible-navigator images
+  Image                    Tag      Execution environment         Created        
+ Size
+0│ee-supported-rhel8       latest   True                          5 weeks ago    
+ 1.32 GB
+nota
+Si necesita acceso al comando ansible-playbook, que usa su nodo de
+control como entorno de ejecución (y no usa entornos de ejecución basados en
+contenedores), también puede instalar el paquete ansible-core:
+[user@controlnode ~]$ sudo dnf install ansible-core
+Sin embargo, ansible-navigator generalmente proporciona una mejor
+experiencia de desarrollo y le facilita el desarrollo de los playbooks de Ansible
+que luego puede migrar al controlador de automatización para que lo usen otros
+miembros de su organización.
+Preparación de hosts gestionados
+Uno de los beneficios de Ansible es que los hosts gestionados no necesitan tener un agente
+especial instalado. El nodo de control de Ansible se conecta con los hosts gestionados mediante
+un protocolo de red estándar para garantizar que los sistemas tengan el estado especificado.
+Los hosts gestionados pueden tener algunos requisitos según el modo en que el nodo de control
+se conecte con ellos y los módulos que se ejecuten en ellos.
+• Los hosts gestionados Linux y UNIX deben tener instalado Python para que funcione la mayoría
+de los módulos. La versión de Python que se debe usar depende de la versión del paquete
+ansible-core. Consulte Support Matrix [https://docs.ansible.com/ansible/
+latest/reference_appendices/release_and_maintenance.html#ansible-core-
+support-matrix] para obtener información sobre los requisitos de la versión de Python para
+los nodos de control y los hosts gestionados.
+• Si SELinux está habilitado en los hosts gestionados, asegúrese de que el paquete python3-
+libselinux esté instalado antes de usar módulos que se relacionen con las funciones de
+copia, archivo o plantilla. Si se instalan otros componentes de Python, puede usar módulos de
+Ansible, como ansible.builtin.dnf o ansible.builtin.package, para garantizar que
+este paquete también esté instalado.
+• Ansible debe poder conectarse a la máquina mediante SSH, y si se conecta como un usuario
+regular, debe poder usar un mecanismo como sudo para obtener acceso de superusuario.
+nota
+Algunos módulos pueden tener sus propios requisitos adicionales. Por ejemplo,
+el módulo ansible.builtin.dnf, que puede usarse para instalar paquetes en
+sistemas Fedora actuales, requiere el paquete python3-dnf.
+14
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Hosts administrados de Microsoft Windows
+Ansible Content Collection ansible.windows, que forma parte del entorno de ejecución de
+automatización predeterminado, incluye varios módulos que están diseñados específicamente
+para hosts gestionados de Microsoft Windows.
+La mayoría de los módulos específicamente diseñados para hosts gestionados de Microsoft
+Windows requiere PowerShell 3.0 o posterior en el host gestionado en lugar de Python. Además,
+los hosts gestionados deben tener configurada la conexión remota de Windows PowerShell.
+Ansible también requiere que .NET Framework 4.0 o posterior esté instalado en hosts gestionados
+de Microsoft Windows.
+Este curso usa hosts gestionados basados en Linux en sus ejemplos y no profundiza sobre las
+diferencias y los ajustes específicos necesarios cuando se gestionan hosts gestionados de
+Microsoft Windows.
+Puede encontrar más información sobre la administración de hosts gestionados de Microsoft
+Windows está disponible en el sitio web de Ansible en https://docs.ansible.com/ansible/latest/
+user_guide/windows.html o en el curso de capacitación de Red Hat Microsoft Windows Automation
+with Red Hat Ansible Automation Platform (DO417).
+Dispositivos de red administrados
+También puede usar la automatización de Ansible para configurar dispositivos de red
+administrados, como enrutadores y switches. Ansible incluye muchos módulos diseñados
+específicamente para este propósito. Esto incluye soporte para Cisco IOS, IOS XR y NX-OS;
+Juniper Junos; Arista EOS; y dispositivos de red basados en VyOS, entre otros.
+Puede escribir playbooks de Ansible para dispositivos de red usando las mismas técnicas básicas
+que usa al escribir playbooks para servidores. Como la mayoría de los dispositivos de red no
+pueden ejecutar Python, Ansible ejecuta módulos de red en el nodo de control, no en los hosts
+gestionados. Los métodos de conexión especiales también se usan para comunicarse con
+dispositivos de red, generalmente usando CLI sobre SSH, XML sobre SSH o API sobre HTTP(S).
+Este curso no profundiza sobre la automatización de la administración de dispositivos de red. Para
+obtener más información sobre este tema, consulte  Ansible for Network Automation  [https://
+docs.ansible.com/ansible/latest/network/index.html] en el sitio web de la comunidad de Ansible
+o el curso de capacitación de Red Hat Network Automation with Red Hat Ansible Automation
+Platform (DO457).
+Referencias
+Simple Content Access
+https://access.redhat.com/articles/simple-content-access
+Red Hat Ansible Automation Platform Installation Guide Red Hat Ansible
+Automation Platform 2.2 | Red Hat Customer Portal
+https://access.redhat.com/documentation/en-us/
+red_hat_ansible_automation_platform/2.2/html/
+red_hat_ansible_automation_platform_installation_guide/
+Windows Guides — Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/windows.html
+Ansible for Network Automation — Ansible Documentation
+https://docs.ansible.com/ansible/latest/network/index.html
+RH294-RHEL9.0-es-3-20240620
+15
+
+
+capítulo 1 |  Presentación de Ansible
+16
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Ejercicio Guiado
+Instalación de Ansible
+Instalar el navegador de contenido de automatización en un nodo de control que ejecuta
+Red Hat Enterprise Linux.
+Resultados
+• Instale el navegador de contenido de automatización en un nodo de control.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start intro-install
+Instrucciones
+ 1.
+En la máquina workstation, instale el paquete RPM ansible-navigator que
+proporciona un navegador de contenido de automatización para que pueda usar esa
+máquina como su nodo de control.
+[student@workstation ~]$ sudo dnf install ansible-navigator
+[sudo] password for student: student
+Last metadata expiration check: 0:12:47 ago on Fri 29 Jul 2022 11:10:54 AM EDT.
+Dependencies resolved.
+...output omitted...
+Is this ok [y/d/N]: y
+...output omitted...
+nota
+Este entorno de laboratorio ya está configurado con el repositorio de paquetes
+RPM remoto necesario para instalar ansible-navigator. En una configuración
+de producción, necesitaría usar subscription-manager para registrar su
+sistema con Red Hat Subscription Management y habilitar el repositorio ansible-
+automation-platform-2.2-for-rhel-9-x86_64-rpms primero.
+ 2.
+Verifique que el navegador de contenido de automatización esté instalado en el sistema.
+Ejecute el comando ansible-navigator con la opción --version.
+[student@workstation ~]$ ansible-navigator --version
+ansible-navigator 2.1.0
+RH294-RHEL9.0-es-3-20240620
+17
+
+
+capítulo 1 |  Presentación de Ansible
+ 3.
+Inicie sesión en el registro de contenedores. Use el comando podman login para iniciar
+sesión en el registro del centro de automatización en utility.lab.example.com. Use
+el nombre de usuario admin y la contraseña redhat.
+[student@workstation ~]$ podman login utility.lab.example.com
+Username: admin
+Password: redhat
+Login Succeeded!
+ 4.
+Descargue la imagen del contenedor del entorno de ejecución. Ejecute el comando
+ansible-navigator images para que el navegador de contenido de automatización
+descargue la imagen del entorno de ejecución y muestre una lista de las imágenes
+disponibles.
+[student@workstation ~]$ ansible-navigator images
+...output omitted...
+Running the command: podman pull utility.lab.example.com/ee-supported-rhel8:latest
+...output omitted...
+Después de descargar la imagen ee-supported-rhel8:latest, ansible-navigator
+muestra la lista de imágenes en modo interactivo:
+  Image                 Tag     Execution environment    Created      Size
+0│ee-supported-rhel8    latest  True                     5 weeks ago  1.32 GB
+^b/PgUp page up ^f/PgDn page down ↑↓ scroll esc back [0-9] goto :help help
+Presione Esc para salir de la lista de imágenes.
+Finalizar
+En la máquina workstation, ejecute el script lab finish intro-install para limpiar este
+ejercicio.
+[student@workstation ~]$ lab finish intro-install
+18
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Resumen
+• La automatización lo ayuda a mitigar los errores humanos y garantizar que su infraestructura de
+TI se encuentre en un estado correcto y coherente.
+• Ansible es una plataforma de automatización de código abierto que puede adaptarse a muchos
+flujos de trabajo y entornos.
+• Red Hat Ansible Automation Platform es una versión totalmente compatible de Ansible
+que también incluye una serie de componentes y herramientas adicionales para ayudarlo a
+desarrollar, implementar y gestionar su código de automatización.
+• Ansible puede usarse para gestionar muchos tipos de sistemas diferentes, incluidos los
+servidores que ejecutan Linux, Microsoft Windows y dispositivos de red.
+• Los playbooks de Ansible son archivos de texto legibles por humanos que describen el estado
+deseado de una infraestructura de TI.
+• Ansible se conecta con hosts gestionados con protocolos de red estándar, como SSH, y
+ejecuta códigos o comandos en los hosts gestionados para garantizar que tengan el estado
+especificado.
+• Ansible se basa en una arquitectura sin agentes en la que el software Ansible solo se instala en
+un nodo de control y en entornos de ejecución de automatización.
+• El navegador de contenido de automatización (ansible-navigator) es una herramienta
+clave que lo ayuda a desarrollar y ejecutar su código de automatización de Ansible.
+RH294-RHEL9.0-es-3-20240620
+19
+
+
+20
+RH294-RHEL9.0-es-3-20240620
+
+

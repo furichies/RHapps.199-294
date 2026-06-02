@@ -1,0 +1,494 @@
+# Gestión de datos
+# Tipo: theory
+# Capítulo: Capítulo 3. Administración de variables y datos
+
+capítulo 3 |  Administración de variables y datos
+Gestión de datos
+Objetivos
+• Hacer referencia a los datos sobre hosts gestionados que usan datos de Ansible y configurar
+datos personalizados en hosts gestionados.
+Descripción de Datos de Ansible
+Los datos de Ansible son variables detectadas automáticamente por Ansible en un host
+gestionado. Los datos contienen información específica del host que puede usarse como variables
+regulares en plays, condicionales, bucles o cualquier otra declaración que dependa de un valor
+recopilado de un host gestionado.
+Algunos datos recopilados para un host gestionado pueden incluir los siguientes:
+• El nombre del host
+• La versión del kernel
+• Nombres de interfaz de red
+• Direcciones IP de la interfaz de red
+• Versiones del sistema operativo
+• La cantidad de CPU
+• Memoria disponible o libre
+• Tamaño y espacio libre de los dispositivos de almacenamiento
+Incluso puede crear datos personalizados, que se almacenan en el host gestionado y son
+exclusivos de ese sistema.
+Los datos son una forma conveniente de recuperar el estado de un host gestionado y de
+determinar qué acción tomar en función de ese estado. Por ejemplo:
+• Su play puede reiniciar un servidor mediante el uso de una tarea condicional basada en el valor
+de un dato que se recopiló, como el estado de un servicio en particular.
+• El play puede personalizar un archivo de configuración MySQL según la memoria disponible
+informada por un dato.
+• La dirección IPv4 usada en un archivo de configuración podría configurarse sobre la base del
+valor de un dato.
+En general, cada play ejecuta el módulo ansible.builtin.setup de forma automática para
+recopilar datos antes de la primera tarea.
+Esto se informa como la tarea Gathering Facts en Ansible 2.3 y versiones posteriores o
+simplemente como setup en versiones anteriores de Ansible. De forma predeterminada, no es
+necesario tener una tarea para ejecutar ansible.builtin.setup en su play. En general, se
+ejecuta automáticamente para usted.
+Una forma de ver qué datos se recopilan para sus hosts gestionados es ejecutar un playbook
+corto que recopile datos y use el módulo ansible.builtin.debug para imprimir el valor de la
+variable ansible_facts.
+108
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+- name: Fact dump
+  hosts: all
+  tasks:
+    - name: Print all facts
+      ansible.builtin.debug:
+        var: ansible_facts
+Cuando ejecuta el playbook, los datos se muestran en la salida del trabajo:
+[user@demo ~]$ ansible-navigator run -m stdout facts.yml
+PLAY [Fact dump] ***************************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [demo1.example.com]
+TASK [Print all facts] *********************************************************
+ok: [demo1.example.com] => {
+    "ansible_facts": {
+        "all_ipv4_addresses": [
+            "10.30.0.178",
+            "172.25.250.10"
+        ],
+        "all_ipv6_addresses": [
+            "fe80::8389:96fd:e53e:979",
+            "fe80::cb51:6814:6342:7bbc"
+        ],
+        "ansible_local": {}
+            }
+        },
+        "apparmor": {
+            "status": "disabled"
+        },
+        "architecture": "x86_64",
+        "bios_date": "04/01/2014",
+        "bios_vendor": "SeaBIOS",
+        "bios_version": "1.13.0-2.module+el8.2.1+7284+aa32a2c4",
+        "board_asset_tag": "NA",
+        "board_name": "NA",
+        "board_serial": "NA",
+        "board_vendor": "NA",
+        "board_version": "NA",
+        "chassis_asset_tag": "NA",
+        "chassis_serial": "NA",
+        "chassis_vendor": "Red Hat",
+        "chassis_version": "RHEL 7.6.0 PC (i440FX + PIIX, 1996)",
+        "cmdline": {
+            "BOOT_IMAGE": "(hd0,gpt3)/vmlinuz-5.14.0-70.13.1.el9_0.x86_64",
+            "console": "ttyS0,115200n8",
+            "crashkernel": "1G-4G:192M,4G-64G:256M,64G-:512M",
+            "net.ifnames": "0",
+            "no_timer_check": true,
+RH294-RHEL9.0-es-3-20240620
+109
+
+
+capítulo 3 |  Administración de variables y datos
+            "root": "UUID=fb535add-9799-4a27-b8bc-e8259f39a767"
+        },
+...output omitted...
+El playbook muestra el contenido de la variable ansible_facts en formato JSON como un
+diccionario de variables. Puede explorar la salida para ver los datos recopilados y para buscar
+datos que pueda querer usar en sus plays.
+En la siguiente tabla se muestran algunos de los datos que podrían recopilarse de un nodo
+administrado, los cuales pueden ser útiles en un playbook:
+Ejemplos de datos de Ansible
+Dato
+Variable
+Nombre de host corto
+ansible_facts['hostname']
+Nombre de dominio
+completamente calificado
+ansible_facts['fqdn']
+Dirección IPv4 principal
+(basada en enrutamiento)
+ansible_facts['default_ipv4']['address']
+Lista de los nombres de todas
+las interfaces de red
+ansible_facts['interfaces']
+Tamaño de la partición de
+disco /dev/vda1
+ansible_facts['devices']['vda']['partitions']
+['vda1']['size']
+Lista de servidores DNS
+ansible_facts['dns']['nameservers']
+Versión del kernel
+actualmente en ejecución
+ansible_facts['kernel']
+nota
+Recuerde que cuando el valor de una variable es un diccionario, hay dos sintaxis que
+pueden usarse para recuperar el valor. Para tomar dos ejemplos de la tabla anterior:
+• ansible_facts['default_ipv4']['address'] también se puede escribir
+ansible_facts.default_ipv4.address
+• ansible_facts['dns']['nameservers'] también se puede escribir
+ansible_facts.dns.nameservers
+Cuando un dato se usa en un playbook, Ansible sustituye de manera dinámica el nombre de la
+variable para el dato con el valor correspondiente:
+110
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+---
+- hosts: all
+  tasks:
+  - name: Prints various Ansible facts
+    ansible.builtin.debug:
+      msg: >
+        The default IPv4 address of {{ ansible_facts.fqdn }}
+        is {{ ansible_facts.default_ipv4.address }}
+En la siguiente salida, se muestra cómo Ansible consiguió consultar el nodo gestionado y usar de
+manera dinámica la información del sistema para actualizar la variable. También puede usar datos
+para crear grupos de hosts dinámicos que combinen criterios en particular.
+[user@demo ~]$ ansible-navigator run -m stdout playbook.yml
+PLAY [all] ***********************************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [demo1.example.com]
+TASK [Prints various Ansible facts] ****************************************
+ok: [demo1.example.com] => {
+    "msg": "The default IPv4 address of demo1.example.com is 172.25.250.10\n"
+}
+PLAY RECAP *****************************************************************
+demo1.example.com    : ok=2    changed=0    unreachable=0    failed=0    skipped=0
+    rescued=0    ignored=0
+Datos de Ansible inyectados como variables
+Antes de Ansible 2.5, los datos siempre se insertaban como variables individuales prefijadas con
+la cadena ansible_ en lugar de ser parte de la variable ansible_facts. Por ejemplo, el dato
+ansible_facts['distribution'] fue denominado ansible_distribution.
+Muchos playbooks aún usan datos inyectados como variables en lugar de la nueva sintaxis, que
+usa el espacio de nombre ansible_facts.*.
+Una de las razones por las que la comunidad de Ansible desalienta la introducción de datos como
+variables es porque se corre el riesgo de colisiones inesperadas entre datos y variables. Un dato
+tiene una prioridad muy alta que anula el playbook y las variables de host y grupo de inventario,
+por lo que esto puede provocar efectos secundarios inesperados.
+La siguiente tabla muestra algunos ejemplos de datos con los nombres ansible_* y
+ansible_facts.*.
+Comparación de los nombres de datos de Ansible seleccionados
+ansible_facts.* name
+ansible_* name
+ansible_facts['hostname']
+ansible_hostname
+ansible_facts['fqdn']
+ansible_fqdn
+RH294-RHEL9.0-es-3-20240620
+111
+
+
+capítulo 3 |  Administración de variables y datos
+ansible_facts.* name
+ansible_* name
+ansible_facts['default_ipv4']
+['address']
+ansible_default_ipv4['address']
+ansible_facts['interfaces']
+ansible_interfaces
+ansible_facts['devices']['vda']
+['partitions']['vda1']['size']
+ansible_devices['vda']
+['partitions']['vda1']['size']
+ansible_facts['dns']
+['nameservers']
+ansible_dns['nameservers']
+ansible_facts['kernel']
+ansible_kernel
+Importante
+Actualmente, Ansible reconoce tanto el nuevo sistema de denominación de
+datos (usando ansible_facts) como el antiguo sistema de nombres de "datos
+inyectados como variables separadas", anterior a la versión 2.5.
+Puede deshabilitar el sistema de nombres ansible_ configurando el parámetro
+inject_facts_as_vars en la sección [defaults] del archivo de configuración
+Ansible en false. La configuración predeterminada actualmente es true.
+Si se establece en false, solo puede hacer referencia a datos de Ansible usando
+el nuevo sistema de nombres ansible_facts.*. En ese caso, los intentos de
+hacer referencia a los datos a través del espacio de nombres ansible_* generan
+un error.
+Desactivación de la recopilación de datos
+Algunas veces, no deseará recopilar datos para su play. Esto puede deberse a varias razones:
+• Es posible que no esté usando los datos y desee acelerar el play o reducir la carga provocada
+por el play en los hosts gestionados.
+• Es posible que los hosts gestionados no puedan ejecutar el módulo ansible.builtin.setup
+por algún motivo o deba instalar algún software de requisito previo antes de recopilar datos.
+Para deshabilitar la recopilación de datos para un play, establezca la palabra clave gather_facts
+en false:
+---
+- name: This play does not automatically gather any facts
+  hosts: large_datacenter
+  gather_facts: false
+Aun si se establece gather_facts: false para un play, puede recopilar datos de forma
+manual en cualquier momento mediante la ejecución de una tarea que use el módulo
+ansible.builtin.setup:
+112
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+  tasks:
+    - name: Manually gather facts
+      ansible.builtin.setup:
+Recopilación de un subconjunto de datos
+Todos los datos se recopilan de forma predeterminada. Puede configurar el módulo
+ansible.builtin.setup para recopilar solo un subconjunto de datos, en lugar de todos
+los datos. Por ejemplo, para recopilar solo datos de hardware, establezca gather_subset en
+hardware:
+- name: Collect only hardware facts
+  ansible.builtin.setup:
+    gather_subset:
+      - hardware
+Si desea recopilar todos los datos, excepto un subconjunto determinado, agregue un signo de
+exclamación (!) delante del nombre del subconjunto. Agregue comillas alrededor de la cadena
+porque en YAML el signo de exclamación no puede usarse al comienzo de una cadena sin comillas.
+- name: Collect all facts except for hardware facts
+  ansible.builtin.setup:
+    gather_subset:
+      - "!hardware"
+Visite https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+setup_module.html#parameter-gather_subset para ver los posibles valores del parámetro
+gather_subset.
+Creación de datos personalizados
+Puede usar datos personalizados para definir ciertos valores para hosts gestionados. Los plays
+pueden usar datos personalizados para completar archivos de configuración o ejecutar tareas de
+forma condicional.
+Los datos personalizados se almacenen localmente en cada host gestionado. Estos datos están
+integrados en la lista de datos estándares recopilados por el módulo ansible.builtin.setup
+cuando se ejecuta en el host gestionado.
+Puede definir datos personalizados estáticamente en un archivo INI o JSON, o puede generarlos
+dinámicamente cuando ejecuta un play. Los datos personalizados dinámicos se recopilan a través
+de scripts ejecutables, que generan una salida JSON.
+De forma predeterminada, el módulo ansible.builtin.setup carga datos personalizados
+de archivos y scripts en el directorio etc/ansible/facts.d de cada host gestionado. El
+nombre de cada archivo o script debe finalizar en .fact para poder usarse. Los scripts de datos
+personalizados dinámicos deben mostrar datos con formato JSON y deben ser ejecutables.
+El siguiente ejemplo de un archivo de datos personalizados estáticos está escrito en formato INI.
+Un archivo de datos personalizados con formato INI contiene un nivel superior definido por una
+sección, seguido por los pares de clave-valor de los datos que se definirán:
+RH294-RHEL9.0-es-3-20240620
+113
+
+
+capítulo 3 |  Administración de variables y datos
+[packages]
+web_package = httpd
+db_package = mariadb-server
+[users]
+user1 = joe
+user2 = jane
+Puede proporcionar los mismos datos en formato JSON. Los siguientes datos JSON son
+equivalentes a los datos especificados por el formato INI en el ejemplo anterior. Los datos JSON
+podrían almacenarse en un archivo de texto estático o imprimirse en una salida estándar mediante
+un script ejecutable:
+{
+  "packages": {
+    "web_package": "httpd",
+    "db_package": "mariadb-server"
+  },
+  "users": {
+    "user1": "joe",
+    "user2": "jane"
+  }
+}
+nota
+Los archivos de datos personalizados no pueden tener formato YAML como un
+playbook. El formato JSON es el equivalente más cercano.
+El módulo ansible.builtin.setup almacena los datos personalizados en la variable
+ansible_facts['ansible_local']. Los datos se organizan sobre la base del nombre del
+archivo que los definió. Por ejemplo, supongamos que el archivo /etc/ansible/facts.d/
+custom.fact en el host gestionado produce los datos personalizados anteriores. En ese caso, el
+valor de ansible_facts['ansible_local']['custom']['users']['user1'] es joe.
+Puede inspeccionar la estructura de sus datos personalizados mediante la recopilación de
+datos y el uso del módulo ansible.builtin.debug para mostrar el contenido de la variable
+ansible_local con un play similar al siguiente ejemplo:
+- name: Custom fact testing
+  hosts: demo1.example.com
+  gather_facts: true
+  tasks:
+    - name: Display all facts in ansible_local
+      ansible.builtin.debug:
+        var: ansible_local
+Cuando ejecuta el play, es posible que vea una salida similar al siguiente ejemplo:
+114
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+...output omitted...
+TASK [Display all facts in ansible_local] *********************************
+ok: [demo1.example.com] => {
+    "ansible_local": {
+        "custom": {
+            "packages": {
+                "db_package": "mariadb-server",
+                "web_package": "httpd"
+            },
+            "users": {
+                "user1": "joe",
+                "user2": "jane"
+            }
+        }
+    }
+}
+...output omitted...
+Puede usar datos personalizados de la misma manera que los datos predeterminados en los
+playbooks:
+[user@demo ~]$ cat playbook.yml
+---
+- hosts: all
+  tasks:
+  - name: Prints various Ansible facts
+    ansible.builtin.debug:
+      msg: >
+           The package to install on {{ ansible_facts['fqdn'] }}
+           is {{ ansible_facts['ansible_local']['custom']['packages']
+['web_package'] }}
+[user@demo ~]$ ansible-navigator run -m stdout playbook.yml
+PLAY [all] ***********************************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [demo1.example.com]
+TASK [Prints various Ansible facts] ****************************************
+ok: [demo1.example.com] => {
+    "msg": "The package to install on demo1.example.com is httpd"
+}
+PLAY RECAP *****************************************************************
+demo1.example.com    : ok=2    changed=0    unreachable=0    failed=0    skipped=0
+    rescued=0    ignored=0
+Creación de variables a partir de otras variables
+A veces, se recomienda crear una nueva variable que use el valor de una variable diferente. Una
+razón para crear una nueva variable es minimizar la escritura.
+RH294-RHEL9.0-es-3-20240620
+115
+
+
+capítulo 3 |  Administración de variables y datos
+El ejemplo anterior creó datos personalizados en hosts gestionados. En ese ejemplo, puede usar
+la variable ansible_facts['ansible_local']['custom'] para hacer referencia a esos
+datos personalizados. Esa variable tiene las claves packages y users. Si su play contiene varias
+referencias a esos datos personalizados, puede beneficiarse de la creación de una nueva variable.
+Puede usar el módulo ansible.builtin.set_fact para crear una nueva variable
+asociada al host actual. Por ejemplo, puede definir la variable custom_host y usar la variable
+ansible_facts['ansible_local']['custom'] como su valor.
+- name: Set custom_host
+  ansible.builtin.set_fact:
+    custom_host: "{{ ansible_facts['ansible_local']['custom'] }}"
+Al definir esta nueva variable, su play puede usar las variables más cortas
+custom_host['packages'] y custom_host['users'] en lugar de las variables
+más largas ansible_facts['ansible_local']['custom']['packages'] y
+ansible_facts['ansible_local']['custom']['users'].
+También puede usar el módulo ansible.builtin.set_fact para minimizar la escritura de
+datos regulares del sistema o variables registradas. Por ejemplo:
+- name: Set vda_parts
+  ansible.builtin.set_fact:
+    vda_parts: "{{ ansible_facts['devices']['vda']['partitions'] }}"
+Después de agregar esta tarea, su play puede usar la variable vda_parts['vda1']['size']
+en lugar de la variable ansible_facts['devices']['vda']['partitions']['vda1']
+['size'] más larga.
+Uso de variables mágicas
+Ansible establece algunas variables especiales automáticamente.
+Estas variables mágicas pueden ser útiles para obtener información específica de un host
+gestionado particular.
+Los nombres de las variables mágicas están reservados, por lo que no debe definir variables con
+estos nombres.
+Cuatro de las variables mágicas más útiles son:
+hostvars
+Contiene las variables para hosts gestionados y puede usarse para obtener los valores para
+las variables de otro host gestionado. No incluye los datos del host gestionado si no se
+recopilaron aún para ese host.
+group_names
+Enumera todos los grupos en los que se encuentra el host gestionado actual.
+groups
+Enumera todos los grupos y hosts en el inventario.
+inventory_hostname
+Contiene el nombre de host para el host gestionado actual, según se configuró en el
+inventario. Este podría ser diferente del nombre de host informado por los datos por diversos
+motivos.
+116
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Una manera de obtener información sobre sus valores es usar el módulo
+ansible.builtin.debug para mostrar el contenido de estas variables.
+Por ejemplo, la siguiente tarea hace que cada host que ejecuta el play imprima una lista de todas
+las interfaces de red en el host demo2.example.com. Esta tarea funciona siempre que los datos
+se hayan recopilado para demo2 anteriormente en el play o por un play anterior en el playbook.
+Usa la variable mágica hostvars para acceder al dato ansible_facts['interfaces'] para
+ese host.
+    - name: Print list of network interfaces for demo2
+      ansible.builtin.debug:
+        var: hostvars['demo2.example.com']['ansible_facts']['interfaces']
+Puede usar el mismo enfoque con variables regulares, no solo con datos. Tenga en cuenta que la
+tarea anterior la ejecutan todos los hosts del play, por lo que sería más eficiente usar un módulo
+diferente para aplicar la información recopilada de un host a la configuración de cada uno de esos
+otros hosts gestionados.
+Recuerde que puede usar el módulo ansible.builtin.setup en una tarea para actualizar
+los datos recopilados en cualquier momento. Sin embargo, la recopilación de datos hace que su
+playbook tarde más en ejecutarse.
+También se encuentran disponibles otras variables mágicas. Para obtener más información,
+consulte https://docs.ansible.com/ansible/latest/reference_appendices/
+special_variables.html.
+Referencias
+Ansible facts - Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_vars_facts.html#ansible-facts
+ansible.builtin.setup module - Gathers facts about remote hosts - Ansible
+Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+setup_module.html
+Special Variables - Ansible Documentation
+https://docs.ansible.com/ansible/latest/reference_appendices/
+special_variables.html
+RH294-RHEL9.0-es-3-20240620
+117
+
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de datos
+Recopilar datos Ansible de un host gestionado y usarlos en los plays.
+Resultados
+Usted deberá ser capaz de realizar lo siguiente:
+• Reunir datos de un host.
+• Crear tareas que usen los datos recogidos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-facts
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-facts.
+[student@workstation ~]$ cd ~/data-facts
+[student@workstation data-facts]$
+ 2.
+Use el módulo ansible.builtin.debug para ver datos. Cree un playbook denominado
+display_facts.yml que contenga un play que muestre datos para el host webserver.
+---
+- name: Display ansible_facts
+  hosts: webserver
+  tasks:
+    - name: Display facts
+      ansible.builtin.debug:
+        var: ansible_facts
+Use el comando ansible-navigator para ejecutar el playbook display_facts.yml.
+Revise la salida y observe los valores de algunas variables que muestra.
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout display_facts.yml
+...output omitted...
+        "system": "Linux",
+        "system_capabilities": [],
+118
+RH294-RHEL9.0-es-3-20240620
+
+

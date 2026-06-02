@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.10. Resumen 14.10. Resumen En esta lección, aprendió sobre SELinux y cómo puede mejorar la seguridad de un sistema Linux. SELinux tiene tres modos: obligatorio, permisivo y deshabilitado, y puede alternar entre ellos para afectar el comportamiento de SELinux. Las políticas de SELinux definen las reglas para el control de acceso obligatorio en un sistema. Los contextos SELinux imponen políticas de seguridad. El comando chcon cambia el contexto de archivos y directorios independientemente de la política de SELinux. El comando semanage fcontext administra la política para modificar los contextos de archivos SELinux, y el comando restaurarcon aplica estos contextos a archivos y directorios. Los booleanos de SELinux habilitan o deshabilitan la configuración opcional de la política de SELinux para ajustar selectivamente el comportamiento de una aplicación. El comando getsebool ve los booleanos de SELinux y su estado actual, y el comando setsebool los habilita o deshabilita, ya sea de manera temporal o persistente. El archivo /var/log/audit/audit.log almacena eventos SELinux en formato sin formato, y el archivo /var/log/messages almacena mensajes genéricos del demonio setroubleshootd. Esos archivos de registro, junto con el comando sealert, pueden analizar eventos de SELinux y brindar sugerencias para resolver problemas.
+
+
+
+
+
+Capítulo 15. Gestión del almacenamiento básico Objetivo Gestionar los dispositivos de almacenamiento creando particiones, sistemas de archivos y espacios de intercambio desde la línea de comandos. Secciones Creación y administración de sistemas de archivos en particiones estándar (y ejercicio guiado) Administración del espacio de intercambio (y ejercicio guiado) Práctica de laboratorio Administración del almacenamiento básico
+
+
+
+
+

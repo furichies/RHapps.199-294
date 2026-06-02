@@ -1,0 +1,205 @@
+# 11.1. Configurar redes desde la línea de comandos
+# Tipo: theory
+# Capítulo: Capítulo 11. Gestión de la configuración de red
+
+11.1. Configuración de redes desde la línea de comandos 11.1. Configuración de redes desde la línea de comandos Objetivos Administrar la configuración de red y los dispositivos desde la línea de comandos mediante el comando nmcli. Administrar conexiones y dispositivos de red En los sistemas RHEL, se utiliza el servicio NetworkManager para monitorear y administrar la configuración de red. El servicio NetworkManager, por ejemplo, proporciona el estado de la red y de la conexión VPN que se muestra en el menú del sistema del entorno gráfico GNOME. El servicio NetworkManager gestiona dispositivos y conexiones de red. Un dispositivo es cualquier interfaz de red física o virtual que maneja el tráfico de red. Una conexión (también conocida como perfil de red) tiene ajustes de configuración relacionados para un único dispositivo de red. Cada conexión debe tener un nombre o ID único, que puede coincidir con el nombre del dispositivo que configura. Los archivos de configuración del servicio se almacenan en el directorio /etc/NetworkManager/system-connections/. Un solo dispositivo puede tener múltiples perfiles de conexión y el usuario puede alternar entre ellos, pero solo puede haber una conexión activa a la vez para el mismo dispositivo. Por ejemplo, puede configurar un dispositivo inalámbrico portátil para usar una dirección IP fija en un lugar de trabajo y usar una segunda conexión con una dirección automatizada para su hogar. Importante En Red Hat Enterprise Linux 10, se elimina por completo la compatibilidad con los archivos de configuración ifcfg y el directorio /etc/sysconfig/network-scripts/. NetworkManager ahora utiliza un formato de archivo de claves estilo INI, que es una estructura de par clave-valor para organizar las propiedades. NetworkManager almacena perfiles de red en el directorio /etc/NetworkManager/system-connections/. Visualización de información de red Utilice la utilidad nmcli para crear y editar archivos de conexión desde la línea de comandos. El estado del dispositivo nmcli
+
+command displays the status of all network devices:
+root@host:~# nmcli dev status
+
+TIPO DE DISPOSITIVO ESTADO CONEXIÓN ens3 ethernet conectado ethernet-ens3 lo bucle invertido conectado (externamente) lo En la salida del comando anterior, la interfaz de bucle invertido está marcada como externa, lo que significa que NetworkManager no administra ese dispositivo. Nota El comando nmcli acepta abreviaturas para sus opciones y argumentos. Por ejemplo, puedes abreviar
+
+nmcli device disconnect as nmcli dev dis, and abbreviate nmcli connection modify as nmcli
+
+mod. La abreviatura puede ser tan corta como una sola letra, siempre que utilice suficientes caracteres para identificar de forma única el objeto a gestionar.
+
+
+
+
+
+11.1. Configuración de redes desde la línea de comandos El comando nmcli connect show muestra una lista de todas las conexiones. Utilice la opción --active para enumerar solo las conexiones activas.
+
+root@host:~# nmcli con show
+
+NOMBRE UUID TIPO DISPOSITIVO ethernet-ens3 fab1e257-61a6-3526-abf9-8c50c83a28c7 ethernet ens3 enp8s0 55e68e96-905d-4613-a29a-f5f88d3a12e8 ethernet -- lo e6274c48-3de6-4a73-b088-f3abde27842f bucle invertido
+
+root@host:~# nmcli con show --active
+
+NOMBRE UUID TIPO DISPOSITIVO ethernet-ens3 fab1e257-61a6-3526-abf9-8c50c83a28c7 ethernet ens3 lo e6274c48-3de6-4a73-b088-f3abde27842f loopback lo Agregar una conexión de red Utilice el comando nmcli connect add para agregar conexiones de red. Los datos para la conexión de red agregada se almacenan en el directorio /etc/NetworkManager/system-connections/ como un archivo con un sufijo .nmconnection. El siguiente ejemplo agrega una conexión de tipo ethernet para la interfaz de red enp8s0. Observe que NetworkManager nombra automáticamente la conexión como ethernet-enp8s0.
+
+root@host:~# nmcli con add ifname enp8s0 type ethernet
+
+La conexión 'ethernet-enp8s0' (db408049-af1d-44df-b451-6c7f4dbf352b) se agregó correctamente. El siguiente ejemplo crea una conexión enp9s0 del tipo ethernet para la interfaz de red enp9s0 con una configuración de red IPv4 estática. Este comando configura la dirección IP 192.168.0.5 con un prefijo de red de /24 y una puerta de enlace de red de 192.168.0.254. El comando nmcli connect add falla si el nombre de la conexión que intenta agregar ya existe.
+
+root@host:~# nmcli con add con-name enp9s0 type ethernet ifname enp9s0 \
+
+ipv4.method manual ipv4.addresses 192.168.0.5/24 ipv4.gateway 192.168.0.254 Conexión 'enp9s0' (1a2ddcef-9daa-4610-9214-1c11d23bef3b) agregada correctamente. El siguiente ejemplo crea una conexión enp10s0 para el dispositivo enp10s0 con direcciones IPv6 e IPv4 estáticas. Este
+
+command configures the 2001:db8:0:1::c000:207 IPv6 address with the /64 network prefix and the
+
+2001:db8:0:1::1 dirección como puerta de enlace predeterminada. El comando también configura la dirección IPv4 192.0.2.7 con el prefijo de red /24 y la dirección 192.0.2.1 como puerta de enlace predeterminada.
+
+root@host:~# nmcli con add con-name enp10s0 type ethernet ifname enp10s0 \
+ipv6.method manual ipv6.addresses '2001:db8:0:1::c000:207/64' ipv6.gateway \
+
+'2001:db8:0:1::1' ipv4.method manual ipv4.addresses '192.0.2.7/24' \ ipv4.gateway '192.0.2.1' Conexión 'enp10s0' (2e779f16-5fc5-4ecc-a92e-c16b9a0cd0a4) agregada correctamente. Nota Las direcciones IP no requieren comillas con el comando nmcli, pero usarlas puede ayudar a completar la tabulación en el shell. Administrar conexiones de red El comando nmcli connect up activa una conexión de red en el dispositivo al que está vinculado. Para activar una conexión de red se requiere el nombre de la conexión, no el nombre del dispositivo.
+
+
+
+
+
+11.1. Configurar redes desde la línea de comandos
+
+root@host:~# nmcli con show
+
+NOMBRE UUID TIPO DISPOSITIVO enp1s0 55e68e96-905d-4613-a29a-f5f88d3a12e8 ethernet enp1s0 lo 8ddeb3e7-1399-4619-a1bc-c82c9aa11034 loopback lo enp8s0 2e779f16-5fc5-4ecc-a92e-c16b9a0cd0a4 ethernet--
+
+root@host:~# nmcli con up enp8s0
+
+Conexión activada exitosamente (ruta activa de D-Bus: /org/freedesktop/NetworkManager/ActiveConnection/9) El comando nmcli desconexión del dispositivo desconecta el dispositivo de red y cierra la conexión:
+
+root@host:~# nmcli dev dis enp8s0
+
+El dispositivo 'enp8s0' se desconectó correctamente. Importante Utilice la desconexión del dispositivo nmcli para detener el tráfico en una interfaz de red y desactivar la conexión. Actualización de la configuración de conexión de red Las conexiones del servicio NetworkManager tienen dos tipos de configuración. Las propiedades de conexión estática las configura el administrador y se almacenan en los archivos de configuración /etc/NetworkManager/system-connections/*.nmconnection. Las propiedades de conexión dinámica se solicitan desde un servidor DHCP y no se almacenan de forma persistente. Para enumerar la configuración actual de una conexión, utilice el comando nmcli connect show. Las configuraciones en minúsculas son propiedades estáticas que el administrador puede cambiar. Las configuraciones en mayúsculas son configuraciones que están activas solo durante el tiempo de ejecución. La opción -p está disponible para imprimir la salida de forma bonita y hacerla más legible.
+
+root@host:~# nmcli -p con show enp8s0
+
+=======================================================================
+
+                Connection profile details (enp8s0)
+
+=======================================================================
+
+connection.id:                          enp8s0
+connection.uuid:                        2e779f16-5fc5-...-16b9a0cd0a4
+connection.stable-id:                   --
+connection.type:                        802-3-ethernet
+connection.interface-name:              enp8s0
+connection.autoconnect:                 yes
+connection.autoconnect-priority:        0
+
+...salida omitida... También puede seleccionar campos específicos al imprimir los detalles de la conexión:
+
+root@host:~# nmcli -f ipv4.method,ipv4.addresses,ipv4.gateway con show enp8s0
+ipv4.method:                            manual
+ipv4.addresses:                         192.0.2.7/24
+ipv4.gateway:                           192.0.2.1
+
+Actualización de la configuración de conexión desde la línea de comandos Utilice el comando de modificación de conexión nmcli para actualizar la configuración de conexión. Estos cambios se guardan en el archivo /etc/NetworkManager/system-connections/name.nmconnection. Consulte la página de manual de nm-settings(5) para conocer las configuraciones disponibles. Utilice el siguiente comando para actualizar la conexión enp8s0 y configurar la dirección IPv4 192.0.2.2/24 y la puerta de enlace predeterminada 192.0.2.254. Utilice el parámetro de conexión.autoconnect del comando nmcli para habilitar o deshabilitar automáticamente la conexión en el inicio del sistema.
+
+
+
+
+
+11.1. Configurar redes desde la línea de comandos
+
+root@host:~# nmcli con mod enp8s0 ipv4.addresses 192.0.2.2/24 \
+
+ipv4.gateway 192.0.2.254 conexión.autoconnect sí Utilice el siguiente comando para actualizar la conexión enp8s0 y configurar la dirección IPv6 2001:db8:0:1::a00:1/64
+
+and the 2001:db8:0:1::1 default gateway:
+root@host:~# nmcli con mod enp8s0 ipv6.addresses '2001:db8:0:1::a00:1/64' \
+ipv6.gateway '2001:db8:0:1::1'
+
+Importante Para cambiar la configuración de una conexión DHCP para que sea estática, actualice la configuración ipv4.method de auto o dhcp a manual. Para una conexión IPv6, actualice la configuración ipv6.method. Si el método no está configurado correctamente, entonces la conexión podría bloquearse o estar incompleta cuando se active, o podría obtener una dirección de DHCP o SLAAC además de la dirección estática configurada. Algunas configuraciones pueden tener múltiples valores. Se puede agregar un valor específico a la lista o eliminarlo de la configuración de conexión agregando un símbolo más (+) o menos (-) al comienzo del nombre de la configuración. Si no se incluye un más o un menos, entonces el valor especificado reemplaza la lista actual de la configuración. El siguiente ejemplo agrega el servidor DNS 2.2.2.2 a la conexión enp8s0:
+
+root@host:~# nmcli con mod enp8s0 +ipv4.dns 2.2.2.2
+
+Actualización de la configuración de conexión mediante archivos de configuración También puede modificar los perfiles de red editando el archivo de configuración de la conexión en el directorio /etc/NetworkManager/system-connections/. Mientras que los comandos nmcli se comunican directamente con NetworkManager para implementar modificaciones de inmediato, las ediciones del archivo de conexión no se implementan hasta que NetworkManager vuelve a cargar el archivo de configuración. Con la edición manual, puede crear configuraciones complejas en pasos y luego cargar la configuración final cuando esté lista. Después de actualizar manualmente el archivo de configuración de la conexión, use el comando nmcli para recargar todos los perfiles de conexión:
+
+root@host:~# nmcli con reload
+
+El siguiente ejemplo vuelve a leer sólo el perfil de conexión enp8s0 en /etc/NetworkManager/system-
+
+connections/enp8s0.nmconnection:
+root@host:~# nmcli con reload enp8s0
+
+Eliminación de una conexión de red El comando de eliminación de conexión nmcli elimina una conexión del sistema. Este comando desconecta el dispositivo y elimina el archivo de configuración de la conexión.
+
+root@host:~# nmcli con del enp8s0
+
+Permisos para modificar la configuración de NetworkManager Utilice el comando de permisos generales nmcli para ver sus permisos actuales para cambiar la configuración de la red. Como se muestra en el siguiente ejemplo, al usuario root se le conceden todos los permisos de NetworkManager:
+
+
+
+
+
+11.1. Configurar redes desde la línea de comandos
+
+root@host:~# nmcli gen permissions
+
+VALOR DEL PERMISO org.freedesktop.NetworkManager.checkpoint-rollback sí org.freedesktop.NetworkManager.enable-disable-connectivity-check sí org.freedesktop.NetworkManager.enable-disable-network sí org.freedesktop.NetworkManager.enable-disable-statistics sí org.freedesktop.NetworkManager.enable-disable-wifi sí org.freedesktop.NetworkManager.enable-disable-wimax sí org.freedesktop.NetworkManager.enable-disable-wwan sí org.freedesktop.NetworkManager.network-control sí org.freedesktop.NetworkManager.reload sí org.freedesktop.NetworkManager.settings.modify.global-dns sí org.freedesktop.NetworkManager.settings.modify.hostname sí org.freedesktop.NetworkManager.settings.modify.own sí org.freedesktop.NetworkManager.settings.modify.system sí org.freedesktop.NetworkManager.sleep-wake sí org.freedesktop.NetworkManager.wifi.scan sí org.freedesktop.NetworkManager.wifi.share.open sí org.freedesktop.NetworkManager.wifi.share.protected sí Los usuarios sin privilegios que hayan iniciado sesión en la consola física o virtual también pueden realizar la mayoría de los cambios de configuración de red. Si un usuario está en la consola del sistema, entonces es probable que el sistema se esté utilizando como una estación de trabajo o computadora portátil donde el usuario necesita configurar, activar y desactivar conexiones. A los usuarios sin privilegios que inician sesión mediante SSH no se les conceden muchos permisos y deben cambiar al usuario raíz para cambiar la configuración de red. El siguiente ejemplo enumera los permisos de NetworkManager del usuario cuando se conecta mediante SSH.
+
+user@host:~$ nmcli gen permissions
+
+VALOR DEL PERMISO org.freedesktop.NetworkManager.checkpoint-rollback auth org.freedesktop.NetworkManager.enable-disable-connectivity-check no org.freedesktop.NetworkManager.enable-disable-network no org.freedesktop.NetworkManager.enable-disable-statistics no org.freedesktop.NetworkManager.enable-disable-wifi no org.freedesktop.NetworkManager.enable-disable-wimax no org.freedesktop.NetworkManager.enable-disable-wwan no org.freedesktop.NetworkManager.network-control auth org.freedesktop.NetworkManager.reload auth org.freedesktop.NetworkManager.settings.modify.global-dns auth org.freedesktop.NetworkManager.settings.modify.hostname auth org.freedesktop.NetworkManager.settings.modify.own auth org.freedesktop.NetworkManager.settings.modify.system auth org.freedesktop.NetworkManager.sleep-wake no org.freedesktop.NetworkManager.wifi.scan auth org.freedesktop.NetworkManager.wifi.share.open no org.freedesktop.NetworkManager.wifi.share.protected no Comandos útiles de NetworkManager La siguiente tabla enumera los comandos clave de nmcli que se analizan en esta sección:
+
+nmcli dev status
+
+Mostrar el estado de NetworkManager de todas las interfaces de red
+
+nmcli con show
+
+Listar todas las conexiones Comando Propósito
+
+
+
+
+
+11.1. Configurar redes desde la línea de comandos
+
+nmcli con show name
+
+Enumerar la configuración actual para el nombre de la conexión
+
+nmcli con add con-name name
+
+Agregar y nombrar un nuevo perfil de conexión
+
+nmcli con mod name
+
+Modificar el nombre de la conexión
+
+nmcli con reload
+
+Vuelva a cargar los archivos de configuración, después de la edición manual del archivo.
+
+nmcli con up name
+
+Activar el nombre de la conexión
+
+nmcli dev dis dev
+
+Desconectar la interfaz, lo que también desactiva la conexión actual.
+
+nmcli con del name
+
+Elimine la conexión especificada y su archivo de configuración Referencias NetworkManager(8), nmcli(1), nmcli-examples(7), nm-settings(5), hostnamectl(1), resolv.conf(5), hostname(5), ip(8) y ip-address(8) páginas man Para obtener más información, consulte el capítulo Configuración de una conexión Ethernet en la guía Configuración y administración de redes en https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html- single/configuring_and_managing_networking/index#configuring-an-ethernet-connection Propósito del comando
+
+
+
+
+
+11.2. Ejercicio guiado Configurar redes desde la línea de comandos 11.2. Ejercicio guiado Configurar redes desde la línea de comandos Administre la configuración de red y los dispositivos desde la línea de comandos mediante el comando nmcli. Resultados Actualice una configuración de conexión de red de DHCP a estática. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-configure
+
+Instrucciones Los nombres de las interfaces de red están determinados por su tipo de bus y el orden de detección de los dispositivos durante el arranque. Los nombres de sus interfaces de red pueden variar según la plataforma del curso y el hardware en uso. En su sistema, ubique el nombre de la interfaz (como eth1, ens06 o enp0p2) asociada con la red Ethernet.
+
+address 52:54:00:01:fa:1e. Use this interface name to replace the ens4 placeholder throughout this exercise if
+
+diferente. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Muestre la lista de interfaces de red en su sistema usando el comando ip. Localice el nombre de la interfaz de red asociada con la dirección Ethernet 52:54:00:01:fa:1e. Registre o recuerde este nombre y utilícelo para reemplazar el nombre ens4 en comandos posteriores si es necesario. 2.
+
+
+
+
+

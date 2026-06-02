@@ -1,0 +1,136 @@
+# 4.7. Administrar cuentas de grupos locales
+# Tipo: theory
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.7. Gestión de cuentas de grupos locales 4.7. Administrar cuentas de grupos locales Objetivos Crear, modificar y eliminar cuentas de grupos locales. Administrar grupos locales Puede administrar grupos usando el menú Cuentas en la consola web de RHEL (si está habilitado) o usando herramientas de línea de comandos. Esta sección se centra en las herramientas de línea de comandos que puede usar desde un símbolo del shell, ya sea localmente, a través de una conexión SSH o en la consola web de RHEL. Crear grupos desde la línea de comando El comando groupadd crea grupos. Sin opciones, el comando groupadd utiliza el siguiente número de ID de grupo (GID) disponible del rango que las variables GID_MIN y GID_MAX especifican en el archivo /etc/login.defs. De forma predeterminada, el comando asigna un valor de GID que es mayor que cualquier otro GID existente, incluso si hay disponible un valor inferior. La opción -g del comando groupadd especifica un GID que utilizará el grupo.
+
+root@host:~# groupadd -g 10000 group01
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group01:x:10000:
+
+Nota Debido a que el comando useradd crea automáticamente grupos privados de usuarios con números GID asignados desde 1000 en adelante, algunos administradores reservan un rango especial de números GID altos para usar cuando crean grupos suplementarios para otros fines. Sin embargo, esta administración adicional es innecesaria porque no es necesario que el UID y el GID principal de un usuario sean el mismo número. La opción groupadd comando -r crea grupos de sistemas. Al igual que con los grupos normales, los grupos del sistema utilizan un GID del rango de GID del sistema válidos enumerados en el archivo /etc/login.defs. Los elementos de configuración SYS_GID_MIN y SYS_GID_MAX en el archivo /etc/login.defs definen el rango de GID del sistema.
+
+root@host:~# groupadd -r group02
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group01:x:10000:
+group02:x:988:
+
+Modificación de grupos existentes desde la línea de comando El comando groupmod cambia las propiedades de un grupo existente. La opción -n del comando groupmod especifica un nuevo nombre para el grupo.
+
+
+
+
+
+4.7. Administrar cuentas de grupos locales
+
+root@host:~# groupmod -n group0022 group02
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group0022:x:988:
+
+Observe que el nombre del grupo se actualiza de grupo02 a grupo0022. La opción -g del comando groupmod reasigna el nombre del grupo a un nuevo GID.
+
+root@host:~# groupmod -g 20000 group0022
+root@host:~# tail /etc/group
+
+...salida omitida...
+
+group0022:x:20000:
+
+Observe que el GID cambia de 988 a 20000. Eliminación de grupos desde la línea de comando El comando groupdel elimina grupos.
+
+root@host:~# groupdel group0022
+
+Importante No puede eliminar un grupo si es el grupo principal predeterminado de un usuario existente. De manera similar a usar el comando userdel, asegúrese de ubicar primero los archivos que posee el grupo para evitar posibles riesgos de seguridad. Pertenencia a grupos primarios y suplementarios El grupo primario predeterminado de un usuario es el grupo que aparece en la línea que define la cuenta del usuario en el archivo /etc/passwd. Un usuario sólo puede pertenecer a un grupo principal a la vez. Los grupos suplementarios de un usuario son los grupos adicionales que están configurados para el usuario en el archivo /etc/group. Un usuario puede pertenecer a muchos grupos complementarios. Para configurar permisos de archivos basados ​​en grupos, no existe ninguna diferencia entre los grupos primarios y suplementarios de un usuario. Si el usuario pertenece a algún grupo al que se le asigna acceso a archivos específicos, entonces ese usuario tiene acceso a esos archivos. La única distinción entre las membresías principal y complementaria de un usuario es cuando un usuario crea un archivo. Los archivos nuevos deben tener un propietario de usuario y un propietario de grupo, que se asigna cuando se crea el archivo. El grupo principal actual del usuario se utiliza para la propiedad del grupo del nuevo archivo, a menos que las opciones del comando lo anulen. Cambiar la membresía del grupo desde la línea de comando Utilice el comando usermod -g para cambiar el grupo principal predeterminado de un usuario.
+
+
+
+
+
+4.7. Administrar cuentas de grupos locales
+
+root@host:~# id user02
+uid=1006(user02) gid=1008(user02) groups=1008(user02)
+root@host:~# usermod -g group01 user02
+root@host:~# id user02
+uid=1006(user02) gid=10000(group01) groups=10000(group01)
+
+Importante El uso de la opción -g para cambiar el grupo principal predeterminado de un usuario no agrega automáticamente el grupo principal antiguo a la lista de grupos suplementarios del usuario. Puede ver este comportamiento en el ejemplo anterior. Además, el uso de esta opción no cambia la propiedad del grupo de ningún archivo existente en el directorio de inicio del usuario ni en ninguna otra parte del sistema. Utilice el comando groupmod -aU para agregar una lista de uno o más usuarios a un grupo suplementario. El nombre del grupo es el argumento final del comando.
+
+root@host:~# id user03
+uid=1007(user03) gid=1009(user03) groups=1009(user03)
+root@host:~# groupmod -aU user03 group01
+root@host:~# id user03
+uid=1007(user03) gid=1009(user03) groups=1009(user03),10000(group01)
+
+Advertencia La opción -a del comando groupmod habilita el modo de agregar. Sin la opción -a, el comando reemplaza el conjunto existente de usuarios que son miembros del grupo por aquellos que están incluidos en la lista de la opción -U. También puede usar el comando usermod -aG para agregar un usuario a uno o más grupos existentes sin eliminarlo de sus grupos primarios o secundarios actuales. La opción -a agrega el usuario al nuevo grupo sin eliminarlo del grupo existente. La opción -G especifica una lista de grupos suplementarios a los que se debe agregar el usuario.
+
+root@host:~# usermod -aG group01 user03
+
+Cambiar temporalmente su grupo principal El grupo principal actual de un usuario determina el grupo propietario de los archivos recién creados. Sin embargo, puedes cambiar temporalmente tu grupo principal actual a uno de los grupos suplementarios al que perteneces. Puede hacer esto inmediatamente antes de crear un conjunto de archivos que desea que ese grupo posea, en lugar de su grupo principal habitual. Utilice el comando newgrp para cambiar su grupo principal para el símbolo del shell actual. Este cambio temporal no afecta a otros indicadores del shell en el mismo sistema. Puede cambiar su grupo principal actual a cualquiera de los grupos suplementarios a los que pertenece o volver a su grupo principal predeterminado. Sólo un grupo a la vez puede ser su grupo principal actual. Si cierra sesión y vuelve a iniciarla, su grupo principal predeterminado en ese indicador de shell volverá a ser el actual. En este ejemplo, el grupo group01 se convierte temporalmente en el grupo principal de este usuario.
+
+
+
+
+
+4.7. Administrar cuentas de grupos locales
+
+user03@host:~$ id
+uid=1007(user03) gid=1009(user03) groups=1009(user03),10000(group01)
+user03@host:~$ newgrp group01
+user03@host:~$ id
+uid=1007(user03) gid=10000(group01) groups=1009(user03),10000(group01)
+
+Referencias
+
+groupadd(8), groupmod(8), groupdel(8), usermod(8), login.defs(5), group(5), passwd(5), and
+
+páginas man de newgrp(1)
+
+
+
+
+
+4.8. Ejercicio guiado Administrar cuentas de grupos locales 4.8. Ejercicio guiado Administrar cuentas de grupos locales Cree, modifique y elimine cuentas de grupos locales. Resultados Crear y gestionar grupos complementarios. Configure el acceso a Sudo para un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-group
+
+Instrucciones Como usuario raíz en la máquina del servidor, cree los grupos suplementarios de operadores y administradores. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el grupo suplementario de operadores con un GID de 30000.
+
+[root@servera ~]# groupadd -g 30000 operators
+
+1.2. Cree el grupo complementario de administración sin especificar un GID.
+
+[root@servera ~]# groupadd admin
+
+1.3. Verifique que existan los grupos suplementarios de operadores y administradores.
+
+[root@servera ~]# tail /etc/group
+
+...salida omitida...
+
+operators:x:30000:
+admin:x:30001:
+
+1.4. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores y verifique la membresía del grupo. 2. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores. 2.1.
+
+
+
+
+

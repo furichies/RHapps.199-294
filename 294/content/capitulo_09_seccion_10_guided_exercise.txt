@@ -1,0 +1,267 @@
+# Ejercicio Guiado: Administración de la configuración de red
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración de la configuración de red
+Ajustar la configuración de red de un host gestionado y recopilar información sobre él en un
+archivo creado por una plantilla.
+Resultados
+• Deberá ser capaz de configurar los ajustes de red y en los hosts gestionados y recopilar
+datos de Ansible relacionados con la red.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-network
+Instrucciones
+ 1.
+Revise el archivo de inventario del directorio del proyecto /home/student/system-
+network.
+1.1.
+Cambie al directorio /home/student/system-network.
+[student@workstation ~]$ cd ~/system-network
+[student@workstation system-network]$
+1.2.
+En el archivo inventory, verifique que servera.lab.example.com sea parte del
+grupo de hosts webservers. Este servidor tiene una interfaz de red de repuesto.
+[student@workstation system-network]$ cat inventory
+[webservers]
+servera.lab.example.com
+ 2.
+Instale la Ansible Content Collection redhat.rhel_system_roles desde el archivo
+redhat-rhel_system_roles-1.19.3.tar.gz en el directorio collections del
+directorio del proyecto.
+2.1.
+Use el comando ansible-galaxy para instalar la Ansible Content
+Collection rhel_system_roles desde el archivo redhat-
+rhel_system_roles-1.19.3.tar.gz en el directorio collections del
+proyecto.
+RH294-RHEL9.0-es-3-20240620
+479
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation system-network]$ ansible-galaxy collection install \
+> ./redhat-rhel_system_roles-1.19.3.tar.gz -p collections
+Starting galaxy collection install process
+Process install dependency map
+Starting collection install process
+Installing 'redhat.rhel_system_roles:1.19.3' to '/home/student/system-network/
+collections/ansible_collections/redhat/rhel_system_roles'
+redhat.rhel_system_roles:1.19.3 was installed successfully
+ 3.
+Cree un playbook que use el rol redhat.rhel_system_roles.network para
+configurar la interfaz de red eth1 en servera.lab.example.com con la dirección IP
+172.25.250.30/24 y el prefijo de red.
+3.1.
+Cree un playbook denominado playbook.yml y agregue un play orientado al grupo
+de hosts webservers. Incluya el rol rhel_system_roles.network en la sección
+roles del play.
+---
+- name: NIC Configuration
+  hosts: webservers
+  roles:
+    - redhat.rhel_system_roles.network
+3.2.
+La documentación para el rol del sistema redhat.rhel_system_roles.network
+enumera las variables y opciones que están disponibles para configurar su
+funcionamiento.
+Ejecute ansible-navigator collections, seleccione la colección
+redhat.rhel_system_roles y, luego, seleccione el rol network para ver su
+documentación.
+Revise la sección Setting the IP configuration: (cerca de la línea 1219 de la
+documentación) y determine qué variable se requiere para configurar la interfaz de
+red eth1 con una dirección IP estática y un prefijo de red.
+Para su comodidad, esa parte de la documentación dice lo siguiente:
+...output omitted...
+Setting the IP configuration:
+```yaml
+network_connections:
+  - name: eth0
+    type: ethernet
+    ip:
+      route_metric4: 100
+      dhcp4: no
+      #dhcp4_send_hostname: no
+      gateway4: 192.0.2.1
+      dns:
+        - 192.0.2.2
+480
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+        - 198.51.100.5
+      dns_search:
+        - example.com
+        - subdomain.example.com
+      dns_options:
+        - rotate
+        - timeout:1
+      route_metric6: -1
+      auto6: no
+      gateway6: 2001:db8::1
+      address:
+        - 192.0.2.3/24
+        - 198.51.100.3/26
+        - 2001:db8::80/7
+...output omitted...
+3.3.
+Cree el subdirectorio group_vars/webservers.
+[student@workstation system-network]$ mkdir -pv group_vars/webservers
+mkdir: created directory 'group_vars'
+mkdir: created directory 'group_vars/webservers'
+3.4.
+Cree un nuevo archivo de variable denominado network.yml en el directorio
+group_vars/webservers para definir la variable de rol network_connections
+para el grupo webservers.
+El valor de esa variable debe configurar una conexión de red para la interfaz de red
+eth1 que le asigna la dirección IP estática y el prefijo de red 172.25.250.30/24.
+Al completarse, el archivo incluye el siguiente contenido:
+[student@workstation system-network]$ cat group_vars/webservers/network.yml
+---
+network_connections:
+  - name: eth1
+    type: ethernet
+    ip:
+      address:
+        - 172.25.250.30/24
+3.5.
+Ejecute el playbook para configurar la interfaz de red secundaria en servera.
+[student@workstation system-network]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [NIC Configuration] *******************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Ensure ansible_facts used by role] ****
+RH294-RHEL9.0-es-3-20240620
+481
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+included: /home/student/system-network/collections/ansible_collections/redhat/
+rhel_system_roles/roles/network/tasks/set_facts.yml for servera.lab.example.com
+TASK [redhat.rhel_system_roles.network : Ensure ansible_facts used by role are
+ present] ***
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Check which services are running] *****
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Check which packages are installed] ***
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Print network provider] ***************
+ok: [servera.lab.example.com] => {
+    "msg": "Using network provider: nm"
+}
+TASK [redhat.rhel_system_roles.network : Abort applying the network state
+ configuration if using the network_state variable with the initscripts provider]
+ ***
+skipping: [servera.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.network : Configure networking connection profiles]
+ ***
+changed: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Configure networking state] ***********
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Show stderr messages for the
+ network_connections] ***
+ok: [servera.lab.example.com] => {
+    "__network_connections_result.stderr_lines": [
+        "[002] <info>  #0, state:None persistent_state:present, 'eth1': add
+ connection eth1, c0177289-f461-4042-b9d4-86fd1b235be1"
+    ]
+}
+TASK [redhat.rhel_system_roles.network : Show debug messages for the
+ network_connections] ***
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Show debug messages for the
+ network_state] ***
+skipping: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Re-test connectivity] *****************
+482
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=10   changed=1    unreachable=0    failed=0   
+ skipped=12   rescued=0    ignored=0
+ 4.
+Ejecute el playbook get-eth1.yml proporcionado en el directorio del proyecto para
+verificar que la configuración de la interfaz de red eth1 en servera sea correcta.
+Verifique que la interfaz de red eth1 use la dirección IP 172.25.250.30 con el prefijo
+de red /24 (equivalente a la máscara de subred 255.255.255.0). La configuración de la
+dirección IP puede demorar hasta un minuto.
+[student@workstation system-network]$ ansible-navigator run \
+> -m stdout get-eth1.yml
+PLAY [Obtain network info for webservers] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Display eth1 info] *******************************************************
+ok: [servera.lab.example.com] => {
+    "ansible_facts['eth1']['ipv4']": {
+        "address": "172.25.250.30",
+        "broadcast": "172.25.250.255",
+        "netmask": "255.255.255.0",
+        "network": "172.25.250.0",
+        "prefix": "24"
+    }
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish system-network
+RH294-RHEL9.0-es-3-20240620
+483
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Trabajo de laboratorio
+Automatización de tareas de
+administración de Linux
+Realizar tareas administrativas comunes de Linux en sus hosts gestionados mediante
+técnicas que se trataron en este capítulo.
+Resultados
+• Cree playbooks para configurar un repositorio de software, usuarios y grupos, volúmenes
+lógicos, trabajos de cron e interfaces de red adicionales en un host gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-review
+Instrucciones
+1.
+Cree un playbook denominado repo_playbook.yml para que se ejecute en el grupo de
+hosts webservers que configure esos hosts gestionados para usar el repositorio interno de
+Yum ubicado en http://materials.example.com/yum/repository y luego instale el
+paquete rhelver disponible desde ese repositorio en esos hosts gestionados.
+La configuración del repositorio debe cumplir con los siguientes requisitos:
+• La configuración se encuentra en el archivo /etc/yum.repos.d/example.repo.
+• El ID del repositorio es example-internal.
+• La URL base es http://materials.example.com/yum/repository.
+• El repositorio está configurado para verificar las firmas RPM GPG.
+• La descripción del repositorio es Example Inc. Internal YUM repo.
+Los paquetes RPM están firmados con un par de claves GPG organizativas. Esa clave pública
+de GPG está disponible en http://materials.example.com/yum/repository/RPM-
+GPG-KEY-example. Debe asegurarse de que la clave esté configurada en todos los hosts
+gestionados en el grupo de hosts webservers.
+Ejecute el playbook. Debe confirmar que el playbook instaló el paquete en sus hosts
+gestionados después de su ejecución.
+2.
+Cree un playbook denominado users.yml para ejecutar en el grupo de hosts webservers
+que crea el grupo de usuarios webadmin, agrega los usuarios ops1 y ops2 y garantiza que
+ambos usuarios tengan webadmin como grupo complementario en esos hosts gestionados.
+Ejecute el playbook. Debe confirmar que los usuarios existen en los hosts gestionados y que
+tienen webadmin como grupo complementario después de que se ejecute el playbook.
+484
+RH294-RHEL9.0-es-3-20240620
+
+

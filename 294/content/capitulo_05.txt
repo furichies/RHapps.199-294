@@ -1,0 +1,1457 @@
+# Capítulo 5. Implementación de archivos en hosts gestionados
+
+capítulo 5
+Implementación de archivos en
+hosts gestionados
+Meta
+Implementar, administrar y ajustar archivos en
+hosts gestionados por Ansible.
+Objetivos
+•
+Crear, instalar, editar y eliminar archivos
+en hosts gestionados; gestionar permisos,
+propiedades, contextos de SELinux y otras
+características de esos archivos.
+•
+Implementar archivos en hosts gestionados que
+se personalizan mediante el uso de plantillas
+Jinja2.
+Secciones
+•
+Modificación y copia de archivos a hosts (y
+ejercicio guiado)
+•
+Implementación de archivos personalizados con
+plantillas Jinja2 (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Implementación de archivos en hosts
+gestionados
+RH294-RHEL9.0-es-3-20240620
+191
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Modificación y copia de archivos a hosts
+Objetivos
+• Crear, instalar, editar y eliminar archivos en hosts gestionados; gestionar permisos, propiedades,
+contextos de SELinux y otras características de esos archivos.
+Descripción de los módulos de archivos
+La mayoría de los módulos de uso común relacionados con la gestión de archivos de Linux se
+proporcionan con ansible-core en la colección ansible.builtin. Realizan tareas como
+crear, copiar, editar y modificar permisos y otros atributos de archivos. En la siguiente tabla, se
+proporciona una lista de los módulos de administración de archivos de uso frecuente:
+Módulos de archivos de uso común en ansible.builtin
+Nombre del módulo
+Descripción del módulo
+blockinfile
+Inserte, actualice o elimine un bloque de texto multilínea rodeado
+por líneas de marcador personalizables.
+copy
+Copie un archivo de la máquina local o remota a una ubicación en un
+host gestionado. Similar al módulo file, el módulo copy también
+puede establecer atributos de archivo, incluido el contexto SELinux.
+fetch
+Este módulo funciona como el módulo copy, pero a la inversa. Este
+módulo se usa para recuperar archivos de máquinas remotas al nodo
+de control y para almacenarlos en un árbol de archivos, organizado
+por nombre de host.
+file
+Establezca atributos tales como permisos, propiedad, contextos
+SELinux y marcas de tiempo de archivos regulares, enlaces
+simbólicos, enlaces físicos y directorios. Este módulo también puede
+crear o eliminar archivos regulares, enlaces simbólicos, enlaces
+físicos y directorios. Una serie de otros módulos relacionados con
+archivos soportan las mismas opciones para establecer atributos
+como el módulo file, incluido el módulo copy.
+lineinfile
+Asegúrese de que una línea particular esté en un archivo o
+reemplace una línea existente usando una expresión regular de
+referencia inversa. Este módulo es principalmente útil cuando desea
+cambiar una sola línea en un archivo.
+stat
+Recupere información de estado de un archivo, similar al comando
+stat de Linux.
+Además, la colección ansible.posix, que se incluye en el entorno de ejecución de
+automatización predeterminado, proporciona algunos módulos adicionales que son útiles para la
+gestión de archivos:
+192
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Módulos de archivos de uso común en ansible.posix
+Nombre del módulo
+Descripción del módulo
+patch
+Aplique parches a los archivos usando patch GNU.
+synchronize
+Un contenedor alrededor del comando rsync para simplificar
+las tareas comunes. El módulo synchronize no está destinado
+a proporcionar acceso a toda la potencia del comando rsync,
+pero hace que las invocaciones más comunes sean más fáciles
+de implementar. Es posible que aún necesite invocar el comando
+rsync directamente a través del módulo command según su caso
+de uso.
+Ejemplos de automatización con módulos de archivos
+Los siguientes ejemplos muestran formas en que puede usar estos módulos para automatizar las
+tareas comunes de administración de archivos.
+Garantía de que exista un archivo en los hosts gestionados
+Use el módulo ansible.builtin.file para tocar un archivo en los hosts gestionados. Esto
+funciona como el comando touch, creando un archivo vacío si no existe y actualizando su hora de
+modificación si existe. En este ejemplo, además de tocar el archivo, Ansible se asegura de que el
+usuario propietario, el grupo y los permisos del archivo estén configurados con valores específicos.
+- name: Touch a file and set permissions
+  ansible.builtin.file:
+    path: /path/to/file
+    owner: user1
+    group: group1
+    mode: 0640
+    state: touch
+Resultado de ejemplo:
+[user@host ~]$ ls -l file
+-rw-r-----.  user1 group1 0 Nov 25 08:00 file
+Modificación de los atributos del archivo
+Puede usar el módulo ansible.builtin.file para garantizar que un archivo nuevo o existente
+tenga los permisos correctos o el tipo SELinux también.
+Por ejemplo, el siguiente archivo ha conservado el contexto predeterminado de SELinux en
+relación con el directorio de inicio de un usuario, que no es el contexto deseado.
+[user@host ~]$ ls -Z samba_file
+-rw-r--r--.  owner group unconfined_u:object_r:user_home_t:s0 samba_file
+La siguiente tarea garantiza que el atributo de tipo de contexto SELinux del archivo samba_file
+es el tipo samba_share_t deseado. Este comportamiento es similar al comando chcon de Linux.
+RH294-RHEL9.0-es-3-20240620
+193
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+- name: SELinux type is set to samba_share_t
+  ansible.builtin.file:
+    path: /path/to/samba_file
+    setype: samba_share_t
+Resultado de ejemplo:
+[user@host ~]$ ls -Z samba_file
+-rw-r--r--.  owner group unconfined_u:object_r:samba_share_t:s0 samba_file
+Los parámetros de atributos de archivo están disponibles en varios módulos de administración
+de archivos. Use el comando ansible-navigator doc para obtener información adicional,
+proporcionando el módulo ansible.builtin.file o ansible.builtin.copy como
+argumento.
+nota
+Para establecer contextos de archivos SELinux de forma persistente en la política,
+algunas opciones incluyen:
+• Si sabe cómo usar los roles de Ansible, puede usar el rol
+redhat.rhel_system_roles.selinux soportado. Esto se trata en el
+Capítulo 7 del curso de capacitación Red Hat Enterprise Linux Automation with
+Ansible (RH294).
+• Puede usar el módulo community.general.sefcontext en Ansible Content
+Collection community.general compatible con la comunidad.
+Copia y edición de archivos en hosts gestionados
+En este ejemplo, el módulo ansible.builtin.copy se usa para copiar un archivo ubicado en el
+directorio de trabajo de Ansible en el nodo de control a los hosts gestionados seleccionados.
+De forma predeterminada, este módulo supone que force: true está configurado. Eso obliga
+al módulo a sobrescribir el archivo remoto si existe, pero tiene un contenido diferente del archivo
+que se está copiando. Si se configura force: false, solo copia el archivo al host gestionado si
+no existe.
+- name: Copy a file to managed hosts
+  ansible.builtin.copy:
+    src: file
+    dest: /path/to/file
+Para recuperar archivos de hosts gestionados, use el módulo ansible.builtin.fetch. Esto
+puede usarse para recuperar un archivo como una clave pública SSH de un sistema de referencia
+antes de distribuirlo a otros hosts gestionados.
+- name: Retrieve SSH key from reference host
+  ansible.builtin.fetch:
+    src: "/home/{{ user }}/.ssh/id_rsa.pub
+    dest: "files/keys/{{ user }}.pub"
+194
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Para asegurarse de que existe una línea de texto específica en un archivo existente, use el módulo
+lineinfile.
+- name: Add a line of text to a file
+  ansible.builtin.lineinfile:
+    path: /path/to/file
+    line: 'Add this line to the file'
+    state: present
+Para agregar un bloque de texto a un archivo existente, use el módulo
+ansible.builtin.blockinfile.
+- name: Add additional lines to a file
+  ansible.builtin.blockinfile:
+    path: /path/to/file
+    block: |
+      First line in the additional block of text
+      Second line in the additional block of text
+    state: present
+nota
+Al usar el módulo ansible.builtin.blockinfile, los marcadores de
+bloque comentados se insertan al principio y al final del bloque para garantizar la
+idempotencia.
+# BEGIN ANSIBLE MANAGED BLOCK
+First line in the additional block of text
+Second line in the additional block of text
+# END ANSIBLE MANAGED BLOCK
+Puede usar el parámetro marker en el módulo para garantizar que se esté usando
+el texto o carácter de comentario correcto para el archivo en cuestión.
+Eliminación de un archivo de los hosts gestionados
+Un ejemplo básico para eliminar un archivo de los hosts gestionados es usar el módulo
+ansible.builtin.file con el parámetro state: absent. El parámetro state es opcional
+para muchos módulos. Siempre debe aclarar si desea state: present o state: absent
+por varias razones. Algunos módulos soportan otras opciones también. Es posible que el valor
+predeterminado pueda cambiar en algún momento, pero quizás lo más importante es que facilita
+la comprensión del estado en el que debe estar el sistema según su tarea.
+- name: Make sure a file does not exist on managed hosts
+  ansible.builtin.file:
+    dest: /path/to/file
+    state: absent
+RH294-RHEL9.0-es-3-20240620
+195
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Recuperación del estado de un archivo en hosts gestionados
+El módulo ansible.builtin.stat recupera datos para un archivo, de manera similar al
+comando stat de Linux. Los parámetros proporcionan la funcionalidad para recuperar atributos
+de archivo, determinar la suma de comprobación de un archivo y más.
+El módulo ansible.builtin.stat devuelve un diccionario de los valores que contienen datos
+de estado del archivo, lo que le permite referirse a partes individuales de información mediante
+variables separadas.
+En el siguiente ejemplo, se registran los resultados de un módulo ansible.builtin.stat y,
+luego, se imprime la checksum MD5 del archivo que verificó. (El algoritmo SHA256 más moderno
+también está disponible; aquí se usa MD5 para mejorar la legibilidad).
+- name: Verify the checksum of a file
+  ansible.builtin.stat:
+    path: /path/to/file
+    checksum_algorithm: md5
+  register: result
+- ansible.builtin.debug
+    msg: "The checksum of the file is {{ result.stat.checksum }}"
+El resultado debe ser similar a lo siguiente:
+TASK [Get md5 checksum of a file] *****************************************
+ok: [hostname]
+TASK [debug] **************************************************************
+ok: [hostname] => {
+    "msg": "The checksum of the file is 5f76590425303022e933c43a7f2092a3"
+}
+La información sobre los valores devueltos por el módulo ansible.builtin.stat son
+registrados en ansible-navigator doc ansible.builtin.stat, o puede registrar una
+variable y visualizar su contenido para ver qué hay disponible:
+- name: Examine all stat output of /etc/passwd
+  hosts: workstation
+  tasks:
+    - name: stat /etc/passwd
+      ansible.builtin.stat:
+        path: /etc/passwd
+      register: results
+    - name: Display stat results
+      debug:
+        var: results
+196
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Sincronización de archivos entre el nodo de control y los hosts
+gestionados
+El módulo ansible.posix.synchronize es un contenedor alrededor de la herramienta
+rsync, que simplifica las tareas comunes de administración de archivos en sus playbooks. La
+herramienta rsync debe instalarse en el host local y remoto. De forma predeterminada, cuando
+usa el módulo ansible.posix.synchronize, el "host local" es el host en el que se origina la
+tarea ansible.posix.synchronize (por lo general, el nodo de control), y el "host de destino"
+es el host al que se conecta ansible.posix.synchronize.
+En el siguiente ejemplo se sincroniza un archivo ubicado en el directorio de trabajo de Ansible con
+los hosts gestionados:
+- name: synchronize local file to remote files
+  ansible.posix.synchronize:
+    src: file
+    dest: /path/to/file
+Hay muchas maneras de usar el módulo ansible.posix.synchronize y sus diversos
+parámetros, incluida la sincronización de directorios. Ejecute el comando ansible-navigator
+doc ansible.posix.synchronize para obtener ejemplos de parámetros y de playbooks
+adicionales.
+Referencias
+Páginas del manual chmod(1), chown(1), rsync(1), stat(1) y touch(1)
+Comando ansible-navigator doc
+Documentación de Ansible: índice de todos los módulos: ansible.builtin
+https://docs.ansible.com/ansible/latest/collections/index_module.html#ansible-
+builtin
+RH294-RHEL9.0-es-3-20240620
+197
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Ejercicio Guiado
+Modificación y copia de archivos a hosts
+Usa los módulos estándar de Ansible para crear, instalar, editar y eliminar archivos en hosts
+gestionados y gestionar permisos, propiedad y contextos de SELinux de esos archivos.
+Resultados
+• Recuperar archivos de hosts gestionados por nombre de host y almacenarlos localmente.
+• Cree playbooks que usen módulos comunes de gestión de archivos de Ansible
+Content Collection ansible.builtin, como copy, fetch, file, lineinfile y
+blockinfile.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-manage
+Instrucciones
+ 1.
+El comando lab creó el directorio /home/student/file-manage con el archivo de
+configuración ansible.cfg y un archivo de inventario denominado inventory. Revise el
+contenido de ambos archivos antes de continuar.
+1.1.
+Cambie al directorio /home/student/file-manage.
+[student@workstation ~]$ cd ~/file-manage
+[student@workstation file-manage]$
+1.2.
+Revise el contenido del archivo ansible.cfg. Verifique que esté habilitado el
+aumento de privilegios y que esté usando sudo como método de aumento de
+privilegios para el usuario remoto devops.
+[defaults]
+inventory=inventory
+remote_user=devops
+[privilege_escalation]
+become=true
+become_method=sudo
+become_user=root
+become_ask_pass=false
+198
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+1.3.
+Revise el contenido del archivo inventory. Los servidores
+servera.lab.example.com y serverb.lab.example.com pertenecen al grupo
+servers.
+[servers]
+servera.lab.example.com
+serverb.lab.example.com
+ 2.
+Cree un playbook denominado file_management.yml.
+• Agregue una tarea con el fin de recuperar el archivo de registro /var/log/secure de
+cada uno de los hosts gestionados en el grupo servers y almacenar los archivos en el
+nodo de control.
+• Agregue una tarea para crear un directorio denominado files en el directorio de inicio
+devops de los hosts gestionados.
+• Asegúrese de que el directorio files tenga el atributo de tipo de contexto SELinux
+samba_share_t.
+• Agregue una tarea para anexar la línea This line was added by the lineinfile
+module al archivo files/users.txt en los hosts gestionados.
+2.1.
+Cree el playbook file_management.yml con un solo play denominado Preparing
+servers. Apunte al grupo de hosts servers y agregue una sección tasks al play.
+---
+- name: Preparing servers
+  hosts: servers
+  tasks:
+2.2.
+La primera tarea debe crear el directorio secure-backups con subdirectorios
+denominados según el nombre de host de cada host gestionado y almacenar los
+archivos de copia de seguridad (backup) en sus respectivos subdirectorios. Use el
+módulo ansible.builtin.fetch para copiar los archivos /var/log/secure en
+el sistema local. El valor del parámetro dest crea el directorio secure-backups si
+aún no existe.
+...output omitted...
+    - name: Fetch the /var/log/secure log file from managed hosts
+      ansible.builtin.fetch:
+        src: /var/log/secure
+        dest: secure-backups
+2.3.
+Agregue una tarea al play que usa el módulo ansible.builtin.file para crear el
+directorio /home/devops/files en todos los hosts gestionados. Asegúrese de que
+el directorio sea propiedad del usuario y grupo devops, que tenga permisos de 0775
+y que tenga un tipo de SELinux de samba_share_t.
+...output omitted...
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+RH294-RHEL9.0-es-3-20240620
+199
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: samba_share_t
+2.4.
+Agregue una tarea al play que use el módulo ansible.builtin.lineinfile para
+anexar la línea dada al archivo /home/devops/files/users.txt. Asegúrese de
+que el archivo sea propiedad del usuario y grupo devops, que tenga permisos de
+0664.
+...output omitted...
+    - name: Add a single line of text to a file
+      ansible.builtin.lineinfile:
+        path: /home/devops/files/users.txt
+        line: This line was added by the lineinfile module
+        state: present
+        create: true
+        owner: devops
+        group: devops
+        mode: 0664
+2.5.
+Al completarse, el playbook debe incluir el siguiente contenido. Revise el playbook
+para comprobar la precisión.
+---
+- name: Preparing servers
+  hosts: servers
+  tasks:
+    - name: Fetch the /var/log/secure log file from managed hosts
+      ansible.builtin.fetch:
+        src: /var/log/secure
+        dest: secure-backups
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: samba_share_t
+    - name: Add a single line of text to a file
+      ansible.builtin.lineinfile:
+        path: /home/devops/files/users.txt
+        line: This line was added by the lineinfile module
+        state: present
+        create: true
+200
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+        owner: devops
+        group: devops
+        mode: 0664
+ 3.
+Verifique la sintaxis del playbook y, luego, ejecútelo y verifique que se ejecute
+correctamente.
+3.1.
+Use el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook. Corrija los errores antes de pasar al siguiente paso.
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml --syntax-check
+playbook: /home/student/file-manage/file_management.yml
+3.2.
+Use el comando ansible-navigator run para ejecutar el playbook:
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml
+PLAY [Preparing servers] **************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Fetch the /var/log/secure log file from managed hosts] **************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+TASK [Ensure the /home/devops/files directory exists] *********************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+TASK [Add a single line of text to a file] ********************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+3.3.
+Confirme que el playbook recuperó los archivos /var/log/secure de los hosts
+gestionados.
+[student@workstation file-manage]$ tree -F secure-backups
+secure-backups
+├── servera.lab.example.com/
+│   └── var/
+│       └── log/
+│           └── secure
+└── serverb.lab.example.com/
+RH294-RHEL9.0-es-3-20240620
+201
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+    └── var/
+        └── log/
+            └── secure
+3.4.
+Use un comando ls -Z con el usuario devops en la máquina servera para verificar
+los atributos SELinux del directorio files en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls -Z'
+unconfined_u:object_r:samba_share_t:s0 files
+3.5.
+Use un comando cat con el usuario devops en la máquina servera para verificar el
+contenido del archivo files/users.txt en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'cat files/users.txt'
+This line was added by the lineinfile module
+ 4.
+Después de ejecutar el playbook, decide realizar algunos cambios adicionales.
+• Cambie el contexto de tipo SELinux para el directorio files a fin de que use el contexto
+establecido por la política de SELinux predeterminada.
+• Agregue una tarea al play Preparing servers que copie el archivo system del
+directorio del proyecto al directorio /home/devops/files en los hosts gestionados.
+• Asegúrese de que el modo de archivo esté establecido en 0664 y que el archivo sea
+propiedad del usuario y grupo devops.
+• Agregue otra tarea para adjuntar el siguiente bloque de texto al archivo /home/devops/
+files/users.txt en todos los hosts gestionados:
+This block of text consists of two lines.
+They have been added by the blockinfile module.
+4.1.
+Edite el playbook file_management.yml. Actualice el parámetro setype en la
+segunda tarea para que el directorio /home/devops/files use el contexto de tipo
+SELinux predeterminado.
+...output omitted...
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: _default
+...output omitted...
+4.2.
+Agregue una tarea que usa el módulo ansible.builtin.copy para copiar el
+archivo local system al directorio /home/devops/files en todos los hosts
+gestionados.
+202
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+...output omitted...
+    - name: Copy a file to managed hosts and set ownership and permissions
+      ansible.builtin.copy:
+        src: system
+        dest: /home/devops/files/
+        owner: devops
+        group: devops
+        mode: 0664
+4.3.
+Agregue una tarea que usa el módulo ansible.builtin.blockinfile para
+anexar el bloque de texto dado al archivo /home/devops/files/users.txt en
+todos los hosts gestionados.
+...output omitted...
+    - name: Add a block of text to an existing file
+      ansible.builtin.blockinfile:
+        path: /home/devops/files/users.txt
+        block: |
+          This block of text consists of two lines.
+          They have been added by the blockinfile module.
+        state: present
+4.4.
+Al completarse, el playbook modificado debe constar del siguiente contenido:
+---
+- name: Preparing servers
+  hosts: servers
+  tasks:
+    - name: Fetch the /var/log/secure log file from managed hosts
+      ansible.builtin.fetch:
+        src: /var/log/secure
+        dest: secure-backups
+    - name: Ensure the /home/devops/files directory exists
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: directory
+        owner: devops
+        group: devops
+        mode: 0775
+        setype: _default
+    - name: Add a single line of text to a file
+      ansible.builtin.lineinfile:
+        path: /home/devops/files/users.txt
+        line: This line was added by the lineinfile module
+        state: present
+        create: true
+        owner: devops
+        group: devops
+RH294-RHEL9.0-es-3-20240620
+203
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+        mode: 0664
+    - name: Copy a file to managed hosts and set ownership and permissions
+      ansible.builtin.copy:
+        src: system
+        dest: /home/devops/files/
+        owner: devops
+        group: devops
+        mode: 0664
+    - name: Add a block of text to an existing file
+      ansible.builtin.blockinfile:
+        path: /home/devops/files/users.txt
+        block: |
+          This block of text consists of two lines.
+          They have been added by the blockinfile module.
+        state: present
+ 5.
+Verifique la sintaxis del playbook y, luego, ejecútelo y verifique que se ejecute
+correctamente.
+5.1.
+Use el comando ansible-navigator run --syntax-check para verificar la
+sintaxis del playbook file_management.yml.
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml --syntax-check
+playbook: /home/student/file-manage/file_management.yml
+5.2.
+Use el comando ansible-navigator run para ejecutar el playbook:
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout file_management.yml
+PLAY [Preparing servers] **************************************************
+TASK [Gathering Facts] ****************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Fetch the /var/log/secure log file from managed hosts] **************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Ensure the /home/devops/files directory exists] *********************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+TASK [Add a single line of text to a file] ********************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Copy a file to managed hosts and set ownership and permissions] *****
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+204
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+TASK [Add a block of text to an existing file] ****************************
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.3.
+Use un comando ls -Z con el usuario devops en la máquina servera para verificar
+los atributos SELinux del directorio files en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls -Z'
+unconfined_u:object_r:user_home_t:s0 files
+5.4.
+Use un comando ls con el usuario devops en la máquina servera para verificar la
+existencia del archivo files/system en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls files/system'
+files/system
+5.5.
+Use un comando cat con el usuario devops en la máquina servera para verificar el
+contenido del archivo files/users.txt en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'cat files/users.txt'
+This line was added by the lineinfile module
+# BEGIN ANSIBLE MANAGED BLOCK
+This block of text consists of two lines.
+They have been added by the blockinfile module.
+# END ANSIBLE MANAGED BLOCK
+ 6.
+Cree un playbook denominado remove_dir.yml en el directorio de trabajo actual.
+Configure un play en el playbook para usar el módulo ansible.builtin.file a fin de
+eliminar el archivo /home/devops/files de todos los hosts gestionados.
+6.1.
+Cree el playbook remove_dir.yml con el siguiente contenido:
+---
+- name: Use the file module to remove a directory
+  hosts: servers
+  tasks:
+    - name: Remove a directory from managed hosts
+      ansible.builtin.file:
+        path: /home/devops/files
+        state: absent
+6.2.
+Ejecute el playbook:
+RH294-RHEL9.0-es-3-20240620
+205
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+[student@workstation file-manage]$ ansible-navigator run \
+> -m stdout remove_dir.yml
+PLAY [Use the file module to remove a directory] **************************
+TASK [Gathering Facts] ****************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [Remove a directory from managed hosts] ******************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP ****************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverb.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+6.3.
+Use un comando ls -l con el usuario devops en la máquina servera para
+confirmar que el directorio files ya no exista en los hosts gestionados.
+[student@workstation file-manage]$ ssh devops@servera 'ls -l /home/devops/files'
+ls: cannot access '/home/devops/files': No such file or directory
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-manage
+206
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Implementación de archivos
+personalizados con plantillas Jinja2
+Objetivos
+• Implementar archivos en hosts gestionados que se personalizan mediante el uso de plantillas
+Jinja2.
+Plantillas para archivos
+Ansible Content Collection ansible.builtin ofrece una serie de módulos que se pueden usar
+para modificar archivos existentes. Estos incluyen lineinfile y blockinfile, entre otros. Sin
+embargo, no siempre son fáciles de usar de manera efectiva y correcta.
+Una forma mucho más poderosa de administrar archivos es usar una plantilla. Con este método,
+puede escribir un archivo de configuración de plantilla que se personaliza automáticamente para
+el host gestionado cuando se implementa el archivo, usando datos y variables de Ansible. Esto
+puede ser más fácil de controlar y menos propenso a errores.
+Introducción a Jinja2
+Ansible usa el sistema de plantillas Jinja2 para los archivos de plantilla. Ansible también usa la
+sintaxis de Jinja2 para hacer referencia a las variables de playbooks, por lo que ya sabe un poco
+cómo usarlo.
+Uso de delimitadores
+Las variables y expresiones lógicas se colocan entre etiquetas, o delimitadores. Cuando se evalúa
+una plantilla Jinja2, la expresión {{ EXPR }} se reemplaza con los resultados de esa expresión
+o variable. Las plantillas de Jinja2 también pueden usar {% EXPR %} para estructuras de control
+especiales o lógica que recorre el código de Jinja2 o para realizar pruebas. Use la sintaxis {#
+COMMENT #} para encerrar los comentarios que no deberían aparecer en el archivo final.
+En el siguiente ejemplo de un archivo de plantillas Jinja2, la primera línea incluye un comentario
+que no se incluirá en el archivo final. Las referencias a variables en la segunda línea se reemplazan
+con los valores de datos del sistema a los que hacen referencia.
+{# /etc/hosts line #}
+{{ ansible_facts['default_ipv4']['address'] }}    {{ ansible_facts['hostname'] }}
+Desarrollo de una plantilla Jinja2
+Una plantilla Jinja2 está compuesta por múltiples elementos: datos, variables y expresiones. Estas
+variables y expresiones se reemplazan con sus valores cuando se entrega la plantilla Jinja2. Las
+variables usadas en la plantilla se pueden especificar en la sección vars del playbook. Es posible
+usar la información de los hosts gestionados como variables en una plantilla.
+Los archivos de plantilla generalmente se guardan en el directorio templates del proyecto para
+su playbook y, generalmente, se les asigna una extensión de archivo .j2 para dejar en claro que
+son archivos de plantilla Jinja2.
+RH294-RHEL9.0-es-3-20240620
+207
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+nota
+Un archivo que contiene una plantilla Jinja2 no necesita tener ninguna extensión de
+archivo específica (por ejemplo, .j2). Sin embargo, proporcionar dicha extensión
+de archivo puede hacer que sea más fácil recordar que es un archivo de plantilla.
+En el siguiente ejemplo, se muestra cómo crear una plantilla para /etc/ssh/sshd_config con
+variables y datos recuperados por Ansible de los hosts gestionados. Cuando un play implementa la
+plantilla, los datos se reemplazan por sus valores en el host gestionado que se está configurando.
+# {{ ansible_managed }}
+# DO NOT MAKE LOCAL MODIFICATIONS TO THIS FILE BECAUSE THEY WILL BE LOST
+Port {{ ssh_port }}
+ListenAddress {{ ansible_facts['default_ipv4']['address'] }}
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+SyslogFacility AUTHPRIV
+PermitRootLogin {{ root_allowed }}
+AllowGroups {{ groups_allowed }}
+AuthorizedKeysFile /etc/.rht_authorized_keys .ssh/authorized_keys
+PasswordAuthentication {{ passwords_allowed }}
+ChallengeResponseAuthentication no
+GSSAPIAuthentication yes
+GSSAPICleanupCredentials no
+UsePAM yes
+X11Forwarding yes
+UsePrivilegeSeparation sandbox
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+Subsystem sftp /usr/libexec/openssh/sftp-server
+Implementación de plantillas Jinja2
+Las plantillas Jinja2 son una herramienta valiosa que puede usar para personalizar archivos de
+configuración para ser implementados en los hosts gestionados. Cuando se ha creado la plantilla
+Jinja2 para un archivo de configuración, se puede implementar en los hosts gestionados usando el
+módulo ansible.builtin.template, el cual soporta la transferencia de un archivo local en el
+nodo de control a los hosts gestionados.
+208
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Para usar el módulo ansible.builtin.template, use la siguiente sintaxis. El valor asociado
+con la clave src especifica la plantilla Jinja2 de origen, y el valor asociado a la clave dest
+especifica el archivo que debe crearse en los hosts de destino.
+tasks:
+  - name: template render
+    ansible.builtin.template:
+      src: /tmp/j2-template.j2
+      dest: /tmp/dest-config-file.txt
+nota
+El módulo ansible.builtin.template también le permite especificar
+el propietario (el usuario que posee el archivo), el grupo, los permisos
+y el contexto SELinux del archivo implementado, al igual que el módulo
+ansible.builtin.file. También puede tomar una opción validate para
+ejecutar un comando arbitrario (como visudo -c) con el fin de verificar que la
+sintaxis de un archivo sea correcta antes de copiarlo en una plantilla.
+Para obtener más detalles, consulte ansible-navigator doc
+ansible.builtin.template.
+Administración de archivos con plantillas
+Para evitar que otros administradores del sistema modifiquen los archivos gestionados por
+Ansible, se aconseja incluir un comentario en la parte superior de la plantilla para indicar que el
+archivo no debe editarse manualmente.
+Una forma de hacer esto es usar la cadena "Administrado por Ansible" en la directiva
+ansible_managed. Esta no es una variable normal, pero se puede usar como una en una
+plantilla. Puede establecer el valor de ansible_managed en un archivo ansible.cfg:
+ansible_managed = Ansible managed
+Para incluir la cadena ansible_managed dentro de una plantilla Jinja2, use la siguiente sintaxis:
+{{ ansible_managed }}
+Estructuras de control
+Puede usar las estructuras de control Jinja2 en los archivos de plantilla para reducir la escritura
+repetitiva, ingresar entradas para cada host en un play de forma dinámica o insertar texto
+condicionalmente en un archivo.
+Uso de bucles
+Jinja2 usa la declaración for para proporcionar la funcionalidad de bucles. En el siguiente
+ejemplo, la variable users tiene una lista de valores. La variable user se reemplaza con todos los
+valores incluidos en la variable users, un valor por línea.
+RH294-RHEL9.0-es-3-20240620
+209
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+{% for user in users %}
+      {{ user }}
+{% endfor %}
+La siguiente plantilla de ejemplo usa una declaración for y un condicional para ejecutar a través
+de todos los valores en la variable users y reemplaza myuser con cada valor, salvo cuando el
+valor es root.
+{# for statement #}
+{% for myuser in users if not myuser == "root" %}
+User number {{ loop.index }} - {{ myuser }}
+{% endfor %}
+La variable loop.index se expande al número de índice en el que se encuentra actualmente el
+bucle. Tiene un valor de 1 la primera vez que se ejecuta el bucle, y se va incrementando de a 1 en
+cada iteración.
+Como otro ejemplo, esta plantilla también usa una declaración for. Se supone que el inventario
+que se está usando ha definido una variable myhosts que contiene una lista de hosts que se van a
+gestionar. Si coloca la siguiente declaración for en una plantilla Jinja2, todos los hosts en el grupo
+myhosts del inventario se enumeran en el archivo resultante.
+{% for myhost in groups['myhosts'] %}
+{{ myhost }}
+{% endfor %}
+Para un ejemplo más práctico, puede usar este ejemplo para generar un archivo /etc/hosts de
+datos de host de forma dinámica. Supongamos que tiene el siguiente playbook:
+- name: /etc/hosts is up to date
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Deploy /etc/hosts
+      ansible.builtin.template:
+        src: templates/hosts.j2
+        dest: /etc/hosts
+La siguiente plantilla templates/hosts.j2 de tres líneas crea el archivo de todos los hosts del
+grupo all. (La línea media es extremadamente larga en la plantilla debido a la longitud de los
+nombres de las variables.) Se repite en cada host del grupo para obtener tres datos para el archivo
+/etc/hosts.
+{% for host in groups['all'] %}
+{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} {{ hostvars[host]
+['ansible_facts']['fqdn'] }} {{ hostvars[host]['ansible_facts']['hostname'] }}
+{% endfor %}
+210
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Uso de condicionales
+Jinja2 usa la declaración if para proporcionar control condicional. Esto le permite colocar una
+línea en un archivo implementado si se cumplen ciertas condiciones.
+En el siguiente ejemplo, el valor de la variable result se coloca en el archivo implementado solo
+si el valor de la variable finished es True.
+{% if finished %}
+{{ result }}
+{% endif %}
+Importante
+Puede usar bucles y condicionales de Jinja2 en las plantillas de Ansible, pero no en
+playbooks de Ansible.
+Filtros de variables
+Jinja2 proporciona filtros que cambian el formato de salida para las expresiones de la plantilla,
+esencialmente convirtiendo los datos en una variable a algún otro formato en el archivo que
+resulta de la plantilla.
+Por ejemplo, existen filtros disponibles para lenguajes, como YAML y JSON. El filtro to_json
+formatea la salida de la expresión con JSON, y el filtro to_yaml formatea la salida de la expresión
+con YAML.
+{{ output | to_json }}
+{{ output | to_yaml }}
+Hay filtros adicionales disponibles, como to_nice_json y to_nice_yaml que formatean la
+salida de la expresión en formato JSON o YAML legible por el ojo humano.
+{{ output | to_nice_json }}
+{{ output | to_nice_yaml }}
+Los filtros from_json y from_yaml esperan cadenas en formato JSON o YAML,
+respectivamente.
+{{ output | from_json }}
+{{ output | from_yaml }}
+nota
+Los filtros son un concepto muy poderoso en Ansible y se tratan con más
+profundidad en el Capítulo 7 del curso Desarrollo de automatización avanzada con
+Red Hat Ansible Automation Platform (DO374).
+Para obtener más información, también puede ver "Using filters to manipulate data"
+[https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html] en la
+Guía del usuario de Ansible.
+RH294-RHEL9.0-es-3-20240620
+211
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Referencias
+Módulo ansible.builtin.template: plantilla de un archivo a un host de destino:
+documentación Ansible
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+template_module.html
+Uso de filtros para manipular datos: documentación Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html
+212
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Ejercicio Guiado
+Implementación de archivos
+personalizados con plantillas Jinja2
+Crear un archivo de plantilla simple que su playbook usa para instalar un archivo de Mensaje
+del día personalizado en cada host gestionado.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-template
+Instrucciones
+ 1.
+En workstation, diríjase al directorio de trabajo /home/student/file-template.
+Revise el archivo inventory en el directorio de trabajo actual. Este archivo configura dos
+grupos: webservers y workstations. El sistema servera.lab.example.com está en
+el grupo webservers y el sistema workstation.lab.example.com está en el grupo
+workstations.
+1.1.
+Diríjase al directorio de trabajo /home/student/file-template.
+[student@workstation ~]$ cd ~/file-template
+[student@workstation file-template]$
+1.2.
+Muestre el contenido del archivo inventory.
+[webservers]
+servera.lab.example.com
+[workstations]
+workstation.lab.example.com
+ 2.
+Cree una plantilla para el archivo del Mensaje del día (/etc/motd) y guárdelo en el archivo
+motd.j2 en el directorio de trabajo actual. Incluya las siguientes variables y datos en la
+plantilla:
+• ansible_facts['fqdn'], para insertar el FQDN del host gestionado.
+RH294-RHEL9.0-es-3-20240620
+213
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+• ansible_facts['distribution'] y
+ansible_facts['distribution_version'], para proporcionar información de
+distribución de Linux.
+Para servidores en el grupo workstations, el Mensaje del día debe incluir el mensaje:
+As a workstation user, you need to submit a ticket to receive help
+with any issues.
+Para servidores en el grupo webservers, el Mensaje del día debe incluir el mensaje:
+Please report issues to: {{ system_owner }}. Establece la variable
+system_owner en el playbook motd.yml, que crea en el próximo paso.
+2.1.
+Cree un archivo de plantilla Jinja2 denominado motd.j2 que incluya el FQDN del
+host gestionado y la información de distribución de Linux.
+This is the system {{ ansible_facts['fqdn'] }}.
+This is a {{ ansible_facts['distribution'] }} version
+ {{ ansible_facts['distribution_version'] }} system.
+2.2.
+Agregue una condición al archivo motd.j2 con el mensaje para los servidores en el
+grupo workstations.
+This is the system {{ ansible_facts['fqdn'] }}.
+This is a {{ ansible_facts['distribution'] }} version
+ {{ ansible_facts['distribution_version'] }} system.
+{% if ansible_facts['fqdn'] in groups['workstations'] %}
+As a workstation user, you need to submit a ticket to receive help with any
+ issues.
+{% endif %}
+2.3.
+Actualice la condición en el archivo motd.j2 con el mensaje para los servidores en el
+grupo webservers.
+This is the system {{ ansible_facts['fqdn'] }}.
+This is a {{ ansible_facts['distribution'] }} version
+ {{ ansible_facts['distribution_version'] }} system.
+{% if ansible_facts['fqdn'] in groups['workstations'] %}
+As a workstation user, you need to submit a ticket to receive help with any
+ issues.
+{% elif ansible_facts['fqdn'] in groups['webservers'] %}
+Please report issues to: {{ system_owner }}.
+{% endif %}
+ 3.
+Cree un archivo de playbook denominado motd.yml en el directorio de trabajo actual.
+Cree un play en ese archivo que defina la variable system_owner en su sección vars.
+El play debe tener una tarea que use el módulo ansible.builtin.template para
+implementar la plantilla Jinja2 motd.j2 en el archivo remoto /etc/motd en los hosts
+gestionados. Establezca el propietario y el grupo de /etc/motd en root y el modo en
+0644.
+---
+- name: Configure the message of the day
+  hosts: all
+214
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+  remote_user: devops
+  become: true
+  vars:
+    - system_owner: clyde@example.com
+  tasks:
+    - name: Configure /etc/motd
+      ansible.builtin.template:
+        src: motd.j2
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+ 4.
+Antes de ejecutar el playbook, use el comando ansible-navigator run --syntax-
+check para verificar su sintaxis. Si informa errores, corríjalos antes de pasar al siguiente
+paso. Debe ver una salida similar a la siguiente:
+[student@workstation file-template]$ ansible-navigator run \
+> -m stdout motd.yml --syntax-check
+playbook: /home/student/file-template/motd.yml
+ 5.
+Ejecute el playbook motd.yml.
+[student@workstation file-template]$ ansible-navigator run \
+> -m stdout motd.yml
+PLAY [Configure the message of the day] ****************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+ok: [workstation.lab.example.com]
+TASK [Configure /etc/motd] *****************************************************
+changed: [servera.lab.example.com]
+changed: [workstation.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation.lab.example.com : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Confirme que el archivo /etc/motd se haya configurado correctamente en los servidores
+webservers y workstations.
+6.1.
+Use el comando ssh para iniciar sesión en servera.lab.example.com con el
+usuario devops. Cierre sesión cuando verifique que el Mensaje del día se muestre
+correctamente en su terminal.
+RH294-RHEL9.0-es-3-20240620
+215
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+[student@workstation file-template]$ ssh devops@servera.lab.example.com
+This is the system servera.lab.example.com.
+This is a RedHat version 9.0 system.
+Please report issues to: clyde@example.com.
+...output omitted...
+[devops@servera ~]$ exit
+logout
+Connection to servera.lab.example.com closed.
+6.2.
+Use el comando ssh para iniciar sesión en workstation.lab.example.com con
+el usuario devops. Cierre sesión cuando verifique que el Mensaje del día se muestre
+correctamente en su terminal.
+[student@workstation file-template]$ ssh devops@workstation.lab.example.com
+This is the system workstation.lab.example.com.
+This is a RedHat version 9.0 system.
+As a workstation user, you need to submit a ticket to receive help with any
+ issues.
+...output omitted...
+[devops@workstation ~]$ exit
+logout
+Connection to workstation.lab.example.com closed.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-template
+216
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Trabajo de laboratorio
+Implementación de archivos en hosts
+gestionados
+Ejecutar un playbook que cree un archivo personalizado en sus hosts gestionados mediante
+el uso de una plantilla Jinja2.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-review
+nota
+Todos los archivos usados en este ejercicio están disponibles en
+workstation en el directorio /home/student/file-review/files.
+Instrucciones
+1.
+Revise el archivo inventory generado en el directorio /home/student/file-review.
+Este archivo de inventario define el grupo servers, el cual tiene asociado el host gestionado
+serverb.lab.example.com.
+2.
+Identifique los datos en serverb.lab.example.com, que muestran la cantidad total de
+memoria del sistema y la cantidad de procesadores que tiene.
+3.
+En el directorio /home/student/file-review, cree el archivo de plantillas Jinja2
+templates/motd.j2. Después de implementar esta plantilla, los usuarios que inicien
+sesión en serverb.lab.example.com deberían ver un mensaje que muestre el recuento
+total de procesadores y memoria del sistema.
+El mensaje puede usar el texto que desee, pero la plantilla debe usar los datos
+ansible_facts['memtotal_mb'] y ansible_facts['processor_count'] para
+proporcionar la información de recursos del sistema para el mensaje.
+4.
+En el directorio /home/student/file-review, cree un archivo de playbook denominado
+motd.yml que contenga un nuevo play que se ejecuta en todos los hosts del inventario.
+Debe iniciar sesión con el usuario devops en el host remoto y usar become para habilitar el
+aumento de privilegios para todo el play.
+RH294-RHEL9.0-es-3-20240620
+217
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+El play debe tener una tarea que use el módulo ansible.builtin.template para
+implementar el archivo de plantilla motd.j2 Jinja2 en el archivo /etc/motd en los hosts
+gestionados. El archivo resultante debe tener el usuario root como su usuario y grupo
+propietario, y sus permisos deben ser 0644.
+Agregue una tarea adicional que use el módulo ansible.builtin.stat para verificar
+que /etc/motd exista en los hosts gestionados y registre sus resultados en una variable.
+Esa tarea debe ir seguida de una tarea que use ansible.builtin.debug para mostrar la
+información en esa variable registrada.
+Agregue una tarea que use el módulo ansible.builtin.copy para colocar files/
+issue en el directorio /etc/ del host gestionado; use la misma propiedad y los mismos
+permisos que /etc/motd.
+Por último, agregue una tarea que use el módulo ansible.builtin.file para asegurarse
+de que /etc/issue.net sea un enlace simbólico a /etc/issue en el host gestionado.
+5.
+Verifique que su playbook no contenga errores de sintaxis.
+6.
+Ejecute el playbook de Ansible motd.yml.
+7.
+Confirme que el playbook motd.yml se haya ejecutado correctamente.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade file-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-review
+218
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Solución
+Implementación de archivos en hosts
+gestionados
+Ejecutar un playbook que cree un archivo personalizado en sus hosts gestionados mediante
+el uso de una plantilla Jinja2.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-review
+nota
+Todos los archivos usados en este ejercicio están disponibles en
+workstation en el directorio /home/student/file-review/files.
+Instrucciones
+1.
+Revise el archivo inventory generado en el directorio /home/student/file-review.
+Este archivo de inventario define el grupo servers, el cual tiene asociado el host gestionado
+serverb.lab.example.com.
+1.1.
+En workstation, cambie al directorio /home/student/file-review.
+[student@workstation ~]$ cd ~/file-review/
+[student@workstation file-review]$
+1.2.
+Muestre el contenido del archivo inventory.
+[servers]
+serverb.lab.example.com
+2.
+Identifique los datos en serverb.lab.example.com, que muestran la cantidad total de
+memoria del sistema y la cantidad de procesadores que tiene.
+RH294-RHEL9.0-es-3-20240620
+219
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Cree un playbook denominado serverb_facts.yml en el directorio /
+home/student/file-review. Edítelo para que contenga un play que
+use el módulo ansible.builtin.debug para mostrar una lista de todos
+los datos para el host gestionado serverb.lab.example.com. Los datos
+ansible_facts['processor_count'] y ansible_facts['memtotal_mb']
+proporcionan información sobre los límites de recursos del host gestionado.
+[student@workstation file-review]$ cat serverb_facts.yml
+---
+- name: Display ansible_facts
+  hosts: serverb.lab.example.com
+  tasks:
+    - name: Display facts
+      ansible.builtin.debug:
+        var: ansible_facts
+[student@workstation file-review]$ ansible-navigator run \
+> -m stdout serverb_facts.yml
+PLAY [Display ansible_facts] ***********************************************
+TASK [Gathering Facts] *****************************************************
+ok: [serverb.lab.example.com]
+TASK [Display facts] *******************************************************
+ok: [serverb.lab.example.com] => {
+    "ansible_facts": {
+...output omitted...
+        "memtotal_mb": 960,
+...output omitted...
+        "processor_count": 1,
+...output omitted...
+    }
+}
+PLAY RECAP *****************************************************************
+serverb.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+3.
+En el directorio /home/student/file-review, cree el archivo de plantillas Jinja2
+templates/motd.j2. Después de implementar esta plantilla, los usuarios que inicien
+sesión en serverb.lab.example.com deberían ver un mensaje que muestre el recuento
+total de procesadores y memoria del sistema.
+El mensaje puede usar el texto que desee, pero la plantilla debe usar los datos
+ansible_facts['memtotal_mb'] y ansible_facts['processor_count'] para
+proporcionar la información de recursos del sistema para el mensaje.
+3.1.
+Cree el archivo templates/motd.j2. El archivo debe usar el siguiente contenido:
+System total memory: {{ ansible_facts['memtotal_mb'] }} MiB.
+System processor count: {{ ansible_facts['processor_count'] }}
+4.
+En el directorio /home/student/file-review, cree un archivo de playbook denominado
+motd.yml que contenga un nuevo play que se ejecuta en todos los hosts del inventario.
+220
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Debe iniciar sesión con el usuario devops en el host remoto y usar become para habilitar el
+aumento de privilegios para todo el play.
+El play debe tener una tarea que use el módulo ansible.builtin.template para
+implementar el archivo de plantilla motd.j2 Jinja2 en el archivo /etc/motd en los hosts
+gestionados. El archivo resultante debe tener el usuario root como su usuario y grupo
+propietario, y sus permisos deben ser 0644.
+Agregue una tarea adicional que use el módulo ansible.builtin.stat para verificar
+que /etc/motd exista en los hosts gestionados y registre sus resultados en una variable.
+Esa tarea debe ir seguida de una tarea que use ansible.builtin.debug para mostrar la
+información en esa variable registrada.
+Agregue una tarea que use el módulo ansible.builtin.copy para colocar files/
+issue en el directorio /etc/ del host gestionado; use la misma propiedad y los mismos
+permisos que /etc/motd.
+Por último, agregue una tarea que use el módulo ansible.builtin.file para asegurarse
+de que /etc/issue.net sea un enlace simbólico a /etc/issue en el host gestionado.
+4.1.
+Cree el playbook y configure las directivas remote_user y become.
+---
+- name: Configure system
+  hosts: all
+  remote_user: devops
+  become: true
+  tasks:
+4.2.
+Cree una tarea con el módulo ansible.builtin.template para implementar el
+archivo de plantilla Jinja2 motd.j2 en el archivo /etc/motd
+    - name: Configure a custom /etc/motd
+      ansible.builtin.template:
+        src: templates/motd.j2
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+4.3.
+Cree una tarea que use el módulo ansible.builtin.stat para verificar que /
+etc/motd existe y registre los resultados. Agregue otra tarea usando el módulo
+ansible.builtin.debug para mostrar la variable registrada.
+    - name: Check file exists
+      ansible.builtin.stat:
+        path: /etc/motd
+      register: motd
+    - name: Display stat results
+      ansible.builtin.debug:
+        var: motd
+4.4.
+Agregue una tarea que use el módulo ansible.builtin.copy para colocar files/
+issue en el directorio /etc/.
+RH294-RHEL9.0-es-3-20240620
+221
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+    - name: Copy custom /etc/issue file
+      ansible.builtin.copy:
+        src: files/issue
+        dest: /etc/issue
+        owner: root
+        group: root
+        mode: 0644
+4.5.
+Agregue una tarea que use el módulo ansible.builtin.file para asegurarse de
+que /etc/issue.net sea un enlace simbólico a /etc/issue.
+    - name: Ensure /etc/issue.net is a symlink to /etc/issue
+      ansible.builtin.file:
+        src: /etc/issue
+        dest: /etc/issue.net
+        state: link
+        owner: root
+        group: root
+        force: true
+4.6.
+El playbook completo debe verse de la siguiente manera.
+---
+- name: Configure system
+  hosts: all
+  remote_user: devops
+  become: true
+  tasks:
+    - name: Configure a custom /etc/motd
+      ansible.builtin.template:
+        src: templates/motd.j2
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+    - name: Check file exists
+      ansible.builtin.stat:
+        path: /etc/motd
+      register: motd
+    - name: Display stat results
+      ansible.builtin.debug:
+        var: motd
+    - name: Copy custom /etc/issue file
+      ansible.builtin.copy:
+        src: files/issue
+        dest: /etc/issue
+        owner: root
+        group: root
+        mode: 0644
+222
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+    - name: Ensure /etc/issue.net is a symlink to /etc/issue
+      ansible.builtin.file:
+        src: /etc/issue
+        dest: /etc/issue.net
+        state: link
+        owner: root
+        group: root
+        force: true
+5.
+Verifique que su playbook no contenga errores de sintaxis.
+Antes de ejecutar el playbook, use el comando ansible-navigator run --syntax-
+check para validar su sintaxis. Si informa errores, corríjalos antes de pasar al siguiente paso.
+Debe ver una salida similar a la siguiente:
+[student@workstation file-review]$ ansible-navigator run \
+> -m stdout motd.yml --syntax-check
+playbook: /home/student/file-review/motd.yml
+6.
+Ejecute el playbook de Ansible motd.yml.
+[student@workstation file-review]$ ansible-navigator run \
+> -m stdout motd.yml
+PLAY [Configure system] ****************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [serverb.lab.example.com]
+TASK [Configure a custom /etc/motd] ****************************************
+changed: [serverb.lab.example.com]
+TASK [Check file exists] ***************************************************
+ok: [serverb.lab.example.com]
+TASK [Display stat results] ************************************************
+ok: [serverb.lab.example.com] => {
+    "motd": {
+        "changed": false,
+        "failed": false,
+...output omitted...
+TASK [Copy custom /etc/issue file] *****************************************
+changed: [serverb.lab.example.com]
+TASK [Ensure /etc/issue.net is a symlink to /etc/issue] ********************
+changed: [serverb.lab.example.com]
+PLAY RECAP *****************************************************************
+serverb.lab.example.com    : ok=6    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+7.
+Confirme que el playbook motd.yml se haya ejecutado correctamente.
+RH294-RHEL9.0-es-3-20240620
+223
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Use ssh para iniciar sesión en serverb.lab.example.com con el usuario devops y
+verifique que el contenido de /etc/motd y /etc/issue aparezca al iniciar sesión. Finalice
+la sesión cuando haya terminado.
+[student@workstation file-review]$ ssh devops@serverb.lab.example.com
+------------------------------- PRIVATE SYSTEM -----------------------------
+*   Access to this computer system is restricted to authorized users only.   *
+*                                                                            *
+*      Customer information is confidential and must not be disclosed.       *
+----------------------------------------------------------------------------
+System total memory: 960 MiB.
+System processor count: 1
+Register this system with Red Hat Insights: insights-client --register
+Create an account or view all your systems at https://red.ht/insights-dashboard
+Last login: Thu Jul  7 14:34:04 2022 from 172.25.250.9
+[devops@serverb ~]$ logout
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade file-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-review
+224
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Resumen
+• Los módulos de gestión de archivos en Ansible Content Collections ansible.builtin y
+ansible.posix le permiten realizar la mayoría de las tareas relacionadas con la administración
+de archivos, como crear, copiar, editar y modificar permisos y otros atributos de archivos.
+• Varios módulos de administración de archivos pueden establecer el modo de permisos y el
+contexto de SELinux para los archivos.
+• Puede usar plantillas Jinja2 para crear archivos dinámicamente para la implementación.
+• Por lo general, una plantilla Jinja2 se compone de dos elementos: variables y expresiones. Estas
+variables y expresiones se reemplazan con valores cuando se entrega la plantilla Jinja2.
+• Use el módulo ansible.builtin.template para implementar plantillas Jinja2 en hosts
+gestionados.
+• Los filtros en Jinja2 transforman las expresiones de las plantillas de un tipo o formato de datos a
+otro.
+RH294-RHEL9.0-es-3-20240620
+225
+
+
+226
+RH294-RHEL9.0-es-3-20240620
+
+

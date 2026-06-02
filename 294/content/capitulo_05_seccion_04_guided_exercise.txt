@@ -1,0 +1,218 @@
+# Ejercicio Guiado: Implementación de archivos personalizados con plantillas Jinja2
+# Tipo: guided_exercise
+# Capítulo: Capítulo 5. Implementación de archivos en hosts gestionados
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Ejercicio Guiado
+Implementación de archivos
+personalizados con plantillas Jinja2
+Crear un archivo de plantilla simple que su playbook usa para instalar un archivo de Mensaje
+del día personalizado en cada host gestionado.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-template
+Instrucciones
+ 1.
+En workstation, diríjase al directorio de trabajo /home/student/file-template.
+Revise el archivo inventory en el directorio de trabajo actual. Este archivo configura dos
+grupos: webservers y workstations. El sistema servera.lab.example.com está en
+el grupo webservers y el sistema workstation.lab.example.com está en el grupo
+workstations.
+1.1.
+Diríjase al directorio de trabajo /home/student/file-template.
+[student@workstation ~]$ cd ~/file-template
+[student@workstation file-template]$
+1.2.
+Muestre el contenido del archivo inventory.
+[webservers]
+servera.lab.example.com
+[workstations]
+workstation.lab.example.com
+ 2.
+Cree una plantilla para el archivo del Mensaje del día (/etc/motd) y guárdelo en el archivo
+motd.j2 en el directorio de trabajo actual. Incluya las siguientes variables y datos en la
+plantilla:
+• ansible_facts['fqdn'], para insertar el FQDN del host gestionado.
+RH294-RHEL9.0-es-3-20240620
+213
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+• ansible_facts['distribution'] y
+ansible_facts['distribution_version'], para proporcionar información de
+distribución de Linux.
+Para servidores en el grupo workstations, el Mensaje del día debe incluir el mensaje:
+As a workstation user, you need to submit a ticket to receive help
+with any issues.
+Para servidores en el grupo webservers, el Mensaje del día debe incluir el mensaje:
+Please report issues to: {{ system_owner }}. Establece la variable
+system_owner en el playbook motd.yml, que crea en el próximo paso.
+2.1.
+Cree un archivo de plantilla Jinja2 denominado motd.j2 que incluya el FQDN del
+host gestionado y la información de distribución de Linux.
+This is the system {{ ansible_facts['fqdn'] }}.
+This is a {{ ansible_facts['distribution'] }} version
+ {{ ansible_facts['distribution_version'] }} system.
+2.2.
+Agregue una condición al archivo motd.j2 con el mensaje para los servidores en el
+grupo workstations.
+This is the system {{ ansible_facts['fqdn'] }}.
+This is a {{ ansible_facts['distribution'] }} version
+ {{ ansible_facts['distribution_version'] }} system.
+{% if ansible_facts['fqdn'] in groups['workstations'] %}
+As a workstation user, you need to submit a ticket to receive help with any
+ issues.
+{% endif %}
+2.3.
+Actualice la condición en el archivo motd.j2 con el mensaje para los servidores en el
+grupo webservers.
+This is the system {{ ansible_facts['fqdn'] }}.
+This is a {{ ansible_facts['distribution'] }} version
+ {{ ansible_facts['distribution_version'] }} system.
+{% if ansible_facts['fqdn'] in groups['workstations'] %}
+As a workstation user, you need to submit a ticket to receive help with any
+ issues.
+{% elif ansible_facts['fqdn'] in groups['webservers'] %}
+Please report issues to: {{ system_owner }}.
+{% endif %}
+ 3.
+Cree un archivo de playbook denominado motd.yml en el directorio de trabajo actual.
+Cree un play en ese archivo que defina la variable system_owner en su sección vars.
+El play debe tener una tarea que use el módulo ansible.builtin.template para
+implementar la plantilla Jinja2 motd.j2 en el archivo remoto /etc/motd en los hosts
+gestionados. Establezca el propietario y el grupo de /etc/motd en root y el modo en
+0644.
+---
+- name: Configure the message of the day
+  hosts: all
+214
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+  remote_user: devops
+  become: true
+  vars:
+    - system_owner: clyde@example.com
+  tasks:
+    - name: Configure /etc/motd
+      ansible.builtin.template:
+        src: motd.j2
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+ 4.
+Antes de ejecutar el playbook, use el comando ansible-navigator run --syntax-
+check para verificar su sintaxis. Si informa errores, corríjalos antes de pasar al siguiente
+paso. Debe ver una salida similar a la siguiente:
+[student@workstation file-template]$ ansible-navigator run \
+> -m stdout motd.yml --syntax-check
+playbook: /home/student/file-template/motd.yml
+ 5.
+Ejecute el playbook motd.yml.
+[student@workstation file-template]$ ansible-navigator run \
+> -m stdout motd.yml
+PLAY [Configure the message of the day] ****************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+ok: [workstation.lab.example.com]
+TASK [Configure /etc/motd] *****************************************************
+changed: [servera.lab.example.com]
+changed: [workstation.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation.lab.example.com : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Confirme que el archivo /etc/motd se haya configurado correctamente en los servidores
+webservers y workstations.
+6.1.
+Use el comando ssh para iniciar sesión en servera.lab.example.com con el
+usuario devops. Cierre sesión cuando verifique que el Mensaje del día se muestre
+correctamente en su terminal.
+RH294-RHEL9.0-es-3-20240620
+215
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+[student@workstation file-template]$ ssh devops@servera.lab.example.com
+This is the system servera.lab.example.com.
+This is a RedHat version 9.0 system.
+Please report issues to: clyde@example.com.
+...output omitted...
+[devops@servera ~]$ exit
+logout
+Connection to servera.lab.example.com closed.
+6.2.
+Use el comando ssh para iniciar sesión en workstation.lab.example.com con
+el usuario devops. Cierre sesión cuando verifique que el Mensaje del día se muestre
+correctamente en su terminal.
+[student@workstation file-template]$ ssh devops@workstation.lab.example.com
+This is the system workstation.lab.example.com.
+This is a RedHat version 9.0 system.
+As a workstation user, you need to submit a ticket to receive help with any
+ issues.
+...output omitted...
+[devops@workstation ~]$ exit
+logout
+Connection to workstation.lab.example.com closed.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish file-template
+216
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 5 |  Implementación de archivos en hosts gestionados
+Trabajo de laboratorio
+Implementación de archivos en hosts
+gestionados
+Ejecutar un playbook que cree un archivo personalizado en sus hosts gestionados mediante
+el uso de una plantilla Jinja2.
+Resultados
+• Crear un archivo de plantilla.
+• Usar el archivo de plantilla en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start file-review
+nota
+Todos los archivos usados en este ejercicio están disponibles en
+workstation en el directorio /home/student/file-review/files.
+Instrucciones
+1.
+Revise el archivo inventory generado en el directorio /home/student/file-review.
+Este archivo de inventario define el grupo servers, el cual tiene asociado el host gestionado
+serverb.lab.example.com.
+2.
+Identifique los datos en serverb.lab.example.com, que muestran la cantidad total de
+memoria del sistema y la cantidad de procesadores que tiene.
+3.
+En el directorio /home/student/file-review, cree el archivo de plantillas Jinja2
+templates/motd.j2. Después de implementar esta plantilla, los usuarios que inicien
+sesión en serverb.lab.example.com deberían ver un mensaje que muestre el recuento
+total de procesadores y memoria del sistema.
+El mensaje puede usar el texto que desee, pero la plantilla debe usar los datos
+ansible_facts['memtotal_mb'] y ansible_facts['processor_count'] para
+proporcionar la información de recursos del sistema para el mensaje.
+4.
+En el directorio /home/student/file-review, cree un archivo de playbook denominado
+motd.yml que contenga un nuevo play que se ejecuta en todos los hosts del inventario.
+Debe iniciar sesión con el usuario devops en el host remoto y usar become para habilitar el
+aumento de privilegios para todo el play.
+RH294-RHEL9.0-es-3-20240620
+217
+
+

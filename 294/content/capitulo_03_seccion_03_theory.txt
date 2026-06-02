@@ -1,0 +1,273 @@
+# Gestión de secretos
+# Tipo: theory
+# Capítulo: Capítulo 3. Administración de variables y datos
+
+capítulo 3 |  Administración de variables y datos
+Gestión de secretos
+Objetivos
+• Cifrar las variables confidenciales usando Ansible Vault y ejecutar playbooks que hagan
+referencia a archivos de variables cifradas por Vault.
+Presentación de Ansible Vault
+Es posible que Ansible necesite acceso a datos confidenciales, como contraseñas o claves API,
+para configurar hosts gestionados. En general, esta información se almacena como texto sin
+formato en variables de inventario u otros archivos de Ansible. Sin embargo, en ese caso, los
+usuarios con acceso a los archivos de Ansible o a un sistema de control de versiones que almacena
+los archivos de Ansible tendrían acceso a estos datos confidenciales. Esto representa un riesgo de
+seguridad notorio.
+Se puede usar Ansible Vault, que está incluido con Ansible, para cifrar y descifrar cualquier archivo
+de datos estructurados usado por Ansible. Para usar Ansible Vault, use una herramienta de la línea
+de comandos denominada ansible-vault para crear, editar, cifrar, descifrar y ver archivos.
+Ansible Vault puede cifrar cualquier archivo de datos usado por Ansible. Esto podría incluir
+variables de inventario, archivos de variables incluidos en un playbook, archivos de variables
+pasados como argumento al ejecutar el playbook o variables definidas en roles de Ansible.
+Importante
+Ansible Vault no implementa sus propias funciones criptográficas, sino que
+usa un kit de herramientas Python externo. Los archivos están protegidos con
+cifrado simétrico mediante el uso de AES256 con una contraseña como clave
+secreta. Tenga en cuenta que la forma en la que se realiza esto no ha sido auditada
+formalmente por un tercero.
+Creación de un archivo cifrado
+Para crear un nuevo archivo cifrado, use el comando ansible-vault create filename.
+El comando le solicitará la nueva contraseña de Vault y abrirá un archivo con el editor
+predeterminado, vi. Puede exportar la variable de entorno EDITOR para especificar un editor
+predeterminado diferente. Por ejemplo, para establecer el editor predeterminado en nano,
+ejecute el comando export EDITOR=nano.
+[student@demo ~]$ ansible-vault create secret.yml
+New Vault password: redhat
+Confirm New Vault password: redhat
+En lugar de ingresar la contraseña de Vault mediante el ingreso estándar, se puede usar un
+archivo de contraseña de Vault para almacenar la contraseña. Este archivo se deberá proteger
+cuidadosamente mediante permisos de archivo y por otros medios.
+[student@demo ~]$ ansible-vault create --vault-password-file=vault-pass secret.yml
+RH294-RHEL9.0-es-3-20240620
+99
+
+
+capítulo 3 |  Administración de variables y datos
+El código usado para proteger archivos es AES256 en las versiones recientes de Ansible, pero los
+archivos cifrados con versiones anteriores aún podrían usar AES de 128 bits.
+Vista de un archivo cifrado
+Puede usar el comando ansible-vault view filename para ver un archivo cifrado con
+Ansible Vault, sin abrirlo para editarlo.
+[student@demo ~]$ ansible-vault view secret1.yml
+Vault password: secret
+my_secret: "yJJvPqhsiusmmPPZdnjndkdnYNDjdj782meUZcw"
+Edición de un archivo cifrado existente
+Para editar un archivo cifrado existente, Ansible Vault proporciona el comando ansible-vault
+edit filename. Este comando descifra el archivo a un archivo temporal y le permite editar el
+archivo. Cuando se guarda, copia el contenido y elimina el archivo temporal.
+[student@demo ~]$ ansible-vault edit secret.yml
+Vault password: redhat
+nota
+El subcomando edit siempre reescribe el archivo, de modo que solo debería
+usarse al hacer cambios. Esto puede tener implicancias cuando el archivo se guarda
+en control de versiones. El subcomando view debe usarse siempre para ver el
+contenido del archivo sin hacer cambios.
+Cifrado de un archivo existente
+Para cifrar un archivo que ya existe, use el comando ansible-vault encrypt filename. Este
+comando puede tomar los nombres de varios archivos que se cifrarán como argumentos.
+[student@demo ~]$ ansible-vault encrypt secret1.yml secret2.yml
+New Vault password: redhat
+Confirm New Vault password: redhat
+Encryption successful
+Use la opción --output=OUTPUT_FILE para guardar el archivo cifrado con un nombre nuevo.
+Solo puede usar un archivo de entrada con la opción --output.
+Descifrado de un archivo existente
+Un archivo ya cifrado existente se puede descifrar de forma permanente con el comando
+ansible-vault decrypt filename. La opción --output se puede usar cuando se descifra
+un solo archivo para guardar el archivo descifrado con un nombre diferente.
+[student@demo ~]$ ansible-vault decrypt secret1.yml --output=secret1-decrypted.yml
+Vault password: redhat
+Decryption successful
+100
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Cambio de contraseña de un archivo cifrado
+Puede usar el comando ansible-vault rekey filename para cambiar la contraseña de
+un archivo cifrado. Este comando puede regenerar la clave de varios archivos de datos al mismo
+tiempo. Solicitará la contraseña original y, luego, la nueva contraseña.
+[student@demo ~]$ ansible-vault rekey secret.yml
+Vault password: redhat
+New Vault password: RedHat
+Confirm New Vault password: RedHat
+Rekey successful
+Al usar un archivo de contraseña de Vault, use la opción --new-vault-password-file:
+[student@demo ~]$ ansible-vault rekey \
+> --new-vault-password-file=NEW_VAULT_PASSWORD_FILE secret.yml
+Playbooks y Ansible Vault
+Para ejecutar un playbook que acceda a archivos cifrados con Ansible Vault, se debe proporcionar
+la contraseña de cifrado al comando ansible-navigator. Si no proporciona la contraseña, el
+playbook devuelve un error:
+[student@demo ~]$ ansible-navigator run -m stdout test-secret.yml
+ERROR! Attempting to decrypt but no vault secrets found
+Puede proporcionar la contraseña de Vault mediante una de las siguientes opciones:
+• Indicar de forma interactiva
+• Especificar el archivo de contraseña Vault
+• Usar la variable de entorno ANSIBLE_VAULT_PASSWORD_FILE
+Para proporcionar la contraseña de Vault de forma interactiva, use --playbook-artifact-
+enable false (o --pae false) y --vault-id @prompt como se ilustra en el siguiente
+ejemplo:
+[student@demo ~]$ ansible-navigator run -m stdout --pae false site.yml \
+> --vault-id @prompt
+Vault password (default): redhat
+Importante
+Debe deshabilitar los artefactos del playbook para ingresar la contraseña de Vault
+de forma interactiva. El comando ansible-navigator se cuelga si necesita
+solicitarle una contraseña interactiva de Vault y los artefactos del playbook no
+están deshabilitados. Los artefactos de playbook están habilitados de forma
+predeterminada.
+Puede usar el comando ansible-navigator --pae false para deshabilitar los artefactos del
+playbook.
+RH294-RHEL9.0-es-3-20240620
+101
+
+
+capítulo 3 |  Administración de variables y datos
+También puede deshabilitar los artefactos del playbook modificando su archivo de proyecto
+ansible-navigator.yml o el archivo .ansible-navigator.yml en su directorio de inicio.
+Establezca el ajuste playbook-artifact en ese archivo en enable: false.
+El siguiente archivo ansible-navigator.yml mínimo que deshabilita los artefactos del
+playbook:
+ansible-navigator:
+  playbook-artifact:
+    enable: false
+En lugar de proporcionar la contraseña de cifrado de Vault de forma interactiva, puede especificar
+un archivo que almacene la contraseña de cifrado en texto sin formato mediante la opción --
+vault-password-file.
+La contraseña debe ser una cadena almacenada como una sola línea en el archivo. Dado que el
+archivo contiene la contraseña confidencial en texto sin formato, es importante que se proteja
+mediante permisos de archivo y otras medidas de seguridad.
+[student@demo ~]$ ansible-navigator run -m stdout site.yml \
+> --vault-password-file=vault-pw-file
+También puede usar la variable de entorno ANSIBLE_VAULT_PASSWORD_FILE para especificar la
+ubicación predeterminada del archivo de contraseña.
+Importante
+Puede usar múltiples contraseñas de Ansible Vault con ansible-navigator.
+Para usar múltiples contraseñas, pase múltiples opciones --vault-id o --vault-
+password-file para el comando ansible-navigator.
+[student@demo ~]$ ansible-navigator run -m stdout --pae false site.yml \
+> --vault-id one@prompt --vault-id two@prompt
+Vault password (one):
+Vault password (two):
+...output omitted...
+Los ID de Vault one y two anteriores a @prompt pueden ser cualquier cosa e
+incluso puede omitirlas por completo. Sin embargo, si usa la opción --vault-
+id id cuando cifra un archivo con el comando ansible-vault, la contraseña
+para el ID coincidente es la primera contraseña que se prueba cuando se ejecuta el
+comando ansible-navigator. Si no coincide, ansible-navigator prueba las
+otras contraseñas que proporcionó. El ID de Vault @prompt sin ID es en realidad la
+abreviatura para default@prompt, lo que significa solicitar la contraseña para el ID
+de Vault default.
+Prácticas recomendadas para la administración de archivos de
+variables
+Para simplificar la administración, tiene sentido configurar su proyecto de Ansible, de modo
+que las variables confidenciales y todas las demás variables se guarden en archivos separados.
+102
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Los archivos que contienen las variables confidenciales se pueden proteger con el comando
+ansible-vault.
+Recuerde que la manera preferida para administrar las variables del grupo y las variables del host
+es crear directorios en el nivel del playbook. El directorio group_vars, generalmente, contiene
+archivos de variables con nombres que coinciden con los grupos de hosts a los que se aplican. El
+directorio host_vars, generalmente, contiene archivos de variables con nombres que coinciden
+con los nombres de host de los hosts gestionados a los que se aplican.
+Puede usar subdirectorios dentro de los directorios group_vars o host_vars para cada grupo
+de hosts o host gestionado. Aquellos directorios pueden contener varios archivos de variables, que
+son usados por el grupo de hosts o el host gestionado.
+En el siguiente directorio de proyecto de ejemplo para el playbook playbook.yml, los miembros
+del grupo de hosts webservers usan variables en el archivo group_vars/webservers/vars.
+El host demo.example.com usa las variables en los archivos host_vars/demo.example.com/
+vars y host_vars/demo.example.com/vault:
+.
+├── ansible.cfg
+├── group_vars
+│   └── webservers
+│       └── vars
+├── host_vars
+│   └── demo.example.com
+│       ├── vars
+│       └── vault
+├── inventory
+└── playbook.yml
+Si crea subdirectorios para cada grupo de hosts o host gestionado, la mayoría de las variables para
+demo.example.com se pueden colocar en el archivo vars, pero las variables confidenciales se
+pueden mantener en secreto colocándolas en el archivo vault. Puede usar ansible-vault
+para cifrar el archivo vault y dejar el archivo vars como texto sin formato.
+En host_vars/demo.example.com, puede asignarle a los archivos cualquier nombre
+de archivo válido que elija. Los nombres de archivo usados en el directorio host_vars/
+demo.example.com son solo ejemplos; no tienen ningún significado especial. Ese directorio
+podría contener más archivos, algunos cifrados por Ansible Vault y otros no.
+Las variables de playbooks (en oposición a las variables de inventario) también se pueden
+proteger con Ansible Vault. Puede colocar las variables confidenciales del playbook en un archivo
+separado que está cifrado con Ansible Vault y, a continuación, incluir ese archivo de variables
+cifradas en un playbook mediante una directiva vars_files. Esto puede ser útil, ya que las
+variables del playbook tienen precedencia sobre las variables de inventario.
+Si está usando varias contraseñas de Vault con su playbook, asegúrese de que a cada archivo
+cifrado se le asigne un ID de Vault y que ingrese la contraseña correspondiente con ese ID de
+Vault cuando ejecute el playbook. Esto garantiza que la contraseña correcta se seleccione primero
+al descifrar el archivo cifrado con Vault, que es más rápido que forzar a Ansible a probar cada
+contraseña de Vault que proporcionó hasta que encuentre la correcta.
+RH294-RHEL9.0-es-3-20240620
+103
+
+
+capítulo 3 |  Administración de variables y datos
+Referencias
+Cifrar contenido con Ansible Vault: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/vault.html
+Mantener las variables en Vault visibles de forma segura: documentación
+de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_best_practices.html#keep-vaulted-variables-safely-visible
+104
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de secretos
+Cifrar las variables confidenciales con Ansible Vault para protegerlas y, luego, ejecutará un
+playbook que usa esas variables.
+Resultados
+• Ejecutar un playbook usando variables definidas en un archivo cifrado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-secret
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-secret.
+[student@workstation ~]$ cd ~/data-secret
+[student@workstation data-secret]$
+ 2.
+Edite el contenido del archivo cifrado secret.yml . El archivo puede ser descifrado
+usando redhat como contraseña. Elimine los comentarios de las entradas con variables
+username y pwhash.
+2.1.
+Edite el archivo /home/student/data-secret/secret.yml cifrado. Ingrese
+redhat como contraseña de Vault cuando se la solicite. El archivo cifrado se abre en
+el editor predeterminado, vim.
+[student@workstation data-secret]$ ansible-vault edit secret.yml
+Vault password: redhat
+2.2.
+Elimine el comentario de las dos entradas variables (username y pwhash)
+eliminando el signo de almohadilla (#) al comienzo de cada línea y, a continuación,
+guarde y cierre el archivo.
+ 3.
+Cree un playbook denominado /home/student/data-secret/create_users.yml.
+El playbook debe contener un play (Create user accounts for all our servers
+en el siguiente ejemplo), que usa las variables definidas en el archivo cifrado /home/
+student/data-secret/secret.yml.
+Configure el play para usar el grupo de hosts devservers. Ejecute este play con el
+usuario devops en el host gestionado remoto. Configure el play para crear el usuario
+RH294-RHEL9.0-es-3-20240620
+105
+
+

@@ -1,0 +1,144 @@
+# Revisión exhaustiva
+# Tipo: theory
+# Capítulo: Capítulo 10. Revisión exhaustiva
+
+capítulo 10 |  Revisión exhaustiva
+Revisión exhaustiva
+Objetivos
+Tras finalizar esta sección, usted deberá haber revisado y actualizado las habilidades y los
+conocimientos aprendidos en Red Hat Enterprise Linux Automation with Ansible.
+Revisión de Red Hat Enterprise Linux Automation with
+Ansible
+Antes de comenzar la revisión exhaustiva de este curso, debe sentirse cómodo con los temas
+que se abordaron en cada capítulo. No dude en solicitarle al instructor orientación o aclaraciones
+adicionales sobre estos temas.
+Capítulo 1,  Presentación de Ansible
+Describir los conceptos fundamentales de Ansible y la forma de usarlo e instalar herramientas de
+desarrollo desde Red Hat Ansible Automation Platform.
+• Describir la motivación para automatizar las tareas de administración de Linux con Ansible, los
+conceptos fundamentales de Ansible y la arquitectura básica de Ansible.
+• Instalar Ansible en un nodo de control y describir la distinción entre Ansible comunitario y
+Red Hat Ansible Automation Platform.
+Capítulo 2,  Implementación de un playbook de Ansible
+Crear un inventario de hosts gestionados, escribir un playbook de Ansible simple y ejecutarlo para
+automatizar las tareas en esos hosts.
+• Describir los conceptos de inventario de Ansible y administrar un archivo de inventario estático.
+• Describir dónde se encuentran los archivos de configuración de Ansible, cómo los selecciona
+Ansible y editarlos para aplicar los cambios a la configuración predeterminada.
+• Escribir un playbook de Ansible básico y ejecutarlo con el navegador de contenido de
+automatización.
+• Escribir un playbook que use múltiples plays con aumento de privilegios por play y aprovechar
+eficazmente el navegador de contenido de automatización para encontrar nuevos módulos en
+Ansible Content Collections disponibles a fin de implementar tareas para un play.
+Capítulo 3,  Administración de variables y datos
+Escribir playbooks que usen variables para simplificar la administración del playbook y datos para
+hacer referencia a información sobre los hosts gestionados.
+• Crear variables que afecten a hosts particulares o grupos de hosts, el play o el entorno global, y
+hacer referencia a ellas, y describir cómo funciona la prioridad de variables.
+• Cifrar las variables confidenciales usando Ansible Vault y ejecutar playbooks que hagan
+referencia a archivos de variables cifradas por Vault.
+500
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+• Hacer referencia a los datos sobre hosts gestionados que usan datos de Ansible y configurar
+datos personalizados en hosts gestionados.
+Capítulo 4,  Implementación del control de tareas
+Administrar el control de tareas, los manejadores y los errores de tareas en playbooks de Ansible.
+• Usar bucles para escribir tareas eficientes y condiciones para controlar cuándo ejecutar tareas.
+• Implementar una tarea que se ejecute solo cuando otra tarea cambie el host gestionado.
+• Controlar lo que sucede cuando falla una tarea y qué condiciones hacen que falle una tarea.
+Capítulo 5,  Implementación de archivos en hosts gestionados
+Implementar, administrar y ajustar archivos en hosts gestionados por Ansible.
+• Crear, instalar, editar y eliminar archivos en hosts gestionados; gestionar permisos, propiedades,
+contextos de SELinux y otras características de esos archivos.
+• Implementar archivos en hosts gestionados que se personalizan mediante el uso de plantillas
+Jinja2.
+Capítulo 6,  Administración de plays y playbooks complejos
+Escribir playbooks para plays y playbooks más grandes y complejos.
+• Escribir patrones de host sofisticados para seleccionar hosts de manera eficiente para un play.
+• Administrar playbooks grandes importando o incluyendo otros playbooks o tareas desde
+archivos externos, ya sea sin condiciones o sobre la base de una prueba condicional.
+Capítulo 7,  Simplificación de playbooks con roles y Ansible
+Content Collections
+Usar los roles de Ansible y Ansible Content Collections para desarrollar playbooks más
+rápidamente y volver a usar el código de Ansible.
+• Describir el propósito de un rol de Ansible, su estructura y cómo se usan los roles en los
+playbooks.
+• Cree un rol en el directorio de proyectos de un playbook y ejecútelo como parte de uno de los
+plays del playbook.
+• Seleccionar y recuperar roles de fuentes externas, como repositorios de Git o Ansible Galaxy, y
+usarlos en sus playbooks.
+• Obtener un conjunto de roles relacionados, módulos suplementarios y otro contenido de Ansible
+Content Collection y usarlos en un playbook.
+• Escribir playbooks que aprovechen los roles del sistema de Red Hat Enterprise Linux para
+realizar operaciones estándares.
+Capítulo 8,  Solución de problemas de Ansible
+Solucionar problemas de playbooks y hosts gestionados.
+• Solucionar problemas genéricos con un nuevo playbook y repararlos.
+RH294-RHEL9.0-es-3-20240620
+501
+
+
+capítulo 10 |  Revisión exhaustiva
+• Solucionar fallas en hosts gestionados cuando se ejecuta un playbook.
+Capítulo 9,  Automatización de tareas de administración de
+Linux
+Automatizar las tareas de administración comunes del sistema Linux con Ansible.
+• Suscribir sistemas, configurar canales de software y repositorios, habilitar flujos de módulos y
+gestionar paquetes RPM en hosts gestionados.
+• Administrar usuarios y grupos de Linux, configurar SSH y modificar la configuración de Sudo en
+hosts gestionados.
+• Administrar el inicio del servicio, programar procesos con at, cron y systemd, reiniciar los
+hosts gestionados con reboot y controlar el destino de inicio predeterminado en los hosts
+gestionados.
+• Particionar los dispositivos de almacenamiento, configurar LVM, formatear particiones o
+volúmenes lógicos, montar sistemas de archivos y agregar espacios de intercambio (swap).
+• Configurar los ajustes de red y la resolución de nombres en los hosts gestionados y recopilar
+datos de Ansible relacionados con la red.
+502
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 10 |  Revisión exhaustiva
+Trabajo de laboratorio
+Implementación de Ansible
+Instalar Ansible en workstation, configurarlo como nodo de control y configurar un
+inventario para las conexiones con los hosts gestionados servera.lab.example.com y
+serverb.lab.example.com. Puede crear, modificar y solucionar problemas de playbooks
+sencillos que usan variables y datos.
+Resultados
+• Instalar y configurar Ansible.
+• Crear, modificar y solucionar problemas de playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start review-cr1
+Especificaciones
+• Instale el navegador de contenido de automatización en workstation para que pueda servir
+como nodo de control. El repositorio Yum que contiene el paquete se ha configurado en
+workstation.
+• Su directorio de proyectos de Ansible es /home/student/review-cr1.
+• En el nodo de control, cree el archivo de inventario /home/student/review-cr1/
+inventory. El inventario debe contener un grupo denominado dev que consta de los hosts
+gestionados servera.lab.example.com y serverb.lab.example.com.
+• Cree un archivo de configuración de Ansible denominado /home/student/review-cr1/
+ansible.cfg. Este archivo de configuración debe usar el archivo /home/student/review-
+cr1/inventory como archivo de inventario del proyecto.
+• Inicie sesión en su centro de automatización privado en utility.lab.example.com desde la
+línea de comandos antes de intentar ejecutar el navegador de contenido de automatización, de
+modo que pueda extraer imágenes del entorno de ejecución de la automatización de su registro
+de contenedores. El nombre de usuario es admin y la contraseña es redhat.
+• Cree un archivo de configuración para el navegador de contenido de automatización
+denominado /home/student/review-cr1/ansible-navigator.yml. Este archivo
+de configuración debe establecer la imagen del entorno de ejecución de automatización
+predeterminada en utility.lab.example.com/ee-supported-rhel8:latest, y el
+navegador de contenido de automatización solo debe extraer esta imagen del repositorio de
+contenedores si la imagen falta en su nodo de control.
+RH294-RHEL9.0-es-3-20240620
+503
+
+

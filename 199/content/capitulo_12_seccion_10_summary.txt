@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.10. Resumen 9.10. Resumen En esta lección, aprendió a administrar, monitorear y enviar señales a los procesos en el sistema. Un proceso es una instancia en ejecución de un programa ejecutable. En Linux, los procesos se asignan a un estado, que puede ser en ejecución, inactivo, detenido o zombie. Al utilizar las funciones de control de trabajos, puede administrar procesos en primer plano y en segundo plano en el mismo terminal. También puede controlar procesos con señales, que es una interrupción de software que informa eventos a un programa en ejecución. Finalmente, puede monitorear la actividad del proceso al comprender el promedio de carga del sistema, que es una estimación de qué tan ocupado está el sistema.
+
+
+
+
+
+Capítulo 10. Control de servicios y demonios Objetivo Controlar y monitorear los servicios y demonios del sistema que inicia systemd. Secciones Identificación de procesos del sistema que se inician automáticamente (y ejercicio guiado) Control de servicios del sistema (y ejercicio guiado) Servicios de control de laboratorio y demonios
+
+
+
+
+

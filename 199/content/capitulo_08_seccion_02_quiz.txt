@@ -1,0 +1,36 @@
+# Cuestionario: Prueba de interpretación de permisos de archivos de Linux
+# Tipo: quiz
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.2. Prueba de interpretación de permisos de archivos de Linux 5.2. Prueba de interpretación de permisos de archivos de Linux Revise la siguiente información y úsela para responder las preguntas del cuestionario. El sistema tiene cuatro usuarios que están asignados a los siguientes grupos: El usuario consultor1 es miembro de los grupos consultor1 y base de datos1. El usuario operador1 es miembro de los grupos operador1 y base de datos1. El usuario contratista1 es miembro de los grupos contratista1 y contratista3. El usuario operador2 es miembro de los grupos operador2 y contratista3. El . El directorio especial contiene cuatro archivos con los siguientes permisos: drwxrwxr-x.   operador1 base de datos1. -rw-rw-r--.   consultor1 consultor1 app1.log -rw-r--rw-.   consultor1 base de datos1 aplicación2.log -rw-rw-r--.   operador1 base de datos1 db1.conf -rw-r-----.   operador1 base de datos1 db2.conf Elija las respuestas correctas a las siguientes preguntas: ¿Qué archivo normal posee el usuario operador1 y todos los usuarios pueden leer? 1. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo puede modificar el usuario contratista1? 2. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo no puede leer el usuario operador2? 3. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo posee el grupo consultor1? 4. app1.log a. aplicación2.log b. db1.conf c. db2.conf d.
+
+
+
+
+
+5.2. Prueba de interpretación de los permisos de archivos de Linux ¿Qué archivos puede eliminar el usuario operador1? 5. Sólo db1.conf a. Sólo db2.conf b. Todos los archivos en el directorio c. Ninguno de los archivos d. ¿Qué archivos puede eliminar el usuario operador2? 6. Sólo app1.log a. Sólo app2.log b. Tanto app1.log como app2.log c. Ninguno de los archivos d.
+
+
+
+
+
+5.2. Prueba de interpretación de la solución de permisos de archivos de Linux ¿Qué archivo normal posee el usuario operador1 y todos los usuarios pueden leer? 1. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo puede modificar el usuario contratista1? 2. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo no puede leer el usuario operador2? 3. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo posee el grupo consultor1? 4. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivos puede eliminar el usuario operador1? 5. Sólo db1.conf a. Sólo db2.conf b. Todos los archivos en el directorio c. Ninguno de los archivos d. ¿Qué archivos puede eliminar el usuario operador2? 6. Sólo app1.log a. Sólo app2.log b. Tanto app1.log como app2.log c. Ninguno de los archivos d.
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos 5.3. Administrar permisos de archivos desde la línea de comandos Objetivos Cambiar los permisos y la propiedad de los archivos con herramientas de línea de comandos. Cambiar permisos de archivos y directorios En Linux, puede configurar permisos en archivos y directorios para definir acceso específico para diferentes conjuntos de usuarios. La principal utilidad para configurar estos permisos es el comando chmod. El comando chmod significa "cambiar modo",
+
+where mode refers to a file's permissions. The following list shows some key characteristics of the chmod command:
+
+Cambia los permisos de archivos y directorios desde la línea de comando. Se necesita una instrucción de permiso seguida de una lista de archivos o directorios para cambiar. Puede configurar la instrucción de permiso de forma simbólica o en notación octal (numérica). Cambiar permisos con el método simbólico El método simbólico para cambiar permisos de archivos utiliza letras para representar las categorías y permisos de usuario, y símbolos para modificar la configuración de permisos. Utilice el comando chmod para modificar los permisos de archivos y directorios. La sintaxis general es la siguiente:
+
+user@host:~$ chmod Who/What/Which file|directory
+
+Quién es la clase de usuario, como se muestra en la siguiente tabla. Si no proporciona una clase de usuario, entonces el comando chmod usa el grupo all como predeterminado. u usuario El propietario del archivo. g group Miembro del grupo del archivo. u otros Usuarios que no sean el propietario del fichero ni miembros del grupo del mismo. a todos Los tres grupos anteriores. Cuál es el operador que modifica los permisos, como en la siguiente tabla. + add Agrega los permisos al archivo. Quién Clase de usuario Descripción Qué Operación Descripción
+
+
+
+
+

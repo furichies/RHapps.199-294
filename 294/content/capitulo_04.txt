@@ -1,0 +1,2092 @@
+# Capítulo 4. Implementación del control de tareas
+
+capítulo 4
+Implementación del control de
+tareas
+Meta
+Administrar el control de tareas, los manejadores y
+los errores de tareas en playbooks de Ansible.
+Objetivos
+•
+Usar bucles para escribir tareas eficientes y
+condiciones para controlar cuándo ejecutar
+tareas.
+•
+Implementar una tarea que se ejecute solo
+cuando otra tarea cambie el host gestionado.
+•
+Controlar lo que sucede cuando falla una tarea
+y qué condiciones hacen que falle una tarea.
+Secciones
+•
+Escritura de bucles y tareas condicionales (y
+ejercicio guiado)
+•
+Implementación de manejadores (y ejercicio
+guiado)
+•
+Manejo de fallas de tareas (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Implementación del control de tareas
+RH294-RHEL9.0-es-3-20240620
+141
+
+
+capítulo 4 |  Implementación del control de tareas
+Escritura de bucles y tareas condicionales
+Objetivos
+• Usar bucles para escribir tareas eficientes y condiciones para controlar cuándo ejecutar tareas.
+Iteración de tareas con bucles
+El uso de bucles permite evitar escribir varias tareas que usan el mismo módulo. Por ejemplo, en
+lugar de escribir cinco tareas para garantizar que existan cinco usuarios, puede escribir una tarea
+que itere sobre una lista de cinco usuarios para garantizar que existan todos.
+Para iterar una tarea sobre un conjunto de ítems, puede usar la palabra clave loop. Puede
+configurar los bucles para que repitan una tarea con cada ítem en una lista, el contenido de cada
+uno de los archivos en una lista, una secuencia de números generada o con estructuras más
+complicadas.
+En esta sección, se cubren bucles simples que iteran sobre una lista de ítems. Consulte la
+documentación para ver escenarios de bucle más avanzados.
+Bucles simples
+Un bucle simple itera una tarea sobre una lista de ítems. Se agrega la palabra clave loop a la tarea,
+y esta toma como valor la lista de ítems sobre los cuales se debería iterar la tarea. La variable de
+bucle item contiene el valor usado durante cada iteración.
+Considere el siguiente fragmento que usa el módulo ansible.builtin.service dos veces
+para garantizar que se estén ejecutando dos servicios de red:
+- name: Postfix is running
+  ansible.builtin.service:
+    name: postfix
+    state: started
+- name: Dovecot is running
+  ansible.builtin.service:
+    name: dovecot
+    state: started
+Estas dos tareas pueden reescribirse para usar un bucle simple, de modo que se necesita solo una
+tarea para garantizar que se ejecuten ambos servicios:
+- name: Postfix and Dovecot are running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - postfix
+    - dovecot
+142
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+El bucle puede usar una lista provista por una variable.
+En el siguiente ejemplo, la variable mail_services contiene la lista de servicios que se deben
+ejecutar.
+vars:
+  mail_services:
+    - postfix
+    - dovecot
+tasks:
+  - name: Postfix and Dovecot are running
+    ansible.builtin.service:
+      name: "{{ item }}"
+      state: started
+    loop: "{{ mail_services }}"
+Bucles sobre una lista de diccionarios
+La lista loop no necesita ser una lista de valores simples.
+En el siguiente ejemplo, cada ítem en la lista es en realidad un diccionario. Cada diccionario del
+ejemplo tiene dos claves, name y groups, y el valor de cada clave en la variable de bucle item
+actual puede obtenerse con las variables item['name'] y item['groups'], respectivamente.
+- name: Users exist and are in the correct groups
+  user:
+    name: "{{ item['name'] }}"
+    state: present
+    groups: "{{ item['groups'] }}"
+  loop:
+    - name: jane
+      groups: wheel
+    - name: joe
+      groups: root
+El resultado de la tarea anterior es que el usuario jane está presente y es un miembro del grupo
+wheel, y el usuario joe está presente y es un miembro del grupo root.
+Palabras clave de bucle del estilo anterior
+Antes de Ansible 2.5, la mayoría de los playbooks usaban una sintaxis diferente para los bucles. Se
+proporcionaron varias palabras clave de bucle, que usaban el prefijo with_, seguido del nombre
+de un complemento (plug-in) de búsqueda Ansible (una característica avanzada que no se trata
+en detalle en este curso). Esta sintaxis para el bucle es muy común en los playbooks existentes,
+pero es probable que se considere obsoleta en el futuro.
+En la siguiente tabla se enumeran algunos ejemplos:
+RH294-RHEL9.0-es-3-20240620
+143
+
+
+capítulo 4 |  Implementación del control de tareas
+Bucles Ansible del estilo anterior
+Palabra clave del bucle
+Descripción
+with_items
+Se comporta igual que la palabra clave loop para listas simples,
+como una lista de cadenas o una lista de diccionarios. A diferencia
+de loop, si se proporcionan listas de listas a with_items, se
+aplanan en una lista de nivel simple. La variable de bucle item
+contiene el ítem de lista usado durante cada iteración.
+with_file
+Requiere una lista de nombres de archivo de nodo de control.
+La variable de bucle item incluye el contenido de un archivo
+correspondiente de la lista de archivos durante cada iteración.
+with_sequence
+Requiere parámetros para generar una lista de valores basada en
+una secuencia numérica. La variable de bucle item incluye el valor
+de uno de los ítems generados en la secuencia generada durante
+cada iteración.
+En el siguiente playbook se muestra un ejemplo de la palabra clave with_items:
+  vars:
+    data:
+      - user0
+      - user1
+      - user2
+  tasks:
+    - name: "with_items"
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      with_items: "{{ data }}"
+Importante
+Desde Ansible 2.5, la forma recomendada de escribir bucles es usar la palabra clave
+loop.
+Sin embargo, todavía debe entender la sintaxis antigua, especialmente
+with_items, porque es ampliamente usada en playbooks existentes. Es probable
+que encuentre playbooks y roles que continúen usando palabras clave with_* para
+el bucle.
+Cualquier tarea que use la sintaxis anterior se puede convertir para usar loop conjuntamente con
+filtros Ansible. No necesita saber cómo usar los filtros Ansible para hacer esto. La documentación
+de Ansible contiene una buena referencia sobre cómo convertir los bucles anteriores en la nueva
+sintaxis, así como ejemplos de cómo realizar un bucle sobre los ítems que no son listas simples.
+Consulte la sección "Migrating from with_X to loop" [https://docs.ansible.com/ansible/latest/
+user_guide/playbooks_loops.html#migrating-from-with-x-to-loop] de la Guía del usuario de
+Ansible.
+Es probable que encuentre tareas de playbooks anteriores que contienen palabras clave with_*.
+Las técnicas avanzadas de bucle están fuera del alcance de este curso. Todas las tareas de
+iteración en este curso se pueden implementar ya sea con la palabra clave with_items o loop.
+144
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Uso de variables de registro con bucles
+La palabra clave register también puede capturar la salida de una tarea que realiza un bucle. En
+el siguiente fragmento de código se muestra la estructura de la variable register de una tarea
+que realiza un bucle:
+[student@workstation loopdemo]$ cat loop_register.yml
+---
+- name: Loop Register Test
+  gather_facts: false
+  hosts: localhost
+  tasks:
+    - name: Looping Echo Task
+      ansible.builtin.shell: "echo This is my item: {{ item }}"
+      loop:
+        - one
+        - two
+      register: echo_results
+    - name: Show echo_results variable
+      ansible.builtin.debug:
+        var: echo_results
+La variable echo_results está registrada.
+El contenido de la variable echo_results se muestra en pantalla.
+Al ejecutar el playbook anterior, se obtiene la siguiente salida:
+[student@workstation loopdemo]$ ansible-navigator run -m stdout loop_register.yml
+PLAY [Loop Register Test] ******************************************************
+TASK [Looping Echo Task] *******************************************************
+changed: [localhost] => (item=one)
+changed: [localhost] => (item=two)
+TASK [Show echo_results variable] **********************************************
+ok: [localhost] => {
+    "echo_results": {
+        "changed": true,
+        "msg": "All items completed",
+        "results": [
+            {
+                "ansible_loop_var": "item",
+                "changed": true,
+                "cmd": "echo This is my item: one",
+                "delta": "0:00:00.004519",
+                "end": "2022-06-29 17:32:54.065165",
+                "failed": false,
+                ...output omitted...
+                "item": "one",
+                "msg": "",
+                "rc": 0,
+RH294-RHEL9.0-es-3-20240620
+145
+
+
+capítulo 4 |  Implementación del control de tareas
+                "start": "2022-06-29 17:32:54.060646",
+                "stderr": "",
+                "stderr_lines": [],
+                "stdout": "This is my item: one",
+                "stdout_lines": [
+                    "This is my item: one"
+                ]
+            },
+            {
+                "ansible_loop_var": "item",
+                "changed": true,
+                "cmd": "echo This is my item: two",
+                "delta": "0:00:00.004175",
+                "end": "2022-06-29 17:32:54.296940",
+                "failed": false,
+                ...output omitted...
+                "item": "two",
+                "msg": "",
+                "rc": 0,
+                "start": "2022-06-29 17:32:54.292765",
+                "stderr": "",
+                "stderr_lines": [],
+                "stdout": "This is my item: two",
+                "stdout_lines": [
+                    "This is my item: two"
+                ]
+            }
+        ],
+        "skipped": false
+    }
+}
+...output omitted...
+El carácter { indica que el inicio de la variable echo_results se compone de pares de
+clave-valor.
+La clave results contiene los resultados de la tarea anterior. El carácter [ indica el inicio de
+una lista.
+El inicio de los metadatos de la tarea para el primer ítem (indicado por la clave item). La
+salida del comando echo se encuentra en la clave stdout.
+El inicio de los metadatos del resultado de la tarea para el segundo ítem.
+El carácter ] indica el final de la lista results.
+En el ejemplo anterior, la clave results contiene una lista. En el siguiente ejemplo, el playbook se
+modifica de modo que la segunda tarea itera en esta lista:
+[student@workstation loopdemo]$ cat new_loop_register.yml
+---
+- name: Loop Register Test
+  gather_facts: false
+  hosts: localhost
+  tasks:
+146
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+    - name: Looping Echo Task
+      ansible.builtin.shell: "echo This is my item: {{ item }}"
+      loop:
+        - one
+        - two
+      register: echo_results
+    - name: Show stdout from the previous task.
+      ansible.builtin.debug:
+        msg: "STDOUT from previous task: {{ item['stdout'] }}"
+      loop: "{{ echo_results['results'] }}"
+Después de ejecutar el playbook anterior, verá la siguiente salida:
+PLAY [Loop Register Test] ******************************************************
+TASK [Looping Echo Task] *******************************************************
+changed: [localhost] => (item=one)
+changed: [localhost] => (item=two)
+TASK [Show stdout from the previous task.] *************************************
+ok: [localhost] => (item={'changed': True, 'stdout': 'This is my item: one',
+ 'stderr': '', 'rc': 0, 'cmd': 'echo This is my item: one', 'start': '2022-06-29
+ 17:41:15.558529', 'end': '2022-06-29 17:41:15.563615', 'delta': '0:00:00.005086',
+ 'msg': '', 'invocation': {'module_args': {'_raw_params': 'echo This is my
+ item: one', '_uses_shell': True, 'warn': False, 'stdin_add_newline': True,
+ 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None,
+ 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['This
+ is my item: one'], 'stderr_lines': [], 'failed': False, 'item': 'one',
+ 'ansible_loop_var': 'item'}) => {
+    "msg": "STDOUT from previous task: This is my item: one"
+}
+ok: [localhost] => (item={'changed': True, 'stdout': 'This is my item: two',
+ 'stderr': '', 'rc': 0, 'cmd': 'echo This is my item: two', 'start': '2022-06-29
+ 17:41:15.810566', 'end': '2022-06-29 17:41:15.814932', 'delta': '0:00:00.004366',
+ 'msg': '', 'invocation': {'module_args': {'_raw_params': 'echo This is my
+ item: two', '_uses_shell': True, 'warn': False, 'stdin_add_newline': True,
+ 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None,
+ 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['This
+ is my item: two'], 'stderr_lines': [], 'failed': False, 'item': 'two',
+ 'ansible_loop_var': 'item'}) => {
+    "msg": "STDOUT from previous task: This is my item: two"
+}
+...output omitted...
+Ejecución de tareas de forma condicional
+Ansible puede usar condicionales para ejecutar tareas o plays cuando se cumplen ciertas
+condiciones. Por ejemplo, puede usar un condicional para determinar la memoria disponible en un
+host gestionado antes de que Ansible instale o configure un servicio.
+Los condicionales permiten que los administradores diferencien entre hosts gestionados y les
+asignen roles funcionales según las condiciones que cumplen. Las variables del playbook, las
+RH294-RHEL9.0-es-3-20240620
+147
+
+
+capítulo 4 |  Implementación del control de tareas
+variables registradas y los datos de Ansible se pueden probar con condicionales. Los operadores
+para comparar cadenas, datos numéricos y valores booleanos están disponibles.
+Los siguientes escenarios ilustran el uso de condicionales en Ansible.
+• Defina un límite de hardware en una variable (por ejemplo, min_memory) y compárelo con la
+memoria disponible en un host gestionado.
+• Capture la salida de un comando y evalúela para determinar si se completó una tarea antes de
+tomar otras medidas. Por ejemplo, si falla un programa, se omite un lote.
+• Use los datos de Ansible para determinar la configuración de la red del host gestionado y decida
+qué archivo de plantilla enviar (por ejemplo, unificación o enlace troncal de red).
+• Evalúe el número de CPU para determinar cómo ajustar adecuadamente un servidor web.
+• Compare una variable registrada con una variable predefinida para determinar si un servicio
+cambió. Por ejemplo, pruebe la suma de comprobación MD5 de un archivo de configuración de
+servicio para ver si se modifica el servicio.
+Sintaxis condicional de tareas
+El enunciado when se usa para ejecutar una tarea de forma condicional. Toma como valor la
+condición para realizar pruebas. Si se cumple la condición, se ejecuta la tarea. Si no se cumple la
+condición, se omite la tarea.
+Una de las condiciones más simples que pueden probarse es si una variable booleana es
+verdadera o falsa. El enunciado when en el siguiente ejemplo hace que la tarea se ejecute solo si
+run_my_task es verdadero.
+---
+- name: Simple Boolean Task Demo
+  hosts: all
+  vars:
+    run_my_task: true
+  tasks:
+    - name: httpd package is installed
+      ansible.builtin.dnf:
+        name: httpd
+      when: run_my_task
+148
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+nota
+Las variables booleanas pueden tener el valor true o false.
+En el contenido de Ansible, puede expresar esos valores de otras formas: True,
+yes o 1 también se aceptan para true; y False, no o 0 también se aceptan para
+false. Es posible que vea true y yes, o false y no usados indistintamente para
+expresar valores booleanos en el contenido de Ansible existente.
+Los archivos YAML de Ansible se basan en el estándar YAML 1.1, pero el estándar
+YAML 1.2 especifica que solo puede usar true o false para establecer valores
+booleanos. Por esta razón, es posible que vea una estandarización gradual hacia el
+uso solo de true o false para los valores booleanos en playbooks y otros archivos
+de Ansible, aunque las formas equivalentes de expresar esos valores siguen siendo
+válidas. Si Ansible eventualmente debiera usar solo esas formas de expresar los
+valores booleanos es una pregunta abierta y una discusión en curso en la comunidad
+de Ansible.
+Importante
+Al usar condiciones de verdadero/falso, como en el ejemplo anterior, debe tener
+mucho cuidado de asegurarse de que Ansible trate su variable como un booleano y
+no como una cadena.
+A partir de Ansible Core 2.12, los condicionales when siempre tratan las cadenas
+como booleanos true si incluyen algún contenido. (El entorno de ejecución de
+automatización predeterminado en Ansible Automation Platform 2.2 usa Ansible
+Core 2.13).
+Por lo tanto, si la variable run_my_task en el ejemplo anterior se escribiera como
+se muestra en el siguiente ejemplo, se trataría como una cadena con contenido y
+tendría el valor booleano true, y la tarea se ejecutaría. Probablemente este no sea
+el comportamiento que desea.
+  run_my_task: "false"
+Sin embargo, si se hubiera escrito como se muestra en el siguiente ejemplo, se
+trataría como el valor booleano false y la tarea no se ejecutaría:
+  run_my_task: false
+Para asegurarse de que este sea el caso, puede reescribir la condición when
+anterior para convertir un valor de cadena accidental en un booleano y pasar valores
+booleanos sin cambios:
+      when: run_my_task | bool
+El siguiente ejemplo es un poco más sofisticado y prueba si la variable my_service tiene un valor.
+Si lo hace, el valor de my_service se usa como nombre del paquete para instalar. Si la variable
+my_service no está definida, la tarea se omite sin errores.
+RH294-RHEL9.0-es-3-20240620
+149
+
+
+capítulo 4 |  Implementación del control de tareas
+---
+- name: Test Variable is Defined Demo
+  hosts: all
+  vars:
+    my_service: httpd
+  tasks:
+    - name: "{{ my_service }} package is installed"
+      ansible.builtin.dnf:
+        name: "{{ my_service }}"
+      when: my_service is defined
+En la siguiente tabla, se muestran algunas operaciones que puede usar al trabajar con
+condicionales:
+Ejemplos de condicionales
+Operación
+Ejemplo
+Igual (el valor es una cadena)
+ansible_facts['machine'] == "x86_64"
+Igual (el valor es numérico)
+max_memory == 512
+Menor que
+min_memory < 128
+Mayor que
+min_memory > 256
+Menor que o igual que
+min_memory <= 256
+Mayor que o igual que
+min_memory >= 512
+No es igual a
+min_memory != 512
+La variable existe
+min_memory is defined
+La variable no existe
+min_memory is not defined
+La variable booleana es
+true. Los valores de 1, True
+o yes se evalúan como true.
+memory_available
+La variable booleana es
+false. Los valores de 0,
+False o no se evalúan como
+false.
+not memory_available
+El valor de la primera variable
+está presente como valor en
+la lista de la segunda variable
+ansible_facts['distribution'] in
+supported_distros
+La última entrada en la tabla anterior puede ser confusa al principio. El siguiente ejemplo ilustra
+cómo funciona.
+En el ejemplo, la variable ansible_facts['distribution'] es un dato determinado
+durante la tarea Gathering Facts e identifica la distribución del sistema operativo del
+150
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+host gestionado. El autor del playbook creó la variable supported_distros y contiene
+una lista de las distribuciones de sistemas operativos que soporta el playbook. Si el valor de
+ansible_facts['distribution'] se encuentra en la lista supported_distros, pasa el
+condicional y se ejecuta la tarea.
+---
+- name: Demonstrate the "in" keyword
+  hosts: all
+  gather_facts: true
+  vars:
+    supported_distros:
+      - RedHat
+      - Fedora
+  tasks:
+    - name: Install httpd using dnf, where supported
+      ansible.builtin.dnf:
+        name: http
+        state: present
+      when: ansible_facts['distribution'] in supported_distros
+Importante
+Observe la sangría de la declaración when. Debido a que la declaración when no es
+una variable de módulo, se la debe colocar fuera del módulo con sangría en el nivel
+superior de la tarea.
+Una tarea es un diccionario YAML, y la declaración when es simplemente una clave
+más en la tarea, como el nombre de la tarea y el módulo que usa. Una convención
+común coloca cualquier palabra clave when que pueda estar presente después del
+nombre de la tarea y del módulo (y los argumentos del módulo).
+Realización de pruebas de varias condiciones
+Una declaración when se puede usar para evaluar condicionales múltiples. Para ello, los
+condicionales se pueden combinar con las palabras clave and u or y se pueden agrupar con
+paréntesis.
+En los siguientes fragmentos, se muestran algunos ejemplos de cómo expresar condiciones
+múltiples.
+• Si una declaración condicional se debe cumplir cuando ambas condiciones son verdaderas,
+debe usar la declaración or. Por ejemplo, la siguiente condición se cumple si la máquina ejecuta
+Red Hat Enterprise Linux o Fedora:
+when: ansible_facts['distribution'] == "RedHat" or ansible_facts['distribution']
+ == "Fedora"
+• Con la operación and, ambas condiciones deben ser verdaderas para que se cumpla con toda
+la declaración condicional. Por ejemplo, la siguiente condición se cumple si el host remoto es un
+host Red Hat Enterprise Linux 9.0 y el kernel instalado es la versión especificada:
+when: ansible_facts['distribution_version'] == "9.0" and ansible_facts['kernel']
+ == "5.14.0-70.13.1.el9_0.x86_64"
+RH294-RHEL9.0-es-3-20240620
+151
+
+
+capítulo 4 |  Implementación del control de tareas
+La palabra clave when también soporta el uso de una lista para describir una lista de
+condiciones. Cuando se proporciona una lista a la palabra clave when, todos los condicionales se
+combinan usando la operación and. En el siguiente ejemplo, se muestra otra forma de combinar
+varias declaraciones condicionales usando el operador and:
+when:
+  - ansible_facts['distribution_version'] == "9.0"
+  - ansible_facts['kernel'] == "5.14.0-70.13.1.el9_0.x86_64"
+Este formato mejora la legibilidad, un objetivo clave de los playbooks de Ansible bien escritos.
+• Puede expresar declaraciones condicionales más complejas agrupando las condiciones con
+paréntesis. Esto asegura que se interpreten correctamente.
+Por ejemplo, la siguiente declaración condicional se cumple si la máquina ejecuta Red Hat
+Enterprise Linux 9 o Fedora 34. Este ejemplo usa el carácter mayor que (>) para que el
+condicional largo se pueda dividir en varias líneas en el playbook, a fin de que sea más fácil de
+leer.
+when: >
+    ( ansible_facts['distribution'] == "RedHat" and
+      ansible_facts['distribution_major_version'] == "9" )
+    or
+    ( ansible_facts['distribution'] == "Fedora" and
+    ansible_facts['distribution_major_version'] == "34" )
+Combinación de bucles y tareas condicionales
+Puede combinar los bucles y los condicionales.
+En el siguiente ejemplo, el módulo ansible.builtin.dnf se instala en el paquete mariadb-
+server si hay un sistema de archivos montado en / con más de 300 MiB libres. El dato
+ansible_facts['mounts'] es una lista de diccionarios, cada uno de los cuales representa
+información acerca de un sistema de archivos instalado. El bucle realiza la iteración de cada
+diccionario en la lista, y la declaración condicional no se cumple, a menos que se determine que
+un diccionario representa un sistema de archivos montado en donde ambas condiciones son
+verdaderas.
+- name: install mariadb-server if enough space on root
+  ansible.builtin.dnf:
+    name: mariadb-server
+    state: latest
+  loop: "{{ ansible_facts['mounts'] }}"
+  when: item['mount'] == "/" and item['size_available'] > 300000000
+Importante
+Cuando usa when con loop para una tarea, se verifica la declaración when de cada
+ítem.
+El siguiente ejemplo también combina condicionales y variables register. Este playbook reinicia
+el servicio httpd únicamente si se ejecuta el servicio postfix:
+152
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+---
+- name: Restart HTTPD if Postfix is Running
+  hosts: all
+  tasks:
+    - name: Get Postfix server status
+      ansible.builtin.command: /usr/bin/systemctl is-active postfix 
+      register: result
+    - name: Restart Apache HTTPD based on Postfix status
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+      when: result.rc == 0
+¿Se está ejecutando Postfix?
+Guarda información en el resultado del módulo en una variable denominada result.
+Evalúe la salida de la tarea Postfix. Si el código de salida del comando systemctl es 0,
+Postfix está activo y esta tarea reinicia el servicio httpd.
+Referencias
+Bucles: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_loops.html
+Pruebas: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_tests.html
+Condicionales: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_conditionals.html
+Qué implica un nombre de variable válido - Variables: documentación de
+Ansible
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_variables.html#what-makes-a-valid-variable-name
+Para obtener más información sobre el cambio al manejo booleano en los
+condicionales en la Ansible comunitario 5 (y Ansible Core 2.12) y versiones
+posteriores, consulte
+https://docs.ansible.com/ansible/latest/porting_guides/
+porting_guide_5.html#deprecated
+RH294-RHEL9.0-es-3-20240620
+153
+
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Escritura de bucles y tareas condicionales
+Escribir un playbook que contenga tareas con condicionales y bucles.
+Resultados
+• Implementar condicionales Ansible usando la palabra clave when.
+• Implementar la iteración de tareas usando la palabra clave loop junto con condicionales.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-flow
+Instrucciones
+ 1.
+En la máquina workstation, cambie al directorio /home/student/control-flow.
+[student@workstation ~]$ cd ~/control-flow
+[student@workstation control-flow]$
+ 2.
+El comando lab creó un archivo de configuración Ansible, así como un archivo de
+inventario. El archivo de inventario contiene el servidor servera.lab.example.com en el
+grupo de hosts database_dev y el servidor serverb.lab.example.com en el grupo de
+hosts database_prod. Revise el contenido del archivo antes de continuar.
+[student@workstation control-flow]$ cat inventory
+[database_dev]
+servera.lab.example.com
+[database_prod]
+serverb.lab.example.com
+ 3.
+Cree el playbook playbook.yml, que contiene un play con dos tareas. Use el grupo de
+hosts database_dev. La primera tarea instala los paquetes requeridos MariaDB y la
+segunda tarea garantiza que el servicio MariaDB se está ejecutando.
+3.1.
+Cree el playbook playbook.yml y defina la variable mariadb_packages con dos
+valores: mariadb-server y python3-PyMySQL.
+154
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+---
+- name: MariaDB server is running
+  hosts: database_dev
+  vars:
+    mariadb_packages:
+      - mariadb-server
+      - python3-PyMySQL
+3.2.
+Defina una tarea que use el módulo ansible.builtin.dnf y la variable
+mariadb_packages. La tarea usa la variable mariadb_packages para instalar los
+paquetes requeridos.
+  tasks:
+    - name: MariaDB packages are installed
+      ansible.builtin.dnf:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ mariadb_packages }}"
+Importante
+El uso de loop no es la forma más eficaz de instalar paquetes. En el código anterior,
+el módulo ansible.builtin.dnf se ejecuta una vez para cada paquete en la
+lista mariadb_packages.
+Normalmente, debe instalar todos los paquetes como una transacción, pasando la
+lista completa de paquetes al módulo, en lugar de pasarla un módulo a la vez:
+- name: MariaDB packages are installed
+  ansible.builtin.dnf:
+    name: "{{ mariadb_packages }}"
+    state: present
+Sin embargo, otros módulos como ansible.builtin.user no le permiten hacer
+esto; debe pasar ese módulo a un usuario para operar a la vez. En esos casos, loop
+es una herramienta invaluable.
+Este ejemplo es simplemente una forma de ver cómo funciona loop.
+3.3.
+Defina una segunda tarea para iniciar el servicio mariadb. El playbook completo
+debería incluir el siguiente contenido.
+- name: MariaDB server is running
+  hosts: database_dev
+  vars:
+    mariadb_packages:
+      - mariadb-server
+      - python3-PyMySQL
+  tasks:
+    - name: MariaDB packages are installed
+      ansible.builtin.dnf:
+RH294-RHEL9.0-es-3-20240620
+155
+
+
+capítulo 4 |  Implementación del control de tareas
+        name: "{{ item }}"
+        state: present
+      loop: "{{ mariadb_packages }}"
+    - name: Start MariaDB service
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: true
+ 4.
+Ejecute el playbook y observe la salida del play.
+[student@workstation control-flow]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [MariaDB server is running] ***********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [MariaDB packages are installed] ******************************************
+changed: [servera.lab.example.com] => (item=mariadb-server)
+changed: [servera.lab.example.com] => (item=python3-PyMySQL)
+TASK [Start MariaDB service] ***************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 5.
+Actualice la primera tarea para que se ejecute solo si el host gestionado usa Red Hat
+Enterprise Linux como su sistema operativo. Actualice el play para que use el grupo de
+hosts database_prod.
+- name: MariaDB server is running
+  hosts: database_prod
+  vars:
+...output omitted...
+  tasks:
+    - name: MariaDB packages are installed
+      ansible.builtin.dnf:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ mariadb_packages }}"
+      when: ansible_facts['distribution'] == "RedHat"
+...output omitted...
+156
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+ 6.
+Ejecute el playbook nuevamente y observe la salida del play.
+[student@workstation control-flow]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [MariaDB server is running] ***********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [MariaDB packages are installed] ******************************************
+ok: [serverb.lab.example.com] => (item=mariadb-server)
+ok: [serverb.lab.example.com] => (item=python3-PyMySQL)
+TASK [Start MariaDB service] ***************************************************
+ok: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=3    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Ansible ejecuta la tarea porque serverb.lab.example.com usa Red Hat Enterprise
+Linux.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-flow
+RH294-RHEL9.0-es-3-20240620
+157
+
+
+capítulo 4 |  Implementación del control de tareas
+Implementación de manejadores
+Objetivos
+• Implementar una tarea que se ejecute solo cuando otra tarea cambie el host gestionado.
+Manejadores de Ansible
+Los módulos Ansible están diseñados para ser idempotentes. Esto significa que, si ejecuta un
+playbook varias veces, el resultado es siempre el mismo. Puede ejecutar plays y sus tareas varias
+veces, pero los hosts gestionados solo se modifican si esos cambios son necesarios para que los
+hosts gestionados alcancen el estado deseado.
+No obstante, algunas veces, cuando una tarea realiza un cambio en el sistema, se puede tener
+que ejecutar otra tarea. Por ejemplo, un cambio en un archivo de configuración del servicio puede
+luego requerir que el servicio se vuelva a cargar para que se aplique la configuración modificada.
+Los manejadores son tareas que responden a una notificación desencadenada por otras tareas.
+Las tareas solo notifican a sus manejadores cuando la tarea cambia algo en un host gestionado.
+Cada controlador se activa por su nombre después del bloque de tareas del play.
+Si ninguna tarea notifica al manejador por nombre, no se ejecutará el manejador. Si una o más
+tareas notifican al manejador, este se ejecutará exactamente una vez después de que todas
+las demás tareas en el play se hayan completado. Debido a que los manejadores son tareas, los
+administradores pueden usar los mismos módulos en manejadores que usarían para cualquier otra
+tarea.
+Generalmente, los manejadores se usan para reiniciar los hosts y los servicios.
+Importante
+Siempre use nombres únicos para sus manejadores. Es posible que tenga resultados
+inesperados si más de un manejador usa el mismo nombre.
+Los manejadores se pueden considerar como tareas inactive que solo se desencadenan cuando se
+las invoca explícitamente mediante una declaración notify. En el siguiente fragmento se muestra
+cómo el servidor Apache solo se reinicia mediante el manejador restart apache cuando un
+archivo de configuración se actualiza y lo notifica:
+tasks:
+  - name: copy demo.example.conf configuration template
+    ansible.builtin.template:
+      src: /var/lib/templates/demo.example.conf.template
+      dest: /etc/httpd/conf.d/demo.example.conf
+    notify:
+      - restart apache
+handlers:
+  - name: restart apache
+158
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+    ansible.builtin.service:
+      name: httpd
+      state: restarted
+La tarea que notifica al manejador.
+La declaración notify indica que la tarea debe desencadenar un manejador.
+El nombre del manejador que debe ejecutarse.
+La palabra clave handlers indica el inicio de la lista de tareas del manejador.
+El nombre del manejador invocado por las tareas.
+El módulo que usará el manejador.
+En el ejemplo anterior, el manejador restart apache se desencadena al ser notificado por
+la tarea template de que se ha producido un cambio. Una tarea puede invocar a más de un
+manejador en su sección notify. Ansible trata la declaración notify como una matriz y realiza
+iteración de los nombres del manejador:
+tasks:
+  - name: copy demo.example.conf configuration template
+    ansible.builtin.template:
+      src: /var/lib/templates/demo.example.conf.template
+      dest: /etc/httpd/conf.d/demo.example.conf
+    notify:
+      - restart mysql
+      - restart apache
+handlers:
+  - name: restart mysql
+    ansible.builtin.service:
+      name: mariadb
+      state: restarted
+  - name: restart apache
+    ansible.builtin.service:
+      name: httpd
+      state: restarted
+Descripción de los beneficios del uso de manejadores
+Como analizamos en la documentación Ansible, debemos recordar algunos aspectos importantes
+acerca del uso de manejadores:
+• Los manejadores se ejecutan siempre en el orden especificado por la sección handlers del
+play. No se ejecutan en el orden en que aparecen en la lista por la declaración notify en una
+tarea ni en el orden en que las tareas los notifican.
+• Los manejadores se ejecutan después de que se hayan completado todas las demás tareas en
+el play. Un manejador invocado por una tarea en la parte tasks del playbook no se ejecutará
+hasta que se hayan procesado todas las tareas en tasks. (Hay algunas excepciones menores a
+esto).
+RH294-RHEL9.0-es-3-20240620
+159
+
+
+capítulo 4 |  Implementación del control de tareas
+• Los nombres de los manejadores se encuentran en un espacio de nombres por play. Si
+erróneamente se asigna a dos manejadores el mismo nombre, se ejecuta solo uno de ellos.
+• Inclusive si más de una tarea notifica a un manejador, este se ejecuta una vez. Si ninguna tarea lo
+notifica, no se ejecuta el manejador.
+• Si una tarea que incluye una declaración notify no informa un resultado changed (por
+ejemplo, un paquete ya se encuentra instalado y la tarea muestra ok), no se notificará al
+manejador. Ansible notifica a los manejadores solo si la tarea muestra el estado changed.
+Importante
+Los manejadores están diseñados para realizar una acción adicional cuando una
+tarea realiza un cambio en un host gestionado. No deben usarse como sustituto de
+las tareas normales.
+Referencias
+Manejadores: ejecución de operaciones en función de los cambios:
+documentación de Ansible
+https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html
+160
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Implementación de manejadores
+Implementar manejadores en playbooks.
+Resultados
+• Debe ser capaz de definir manejadores en playbooks y notificarlos para aplicar cambios de
+configuración.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-handlers
+Instrucciones
+ 1.
+En la máquina workstation, abra un nuevo terminal y cambie al directorio /home/
+student/control-handlers.
+[student@workstation ~]$ cd ~/control-handlers
+[student@workstation control-handlers]$
+ 2.
+Edite el archivo del playbook configure_webapp.yml. Este playbook instala y configura
+un servidor de aplicaciones web. Cuando cambia la configuración del servidor de
+aplicaciones web, el playbook desencadena un reinicio del servicio correspondiente.
+2.1.
+Revise el playbook configure_webapp.yml. Comienza con la inicialización de
+algunas variables:
+---
+- name: Web application server is deployed
+  hosts: webapp
+  vars:
+    packages: 
+      - nginx
+      - php-fpm
+      - firewalld
+    web_service: nginx 
+    app_service: php-fpm 
+    firewall_service: firewalld 
+    firewall_service_rules: 
+      - http
+    web_config_src: files/nginx.conf.standard 
+RH294-RHEL9.0-es-3-20240620
+161
+
+
+capítulo 4 |  Implementación del control de tareas
+    web_config_dst: /etc/nginx/nginx.conf 
+    app_config_src: files/php-fpm.conf.standard 
+    app_config_dst: /etc/php-fpm.conf 
+  tasks:
+packages especifica el nombre de los paquetes que se instalarán para los
+servicios de la aplicación web.
+web_service especifica el nombre del servicio del servidor web.
+app_service especifica el nombre del servicio del servidor de aplicaciones.
+firewall_service especifica el nombre del servicio de firewall.
+firewall_service_rules especifica una lista de servicios para permitir a
+través del firewall.
+web_config_src especifica la ubicación del archivo de configuración del
+servidor web para instalar.
+web_config_dst especifica la ubicación del archivo de configuración del
+servidor web instalado en los hosts gestionados.
+app_config_src especifica la ubicación del archivo de configuración del
+servidor de aplicaciones para instalar.
+web_config_dst especifica la ubicación del archivo de configuración del
+servidor de aplicaciones instalado en los hosts gestionados.
+2.2.
+En el archivo configure_webapp.yml, defina una tarea que usa el módulo
+ansible.builtin.dnf para instalar los paquetes de base de datos requeridos,
+según lo define la variable packages.
+La tarea debe decir lo siguiente:
+  tasks:
+    - name: "{{ packages }} packages are installed"
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+2.3.
+Agregue una tarea para iniciar y habilitar los servicios requeridos. Use un bucle para
+realizar la acción para los tres servicios definidos:
+    - name: Make sure services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - "{{ web_service }}"
+        - "{{ app_service }}"
+        - "{{ firewall_service }}"
+162
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+2.4.
+Agregue una tarea que recorra los ítems en la variable firewall_service_rules.
+Permita que cada servicio pase por el firewall:
+nota
+Aunque la variable firewall_service_rules solo contiene un elemento en este
+punto, puede agregar elementos a la variable (como agregar el servicio https) sin
+cambiar la tarea.
+    - name: Allow services through the firewall
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        state: enabled
+        immediate: true
+        permanent: true
+      loop: "{{ firewall_service_rules }}"
+2.5.
+Agregue una tarea para descargar nginx.conf.standard en /etc/nginx/
+nginx.conf en el host gestionado, mediante el módulo ansible.builtin.copy.
+Agregue una condición que notifique al manejador restart web service
+para reiniciar el servicio de servidor web después de un cambio de archivo de
+configuración. La tarea debe decir lo siguiente:
+    - name: The {{ web_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ web_config_src }}"
+        dest: "{{ web_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart web service
+2.6.
+Agregue una tarea para descargar php-fpm.conf.standard en /etc/php-
+fpm.conf en el host gestionado, mediante el módulo ansible.builtin.copy.
+Agregue una condición que notifique al manejador restart app service para
+reiniciar el servicio de servidor de aplicaciones después de un cambio de archivo de
+configuración. La tarea debe decir lo siguiente:
+    - name: The {{ app_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ app_config_src }}"
+        dest: "{{ app_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart app service
+2.7.
+Agregue la palabra clave handlers para definir el inicio de las tareas del manejador.
+Defina el primer manejador, restart web service, que reinicia el servicio nginx.
+En el manejador, se debe leer lo siguiente:
+RH294-RHEL9.0-es-3-20240620
+163
+
+
+capítulo 4 |  Implementación del control de tareas
+  handlers:
+    - name: restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+2.8.
+Defina el segundo manejador, restart app service, que reinicia el servicio php-
+fpm. En el manejador, se debe leer lo siguiente:
+    - name: restart app service
+      ansible.builtin.service:
+        name: "{{ app_service }}"
+        state: restarted
+El playbook completo debe incluir el siguiente contenido:
+---
+- name: Web application server is deployed
+  hosts: webapp
+  vars:
+    packages:
+      - nginx
+      - php-fpm
+      - firewalld
+    web_service: nginx
+    app_service: php-fpm
+    firewall_service: firewalld
+    firewall_service_rules:
+      - http
+    web_config_src: files/nginx.conf.standard
+    web_config_dst: /etc/nginx/nginx.conf
+    app_config_src: files/php-fpm.conf.standard
+    app_config_dst: /etc/php-fpm.conf
+  tasks:
+    - name: "{{ packages }} packages are installed"
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+    - name: Make sure services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - "{{ web_service }}"
+        - "{{ app_service }}"
+        - "{{ firewall_service }}"
+    - name: Allow services through the firewall
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+164
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+        state: enabled
+        immediate: true
+        permanent: true
+      loop: "{{ firewall_service_rules }}"
+    - name: The {{ web_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ web_config_src }}"
+        dest: "{{ web_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart web service
+    - name: The {{ app_config_dst }} file has been deployed
+      ansible.builtin.copy:
+        src: "{{ app_config_src }}"
+        dest: "{{ app_config_dst }}"
+        mode: "0644"
+      notify:
+        - restart app service
+  handlers:
+    - name: restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+    - name: restart app service
+      ansible.builtin.service:
+        name: "{{ app_service }}"
+        state: restarted
+ 3.
+Antes de ejecutar el playbook, ejecute ansible-navigator con la opción --syntax-
+check para verificar que su sintaxis sea correcta. Corrija los errores informados antes de
+pasar al siguiente paso. Debe ver una salida similar a la siguiente:
+[student@workstation control-handlers]$ ansible-navigator run \
+> -m stdout configure_webapp.yml --syntax-check
+playbook: /home/student/control-handlers/configure_webapp.yml
+ 4.
+Ejecute el playbook configure_webapp.yml. En la salida, se muestra que los
+manejadores se están ejecutando.
+[student@workstation control-handlers]$ ansible-navigator run \
+> -m stdout configure_webapp.yml
+PLAY [Web application server is deployed] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [['nginx', 'php-fpm', 'firewalld'] packages are installed] ****************
+changed: [servera.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+165
+
+
+capítulo 4 |  Implementación del control de tareas
+TASK [Make sure services are running] ******************************************
+changed: [servera.lab.example.com] => (item=nginx)
+changed: [servera.lab.example.com] => (item=php-fpm)
+ok: [servera.lab.example.com] => (item=firewalld)
+TASK [Allow services through the firewall] *************************************
+changed: [servera.lab.example.com] => (item=http)
+TASK [The /etc/nginx/nginx.conf file has been deployed] ************************
+changed: [servera.lab.example.com]
+TASK [The /etc/php-fpm.conf file has been deployed] ****************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [restart web service] ******************************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [restart app service] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=7    unreachable=0    failed=0  ...
+ 5.
+Ejecute el playbook nuevamente.
+[student@workstation control-handlers]$ ansible-navigator run \
+> -m stdout configure_webapp.yml
+PLAY [Web application server is deployed] **************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [['nginx', 'php-fpm', 'firewalld'] packages are installed] ****************
+ok: [servera.lab.example.com]
+TASK [Make sure services are running] ******************************************
+ok: [servera.lab.example.com] => (item=nginx)
+ok: [servera.lab.example.com] => (item=php-fpm)
+ok: [servera.lab.example.com] => (item=firewalld)
+TASK [Allow services through the firewall] *************************************
+ok: [servera.lab.example.com] => (item=http)
+TASK [The /etc/nginx/nginx.conf file has been deployed] ************************
+ok: [servera.lab.example.com]
+TASK [The /etc/php-fpm.conf file has been deployed] ****************************
+166
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=0    unreachable=0    failed=0  ...
+En esta oportunidad, se omiten los manejadores. Si el archivo de configuración remota /
+etc/nginx/nginx.conf se cambia en el futuro, ejecutar el playbook desencadenará el
+manejador restart web service, pero no el manejador restart app service.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-handlers
+RH294-RHEL9.0-es-3-20240620
+167
+
+
+capítulo 4 |  Implementación del control de tareas
+Manejo de fallas de tareas
+Objetivos
+• Controlar lo que sucede cuando falla una tarea y qué condiciones hacen que falle una tarea.
+Gestión de errores de tareas en plays
+Ansible evalúa los códigos de retorno de cada tarea para determinar si una tarea se realizó
+satisfactoriamente o con errores. Generalmente, cuando una tarea falla, Ansible omite
+inmediatamente todas las tareas posteriores.
+No obstante, algunas veces puede desear continuar la ejecución del play, aunque una tarea falle.
+Por ejemplo, puede esperar que una tarea específica falle y tal vez desee recuperarla ejecutando
+otra tarea de forma condicional. Pueden usarse varias características de Ansible para gestionar los
+errores de tareas.
+Fallas de tareas ignoradas
+De forma predeterminada, si una tarea falla, se cancela el play. Sin embargo, el comportamiento
+puede anularse si se ignoran las tareas fallidas. Puede usar la palabra clave ignore_errors en
+una tarea para lograr esto.
+En el siguiente fragmento, se muestra cómo usar ignore_errors en una tarea para continuar la
+ejecución de un playbook en el host, aun si la tarea falla. Por ejemplo, si el paquete notapkg no
+existe, el módulo ansible.builtin.dnf falla, pero si se tiene ignore_errors establecido
+como true, la ejecución continuará.
+- name: Latest version of notapkg is installed
+  ansible.builtin.dnf:
+    name: notapkg
+    state: latest
+  ignore_errors: true
+Forzado de la ejecución de manejadores después de la falla de
+una tarea
+En general, cuando falla una tarea y se cancela el play en ese host, no se ejecutan los manejadores
+informados por las tareas anteriores en el play. Si establece la palabra clave force_handlers:
+true en el play, se llama a los manejadores notificados incluso si se canceló el play porque falló
+una tarea posterior.
+Importante
+Si ha establecido ignore_errors: true en una tarea o para el play de la tarea,
+si esa tarea falla, se ignora la falla. En ese caso, el play continúa ejecutándose y los
+manejadores aún se ejecutan, incluso si ha establecido force_handlers: false,
+a menos que algún otro error haga que el play falle.
+168
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+En el siguiente fragmento se muestra cómo usar la palabra clave force_handlers en un play
+para forzar la ejecución del manejador notificado, incluso si falla una tarea:
+---
+- hosts: all
+  force_handlers: true
+  tasks:
+    - name: a task which always notifies its handler
+      ansible.builtin.command: /bin/true
+      notify: restart the database
+    - name: a task which fails because the package doesn't exist
+      ansible.builtin.dnf:
+        name: notapkg
+        state: latest
+  handlers:
+    - name: restart the database
+      ansible.builtin.service:
+        name: mariadb
+        state: restarted
+Importante
+Recuerde que se notifica a los manejadores cuando una tarea informa un resultado
+changed, pero no se notifican cuando informa un resultado ok o failed.
+Si establece force_handlers: true en el play, todos los manejadores que hayan
+sido notificados se ejecutarán incluso si una falla posterior de la tarea hace que el
+play falle. De lo contrario, los manejadores no se ejecutan en absoluto cuando falla
+un play.
+Establecer force_handlers: true en un play no hace que los manejadores sean
+notificados para tareas que reportan ok o failed; solo hace que se ejecuten los
+manejadores que ya han sido notificados antes del punto en el que falló el play.
+Especificación de las condiciones de falla de tareas
+Puede usar la palabra clave failed_when en una tarea para especificar las condiciones que
+indican que la tarea falló. A menudo, esto se usa con los módulos de comando que pueden
+ejecutar un comando correctamente, pero la salida del comando indica una falla.
+Por ejemplo, puede ejecutar un script que presenta un mensaje de error y usar ese mensaje para
+definir el estado fallido para la tarea. En el siguiente ejemplo se muestra una forma en que puede
+usar la palabra clave failed_when en una tarea:
+tasks:
+  - name: Run user creation script
+    ansible.builtin.shell: /usr/local/bin/create_users.sh
+    register: command_result
+    failed_when: "'Password missing' in command_result.stdout"
+RH294-RHEL9.0-es-3-20240620
+169
+
+
+capítulo 4 |  Implementación del control de tareas
+El módulo ansible.builtin.fail también se puede usar para forzar la falla de una tarea. En
+su lugar, podría escribir ese ejemplo como dos tareas:
+tasks:
+  - name: Run user creation script
+    ansible.builtin.shell: /usr/local/bin/create_users.sh
+    register: command_result
+    ignore_errors: true
+  - name: Report script failure
+    ansible.builtin.fail:
+      msg: "The password is missing in the output"
+    when: "'Password missing' in command_result.stdout"
+Puede usar el módulo ansible.builtin.fail para proporcionar un mensaje de error claro
+para la tarea. Este enfoque también permite la falla retrasada, lo que significa que puede ejecutar
+tareas intermedias para completar o revertir otros cambios.
+Especificación cuando una tarea informa resultados
+"changed"
+Cuando una tarea realiza un cambio a un host gestionado, informa el estado changed y notifica a
+los manejadores. Cuando una tarea no necesita realizar un cambio, informa ok y no notifica a los
+manejadores.
+Use la palabra clave changed_when para controlar cómo una tarea informa que ha cambiado
+algo en el host gestionado. Por ejemplo, el módulo ansible.builtin.command en el siguiente
+ejemplo valida la configuración httpd en un host gestionado.
+Esta tarea valida la sintaxis de configuración, pero no se cambia nada en el host gestionado. Las
+tareas posteriores pueden usar el valor de la variable httpd_config_status.
+En general, informaría siempre changed cuando se ejecuta. Para eliminar ese informe de
+modificación, changed_when: false se establece de modo que solo informa ok o failed.
+  - name: Validate httpd configuration
+    ansible.builtin.command: httpd -t
+    changed_when: false
+    register: httpd_config_status
+En el siguiente ejemplo se usa el módulo ansible.builtin.shell y solo se informa changed
+si se encuentra la cadena "Success" en la salida de la variable registrada. Si informa changed,
+entonces notifica al manejador.
+tasks:
+  - ansible.builtin.shell:
+      cmd: /usr/local/bin/upgrade-database
+    register: command_result
+    changed_when: "'Success' in command_result.stdout"
+    notify:
+      - restart_database
+handlers:
+  - name: restart_database
+170
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+     ansible.builtin.service:
+       name: mariadb
+       state: restarted
+Bloques Ansible y control de errores
+En los playbooks, los blocks (bloques) son cláusulas que agrupan tareas de forma lógica y se
+pueden usar para controlar cómo se ejecutan las tareas. Por ejemplo, un bloque de tareas puede
+tener una palabra clave when para aplicar un condicional a varias tareas:
+- name: block example
+  hosts: all
+  tasks:
+    - name: installing and configuring DNF versionlock plugin
+      block:
+      - name: package needed by dnf
+        ansible.builtin.dnf:
+          name: python3-dnf-plugin-versionlock
+          state: present
+      - name: lock version of tzdata
+        ansible.builtin.lineinfile:
+          dest: /etc/yum/pluginconf.d/versionlock.list
+          line: tzdata-2016j-1
+          state: present
+      when: ansible_distribution == "RedHat"
+Los bloques también permiten el control de errores junto con los enunciados rescue y always. Si
+falla alguna de las tareas de block, se ejecutan las tareas rescue para recuperarse.
+Después de que se ejecuten las tareas en la cláusula block, así como las tareas en la cláusula
+rescue si hubo una falla, se ejecutan las tareas en la cláusula always.
+Para resumir:
+• block: define las tareas principales para ejecutar.
+• rescue: define las tareas que se ejecutarán si fallan las tareas definidas en la cláusula block.
+• always: define las tareas que se ejecutarán siempre, independientemente del éxito o de la falla
+de las tareas definidas en las cláusulas block y rescue.
+En el siguiente ejemplo, se muestra cómo implementar un bloque en un playbook.
+  tasks:
+    - name: Upgrade DB
+      block:
+        - name: upgrade the database
+          ansible.builtin.shell:
+            cmd: /usr/local/lib/upgrade-database
+      rescue:
+        - name: revert the database upgrade
+          ansible.builtin.shell:
+            cmd: /usr/local/lib/revert-database
+      always:
+        - name: always restart the database
+RH294-RHEL9.0-es-3-20240620
+171
+
+
+capítulo 4 |  Implementación del control de tareas
+          ansible.builtin.service:
+            name: mariadb
+            state: restarted
+La condición when en una cláusula block también se aplica a sus cláusulas rescue y always si
+están presentes.
+Referencias
+Control de errores en playbooks: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_error_handling.html
+Control de errores - Bloques: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html#blocks-
+error-handling
+172
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Manejo de fallas de tareas
+Explorar diferentes formas de manejar la falla de una tarea en un playbook de Ansible.
+Resultados
+• Ignorar los comandos fallidos durante la ejecución de playbooks.
+• Forzar la ejecución de los manejadores.
+• Reemplazar lo que constituye una falla en las tareas.
+• Reemplazar el estado changed para las tareas.
+• Implementar block, rescue y always en playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-errors
+Instrucciones
+ 1.
+En la máquina workstation, cambie al directorio /home/student/control-errors.
+[student@workstation ~]$ cd ~/control-errors
+[student@workstation control-errors]$
+ 2.
+El comando lab creó un archivo de configuración Ansible, así como un archivo de
+inventario, que contiene el servidor servera.lab.example.com en el grupo
+databases. Revise el archivo antes de continuar.
+[student@workstation control-errors]$ cat inventory
+[databases]
+servera.lab.example.com
+ 3.
+Cree un playbook denominado playbook.yml que contiene un play con dos tareas.
+Escriba la primera tarea con un error deliberado para que falle.
+3.1.
+Abra el playbook en un editor de texto. Defina tres variables: web_package con un
+valor de http, db_package con un valor de mariadb-server y db_service con
+un valor de mariadb. Estas variables se usarán para instalar los paquetes requeridos
+e iniciar el servidor.
+RH294-RHEL9.0-es-3-20240620
+173
+
+
+capítulo 4 |  Implementación del control de tareas
+El valor http es un error intencional en el nombre del paquete. El (intencionalmente
+incorrecto) debe contar con el siguiente contenido:
+---
+- name: Task Failure Exercise
+  hosts: databases
+  vars:
+    web_package: http
+    db_package: mariadb-server
+    db_service: mariadb
+3.2.
+Defina dos tareas que usen el módulo ansible.builtin.dnf y las dos variables,
+web_package y db_package. Las tareas deben instalar los paquetes requeridos y
+leerse de la siguiente manera:
+  tasks:
+    - name: Install {{ web_package }} package
+      ansible.builtin.dnf:
+        name: "{{ web_package }}"
+        state: present
+    - name: Install {{ db_package }} package
+      ansible.builtin.dnf:
+        name: "{{ db_package }}"
+        state: present
+ 4.
+Ejecute el playbook y observe la salida del play.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install http package] ****************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "failures":
+ ["No package http available."], "msg": "Failed to install some of the specified
+ packages", "rc": 1, "results": []}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+La tarea falló porque no hay un paquete existente denominado http. Debido a que falló la
+primera tarea, no se ejecutó la segunda tarea.
+ 5.
+Actualice la primera tarea para ignorar cualquier error añadiendo la palabra clave
+ignore_errors. Las tareas deben contar con el siguiente contenido:
+174
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+  tasks:
+    - name: Install {{ web_package }} package
+      ansible.builtin.dnf:
+        name: "{{ web_package }}"
+        state: present
+      ignore_errors: true
+    - name: Install {{ db_package }} package
+      ansible.builtin.dnf:
+        name: "{{ db_package }}"
+        state: present
+ 6.
+Ejecute el playbook nuevamente y observe la salida del play.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install http package] ****************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "failures":
+ ["No package http available."], "msg": "Failed to install some of the specified
+ packages", "rc": 1, "results": []}
+...ignoring
+TASK [Install mariadb-server package] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=1
+Aunque falló la primera tarea, Ansible ejecutó la segunda.
+ 7.
+En este paso, configurará una palabra clave block para que pueda experimentar con su
+funcionamiento.
+7.1.
+Actualice el playbook anidando la primera tarea en una cláusula block. Elimine la
+línea que establece ignore_errors: true. El bloque debe incluir el siguiente
+contenido:
+    - name: Attempt to set up a webserver
+      block:
+        - name: Install {{ web_package }} package
+          ansible.builtin.dnf:
+            name: "{{ web_package }}"
+            state: present
+RH294-RHEL9.0-es-3-20240620
+175
+
+
+capítulo 4 |  Implementación del control de tareas
+7.2.
+Anide la tarea que instala el paquete mariadb-server en una cláusula rescue. Si
+la tarea enumerada en la cláusula block falla, esta tarea se ejecuta. La cláusula del
+bloque debe incluir el siguiente contenido:
+      rescue:
+        - name: Install {{ db_package }} package
+          ansible.builtin.dnf:
+            name: "{{ db_package }}"
+            state: present
+7.3.
+Por último, agregue una cláusula always que iniciará el servidor de base de datos
+una vez realizada la instalación usando el módulo ansible.builtin.service. La
+cláusula always debe incluir el siguiente contenido:
+      always:
+        - name: Start {{ db_service }} service
+          ansible.builtin.service:
+            name: "{{ db_service }}"
+            state: started
+7.4.
+La tarea completa debe contar con el siguiente contenido:
+  tasks:
+    - name: Attempt to set up a webserver
+      block:
+        - name: Install {{ web_package }} package
+          ansible.builtin.dnf:
+            name: "{{ web_package }}"
+            state: present
+      rescue:
+        - name: Install {{ db_package }} package
+          ansible.builtin.dnf:
+            name: "{{ db_package }}"
+            state: present
+      always:
+        - name: Start {{ db_service }} service
+          ansible.builtin.service:
+            name: "{{ db_service }}"
+            state: started
+ 8.
+Ejecute el playbook otra vez y observe la salida.
+8.1.
+Ejecute el playbook. Fallará la tarea en el bloque que garantiza que esté instalado
+web_package, lo que causará la ejecución de la tarea del bloque rescue. A
+continuación, se ejecuta la tarea en el bloque always.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+176
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+TASK [Install http package] ****************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "failures":
+ ["No package http available."], "msg": "Failed to install some of the specified
+ packages", "rc": 1, "results": []}
+TASK [Install mariadb-server package] ******************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=1    ignored=0
+8.2.
+Edite el playbook y corrija el valor de la variable web_package para que diga httpd.
+Esto hará que la tarea en el bloque se ejecute de manera correcta la próxima vez que
+ejecute el playbook.
+  vars:
+    web_package: httpd
+    db_package: mariadb-server
+    db_service: mariadb
+8.3.
+Ejecute el playbook nuevamente. Esta vez, la tarea en el bloque no fallará. Esto hace
+que se ignore la tarea en la sección rescue. La tarea de la sección always aún se
+ejecuta.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install httpd package] ***************************************************
+changed: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 9.
+Este paso explora el modo en que se controla la condición que hace que la tarea se informe
+como "changed" (modificado) para un host gestionado.
+9.1.
+Edite el playbook para agregar dos tareas al inicio del play, antes de la cláusula
+block. La primera tarea usa el módulo ansible.builtin.command para ejecutar
+el comando date y registra el resultado en la variable command_result. La segunda
+tarea usa el módulo ansible.builtin.debug para imprimir la salida estándar del
+comando de la primera tarea.
+RH294-RHEL9.0-es-3-20240620
+177
+
+
+capítulo 4 |  Implementación del control de tareas
+  tasks:
+    - name: Check local time
+      ansible.builtin.command: date
+      register: command_result
+    - name: Print local time
+      ansible.builtin.debug:
+        var: command_result.stdout
+9.2.
+Ejecute el playbook. Debería ver que la primera tarea, que ejecuta el módulo
+ansible.builtin.command, informe changed, aun si no modificó el sistema
+remoto; solo recopiló información acerca de la hora. Esto se debe a que el módulo
+ansible.builtin.command no puede diferenciar entre un comando que recopila
+datos y un comando que modifica el estado.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Check local time] ********************************************************
+changed: [servera.lab.example.com]
+TASK [Print local time] ********************************************************
+ok: [servera.lab.example.com] => {
+    "command_result.stdout": "Tue Jul  5 03:04:51 PM EDT 2022"
+}
+TASK [Install httpd package] ***************************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Si ejecuta el playbook nuevamente, la tarea Check local time informa changed
+nuevamente.
+9.3.
+Esa tarea ansible.builtin.command no debería informar changed cada vez que
+se ejecuta, ya que no modifica el host gestionado. Dado que sabe que la tarea nunca
+modifica un host gestionado, agregue la línea changed_when: false a la tarea
+para eliminar la modificación.
+  tasks:
+    - name: Check local time
+      ansible.builtin.command: date
+      register: command_result
+      changed_when: false
+178
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+    - name: Print local time
+      ansible.builtin.debug:
+        var: command_result.stdout
+9.4.
+Ejecute el playbook nuevamente para observar que la tarea ahora informe ok, pero la
+tarea aún se está ejecutando y está guardando la hora en la variable.
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Check local time] ********************************************************
+ok: [servera.lab.example.com]
+TASK [Print local time] ********************************************************
+ok: [servera.lab.example.com] => {
+    "command_result.stdout": "Tue Jul  5 03:06:43 PM EDT 2022"
+}
+TASK [Install httpd package] ***************************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 10. Como ejercicio final, edite el playbook para explorar el modo en que la palabra clave
+failed_when interactúa con las tareas.
+10.1.
+Edite la tarea Install {{ web_package }} package de modo que informe que
+falló cuando web_package tenga el valor httpd. Dado que este es el caso, la tarea
+informará una falla cuando ejecute el play.
+Preste atención a su sangría para asegurarse de que la palabra clave se establezca
+correctamente en la tarea.
+      block:
+        - name: Install {{ web_package }} package
+          ansible.builtin.dnf:
+            name: "{{ web_package }}"
+            state: present
+          failed_when: web_package == "httpd"
+10.2. Ejecute el playbook.
+RH294-RHEL9.0-es-3-20240620
+179
+
+
+capítulo 4 |  Implementación del control de tareas
+[student@workstation control-errors]$ ansible-navigator run -m stdout playbook.yml
+PLAY [Task Failure Exercise] ***************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Check local time] ********************************************************
+ok: [servera.lab.example.com]
+TASK [Print local time] ********************************************************
+ok: [servera.lab.example.com] => {
+    "command_result.stdout": "Tue Jul  5 03:08:41 PM EDT 2022"
+}
+TASK [Install httpd package] ***************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false,
+ "failed_when_result": true, "msg": "Nothing to do", "rc": 0, "results": []}
+TASK [Install mariadb-server package] ******************************************
+ok: [servera.lab.example.com]
+TASK [Start mariadb service] ***************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=1    ignored=0
+Observe la salida con atención. La palabra clave failed_when modifica el estado
+que informa la tarea después de su ejecución; no modifica el comportamiento de la
+tarea en sí.
+Sin embargo, la falla informada puede modificar el comportamiento del resto del play.
+Dado que esta tarea se encontraba en un bloque e informó una falla, se ejecutó la
+tarea Install mariadb-server package en la sección rescue del bloque.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-errors
+180
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Trabajo de laboratorio
+Implementación del control de tareas
+Instalar el servidor web Apache y protegerlo con el uso de mod_ssl. Usará las condiciones,
+los manejadores y el manejo de fallas de tareas en su playbook para implementar el entorno.
+Resultados
+• Definir condicionales en playbooks de Ansible
+• Establecer bucles que realizan iteración de elementos
+• Definir manejadores en playbooks
+• Manejar errores de tareas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-review
+Instrucciones
+1.
+En la máquina workstation, cambie al directorio /home/student/control-review.
+2.
+El directorio del proyecto contiene un play parcialmente completado en el playbook
+playbook.yml. En el comentario #Fail fast message, agregue una tarea que use el
+módulo ansible.builtin.fail. Proporcione un nombre adecuado para la tarea.
+Esta tarea solo debe ejecutarse cuando el sistema remoto no cumple con los siguientes
+requisitos mínimos:
+• Tiene al menos la cantidad de RAM especificada por la variable min_ram_mb. La variable
+min_ram_mb se define en el archivo vars.yml y tiene un valor de 256.
+• Ejecuta Red Hat Enterprise Linux.
+3.
+En el comentario #Install all packages, agregue una tarea denominada Ensure
+required packages are present para instalar la última versión de los paquetes que
+faltan. Los paquetes requeridos son especificados por la variable packages, que se define
+en el archivo vars.yml.
+4.
+Debajo del comentario #Enable and start services, agregue una tarea para iniciar
+los servicios. Deben iniciarse y habilitarse todos los servicios especificados por la variable
+services, que se define en el archivo vars.yml. Proporcione un nombre adecuado para la
+tarea.
+5.
+Debajo del comentario #Block of config tasks, agregue un bloque de tareas al play.
+Este bloque contiene dos tareas:
+RH294-RHEL9.0-es-3-20240620
+181
+
+
+capítulo 4 |  Implementación del control de tareas
+• Una tarea para asegurar que el directorio especificado por la variable ssl_cert_dir
+existe en el host remoto. Este directorio almacena los certificados del servidor web.
+• Una tarea para copiar todos los archivos especificados por la variable
+web_config_files al host remoto. Examine la estructura de la variable
+web_config_files en el archivo vars.yml. Configure la tarea para copiar cada archivo
+al destino correcto en el host remoto.
+Esta tarea debe desencadenar el manejador Restart web service si alguno de estos
+archivos se modifica en el servidor remoto.
+Además, se ejecuta una tarea de depuración si falla alguna de las dos tareas anteriores. En
+este caso, la tarea imprime el siguiente mensaje: One or more of the configuration
+changes failed, but the web service is still active.
+Asegúrese de proporcionar un nombre para todas las tareas.
+6.
+El play configura el host remoto para escuchar las solicitudes de HTTPS estándares.
+Debajo del comentario #Configure the firewall, agregue una tarea para configurar
+firewalld.
+Asegúrese de que la tarea configure el host remoto para aceptar conexiones HTTP y HTTPS
+estándares. Estos cambios de configuración deben ser efectivos de inmediato y persistir
+después de un reinicio. Proporcione un nombre adecuado para la tarea.
+7.
+Defina el manejador Restart web service.
+Cuando se desencadena, esta tarea debe reiniciar el servicio web determinado por la variable
+web_service, definida en el archivo vars.yml.
+8.
+Desde el directorio ~/control-review, ejecute el playbook playbook.yml. El playbook
+debe ejecutarse sin errores y desencadenar la ejecución de la tarea del manejador.
+9.
+Verifique que el servidor web ahora responde a las solicitudes HTTPS, usando el certificado
+autofirmado personalizado para cifrar la conexión. El servidor web debería volver a
+Configured for both HTTP and HTTPS.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade control-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-review
+182
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Solución
+Implementación del control de tareas
+Instalar el servidor web Apache y protegerlo con el uso de mod_ssl. Usará las condiciones,
+los manejadores y el manejo de fallas de tareas en su playbook para implementar el entorno.
+Resultados
+• Definir condicionales en playbooks de Ansible
+• Establecer bucles que realizan iteración de elementos
+• Definir manejadores en playbooks
+• Manejar errores de tareas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-review
+Instrucciones
+1.
+En la máquina workstation, cambie al directorio /home/student/control-review.
+[student@workstation ~]$ cd ~/control-review
+[student@workstation control-review]$
+2.
+El directorio del proyecto contiene un play parcialmente completado en el playbook
+playbook.yml. En el comentario #Fail fast message, agregue una tarea que use el
+módulo ansible.builtin.fail. Proporcione un nombre adecuado para la tarea.
+Esta tarea solo debe ejecutarse cuando el sistema remoto no cumple con los siguientes
+requisitos mínimos:
+• Tiene al menos la cantidad de RAM especificada por la variable min_ram_mb. La variable
+min_ram_mb se define en el archivo vars.yml y tiene un valor de 256.
+• Ejecuta Red Hat Enterprise Linux.
+La tarea completa debe contar con el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+183
+
+
+capítulo 4 |  Implementación del control de tareas
+  tasks:
+    #Fail fast message
+    - name: Show failed system requirements message
+      ansible.builtin.fail:
+        msg: "The {{ inventory_hostname }} did not meet minimum reqs."
+      when: >
+        ansible_facts['memtotal_mb'] < min_ram_mb or
+        ansible_facts['distribution'] != "RedHat"
+3.
+En el comentario #Install all packages, agregue una tarea denominada Ensure
+required packages are present para instalar la última versión de los paquetes que
+faltan. Los paquetes requeridos son especificados por la variable packages, que se define
+en el archivo vars.yml.
+La tarea completa debe contar con el siguiente contenido:
+    #Install all packages
+    - name: Ensure required packages are present
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+4.
+Debajo del comentario #Enable and start services, agregue una tarea para iniciar
+los servicios. Deben iniciarse y habilitarse todos los servicios especificados por la variable
+services, que se define en el archivo vars.yml. Proporcione un nombre adecuado para la
+tarea.
+La tarea completa debe contar con el siguiente contenido:
+    #Enable and start services
+    - name: Ensure services are started and enabled
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop: "{{ services }}"
+5.
+Debajo del comentario #Block of config tasks, agregue un bloque de tareas al play.
+Este bloque contiene dos tareas:
+• Una tarea para asegurar que el directorio especificado por la variable ssl_cert_dir
+existe en el host remoto. Este directorio almacena los certificados del servidor web.
+• Una tarea para copiar todos los archivos especificados por la variable
+web_config_files al host remoto. Examine la estructura de la variable
+184
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+web_config_files en el archivo vars.yml. Configure la tarea para copiar cada archivo
+al destino correcto en el host remoto.
+Esta tarea debe desencadenar el manejador Restart web service si alguno de estos
+archivos se modifica en el servidor remoto.
+Además, se ejecuta una tarea de depuración si falla alguna de las dos tareas anteriores. En
+este caso, la tarea imprime el siguiente mensaje: One or more of the configuration
+changes failed, but the web service is still active.
+Asegúrese de proporcionar un nombre para todas las tareas.
+El bloque de la tarea completa debe contar con el siguiente contenido:
+    #Block of config tasks
+    - name: Setting up the SSL cert directory and config files
+      block:
+        - name: Create SSL cert directory
+          ansible.builtin.file:
+            path: "{{ ssl_cert_dir }}"
+            state: directory
+        - name: Copy config files
+          ansible.builtin.copy:
+            src: "{{ item['src'] }}"
+            dest: "{{ item['dest'] }}"
+          loop: "{{ web_config_files }}"
+          notify: Restart web service
+      rescue:
+        - name: Configuration error message
+          ansible.builtin.debug:
+            msg: >
+              One or more of the configuration
+              changes failed, but the web service
+              is still active.
+6.
+El play configura el host remoto para escuchar las solicitudes de HTTPS estándares.
+Debajo del comentario #Configure the firewall, agregue una tarea para configurar
+firewalld.
+Asegúrese de que la tarea configure el host remoto para aceptar conexiones HTTP y HTTPS
+estándares. Estos cambios de configuración deben ser efectivos de inmediato y persistir
+después de un reinicio. Proporcione un nombre adecuado para la tarea.
+La tarea completa debe contar con el siguiente contenido:
+    #Configure the firewall
+    - name: Ensure web server ports are open
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        immediate: true
+        permanent: true
+        state: enabled
+      loop:
+        - http
+        - https
+RH294-RHEL9.0-es-3-20240620
+185
+
+
+capítulo 4 |  Implementación del control de tareas
+7.
+Defina el manejador Restart web service.
+Cuando se desencadena, esta tarea debe reiniciar el servicio web determinado por la variable
+web_service, definida en el archivo vars.yml.
+Agregue una sección handlers al final del play:
+  handlers:
+    - name: Restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+El playbook completo debe incluir el siguiente contenido:
+---
+- name: Playbook Control Lab
+  hosts: webservers
+  vars_files: vars.yml
+  tasks:
+    #Fail fast message
+    - name: Show failed system requirements message
+      ansible.builtin.fail:
+        msg: "The {{ inventory_hostname }} did not meet minimum reqs."
+      when: >
+        ansible_facts['memtotal_mb'] < min_ram_mb or
+        ansible_facts['distribution'] != "RedHat"
+    #Install all packages
+    - name: Ensure required packages are present
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+    #Enable and start services
+    - name: Ensure services are started and enabled
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop: "{{ services }}"
+    #Block of config tasks
+    - name: Setting up the SSL cert directory and config files
+      block:
+        - name: Create SSL cert directory
+          ansible.builtin.file:
+            path: "{{ ssl_cert_dir }}"
+            state: directory
+        - name: Copy config files
+          ansible.builtin.copy:
+            src: "{{ item['src'] }}"
+            dest: "{{ item['dest'] }}"
+          loop: "{{ web_config_files }}"
+          notify: Restart web service
+186
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+      rescue:
+        - name: Configuration error message
+          ansible.builtin.debug:
+            msg: >
+              One or more of the configuration
+              changes failed, but the web service
+              is still active.
+    #Configure the firewall
+    - name: Ensure web server ports are open
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        immediate: true
+        permanent: true
+        state: enabled
+      loop:
+        - http
+        - https
+  #Add handlers
+  handlers:
+    - name: Restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+8.
+Desde el directorio ~/control-review, ejecute el playbook playbook.yml. El playbook
+debe ejecutarse sin errores y desencadenar la ejecución de la tarea del manejador.
+[student@workstation control-review]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Playbook Control Lab] ****************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [Show failed system requirements message] *********************************
+skipping: [serverb.lab.example.com]
+TASK [Ensure required packages are present] ************************************
+changed: [serverb.lab.example.com]
+TASK [Ensure services are started and enabled] *********************************
+changed: [serverb.lab.example.com] => (item=httpd)
+ok: [serverb.lab.example.com] => (item=firewalld)
+TASK [Create SSL cert directory] ***********************************************
+changed: [serverb.lab.example.com]
+TASK [Copy config files] *******************************************************
+changed: [serverb.lab.example.com] => (item={'src': 'server.key', 'dest': '/etc/
+httpd/conf.d/ssl'})
+RH294-RHEL9.0-es-3-20240620
+187
+
+
+capítulo 4 |  Implementación del control de tareas
+changed: [serverb.lab.example.com] => (item={'src': 'server.crt', 'dest': '/etc/
+httpd/conf.d/ssl'})
+changed: [serverb.lab.example.com] => (item={'src': 'ssl.conf', 'dest': '/etc/
+httpd/conf.d'})
+changed: [serverb.lab.example.com] => (item={'src': 'index.html', 'dest': '/var/
+www/html'})
+TASK [Ensure web server ports are open] ****************************************
+changed: [serverb.lab.example.com] => (item=http)
+changed: [serverb.lab.example.com] => (item=https)
+RUNNING HANDLER [Restart web service] ******************************************
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+9.
+Verifique que el servidor web ahora responde a las solicitudes HTTPS, usando el certificado
+autofirmado personalizado para cifrar la conexión. El servidor web debería volver a
+Configured for both HTTP and HTTPS.
+[student@workstation control-review]$ curl -k -vvv https://serverb.lab.example.com
+*   Trying 172.25.250.11:443...
+* Connected to serverb.lab.example.com (172.25.250.11) port 443 (#0)
+...output omitted...
+< HTTP/1.1 200 OK
+< Date: Tue, 05 Jul 2022 19:36:48 GMT
+< Server: Apache/2.4.51 (Red Hat Enterprise Linux) OpenSSL/3.0.1
+< Last-Modified: Tue, 05 Jul 2022 19:35:30 GMT
+< ETag: "24-5e313f48fbb2c"
+< Accept-Ranges: bytes
+< Content-Length: 36
+< Content-Type: text/html; charset=UTF-8
+<
+Configured for both HTTP and HTTPS.
+* Connection #0 to host serverb.lab.example.com left intact
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade control-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-review
+188
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+RH294-RHEL9.0-es-3-20240620
+189
+
+
+capítulo 4 |  Implementación del control de tareas
+Resumen
+• Los bucles se usan para iterar un conjunto de valores, como una simple lista de cadenas o una
+lista de diccionarios.
+• Los condicionales se pueden usar para ejecutar tareas o plays únicamente cuando se hayan
+cumplido ciertas condiciones.
+• Los manejadores son tareas especiales que se ejecutan al final de un play si otras tareas los
+notifican.
+• Los manejadores solo son notificados cuando una tarea informa que se cambió algo en un host
+gestionado.
+• Las tareas se pueden configurar para manejar condiciones de error ignorando una falla en las
+tareas, forzando a los manejadores a ser invocados aun cuando la tarea haya fallado, marcar una
+tarea como con errores cuando fue satisfactoria o reemplazar el comportamiento que hace que
+la tarea se marque como modificada.
+• Los bloques se usan para agrupar tareas como una unidad y ejecutar otras tareas dependiendo
+de si todas las tareas en el bloque se realizaron satisfactoriamente.
+190
+RH294-RHEL9.0-es-3-20240620
+
+

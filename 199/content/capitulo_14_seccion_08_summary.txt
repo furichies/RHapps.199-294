@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 11. Gestión de la configuración de red
+
+11.8. Resumen 11.8. Resumen En esta lección, aprendió a administrar la configuración de red mediante el demonio NetworkManager y a administrar dispositivos y conexiones de red mediante la interfaz de línea de comandos de NetworkManager (nmcli). RHEL 10 utiliza un formato de archivo de claves estilo INI para almacenar perfiles de red en el directorio /etc/NetworkManager/system-connections. Se elimina por completo la compatibilidad con el formato de archivo ifcfg anterior para conexiones de red. Puede identificar de forma exclusiva servidores con un FQDN, que puede administrar mediante el comando hostnamectl. También aprendió a configurar y probar la resolución de nombres local.
+
+
+
+
+
+Capítulo 12. Programación de tareas del sistema Objetivo Programar programas del sistema que deben ejecutarse de forma recurrente para soportar demonios o funciones del sistema operativo. Secciones Administrar trabajos repetidos mediante el uso de unidades de temporizador Systemd (y ejercicio guiado) Administrar archivos temporales (y ejercicio guiado) Programar tareas recurrentes del sistema con Cron (y ejercicio guiado) Programar tareas de usuario (cuestionario)
+
+
+
+
+

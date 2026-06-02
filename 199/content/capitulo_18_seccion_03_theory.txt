@@ -1,0 +1,107 @@
+# 15.3. Administrar el espacio de intercambio
+# Tipo: theory
+# Capítulo: Capítulo 15. Gestión del almacenamiento básico
+
+15.3. Gestión del espacio de intercambio 15.3. Gestión de objetivos del espacio de intercambio Crear y activar un espacio de intercambio para complementar la memoria física. Conceptos de espacio de intercambio Un espacio de intercambio es un área de un disco bajo el control del subsistema de administración de memoria del kernel de Linux. El kernel utiliza espacio de intercambio para complementar la RAM del sistema manteniendo páginas inactivas en la memoria. La memoria virtual de un sistema abarca la RAM del sistema combinada y el espacio de intercambio. Cuando el uso de memoria en un sistema excede un límite definido, el kernel busca en la RAM páginas de memoria inactivas asignadas a procesos. El kernel escribe las páginas inactivas en el área de intercambio y reasigna las páginas RAM a otros procesos. Si un programa requiere acceso a una página en el disco, entonces el núcleo localiza otra página de memoria inactiva, la escribe en el disco y recupera la página requerida del área de intercambio. Como las áreas de intercambio están en el disco, el intercambio es lento en comparación con la RAM. Aunque el espacio de intercambio aumenta la RAM del sistema, no considere el espacio de intercambio como una solución sostenible para la RAM insuficiente para su carga de trabajo. Cálculo del espacio de intercambio Los administradores deben dimensionar el espacio de intercambio según la carga de trabajo de la memoria del sistema. Los proveedores de aplicaciones a veces ofrecen recomendaciones para calcular el espacio de intercambio. La siguiente tabla proporciona orientación basada en la memoria física total. Tabla 21. Recomendaciones de RAM y espacio de intercambio 2 GB o menos El doble de RAM Tres veces la RAM Entre 2 GB y 8 GB Igual que la RAM El doble de RAM Entre 8 GB y 64 GB Al menos 4 GB 1,5 veces la RAM Más de 64 GB Al menos 4 GB No se recomienda la hibernación La función de hibernación de la computadora portátil y de escritorio utiliza el espacio de intercambio para guardar el contenido de la RAM antes de apagar el sistema. Cuando vuelve a encender el sistema, el kernel restaura el contenido de la RAM desde el espacio de intercambio y no requiere un inicio completo. Para esos sistemas, el espacio de intercambio debe ser mayor que la cantidad de RAM. Para obtener más información sobre el tamaño del espacio de intercambio, consulte el artículo de la base de conocimiento ¿Cuál es el tamaño de intercambio recomendado para las plataformas Red Hat? RAM Intercambiar espacio Intercambiar espacio si permite la hibernación
+
+
+
+
+
+15.3. Administrar el espacio de intercambio Crear un espacio de intercambio Para crear un espacio de intercambio, realice los siguientes pasos: Cree una partición con un tipo de sistema de archivos linux-swap. Coloque una firma de intercambio en el dispositivo. Cree una partición de intercambio Utilice el comando parted para crear una partición del tamaño apropiado y establezca su tipo de sistema de archivos en linux-swap. En
+
+the past, tools determined from the partition's file-system type whether to activate the device; however, that
+
+El requisito ya no es el caso. Aunque las utilidades ya no utilizan el tipo de sistema de archivos de la partición, los administradores pueden determinar el propósito de la partición a partir de ese tipo. El siguiente ejemplo crea una partición de 256 MB. Utilice el comando parted para abrir una sesión de partición interactiva:
+
+root@host:~# parted /dev/sdb
+
+GNU Parted 3.6 Usando /dev/sdb ¡Bienvenido a GNU Parted! Escriba "ayuda" para ver una lista de comandos. Utilice el subcomando imprimir para mostrar la tabla de particiones: (partido) imprimir Modelo: QEMU QEMU HARDDISK (scsi) Disco /dev/sdb: 5369 MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Tamaño Tamaño Sistema de archivos Nombre Banderas 1 1049 kB 1001 MB 1000 MB de datos Utilice mkpart subcomando para crear una partición con el nombre swap1: (parted) mkpart ¿Nombre de partición?  []? swap1 Establezca el tipo de partición linux-swap: ¿Tipo de sistema de archivos?  [ext2]? linux-swap Especifique la ubicación de inicio de la partición: ¿Inicio? 1001 MB Especifique la ubicación final de la partición: ¿Fin? 1257 MB Utilice el subcomando imprimir para verificar la partición recién creada:
+
+
+
+
+
+15.3. Gestión del espacio de intercambio (partido) Modelo de impresión: QEMU QEMU HARDDISK (scsi) Disco /dev/sdb: 5369 MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049 kB 1001 MB 1000 MB datos 2 1001 MB 1257 MB 256MB linux-swap(v1) swap1 Salga del comando parted: (parted) quit Información: Es posible que necesite actualizar /etc/fstab.
+
+root@host:~#
+
+Como alternativa al uso del modo interactivo, puede crear una partición con un único comando no interactivo:
+
+root@host:~# parted /dev/sdb mkpart swap1 linux-swap 1001MB 1257MB
+
+Después de crear la partición, ejecute el comando udevadm para que el sistema detecte la nueva partición y cree la
+
+associated device file in the /dev directory:
+root@host:~# udevadm settle
+
+Formatear espacio de intercambio El comando mkswap aplica una firma de intercambio al dispositivo. A diferencia de otras utilidades de formateo, el comando mkswap escribe un único bloque de datos al principio del dispositivo y deja el resto del dispositivo sin formato para que el kernel pueda usarlo para almacenar páginas de memoria.
+
+root@host:~# mkswap /dev/sdb2
+
+Configurando swapspace versión 1, tamaño = 244 MiB (255848448 bytes)
+
+no label, UUID=39e2667a-9458-42fe-9665-c5c854605881
+
+Activación del espacio de intercambio Utilice el comando swapon para activar un espacio de intercambio formateado. Utilice el comando swapon con el dispositivo como parámetro, o utilice la opción -a del comando swapon para activar todos los espacios de intercambio enumerados en el archivo /etc/fstab. El comando swapon no activa el espacio de intercambio de forma persistente.
+
+root@host:~# swapon /dev/sdb2
+
+Utilice el comando swapon --show option o el comando free para inspeccionar los espacios de intercambio disponibles.
+
+
+
+
+
+15.3. Administrar el espacio de intercambio
+
+root@host:~# free
+              total        used        free      shared  buff/cache   available
+
+Mem: 1873036 135044 1536040 16748 201952 1575680 Swap: 249852 0 249852 Desactivar espacio de intercambio Puede desactivar un espacio de intercambio usando el comando swapoff. Si las páginas se escriben en el espacio de intercambio, entonces el comando swapoff intenta mover esas páginas a otros espacios de intercambio activos o nuevamente a la memoria. Si el comando swapoff no puede escribir datos en otros lugares, falla con un error y el espacio de intercambio permanece activo. Activar el espacio de intercambio de manera persistente Cree una entrada en el archivo /etc/fstab para garantizar que un espacio de intercambio permanezca activo durante el inicio del sistema. El siguiente ejemplo muestra una línea típica en el archivo /etc/fstab basada en el espacio de intercambio creado previamente. UUID=39e2667a-9458-42fe-9665-c5c854605881 swap swap defaults 0 0 El ejemplo utiliza el UUID de la partición como primer campo. Cuando formatea el dispositivo, el comando mkswap muestra el UUID de la partición. También puede utilizar el comando lsblk --fs para mostrar el UUID de la partición. Alternativamente, puede usar el nombre del dispositivo en lugar del UUID de la partición. El segundo campo suele estar reservado para el punto de montaje. Sin embargo, para dispositivos de intercambio, a los que no se puede acceder a través de la estructura del directorio, este campo toma el valor del marcador de posición de intercambio. La página de manual fstab(5) utiliza none
+
+placeholder value; however, a swap value provides more informative error messages if something goes wrong.
+
+El tercer campo es el tipo de sistema de archivos. El tipo de sistema de archivos para el espacio de intercambio es swap. El cuarto campo es para opciones. El ejemplo utiliza la opción predeterminada. La opción predeterminada incluye la opción de montaje automático, que activa el espacio de intercambio automáticamente al iniciar el sistema. Los dos últimos campos son la bandera de volcado y la orden fsck. Los espacios de intercambio no requieren una copia de seguridad ni una verificación del sistema de archivos, por lo que estos campos deben establecerse en cero. Cuando agrega o elimina una entrada en el archivo /etc/fstab, ejecute el comando systemctl daemon-reload o reinicie el servidor para que el demonio systemd registre la nueva configuración.
+
+root@host:~# systemctl daemon-reload
+
+Establecer prioridad de espacio de intercambio De forma predeterminada, el sistema utiliza espacios de intercambio en orden de prioridad. El kernel usa el espacio de intercambio de mayor prioridad hasta que está lleno y luego comienza a usar el espacio de intercambio de baja prioridad. La prioridad predeterminada para los espacios de intercambio es baja y los nuevos espacios de intercambio tienen menor prioridad que los espacios de intercambio creados anteriormente. Cuando los espacios de intercambio tienen la misma prioridad, el kernel les escribe en forma circular. Para establecer la prioridad, utilice la opción pri en el archivo /etc/fstab. El kernel utiliza primero el espacio de intercambio con mayor prioridad. La prioridad predeterminada es -2. El siguiente ejemplo muestra tres espacios de intercambio definidos en el archivo /etc/fstab. El kernel usa primero la última entrada, porque su prioridad está establecida en 10. Cuando ese espacio está lleno, usa la segunda entrada, porque su prioridad está establecida en 4. Finalmente,
+
+
+
+
+
+15.3. La gestión del espacio de intercambio utiliza la primera entrada, que tiene una prioridad predeterminada de -2. UUID=af30cbb0-3866-466a-825a-58889a49ef33 swap swap defaults 0 0 UUID=39e2667a-9458-42fe-9665-c5c854605881 swap swap pri=4 0 0 UUID=fbd7fa60-b781-44a8-961b-37ac3ef572bf swap swap pri=10 0 0 Utilice la opción swapon comando --show para mostrar las prioridades del espacio de intercambio. Referencias páginas man mkswap(8), swapon(8), swapoff(8), mount(8) y parted(8) Para obtener más información, consulte el capítulo Introducción a Swap en la guía Administración de dispositivos de almacenamiento.
+
+at https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/managing_storage_devices/index#getting-started-with-swap Base de conocimientos: ¿Cuál es el tamaño de intercambio recomendado para las plataformas Red Hat?
+
+
+
+
+
+15.4. Ejercicio guiado Administrar el espacio de intercambio 15.4. Ejercicio guiado Administrar el espacio de intercambio Cree y active un espacio de intercambio para complementar la memoria física. Resultados Crear una partición de intercambio. Activa el espacio de intercambio y hazlo disponible de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start storage-swap
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Inspeccione el disco /dev/sdb. El disco ya tiene una tabla de particiones y utiliza el esquema de partición GPT. Además, el disco tiene una partición de 1 GB existente.
+
+[root@servera ~]# parted /dev/sdb print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5369 MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049 kB 1001 MB 1000 MB de datos 2. Cree una partición llamada myswap con un tamaño de 500 MB para usar como intercambio espacio. Configure la partición al tipo de partición de intercambio de Linux. 3. Utilice el comando parted no interactivo para crear la partición myswap. Debido a que el disco utiliza el esquema de partición GPT, debe nombrar la partición. Especifique la posición inicial como 1001 MB, que es el final de la partición existente. El comando parted garantiza que la nueva partición siga inmediatamente a la anterior, sin ningún espacio. Debido a que la partición myswap comienza en la posición de 1001 MB, establezca la posición final en 1501 MB para configurar un tamaño de partición de 500 MB. 3.1.
+
+
+
+
+

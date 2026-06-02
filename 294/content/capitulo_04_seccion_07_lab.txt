@@ -1,0 +1,399 @@
+# Trabajo de laboratorio: Implementación del control de tareas
+# Tipo: lab
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Trabajo de laboratorio
+Implementación del control de tareas
+Instalar el servidor web Apache y protegerlo con el uso de mod_ssl. Usará las condiciones,
+los manejadores y el manejo de fallas de tareas en su playbook para implementar el entorno.
+Resultados
+• Definir condicionales en playbooks de Ansible
+• Establecer bucles que realizan iteración de elementos
+• Definir manejadores en playbooks
+• Manejar errores de tareas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-review
+Instrucciones
+1.
+En la máquina workstation, cambie al directorio /home/student/control-review.
+2.
+El directorio del proyecto contiene un play parcialmente completado en el playbook
+playbook.yml. En el comentario #Fail fast message, agregue una tarea que use el
+módulo ansible.builtin.fail. Proporcione un nombre adecuado para la tarea.
+Esta tarea solo debe ejecutarse cuando el sistema remoto no cumple con los siguientes
+requisitos mínimos:
+• Tiene al menos la cantidad de RAM especificada por la variable min_ram_mb. La variable
+min_ram_mb se define en el archivo vars.yml y tiene un valor de 256.
+• Ejecuta Red Hat Enterprise Linux.
+3.
+En el comentario #Install all packages, agregue una tarea denominada Ensure
+required packages are present para instalar la última versión de los paquetes que
+faltan. Los paquetes requeridos son especificados por la variable packages, que se define
+en el archivo vars.yml.
+4.
+Debajo del comentario #Enable and start services, agregue una tarea para iniciar
+los servicios. Deben iniciarse y habilitarse todos los servicios especificados por la variable
+services, que se define en el archivo vars.yml. Proporcione un nombre adecuado para la
+tarea.
+5.
+Debajo del comentario #Block of config tasks, agregue un bloque de tareas al play.
+Este bloque contiene dos tareas:
+RH294-RHEL9.0-es-3-20240620
+181
+
+
+capítulo 4 |  Implementación del control de tareas
+• Una tarea para asegurar que el directorio especificado por la variable ssl_cert_dir
+existe en el host remoto. Este directorio almacena los certificados del servidor web.
+• Una tarea para copiar todos los archivos especificados por la variable
+web_config_files al host remoto. Examine la estructura de la variable
+web_config_files en el archivo vars.yml. Configure la tarea para copiar cada archivo
+al destino correcto en el host remoto.
+Esta tarea debe desencadenar el manejador Restart web service si alguno de estos
+archivos se modifica en el servidor remoto.
+Además, se ejecuta una tarea de depuración si falla alguna de las dos tareas anteriores. En
+este caso, la tarea imprime el siguiente mensaje: One or more of the configuration
+changes failed, but the web service is still active.
+Asegúrese de proporcionar un nombre para todas las tareas.
+6.
+El play configura el host remoto para escuchar las solicitudes de HTTPS estándares.
+Debajo del comentario #Configure the firewall, agregue una tarea para configurar
+firewalld.
+Asegúrese de que la tarea configure el host remoto para aceptar conexiones HTTP y HTTPS
+estándares. Estos cambios de configuración deben ser efectivos de inmediato y persistir
+después de un reinicio. Proporcione un nombre adecuado para la tarea.
+7.
+Defina el manejador Restart web service.
+Cuando se desencadena, esta tarea debe reiniciar el servicio web determinado por la variable
+web_service, definida en el archivo vars.yml.
+8.
+Desde el directorio ~/control-review, ejecute el playbook playbook.yml. El playbook
+debe ejecutarse sin errores y desencadenar la ejecución de la tarea del manejador.
+9.
+Verifique que el servidor web ahora responde a las solicitudes HTTPS, usando el certificado
+autofirmado personalizado para cifrar la conexión. El servidor web debería volver a
+Configured for both HTTP and HTTPS.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade control-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-review
+182
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Solución
+Implementación del control de tareas
+Instalar el servidor web Apache y protegerlo con el uso de mod_ssl. Usará las condiciones,
+los manejadores y el manejo de fallas de tareas en su playbook para implementar el entorno.
+Resultados
+• Definir condicionales en playbooks de Ansible
+• Establecer bucles que realizan iteración de elementos
+• Definir manejadores en playbooks
+• Manejar errores de tareas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-review
+Instrucciones
+1.
+En la máquina workstation, cambie al directorio /home/student/control-review.
+[student@workstation ~]$ cd ~/control-review
+[student@workstation control-review]$
+2.
+El directorio del proyecto contiene un play parcialmente completado en el playbook
+playbook.yml. En el comentario #Fail fast message, agregue una tarea que use el
+módulo ansible.builtin.fail. Proporcione un nombre adecuado para la tarea.
+Esta tarea solo debe ejecutarse cuando el sistema remoto no cumple con los siguientes
+requisitos mínimos:
+• Tiene al menos la cantidad de RAM especificada por la variable min_ram_mb. La variable
+min_ram_mb se define en el archivo vars.yml y tiene un valor de 256.
+• Ejecuta Red Hat Enterprise Linux.
+La tarea completa debe contar con el siguiente contenido:
+RH294-RHEL9.0-es-3-20240620
+183
+
+
+capítulo 4 |  Implementación del control de tareas
+  tasks:
+    #Fail fast message
+    - name: Show failed system requirements message
+      ansible.builtin.fail:
+        msg: "The {{ inventory_hostname }} did not meet minimum reqs."
+      when: >
+        ansible_facts['memtotal_mb'] < min_ram_mb or
+        ansible_facts['distribution'] != "RedHat"
+3.
+En el comentario #Install all packages, agregue una tarea denominada Ensure
+required packages are present para instalar la última versión de los paquetes que
+faltan. Los paquetes requeridos son especificados por la variable packages, que se define
+en el archivo vars.yml.
+La tarea completa debe contar con el siguiente contenido:
+    #Install all packages
+    - name: Ensure required packages are present
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+4.
+Debajo del comentario #Enable and start services, agregue una tarea para iniciar
+los servicios. Deben iniciarse y habilitarse todos los servicios especificados por la variable
+services, que se define en el archivo vars.yml. Proporcione un nombre adecuado para la
+tarea.
+La tarea completa debe contar con el siguiente contenido:
+    #Enable and start services
+    - name: Ensure services are started and enabled
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop: "{{ services }}"
+5.
+Debajo del comentario #Block of config tasks, agregue un bloque de tareas al play.
+Este bloque contiene dos tareas:
+• Una tarea para asegurar que el directorio especificado por la variable ssl_cert_dir
+existe en el host remoto. Este directorio almacena los certificados del servidor web.
+• Una tarea para copiar todos los archivos especificados por la variable
+web_config_files al host remoto. Examine la estructura de la variable
+184
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+web_config_files en el archivo vars.yml. Configure la tarea para copiar cada archivo
+al destino correcto en el host remoto.
+Esta tarea debe desencadenar el manejador Restart web service si alguno de estos
+archivos se modifica en el servidor remoto.
+Además, se ejecuta una tarea de depuración si falla alguna de las dos tareas anteriores. En
+este caso, la tarea imprime el siguiente mensaje: One or more of the configuration
+changes failed, but the web service is still active.
+Asegúrese de proporcionar un nombre para todas las tareas.
+El bloque de la tarea completa debe contar con el siguiente contenido:
+    #Block of config tasks
+    - name: Setting up the SSL cert directory and config files
+      block:
+        - name: Create SSL cert directory
+          ansible.builtin.file:
+            path: "{{ ssl_cert_dir }}"
+            state: directory
+        - name: Copy config files
+          ansible.builtin.copy:
+            src: "{{ item['src'] }}"
+            dest: "{{ item['dest'] }}"
+          loop: "{{ web_config_files }}"
+          notify: Restart web service
+      rescue:
+        - name: Configuration error message
+          ansible.builtin.debug:
+            msg: >
+              One or more of the configuration
+              changes failed, but the web service
+              is still active.
+6.
+El play configura el host remoto para escuchar las solicitudes de HTTPS estándares.
+Debajo del comentario #Configure the firewall, agregue una tarea para configurar
+firewalld.
+Asegúrese de que la tarea configure el host remoto para aceptar conexiones HTTP y HTTPS
+estándares. Estos cambios de configuración deben ser efectivos de inmediato y persistir
+después de un reinicio. Proporcione un nombre adecuado para la tarea.
+La tarea completa debe contar con el siguiente contenido:
+    #Configure the firewall
+    - name: Ensure web server ports are open
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        immediate: true
+        permanent: true
+        state: enabled
+      loop:
+        - http
+        - https
+RH294-RHEL9.0-es-3-20240620
+185
+
+
+capítulo 4 |  Implementación del control de tareas
+7.
+Defina el manejador Restart web service.
+Cuando se desencadena, esta tarea debe reiniciar el servicio web determinado por la variable
+web_service, definida en el archivo vars.yml.
+Agregue una sección handlers al final del play:
+  handlers:
+    - name: Restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+El playbook completo debe incluir el siguiente contenido:
+---
+- name: Playbook Control Lab
+  hosts: webservers
+  vars_files: vars.yml
+  tasks:
+    #Fail fast message
+    - name: Show failed system requirements message
+      ansible.builtin.fail:
+        msg: "The {{ inventory_hostname }} did not meet minimum reqs."
+      when: >
+        ansible_facts['memtotal_mb'] < min_ram_mb or
+        ansible_facts['distribution'] != "RedHat"
+    #Install all packages
+    - name: Ensure required packages are present
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+    #Enable and start services
+    - name: Ensure services are started and enabled
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop: "{{ services }}"
+    #Block of config tasks
+    - name: Setting up the SSL cert directory and config files
+      block:
+        - name: Create SSL cert directory
+          ansible.builtin.file:
+            path: "{{ ssl_cert_dir }}"
+            state: directory
+        - name: Copy config files
+          ansible.builtin.copy:
+            src: "{{ item['src'] }}"
+            dest: "{{ item['dest'] }}"
+          loop: "{{ web_config_files }}"
+          notify: Restart web service
+186
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+      rescue:
+        - name: Configuration error message
+          ansible.builtin.debug:
+            msg: >
+              One or more of the configuration
+              changes failed, but the web service
+              is still active.
+    #Configure the firewall
+    - name: Ensure web server ports are open
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        immediate: true
+        permanent: true
+        state: enabled
+      loop:
+        - http
+        - https
+  #Add handlers
+  handlers:
+    - name: Restart web service
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
+8.
+Desde el directorio ~/control-review, ejecute el playbook playbook.yml. El playbook
+debe ejecutarse sin errores y desencadenar la ejecución de la tarea del manejador.
+[student@workstation control-review]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Playbook Control Lab] ****************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [Show failed system requirements message] *********************************
+skipping: [serverb.lab.example.com]
+TASK [Ensure required packages are present] ************************************
+changed: [serverb.lab.example.com]
+TASK [Ensure services are started and enabled] *********************************
+changed: [serverb.lab.example.com] => (item=httpd)
+ok: [serverb.lab.example.com] => (item=firewalld)
+TASK [Create SSL cert directory] ***********************************************
+changed: [serverb.lab.example.com]
+TASK [Copy config files] *******************************************************
+changed: [serverb.lab.example.com] => (item={'src': 'server.key', 'dest': '/etc/
+httpd/conf.d/ssl'})
+RH294-RHEL9.0-es-3-20240620
+187
+
+
+capítulo 4 |  Implementación del control de tareas
+changed: [serverb.lab.example.com] => (item={'src': 'server.crt', 'dest': '/etc/
+httpd/conf.d/ssl'})
+changed: [serverb.lab.example.com] => (item={'src': 'ssl.conf', 'dest': '/etc/
+httpd/conf.d'})
+changed: [serverb.lab.example.com] => (item={'src': 'index.html', 'dest': '/var/
+www/html'})
+TASK [Ensure web server ports are open] ****************************************
+changed: [serverb.lab.example.com] => (item=http)
+changed: [serverb.lab.example.com] => (item=https)
+RUNNING HANDLER [Restart web service] ******************************************
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=7    changed=6    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+9.
+Verifique que el servidor web ahora responde a las solicitudes HTTPS, usando el certificado
+autofirmado personalizado para cifrar la conexión. El servidor web debería volver a
+Configured for both HTTP and HTTPS.
+[student@workstation control-review]$ curl -k -vvv https://serverb.lab.example.com
+*   Trying 172.25.250.11:443...
+* Connected to serverb.lab.example.com (172.25.250.11) port 443 (#0)
+...output omitted...
+< HTTP/1.1 200 OK
+< Date: Tue, 05 Jul 2022 19:36:48 GMT
+< Server: Apache/2.4.51 (Red Hat Enterprise Linux) OpenSSL/3.0.1
+< Last-Modified: Tue, 05 Jul 2022 19:35:30 GMT
+< ETag: "24-5e313f48fbb2c"
+< Accept-Ranges: bytes
+< Content-Length: 36
+< Content-Type: text/html; charset=UTF-8
+<
+Configured for both HTTP and HTTPS.
+* Connection #0 to host serverb.lab.example.com left intact
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade control-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-review
+188
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+RH294-RHEL9.0-es-3-20240620
+189
+
+
+capítulo 4 |  Implementación del control de tareas
+Resumen
+• Los bucles se usan para iterar un conjunto de valores, como una simple lista de cadenas o una
+lista de diccionarios.
+• Los condicionales se pueden usar para ejecutar tareas o plays únicamente cuando se hayan
+cumplido ciertas condiciones.
+• Los manejadores son tareas especiales que se ejecutan al final de un play si otras tareas los
+notifican.
+• Los manejadores solo son notificados cuando una tarea informa que se cambió algo en un host
+gestionado.
+• Las tareas se pueden configurar para manejar condiciones de error ignorando una falla en las
+tareas, forzando a los manejadores a ser invocados aun cuando la tarea haya fallado, marcar una
+tarea como con errores cuando fue satisfactoria o reemplazar el comportamiento que hace que
+la tarea se marque como modificada.
+• Los bloques se usan para agrupar tareas como una unidad y ejecutar otras tareas dependiendo
+de si todas las tareas en el bloque se realizaron satisfactoriamente.
+190
+RH294-RHEL9.0-es-3-20240620
+
+

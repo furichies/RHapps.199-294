@@ -1,0 +1,155 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar cuentas de grupos locales
+# Tipo: guided_exercise
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.8. Ejercicio guiado Administrar cuentas de grupos locales 4.8. Ejercicio guiado Administrar cuentas de grupos locales Cree, modifique y elimine cuentas de grupos locales. Resultados Crear y gestionar grupos complementarios. Configure el acceso a Sudo para un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-group
+
+Instrucciones Como usuario raíz en la máquina del servidor, cree los grupos suplementarios de operadores y administradores. 1. Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el grupo suplementario de operadores con un GID de 30000.
+
+[root@servera ~]# groupadd -g 30000 operators
+
+1.2. Cree el grupo complementario de administración sin especificar un GID.
+
+[root@servera ~]# groupadd admin
+
+1.3. Verifique que existan los grupos suplementarios de operadores y administradores.
+
+[root@servera ~]# tail /etc/group
+
+...salida omitida...
+
+operators:x:30000:
+admin:x:30001:
+
+1.4. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores y verifique la membresía del grupo. 2. Agregue los usuarios operador1, operador2 y operador3 al grupo de operadores. 2.1.
+
+
+
+
+
+4.8. Ejercicio guiado Administrar cuentas de grupos locales
+
+[root@servera ~]# usermod -aG operators operator1
+[root@servera ~]# usermod -aG operators operator2
+[root@servera ~]# usermod -aG operators operator3
+
+Confirme que los usuarios estén en el grupo.
+
+[root@servera ~]# id operator1
+uid=1003(operator1) gid=1003(operator1) groups=1003(operator1),30000(operators)
+[root@servera ~]# id operator2
+uid=1004(operator2) gid=1004(operator2) groups=1004(operator2),30000(operators)
+[root@servera ~]# id operator3
+uid=1005(operator3) gid=1005(operator3) groups=1005(operator3),30000(operators)
+
+2.2. Agregue los usuarios sysadmin1, sysadmin2 y sysadmin3 al grupo de administración y verifique la pertenencia al grupo. 3. Agregue los usuarios sysadmin1, sysadmin2 y sysadmin3 al grupo de administración.
+
+[root@servera ~]# usermod -aG admin sysadmin1
+[root@servera ~]# usermod -aG admin sysadmin2
+[root@servera ~]# usermod -aG admin sysadmin3
+
+3.1. Confirme que los usuarios estén en el grupo.
+
+[root@servera ~]# id sysadmin1
+uid=1006(sysadmin1) gid=1006(sysadmin1) groups=1006(sysadmin1),30001(admin)
+[root@servera ~]# id sysadmin2
+uid=1007(sysadmin2) gid=1007(sysadmin2) groups=1007(sysadmin2),30001(admin)
+[root@servera ~]# id sysadmin3
+uid=1008(sysadmin3) gid=1008(sysadmin3) groups=1008(sysadmin3),30001(admin)
+
+3.2. Examine el archivo /etc/group para verificar las membresías de grupos suplementarios.
+
+[root@servera ~]# tail /etc/group
+
+...salida omitida...
+
+operators:x:30000:operator1,operator2,operator3
+admin:x:30001:sysadmin1,sysadmin2,sysadmin3
+
+3.3. Habilite los derechos administrativos para todos los miembros del grupo de administradores. Verifique que cualquier miembro del grupo de administradores pueda ejecutar comandos administrativos. 4. Otorgue al grupo de administradores privilegios administrativos completos creando el archivo /etc/sudoers.d/admin con los permisos adecuados. La cadena %admin ALL=(ALL) ALL significa que los miembros del grupo de administración pueden ejecutar cualquier comando como cualquier usuario, incluido el usuario root.
+
+[root@servera ~]# echo "%admin ALL=(ALL) ALL" > /etc/sudoers.d/admin
+
+4.1. Cambie al usuario sysadmin1 (un miembro del grupo de administración).
+
+[root@servera ~]# su - sysadmin1
+
+4.2. Sin usar Sudo, intente leer las últimas entradas del archivo /var/log/messages. El comando debería fallar porque el usuario sysadmin1 no tiene permiso para leer el archivo. 4.3.
+
+
+
+
+
+4.8. Ejercicio guiado Administrar cuentas de grupo local Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-group
+[sysadmin1@servera ~]$ tail /var/log/messages
+tail: cannot open '/var/log/messages' for reading: Permission denied
+
+Utilice Sudo para leer las últimas entradas del archivo /var/log/messages. Utilice redhat como contraseña para el usuario sysadmin1. El comando debería tener éxito porque el usuario sysadmin1 puede usar los privilegios Sudo otorgados al grupo de administradores.
+
+[sysadmin1@servera ~]$ sudo tail /var/log/messages
+
+[sudo] contraseña para sysadmin1: redhat...salida omitida... 18 de mayo 04:59:40 servera su[8080]: (a root) sysadmin1 en pts/2 18 de mayo 04:59:40 servera systemd[1]: iniciando systemd-hostnamed.service - Servicio de nombre de host... 18 de mayo 04:59:40 servera systemd[1]: iniciado systemd-hostnamed.service - Servicio de nombre de host. 4.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[sysadmin1@servera ~]$ exit
+
+cerrar sesión
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+4.9. Gestión de contraseñas de usuarios 4.9. Administración de contraseñas de usuarios Objetivos Establecer una política de administración de contraseñas para los usuarios y bloquear y desbloquear manualmente las cuentas de usuario. Contraseñas ocultas y política de contraseñas Originalmente, las contraseñas cifradas se almacenaban en el archivo /etc/passwd, legible en todo el mundo. Estas contraseñas se consideraron adecuadas hasta que los ataques de diccionario a contraseñas cifradas se volvieron comunes. Las contraseñas cifradas criptográficamente se movieron al archivo /etc/shadow, que solo el usuario root puede leer. Al igual que el archivo /etc/passwd, cada usuario tiene una entrada en el archivo /etc/shadow. Una entrada de ejemplo de /etc/shadow
+
+file has nine colon-separated fields:
+root@host:~# cat /etc/shadow
+
+...salida omitida...
+
+user03:$y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC:20222:0:99999:7:2:20282::
+
+Cada campo de la entrada está separado por dos puntos:
+
+user03 : Name of the user account.
+
+$y$j…​.ziHC: La contraseña criptográficamente hash del usuario. 20222: Los días desde la época en la que se cambió la contraseña por última vez, donde la época es 1970-01-01 en la zona horaria UTC. 0: Los días mínimos desde el último cambio de contraseña antes de que el usuario pueda cambiarla nuevamente. 99999: El máximo de días sin cambio de contraseña antes de que caduque. Un campo vacío significa que la contraseña nunca caduca. 7: La cantidad de días de anticipación para advertir al usuario que su contraseña caducará. 2: La cantidad de días sin actividad, comenzando con el día en que expiró la contraseña, antes de que la cuenta se bloquee automáticamente. 20282: el día en que la cuenta vence en días desde la época. Un campo vacío significa que la cuenta nunca caduca. El último campo suele estar vacío y reservado para uso futuro. Formato de una contraseña con hash criptográfico El campo de contraseña con hash criptográfico almacena tres piezas clave de información: el algoritmo de hash en uso, el salt y el hash criptográfico. Salt agrega datos aleatorios a la contraseña para crear un hash único para fortalecer la contraseña criptográficamente hash. Cada dato está delimitado por el signo de dólar ($). $y$j9T$qybndwEWzHhr0uTGAwO4Q0$OuNgGC5Mx2RrCO4JOXtR2VJfTA8dLPxa7NV1tvhziHC
+
+y : The hashing algorithm in use for this password. A y indicates a yescrypt hash; a 6 indicates a SHA-512 hash;
+
+y un 5 indica SHA-256. El formato del resto de la contraseña depende del algoritmo.
+
+j9T : Parameters that tune the behavior of how yescrypt hashes. These options are standardized by the tools
+
+que establecen contraseñas para garantizar un ajuste seguro. Es posible que otros algoritmos no tengan este campo.
+
+qybndwEWzHhr0uTGAwO4Q0 : The salt in use to cryptographically hash the password; it is originally chosen at
+
+aleatorio.
+
+
+
+
+

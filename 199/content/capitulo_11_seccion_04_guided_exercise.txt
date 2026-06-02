@@ -1,0 +1,108 @@
+# Ejercicio Guiado: Ejercicio guiado Montar y desmontar un sistema de archivos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 8. Acceso a medios extraíbles
+
+8.4. Ejercicio guiado Montar y desmontar un sistema de archivos 8.4. Ejercicio guiado Montar y desmontar un sistema de archivos Montar y desmontar un sistema de archivos que se encuentra en un medio extraíble. Resultados Identificar y montar un nuevo sistema de archivos en un punto de montaje específico y luego desmontar el sistema de archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-mount
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Se agrega una nueva partición con un sistema de archivos al disco /dev/sdb en la máquina del servidor. Monte la partición recién disponible utilizando el UUID en el punto de montaje /mnt/part1. 2. Cree el directorio /mnt/part1.
+
+[root@servera ~]# mkdir /mnt/part1
+
+2.1. Consulta el UUID del dispositivo /dev/sdb1.
+
+[root@servera ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE ... UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 2dfe4a17-d529-480a-a53e-9c28ff49545e El UUID del dispositivo puede ser diferente en su entorno. El resultado anterior omite algunas columnas no esenciales, por lo que su resultado puede diferir. 2.2. Monte el sistema de archivos utilizando el UUID en el directorio /mnt/part1. Utilice el UUID /dev/sdb1 del resultado del comando anterior.
+
+[root@servera ~]# mount \
+
+UUID="2dfe4a17-d529-480a-a53e-9c28ff49545e" /mnt/part1 2.3. Verifique que el dispositivo /dev/sdb1 esté montado en el directorio /mnt/part1. 2.4.
+
+
+
+
+
+8.4. Ejercicio guiado Montar y desmontar un sistema de archivos Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-mount
+[root@servera ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE ... UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 2dfe4a17-d529-480a-a53e-9c28ff49545e 4.8G 3% /mnt/part1 El resultado anterior omite algunas columnas no esenciales, por lo que su resultado puede diferir. Cambie al directorio /mnt/part1 y cree el subdirectorio testdir. Cree el archivo /mnt/part1/testdir/newmount para verificar que puede escribir en el punto de montaje. 3. Cambie al directorio /mnt/part1.
+
+[root@servera ~]# cd /mnt/part1
+
+3.1. Cree el directorio /mnt/part1/testdir.
+
+[root@servera part1]# mkdir testdir
+
+3.2. Cree el archivo /mnt/part1/testdir/newmount.
+
+[root@servera part1]# touch testdir/newmount
+
+3.3. Desmonte el sistema de archivos que está montado en el directorio /mnt/part1. 4. Intente desmontar el directorio /mnt/part1 con el shell todavía en el directorio /mnt/part1. El comando umount no logra desmontar el dispositivo.
+
+[root@servera part1]# umount /mnt/part1
+umount: /mnt/part1: target is busy.
+
+4.1. Cambie el directorio actual del shell al directorio /root.
+
+[root@servera part1]# cd
+
+[root@servera ~]# 4.2. Desmonte el directorio /mnt/part1.
+
+[root@servera ~]# umount /mnt/part1
+
+4.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+8.5. Localización de archivos en un sistema de archivos 8.5. Localización de archivos en un sistema de archivos Objetivos Buscar archivos en un sistema de archivos que esté actualmente montado. Búsqueda de archivos Un administrador del sistema debe poder buscar en los sistemas de archivos archivos que coincidan con criterios específicos. Esta sección analiza
+
+two commands to search for files in the file-system hierarchy:
+
+El comando de localización busca en un índice pregenerado nombres de archivos o rutas de archivos y devuelve los resultados al instante. El comando de búsqueda busca archivos en tiempo real analizando la jerarquía del sistema de archivos. Localización de archivos por nombre El comando de localización busca archivos según el nombre o la ruta al archivo. El comando de localización es rápido porque busca la información de la base de datos mlocate. Sin embargo, esta base de datos no se actualiza en tiempo real y requiere actualizaciones frecuentes para obtener resultados precisos. Esta característica también significa que el comando de localización no busca archivos que se crearon después de la última actualización de la base de datos. La base de datos de localización se actualiza automáticamente todos los días. Sin embargo, el usuario root podría utilizar el comando actualizadob para forzar una actualización inmediata.
+
+root@host:~# updatedb
+
+El comando de localización restringe los resultados para usuarios sin privilegios. Para ver el nombre del archivo resultante, el usuario debe tener permiso de búsqueda en el directorio donde reside el archivo. Por ejemplo, ubique los archivos que el usuario desarrollador puede leer y
+
+that match the passwd keyword in the name or path:
+developer@host:~$ locate passwd
+
+/etc/passwd /etc/passwd- /etc/pam.d/passwd ...salida omitida... El siguiente ejemplo muestra el nombre del archivo o la ruta para una coincidencia parcial con la consulta de búsqueda:
+
+root@host:~# locate image
+
+/etc/selinux/targeted/contexts/virtual_image_context /usr/bin/grub2-mkimage /usr/lib/sysimage ... salida omitida... La opción -i del comando de localización realiza una búsqueda que no distingue entre mayúsculas y minúsculas. Esta opción devuelve todas las combinaciones posibles de
+
+matching uppercase and lowercase letters:
+
+
+
+
+

@@ -1,0 +1,105 @@
+# Ejercicio Guiado: Ejercicio guiado Configurar Flatpak para la instalación de aplicaciones
+# Tipo: guided_exercise
+# Capítulo: Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak
+
+7.2. Ejercicio guiado Configurar Flatpak para la instalación de aplicaciones 7.2. Ejercicio guiado Configurar Flatpak para la instalación de aplicaciones Instalar y configurar herramientas Flatpak y acceder a repositorios remotos. Resultados Verifique la configuración del administrador de paquetes Flatpak preinstalado. Deshabilite y habilite un repositorio Flatpak remoto. Agregue un repositorio remoto personalizado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start flatpak-configure
+
+Instrucciones Verifique que el administrador de paquetes Flatpak esté instalado en la máquina de la estación de trabajo e inspeccione su configuración. 1. Utilice el comando rpm para enumerar todos los paquetes instalados que coincidan con el nombre del paquete flatpak.
+
+student@workstation:~$ rpm -qa | grep flatpak
+flatpak-session-helper-1.16.0-5.el10.x86_64
+flatpak-libs-1.16.0-5.el10.x86_64
+flatpak-selinux-1.16.0-5.el10.noarch
+flatpak-1.16.0-5.el10.x86_64
+
+redhat-flatpak-repo-0.1-5.el10.noarch 1.1. Vea los archivos de configuración de todo el sistema para Flatpak en el directorio /etc/flatpak.
+
+student@workstation:~$ tree /etc/flatpak/
+
+/etc/flatpak/ └──remotos.d
+
+    └── rhel.flatpakrepo
+
+2 directorios, 1 archivo 1.2. Vea el archivo del repositorio rhel Flatpak preconfigurado. Este repositorio remoto está disponible para todos los usuarios de la máquina. 1.3.
+
+
+
+
+
+7.2. Ejercicio guiado Configurar Flatpak para la instalación de aplicaciones
+
+student@workstation:~$ cat /etc/flatpak/remotes.d/rhel.flatpakrepo
+
+[Flatpak Repo] Title=Red Hat Enterprise Linux Url=oci+https://flatpaks.redhat.io/rhel/ AuthenticatorName=org.flatpak.Authenticator.Oci Homepage=https://catalog.redhat.com/software/containers/explore Comment=Aplicaciones y tiempos de ejecución de Red Hat Enterprise Linux Flatpak Descripción=Este repositorio contiene Flatpaks de aplicaciones creadas para Red Hat Enterprise Linux, junto con Red Hat Flatpak Tiempo de ejecución y SDK. Icon=https://www.redhat.com/misc/favicon.ico CollectionID=com.redhat.Stable Enumere todos los repositorios actualmente habilitados. Opcionalmente, puede agregar la opción -d para ver el resultado detallado del comando.
+
+student@workstation:~$ flatpak remotes
+
+Nombre Opciones rhel system,oci,no-gpg-verify 1.4. Deshabilite el repositorio rhel porque requiere una cuenta de Red Hat para la autenticación y la conectividad a Internet, que podría no estar disponible en su entorno de clase.
+
+student@workstation:~$ flatpak remote-modify --disable rhel
+
+2. El entorno del laboratorio del aula proporciona un repositorio Flatpak local. Su archivo de definición está disponible en
+
+http://flatpak.lab.example.com/myrepo.flatpakrepo. View the contents of the flatpakrepo file by using the curl
+
+navegador de línea de comandos.
+
+student@workstation:~$ curl http://flatpak.lab.example.com/myrepo.flatpakrepo
+
+[Flatpak Repo] Title=Mi repositorio Flatpak Url=http://flatpak.lab.example.com/ Homepage=http://flatpak.lab.example.com Comment=Repositorio Flatpak personalizado Descripción=Repositorio para aplicaciones Flatpak personalizadas Icon=https://example.com/icon.png 3. Agregue el repositorio personalizado en el modo de instalación del usuario. Utilice myrepo como nombre para el repositorio remoto.
+
+student@workstation:~$ flatpak remote-add --no-gpg-verify --user myrepo \
+http://flatpak.lab.example.com/myrepo.flatpakrepo
+
+4. Verifique que el nuevo repositorio remoto esté disponible. Instale el paquete de la plataforma freedesktop. 5. Enumere los repositorios actualmente habilitados. Tenga en cuenta que otros usuarios de la máquina no pueden ver este repositorio.
+
+student@workstation:~$ flatpak remotes
+
+Nombre Opciones usuario myrepo,no-gpg-verify 5.1. Enumere todas las aplicaciones y tiempos de ejecución disponibles en el repositorio remoto de myrepo. 5.2.
+
+
+
+
+
+7.2. Ejercicio guiado Configurar Flatpak para la instalación de aplicaciones Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish flatpak-configure
+student@workstation:~$ flatpak remote-ls myrepo
+
+Nombre ID de aplicación Versión Rama codium com.vscodium.codium stable Obsidian md.obsidian.Obsidian stable freedesktop platform org.freedesktop.Platform 24.08 freedesktop development platform org.freedesktop.Sdk 24.08 Instale el tiempo de ejecución de Freedesktop utilizando el comando de instalación flatpak. Los tiempos de ejecución contienen bibliotecas esenciales para las aplicaciones que están disponibles en los repositorios.
+
+student@workstation:~$ flatpak install org.freedesktop.Platform
+
+Buscando coincidencias...
+
+     ID                        Branch  Op  Remote  Download
+
+1. org.freedesktop.Platform 24.08 i myrepo 264.5 MB ¿Continuar con estos cambios en la instalación del usuario? [S/n]: y Instalando… ████████████████████ 100% 63,4 MB/s 00:00 Instalación completa. 5.3. Elimine permanentemente el repositorio remoto myrepo utilizando el comando flatpak remote-delete. Permita que la herramienta elimine automáticamente todos los objetos Flatpak que se instalaron desde este repositorio remoto.
+
+student@workstation:~$ flatpak remote-delete myrepo
+
+Las siguientes referencias se instalan desde 'myrepo' remoto:
+
+   1) runtime/org.freedesktop.Platform/x86_64/24.08
+
+¿Quitarlos? [y/n]: y Desinstalando runtime/org.freedesktop.Platform/x86_64/24.08 6. Vuelva a habilitar el repositorio oficial de Red Hat mediante la herramienta gráfica del software GNOME. 7. Haga clic en el logotipo de Red Hat en la esquina superior izquierda de la pantalla para abrir la descripción general de actividades. 7.1. En el cuadro de búsqueda, ingrese software y luego abra la aplicación de software GNOME de la lista de resultados. 7.2. En la ventana del software GNOME, haga clic en el Menú principal que aparece como tres líneas en la esquina superior derecha y seleccione Repositorios de software. 7.3. Habilite el repositorio remoto de Red Hat Enterprise Linux activando el interruptor. 7.4. Cierre la herramienta gráfica del software GNOME. 7.5.
+
+
+
+
+
+7.3. Gestionando Aplicaciones desde Flatpak 7.3. Administrar aplicaciones desde Flatpak Objetivos Utilice Flatpak para enumerar, buscar, instalar, actualizar, eliminar y obtener información de metadatos de aplicaciones. Administrar aplicaciones con la CLI de Flatpak Al utilizar los comandos de la CLI de Flatpak, puede enumerar, buscar, instalar, actualizar, eliminar y obtener información de metadatos para las aplicaciones de Flatpak y sus dependencias de tiempo de ejecución. Puede utilizar contenido del repositorio de Red Hat y de repositorios remotos de terceros. Red Hat no admite aplicaciones ni tiempos de ejecución de repositorios remotos de terceros. Identificadores de Flatpak Las aplicaciones y los tiempos de ejecución de Flatpak utilizan identificadores únicos que siguen el formato dominio.organización.Aplicación. Este identificador de tres partes permite a una empresa, desarrollador u organización publicar muchas aplicaciones con un prefijo compartido, como com.company. El último segmento (.App) identifica el nombre de la aplicación. Puedes usar el completo o el corto.
+
+object identifier for Flatpak operations: com.company.App or App.
+
+En algunos escenarios, debe especificar la arquitectura o versión de la CPU, como estable o beta. Puede solicitar estas especificaciones adicionales utilizando el identificador triple de un objeto. El formato de un triple identificador es ID/arquitectura/rama, como por ejemplo org.organization.App/x86_64/stable. En Flatpak, rama se refiere a diferentes versiones del mismo objeto. Puedes dejar en blanco algunas partes del identificador triple para especificar parte del objeto. Por ejemplo, org.organization.App/x86_64// especifica solo la arquitectura y org.organization.App//stable especifica solo la rama. Consulta de repositorios remotos para objetos disponibles El comando de búsqueda flatpak enumera las aplicaciones y tiempos de ejecución coincidentes que están disponibles en todos los repositorios remotos que están habilitados en el sistema. Este comando utiliza metadatos de appstream almacenados en caché que ya se descargaron del repositorio remoto. Si los metadatos almacenados en caché tienen más de un día de antigüedad, los metadatos se actualizan automáticamente cuando se ejecuta el comando. El comando utiliza una palabra clave para encontrar una coincidencia en cualquiera de los atributos de metadatos que define el archivo XML de la aplicación: Nombre de la aplicación o tiempo de ejecución Descripción Identificador de la aplicación Palabra clave que define el desarrollador La palabra clave no distingue entre mayúsculas y minúsculas y devuelve información para las aplicaciones y tiempos de ejecución que coinciden con la consulta. El siguiente ejemplo muestra una búsqueda que utiliza la palabra clave Thunderbird para encontrar aplicaciones en Flatpak Remote.
+
+repositories:
+
+
+
+
+

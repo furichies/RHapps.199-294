@@ -1,0 +1,1313 @@
+# Capítulo 6. Instalación y actualización de software con RPM
+
+## 6.1. Investigación de paquetes de software RPM
+
+6.1. Investigación de paquetes de software RPM 6.1. Investigación de paquetes de software RPM Objetivos Explicar cómo Red Hat y otras fuentes proporcionan software como paquetes RPM e investigar los paquetes del sistema instalados. Paquetes de software RPM El Administrador de paquetes RPM, desarrollado originalmente por Red Hat, proporciona una forma estándar de empaquetar software para su distribución. Administrar software en forma de paquetes RPM es más sencillo que trabajar con software extraído a un sistema de archivos desde un archivo. Con los paquetes RPM, los administradores pueden rastrear qué archivos instala el paquete de software, qué archivos elimina el paquete de software si lo desinstala y verifica que los paquetes de soporte estén presentes cuando lo instala. La base de datos RPM local de su sistema almacena la información sobre los paquetes instalados. Red Hat proporciona todo el software para Red Hat Enterprise Linux como un paquete RPM. Los nombres de los archivos del paquete RPM constan de cuatro elementos (más el sufijo .rpm): nombre-versión-lanzamiento.arquitectura: Figura 11. Elementos del nombre del archivo RPM El nombre es una o más palabras para describir el contenido (coreutils). La versión es el número de versión del software original (9.5). La versión es el número de versión del paquete según esa versión y la establece el empaquetador, que puede no ser el desarrollador del software original (6.el10). Arch es la arquitectura del procesador en la que se compila el paquete para ejecutarse. El valor x86_64 indica que este paquete está creado para la versión de 64 bits del conjunto de instrucciones x86 (a diferencia de aarch64 para ARM de 64 bits, etc.). Los paquetes RPM suelen descargarse de repositorios. Un repositorio es una ubicación central para almacenar y mantener paquetes de software RPM. Solo necesita el nombre del paquete para instalar paquetes RPM desde los repositorios. Si existen varias versiones, el Administrador de paquetes RPM instala el paquete con el número de versión posterior. Si existen varias versiones de una sola versión, el Administrador de paquetes RPM instala el paquete con el número de versión posterior. Cada paquete RPM es un archivo con los siguientes componentes: Los archivos que el paquete instala en su sistema. Información sobre el paquete (metadatos), como el nombre, la versión, la versión y la arquitectura; un resumen y
+
+description of the package; whether it requires other packages to be installed; licensing; a package change log;
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM y otros detalles. Scripts que pueden ejecutarse al instalar, actualizar o eliminar el paquete. Estos scripts también pueden ejecutarse al instalar, actualizar o eliminar otros paquetes. Normalmente, los proveedores de software firman digitalmente paquetes RPM con claves GNU Privacy Guard (GPG). Red Hat, por ejemplo, firma digitalmente todos los paquetes que lanza. El sistema RPM verifica la integridad del paquete confirmando que el paquete esté firmado con la clave GPG adecuada. El sistema RPM no puede instalar un paquete si la firma GPG no coincide. Actualización de software con paquetes RPM Red Hat genera un paquete RPM completo para actualizar el software. Un administrador que instala ese paquete obtiene solo la versión más reciente del paquete. No es necesario instalar una versión anterior de un paquete para parchearlo. Para actualizar el software, RPM elimina la versión anterior del paquete e instala la última versión. Las actualizaciones suelen conservar los archivos de configuración, pero el empaquetador de la nueva versión define el comportamiento exacto. Normalmente, sólo se instala una versión de un paquete a la vez. Si un paquete se crea con nombres de archivos que no entran en conflicto, es posible que instale varias versiones. El paquete del kernel es un ejemplo de instalación de múltiples versiones de paquetes. Debido a que usted prueba un nuevo kernel solo iniciando con ese kernel, el paquete está diseñado para admitir la instalación de múltiples versiones. Si el nuevo kernel no arranca, puede volver al kernel anterior. Inspección de paquetes RPM La utilidad rpm es una herramienta de bajo nivel que puede recuperar información detallada sobre el contenido de los paquetes instalados. La herramienta también puede inspeccionar archivos en paquetes descargados antes de la instalación. Consultar la base de datos RPM sobre paquetes instalados De forma predeterminada, la herramienta obtiene información de una base de datos local de paquetes instalados. Recuperar información general sobre los paquetes instalados:
+
+rpm -qa : List all installed packages.
+rpm -qf FILENAME : Determine which package provides FILENAME.
+user@host:~$ rpm -qf /etc/yum.repos.d
+
+redhat-release-10.0-30.el10.x86_64 Obtenga información sobre paquetes específicos:
+
+rpm -q : List the currently installed package version.
+user@host:~$ rpm -q dnf
+dnf-4.20.0-12.el10_0.noarch
+
+A partir de RHEL 10, el comando rpmsort se puede usar como el comando sort en una canalización, pero puede ordenar correctamente las cadenas de versión RPM en la salida del comando:
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+user@host:~$ rpm -q kernel | sort
+
+kernel-6.12.0-141.el10.x86_64 kernel-6.12.0-45.el10.x86_64
+
+user@host:~$ rpm -q kernel | rpmsort
+
+kernel-6.12.0-45.el10.x86_64 kernel-6.12.0-141.el10.x86_64
+
+rpm -qi : Get detailed package information.
+rpm -ql : List the files that the package installs.
+user@host:~$ rpm -ql dnf
+
+/usr/bin/dnf /usr/lib/systemd/system/dnf-makecache.service /usr/lib/systemd/system/dnf-makecache.timer /usr/share/bash-completion/completions/dnf ... salida omitida...
+
+rpm -qc : List only the configuration files that the package installs.
+user@host:~$ rpm -qc openssh-clients
+
+/etc/ssh/ssh_config /etc/ssh/ssh_config.d/50-redhat.conf
+
+rpm -qd : List only the documentation files that the package installs.
+user@host:~$ rpm -qd openssh-clients
+
+/usr/share/man/man1/scp.1.gz /usr/share/man/man1/sftp.1.gz /usr/share/man/man1/ssh-add.1.gz /usr/share/man/man1/ssh-agent.1.gz ... salida omitida...
+
+rpm -q --scripts : List the shell scripts that run before or after you install or remove the package.
+user@host:~$ rpm -q --scripts openssh-server
+preinstall scriptlet (using /bin/sh):
+# generated from openssh-server-systemd-sysusers.conf
+getent group 'sshd' >/dev/null || groupadd -f -g '74' -r 'sshd' || :
+if ! getent passwd 'sshd' >/dev/null; then
+    if ! getent passwd '74' >/dev/null; then
+        useradd -r -u '74' -g 'sshd' -d '/usr/share/empty.sshd' -s '/usr/sbin/nologin' -c 'Privilege-
+separated SSH' 'sshd' || :
+    else
+        useradd -r -g 'sshd' -d '/usr/share/empty.sshd' -s '/usr/sbin/nologin' -c 'Privilege-separated SSH' 
+
+'sshd' || :
+
+    fi
+
+fi ...salida omitida...
+
+rpm -q --changelog : List the change log information for the package.
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+user@host:~$ rpm -q --changelog audit
+
+* Miércoles 08 de enero de 2025 Attila Lakatos <alakatos@redhat.com> - 4.0.3-1 - Rebase a 4.0.3 - El complemento debe tener el sufijo .conf; de lo contrario, se omitirá
+
+  Resolves: RHEL-58838
+
+- corrección del inodo del punto de control de ausearch
+
+  Resolves: RHEL-62333
+
+- Audisp-filter: filtra eventos de auditoría y los reenvía a otros complementos
+
+  Resolves: RHEL-5199
+
+- Iniciar sesión en la consola cuando el sistema se detiene debido a que la auditoría no tiene suficiente almacenamiento
+
+  Resolves: RHEL-990
+
+...salida omitida... Consulta de un archivo RPM antes de la instalación Cuando descarga un paquete RPM de un tercero, una buena práctica es inspeccionar su contenido antes de instalarlo. Puede inspeccionar un archivo de paquete agregando la opción -p a cualquiera de los comandos de consulta rpm discutidos anteriormente. Esta opción configura la herramienta para obtener su información directamente del archivo, en lugar de la base de datos de paquetes instalados del sistema. Puede utilizar esta opción para ver los detalles del paquete, la lista de archivos, los scripts o la documentación antes de comprometerse a instalarlo. Consultar archivos de paquetes locales:
+
+rpm -qlp : List the files that the local package installs.
+user@host:~$ ls -l podman-5.4.0-1.el10.x86_64.rpm
+
+-rw-r--r--. 1 usuario usuario 16494682 9 de junio 23:43 podman-5.4.0-1.el10.x86_64.rpm
+
+user@host:~$ rpm -qlp podman-5.4.0-1.el10.x86_64.rpm
+
+/usr/bin/podman /usr/lib/.build-id /usr/lib/.build-id/0b ... salida omitida... Instalación de paquetes RPM El comando rpm puede instalar paquetes individuales, pero carece de resolución de dependencias. Si intenta instalar un paquete con dependencias no satisfechas, como bibliotecas faltantes, el comando falla. El paquete requiere que todas las dependencias estén preinstaladas. Para solucionar este problema, puede utilizar DNF (Dandified YUM). Como administrador de paquetes de alto nivel, DNF amplía la funcionalidad del Administrador de paquetes RPM conectándose a repositorios de software en línea para localizar e instalar automáticamente todas las dependencias necesarias. El siguiente ejemplo utiliza el comando rpm para instalar un paquete RPM desde un directorio local que no tiene dependencias no satisfechas.
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+root@host:~# rpm -ivh podman-5.4.0-1.el10.x86_64.rpm
+
+Verificando... ################################# [100%] Preparando... ##################################[100%] Actualizando/instalando...
+
+        podman-6:5.4.0-1     ################################# [100%]
+
+Advertencia Tenga cuidado al instalar paquetes de terceros. El paquete RPM puede incluir software inestable, desactualizado o malicioso, y puede incluir scripts arbitrarios que se ejecutan como usuario root como parte del proceso de instalación. Extracción de paquetes RPM Utilice el comando rpm2cpio para extraer archivos de un archivo de paquete RPM sin instalar el paquete. El comando rpm2cpio convierte un paquete RPM en un archivo cpio. Una vez que el paquete RPM se convierte en un archivo cpio, el comando cpio puede extraer una lista de archivos. Utilice el comando cpio con la opción -i para extraer archivos de la entrada estándar. Utilice la opción -d para crear subdirectorios según sea necesario, comenzando en el directorio de trabajo actual. Utilice la opción -v para obtener resultados detallados.
+
+user@host:~/tmp-extract$ rpm2cpio httpd-2.4.63-1.el10.x86_64.rpm | cpio -idv
+
+./etc/httpd/conf.modules.d/00-brotli.conf ./etc/httpd/conf.modules.d/00-systemd.conf ./usr/lib/.build-id ./usr/lib/systemd/system/htcacheclean.service ./usr/lib/systemd/system/httpd.service ./usr/lib/systemd/system/httpd.socket ...salida omitida... 121 bloques
+
+user@host:~/tmp-extract$ ls -l
+
+total 56
+
+drwxr-xr-x. 3 user user       19 Jun  9 23:51 etc
+
+-rw-r--r--. 1 raíz raíz 54557 9 de junio 23:50 httpd-2.4.63-1.el10.x86_64.rpm
+
+drwxr-xr-x. 5 user user       43 Jun  9 23:51 usr
+
+Extraiga archivos individuales especificando la ruta del archivo:
+
+user@host:~$ rpm2cpio httpd-2.4.63-1.el10.x86_64.rpm | \
+
+cpio -id "/etc/httpd/conf.modules.d/00-systemd.conf" 121 bloques
+
+user@host:~$ ls etc/httpd/conf.modules.d/
+
+00-brotli.conf 00-systemd.conf Utilice los comandos rpm2cpio y cpio -t para enumerar los archivos en un paquete RPM. Utilice la opción -v del comando cpio para obtener resultados detallados.
+
+
+
+
+
+6.1. Investigación de paquetes de software RPM
+
+user@host:~$ rpm2cpio httpd-2.4.63-1.el10.x86_64.rpm | cpio -tv
+
+-rw-r--r-- 1 raíz raíz 47 27 de enero 00:00 ./etc/httpd/conf.modules.d/00-brotli.conf -rw-r--r-- 1 raíz raíz 88 27 de enero 00:00 ./etc/httpd/conf.modules.d/00-systemd.conf -rw-r--r-- 1 raíz raíz 435 27 de enero 00:00 ./usr/lib/systemd/system/htcacheclean.service -rw-r--r-- 1 raíz raíz 1340 27 de enero 00:00 ./usr/lib/systemd/system/httpd.service -rw-r--r-- 1 raíz raíz 244 27 de enero 00:00 ./usr/lib/systemd/system/httpd.socket ...salida omitida... 121 bloques Referencias
+
+rpm(8), rpm2cpio(8), rpmsort(8), cpio(1), and rpmkeys(8) man pages
+
+
+
+
+
+6.2. Ejercicio guiado Investigación de un paquete de software RPM 6.2. Ejercicio guiado Investigación de un paquete de software RPM Recopile información sobre un paquete de terceros, extraiga archivos del paquete para inspeccionarlos y luego instálelo en un servidor. Resultados Instalar un paquete que no sea de los repositorios de software. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-rpm
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En la máquina del servidor, inspeccione el paquete RPM en el directorio de inicio del usuario estudiante. Enumere los archivos del paquete y revise el script que ejecuta el sistema cuando instala o desinstala el paquete. 2. Enumere el contenido del directorio de inicio del usuario estudiante.
+
+[student@servera ~]$ ls
+
+rhcsa-script-1.0.0-1.noarch.rpm 2.1. Vea información para el paquete rhcsa-script-1.0.0-1.noarch.rpm. 2.2.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado: Investigación de un paquete de software RPM
+
+6.2. Ejercicio guiado Investigación de un paquete de software RPM 6.2. Ejercicio guiado Investigación de un paquete de software RPM Recopile información sobre un paquete de terceros, extraiga archivos del paquete para inspeccionarlos y luego instálelo en un servidor. Resultados Instalar un paquete que no sea de los repositorios de software. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-rpm
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En la máquina del servidor, inspeccione el paquete RPM en el directorio de inicio del usuario estudiante. Enumere los archivos del paquete y revise el script que ejecuta el sistema cuando instala o desinstala el paquete. 2. Enumere el contenido del directorio de inicio del usuario estudiante.
+
+[student@servera ~]$ ls
+
+rhcsa-script-1.0.0-1.noarch.rpm 2.1. Vea información para el paquete rhcsa-script-1.0.0-1.noarch.rpm. 2.2.
+
+
+
+
+
+6.2. Ejercicio guiado: Investigación de un paquete de software RPM
+
+[student@servera ~]$ rpm -q -p rhcsa-script-1.0.0-1.noarch.rpm -i
+
+Nombre: rhcsa-script Versión: 1.0.0 Versión: 1 Arquitectura: noarch Fecha de instalación: (no instalado) Grupo: Tamaño del sistema: 593 Licencia: GPL Firma: (ninguna) RPM de origen: rhcsa-script-1.0.0-1.src.rpm Fecha de compilación: miércoles 23 de marzo de 2022 08:24:21 a. m. EDT Host de compilación: localhost Empaquetador: Bernardo Gargallo URL: http://example.com Resumen: Guión de práctica de RHCSA Descripción: Un guión de práctica de RHCSA. El paquete cambia el motd. El paquete rhcsa-script modifica el mensaje del día (MOTD) del sistema. El sistema muestra el MOTD a los usuarios al iniciar sesión. Enumere los archivos del paquete rhcsa-script-1.0.0-1.noarch.rpm.
+
+[student@servera ~]$ rpm -q -p rhcsa-script-1.0.0-1.noarch.rpm -l
+
+/opt/rhcsa-script/mymotd El paquete rhcsa-script incluye el archivo mymotd, que contiene el mensaje que actualiza el MOTD. 2.3. Vea el script que se ejecuta al instalar o desinstalar el paquete rhcsa-script-1.0.0-1.noarch.rpm. El script incluye secciones de código que se ejecutan cuando se instala o desinstala el paquete.
+
+[student@servera ~]$ rpm -q -p rhcsa-script-1.0.0-1.noarch.rpm --scripts
+preinstall scriptlet (using /bin/sh):
+if [ "$1" == "2" ]; then
+   if [ -e /etc/motd.orig ]; then
+     mv -f /etc/motd.orig /etc/motd
+   fi
+
+fi
+
+postinstall scriptlet (using /bin/sh):
+
+...salida omitida...
+
+postuninstall scriptlet (using /bin/sh):
+
+...salida omitida... 2.4. Extraiga el contenido del paquete rhcsa-script-1.0.0-1.noarch.rpm al directorio /home/student. 3. Utilice los comandos rpm2cpio y cpio -tv para enumerar los archivos en el paquete rhcsa-script-1.0.0-1.noarch.rpm.
+
+[student@servera ~]$ rpm2cpio rhcsa-script-1.0.0-1.noarch.rpm | cpio -tv
+
+-rw-r--r-- 1 raíz raíz 593 23 de marzo 08:24 ./opt/rhcsa-script/mymotd 2 bloques 3.1. Extraiga todos los archivos del paquete rhcsa-script-1.0.0-1.noarch.rpm al directorio /﻿home/student. Utilice los comandos rpm2cpio y cpio -idv para extraer los archivos y crear los directorios principales cuando sea necesario en modo detallado. 3.2.
+
+
+
+
+
+6.2. Ejercicio guiado: Investigación de un paquete de software RPM
+
+[student@servera ~]$ rpm2cpio rhcsa-script-1.0.0-1.noarch.rpm | cpio -idv
+
+./opt/rhcsa-script/mymotd 2 bloques Enumere los archivos en el directorio /home/student/opt para verificar que los archivos extraídos sean los mismos que los archivos dentro del paquete.
+
+[student@servera ~]$ ls -lR opt
+opt:
+
+total 0
+
+drwxr-xr-x. 2 student student 20 Jun 18 19:29 rhcsa-script
+opt/rhcsa-script:
+
+total 4 -rw-r--r--. 1 estudiante estudiante 593 18 de junio 19:29 mymotd 3.3. Instale el paquete rhcsa-script-1.0.0-1.noarch.rpm utilizando privilegios de superusuario. Utilice estudiante como contraseña para autenticarse cuando utilice Sudo. 4. Utilice el comando sudo rpm -ivh para instalar el paquete RPM rhcsa-script-1.0.0-1.noarch.rpm.
+
+[student@servera ~]$ sudo rpm -ivh rhcsa-script-1.0.0-1.noarch.rpm
+
+[sudo] contraseña para estudiante: estudiante Verificando... ######################################## [100%] Preparando... ##################################[100%] Actualizando/instalando...
+
+   1:rhcsa-script-1.0.0-1             ################################# [100%]
+
+[estudiante@servera ~]$ 4.1. Verifique que el paquete esté instalado correctamente.
+
+[student@servera ~]$ rpm -q rhcsa-script
+
+rhcsa-script-1.0.0-1.noarch 4.2. Salga de la máquina del servidor e inicie sesión nuevamente para ver el nuevo mensaje del día.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$ ssh student@servera
+
+______ _ _ _ _ _____ _ _ | ___ \ | | | | | |     | |   |_ _|       (_) (_) | |_/ /___ __| | | |_| | __ _| |_ | |_ __ __ _ _ _ __ _ _ __ __ _ |    // _ \/ _` | |  _ |/ _` | __|   | | '__/ _` | | '_\| | '_ \ / _` | | |\ \ __/ (_| | | | | (_| | |_ | | | | (_| | | | | | | | | | (_| | \_| \_\___|\__,_| \_| |_/\__,_|\__| \_/_| \__,_|_|_| |_|_|_| |_|\__, |
+
+                                                                    __/ |
+                                                                   |___/
+
+Active la consola web con: systemctl enable --now cockpit.socket Registre este sistema con Red Hat Insights: insights-client --register Cree una cuenta o vea todos sus sistemas en https://red.ht/insights-dashboard Último inicio de sesión: miércoles 11 de junio a las 15:53:21 2025 desde 172.25.250.9 [student@servera ~]$ 5. Regrese al sistema de la estación de trabajo como estudiante usuario. 6.
+
+
+
+
+
+6.2. Ejercicio guiado Investigación de un paquete de software RPM Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-rpm
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF 6.3. Instalación y actualización de paquetes con DNF Objetivos Buscar, instalar y actualizar paquetes de software con DNF. Administrar paquetes de software con DNF A partir de Red Hat Enterprise Linux 9, DNF (Dandified YUM) reemplaza a YUM como administrador de paquetes. Los comandos DNF son funcionalmente iguales que los comandos YUM. Por compatibilidad, los comandos YUM todavía existen como enlaces simbólicos.
+
+to DNF:
+user@host:~$ ls -l /usr/bin/yum*
+
+lrwxrwxrwx. 1 raíz raíz 5 7 de febrero de 2025 /usr/bin/yum -> dnf-3 lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-builddep -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-config-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-groups-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yumdownloader -> ../libexec/dnf-utils Red Hat recomienda usar el comando dnf. Es posible que parte de la documentación aún haga referencia al comando yum, pero los archivos son el mismo comando vinculado. El comando rpm de bajo nivel se puede utilizar para instalar paquetes, pero no está diseñado para funcionar con repositorios de paquetes ni para resolver dependencias de múltiples fuentes automáticamente. DNF mejora la instalación y las actualizaciones de software basado en RPM. Con el comando dnf, puede instalar, actualizar, eliminar y obtener información sobre paquetes de software y sus dependencias. Puede obtener un historial de transacciones y trabajar con múltiples repositorios de software de Red Hat y de terceros. Los repositorios de BaseOS y Application Stream Red Hat Enterprise Linux 10 distribuye contenido a través de dos repositorios de software principales: BaseOS y Application Stream (AppStream). Tanto BaseOS como AppStream son partes necesarias de un sistema Red Hat Enterprise Linux 10. El repositorio de BaseOS proporciona el contenido principal del sistema operativo para Red Hat Enterprise Linux como paquetes RPM. Los componentes de BaseOS tienen el mismo ciclo de vida que el contenido de versiones anteriores de Red Hat Enterprise Linux. Application Stream contiene partes necesarias del sistema, así como una amplia gama de aplicaciones que anteriormente estaban disponibles como parte de Red Hat Software Collections y otros productos y programas. Cada flujo de aplicaciones tiene un ciclo de vida que es el mismo que Red Hat Enterprise Linux 10 o más corto. Las versiones anteriores de Red Hat Enterprise Linux distribuyen algunos flujos de paquetes para aplicaciones populares como módulos, como los sistemas de gestión de bases de datos. En RHEL 10, Red Hat ya no proporciona módulos DNF en el repositorio de AppStream. Búsqueda de software con DNF El comando de ayuda dnf muestra información de uso. El comando dnf list muestra los paquetes instalados y disponibles. El siguiente ejemplo utiliza un carácter comodín para enumerar los paquetes instalados y disponibles que comienzan con la palabra clave http.
+
+
+
+
+
+
+
+## 6.3. Instalación y actualización de paquetes con DNF
+
+6.3. Instalación y actualización de paquetes con DNF 6.3. Instalación y actualización de paquetes con DNF Objetivos Buscar, instalar y actualizar paquetes de software con DNF. Administrar paquetes de software con DNF A partir de Red Hat Enterprise Linux 9, DNF (Dandified YUM) reemplaza a YUM como administrador de paquetes. Los comandos DNF son funcionalmente iguales que los comandos YUM. Por compatibilidad, los comandos YUM todavía existen como enlaces simbólicos.
+
+to DNF:
+user@host:~$ ls -l /usr/bin/yum*
+
+lrwxrwxrwx. 1 raíz raíz 5 7 de febrero de 2025 /usr/bin/yum -> dnf-3 lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-builddep -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-config-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yum-groups-manager -> ../libexec/dnf-utils lrwxrwxrwx. 1 raíz raíz 20 23 de enero de 2025 /usr/bin/yumdownloader -> ../libexec/dnf-utils Red Hat recomienda usar el comando dnf. Es posible que parte de la documentación aún haga referencia al comando yum, pero los archivos son el mismo comando vinculado. El comando rpm de bajo nivel se puede utilizar para instalar paquetes, pero no está diseñado para funcionar con repositorios de paquetes ni para resolver dependencias de múltiples fuentes automáticamente. DNF mejora la instalación y las actualizaciones de software basado en RPM. Con el comando dnf, puede instalar, actualizar, eliminar y obtener información sobre paquetes de software y sus dependencias. Puede obtener un historial de transacciones y trabajar con múltiples repositorios de software de Red Hat y de terceros. Los repositorios de BaseOS y Application Stream Red Hat Enterprise Linux 10 distribuye contenido a través de dos repositorios de software principales: BaseOS y Application Stream (AppStream). Tanto BaseOS como AppStream son partes necesarias de un sistema Red Hat Enterprise Linux 10. El repositorio de BaseOS proporciona el contenido principal del sistema operativo para Red Hat Enterprise Linux como paquetes RPM. Los componentes de BaseOS tienen el mismo ciclo de vida que el contenido de versiones anteriores de Red Hat Enterprise Linux. Application Stream contiene partes necesarias del sistema, así como una amplia gama de aplicaciones que anteriormente estaban disponibles como parte de Red Hat Software Collections y otros productos y programas. Cada flujo de aplicaciones tiene un ciclo de vida que es el mismo que Red Hat Enterprise Linux 10 o más corto. Las versiones anteriores de Red Hat Enterprise Linux distribuyen algunos flujos de paquetes para aplicaciones populares como módulos, como los sistemas de gestión de bases de datos. En RHEL 10, Red Hat ya no proporciona módulos DNF en el repositorio de AppStream. Búsqueda de software con DNF El comando de ayuda dnf muestra información de uso. El comando dnf list muestra los paquetes instalados y disponibles. El siguiente ejemplo utiliza un carácter comodín para enumerar los paquetes instalados y disponibles que comienzan con la palabra clave http.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ dnf list 'http*'
+
+Paquetes disponibles httpcomponents-client.noarch 4.5.14-9.el10 rhel-10.0-for-x86_64-appstream-rpms httpcomponents-core.noarch 4.4.16-9.el10 rhel-10.0-for-x86_64-appstream-rpms httpd.x86_64 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-core.x86_64 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-devel.x86_64 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-filesystem.noarch 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-manual.noarch 2.4.63-1.el10 rhel-10.0-para-x86_64-appstream-rpms httpd-tools.x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms El comando dnf search KEYWORD enumera los paquetes por palabras clave que se encuentran únicamente en los campos de nombre y resumen. Para buscar paquetes con "servidor web" en sus campos de nombre, resumen y descripción, utilice buscar todo con la web
+
+server keyword:
+user@host:~$ dnf search all 'web server'
+
+Última verificación de vencimiento de metadatos: hace 0:11:50 el miércoles 11 de junio a las 18:59:21 de 2025. ================== Resumen y descripción Coincidencia: servidor web ====================
+
+nginx.x86_64 : A high performance web server and reverse proxy server
+pcp-pmda-weblog.x86_64 : Performance Co-Pilot (PCP) metrics from web server logs
+python3-tornado.x86_64 : Scalable, non-blocking web server and tools
+
+========================= Resumen coincidente: servidor web ===========================
+
+libcurl.x86_64 : A library for getting files from web servers
+
+======================= Descripción Coincidente: servidor web =========================
+
+freeradius.x86_64 : High-performance and highly configurable free RADIUS server
+git-instaweb.noarch : Repository browser in gitweb
+httpd.x86_64 : Apache HTTP Server
+mod_auth_openidc.x86_64 : OpenID Connect auth module for Apache HTTP Server
+varnish.x86_64 : High-performance HTTP accelerator
+
+El comando dnf info PACKAGENAME devuelve información detallada sobre un paquete, incluido el disco necesario.
+
+space for installation. For example, the following command retrieves information about the httpd package:
+user@host:~$ dnf info httpd
+
+Nombre de paquetes disponibles: httpd Versión: 2.4.63 Versión: 1.el10 Arquitectura: x86_64 Tamaño: 53 k Fuente: httpd-2.4.63-1.el10.src.rpm Repositorio: rhel-10.0-for-x86_64-appstream-rpms Resumen: Apache HTTP Server URL: https://httpd.apache.org/ Licencia: Apache-2.0 AND (BSD-3-Cláusula Y metamail Y HPND-sell-variante
+
+             : AND Spencer-94)
+
+Descripción: El servidor HTTP Apache es un servidor potente, eficiente y extensible.
+
+             : web server.
+
+El comando dnf proporciona PATHNAME muestra paquetes que coinciden con el nombre de ruta especificado (los nombres de ruta a menudo incluyen caracteres comodín). Por ejemplo, el siguiente comando busca paquetes que proporcionan la
+
+/var/www/html directory:
+user@host:~$ dnf provides /var/www/html
+
+...salida omitida...
+
+httpd-filesystem-2.4.63-1.el10.noarch : The basic directory layout for the
+                                      : Apache HTTP Server
+
+Repositorio: rhel-10.0-for-x86_64-appstream-rpms Coincidencia de: Nombre de archivo: /var/www/html Instalación, actualización y eliminación de software con DNF
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF El comando dnf install PACKAGENAME obtiene e instala un paquete de software, incluidas las dependencias.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ sudo dnf install httpd
+
+Dependencias resueltas. ========================================================================================== Paquete Versión Arch Tamaño del repositorio ================================================================================== Instalación: httpd x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 53 k Instalando dependencias: apr x86_64 1.7.5-2.el10 rhel-10.0-for-x86_64-appstream-rpms 132 k apr-util x86_64 1.6.3-21.el10 rhel-10.0-para-x86_64-appstream-rpms 101 k apr-util-lmdb x86_64 1.6.3-21.el10 rhel-10.0-para-x86_64-appstream-rpms 16 k httpd-core x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 1,5 M sistema de archivos httpd
+
+                 noarch 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms  17 k
+
+httpd-tools x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 87 k redhat-logos-httpd
+
+                 noarch 100.0-2.el10  rhel-10.0-for-x86_64-appstream-rpms  18 k
+
+Instalación de dependencias débiles: apr-util-openssl
+
+                 x86_64 1.6.3-21.el10 rhel-10.0-for-x86_64-appstream-rpms  18 k
+
+mod_http2 x86_64 2.0.29-2.el10 rhel-10.0-for-x86_64-appstream-rpms 169 k mod_lua x86_64 2.4.63-1.el10 rhel-10.0-for-x86_64-appstream-rpms 61 k Resumen de transacciones ================================================================================================= Instalar 11 paquetes Tamaño total de descarga: 2,2 M Tamaño instalado: 6,0 M ¿Está bien [s/n]: y Descargando Paquetes: (1/11): apr-util-1.6.3-21.el10.x86_64.rpm 5,1 MB/s | 101 kB 00:00 (2/11): abr-util-lmdb-1.6.3-21.el10.x86_64.rpm 697 kB/s |  16 kB 00:00 (3/11): abr-1.7.5-2.el10.x86_64.rpm 4,2 MB/s | 132 kB 00:00 (4/11): abr-util-openssl-1.6.3-21.el10.x86_64.r 1,7 MB/s |  18 kB 00:00 (5/11): httpd-2.4.63-1.el10.x86_64.rpm 817 kB/s |  53 kB 00:00 (6/11): httpd-filesystem-2.4.63-1.el10.noarch.r 275 kB/s |  17 kB 00:00 (7/11): httpd-tools-2.4.63-1.el10.x86_64.rpm 12 MB/s |  87 kB 00:00 (8/11): httpd-core-2.4.63-1.el10.x86_64.rpm 9,0 MB/s | 1,5 MB 00:00 (11/9): mod_lua-2.4.63-1.el10.x86_64.rpm 615 kB/s |  61 kB 00:00 (10/11): mod_http2-2.0.29-2.el10.x86_64.rpm 1,5 MB/s | 169 kB 00:00 (11/11): redhat-logos-httpd-100.0-2.el10.noarch 208 kB/s |  18KB 00:00
+
+--------------------------------------------------------------------------------
+
+Total de 7,5 MB/s | 2.2 MB 00:00 Ejecutando verificación de transacción La verificación de transacción fue exitosa. Ejecutando prueba de transacción La prueba de transacción fue exitosa. Transacción en ejecución
+
+  Preparing        :                                                        1/1
+  Installing       : apr-1.7.5-2.el10.x86_64                               1/11
+
+...salida omitida...
+
+  Installing       : httpd-2.4.63-1.el10.x86_64                           11/11
+  Running scriptlet: httpd-2.4.63-1.el10.x86_64                           11/11
+
+Instalado:
+
+  apr-1.7.5-2.el10.x86_64                 apr-util-1.6.3-21.el10.x86_64
+  apr-util-lmdb-1.6.3-21.el10.x86_64      apr-util-openssl-1.6.3-21.el10.x86_64
+  httpd-2.4.63-1.el10.x86_64              httpd-core-2.4.63-1.el10.x86_64
+
+...salida omitida... ¡Completo! El comando dnf update PACKAGENAME obtiene e instala una versión posterior del paquete especificado, incluidas las dependencias. Generalmente, el proceso intenta conservar los archivos de configuración en su lugar, pero en algunos casos, esos archivos pueden
+
+
+
+
+
+6.3. Se cambiará el nombre de Instalación y actualización de paquetes con DNF si el empaquetador determina que el nombre del archivo anterior no funcionará después de la actualización. Si no se especifica ningún nombre de paquete, el comando instala todas las actualizaciones de paquetes disponibles.
+
+user@host:~$ sudo dnf upgrade
+
+Debido a que un nuevo kernel sólo puede probarse arrancando con ese kernel, el paquete admite específicamente la instalación de múltiples versiones al mismo tiempo. Si el nuevo kernel no arranca, entonces el kernel anterior todavía está disponible. ejecutando el
+
+dnf upgrade kernel command installs the new kernel.
+
+Utilice el comando dnf list kernel para enumerar todos los kernels instalados y disponibles. Para ver el kernel que se está ejecutando actualmente, use el comando uname. La opción del comando uname -r muestra solo la versión y la versión del kernel, y la opción -a del comando uname muestra la versión del kernel e información adicional.
+
+user@host:~$ dnf list kernel
+
+Paquetes instalados kernel.x86_64 6.12.0-55.9.1.el10_0 @System kernel.x86_64 6.12.0-55.12.1.el10_0 @rhel-10-for-x86_64-baseos-rpms
+
+user@host:~$ uname -r
+
+6.12.0-55.12.1.el10_0.x86_64
+
+user@host:~$ uname -a
+
+Estación de trabajo Linux 6.12.0-55.12.1.el10_0.x86_64 #1 SMP PREEMPT_DYNAMIC martes 13 de mayo 02:51:44 EDT 2025 x86_64 GNU/Linux El comando dnf remove PACKAGENAME elimina un paquete de software instalado, incluidos los paquetes compatibles.
+
+user@host:~$ sudo dnf remove httpd
+
+Advertencia El comando dnf remove elimina los paquetes enumerados y cualquier paquete que los requiera (y los paquetes que los requieran, etc.). Este comando puede provocar la eliminación inesperada de paquetes, por lo que debe revisar detenidamente la lista de paquetes que se eliminarán. Instalación y eliminación de grupos de software con DNF Con DNF, también puede instalar y eliminar grupos, que son colecciones de software relacionado que se instalan juntos. En Red Hat Enterprise Linux, el comando dnf puede instalar dos tipos de grupos de paquetes. Los grupos regulares son colecciones de paquetes. Los grupos de entornos son colecciones de grupos regulares. Los paquetes o grupos que proporcionan estas colecciones pueden aparecer como obligatorios (deben instalarse si el grupo está instalado), predeterminados (normalmente instalados si el grupo está instalado) u opcionales (no instalados cuando el grupo está instalado, a menos que se solicite específicamente). Similar al comando dnf list, el comando dnf group list muestra los nombres de los grupos instalados y disponibles.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ dnf group list
+
+Grupos de entorno disponibles:
+
+   Server with GUI
+   Server
+   Minimal Install
+
+...salida omitida... Grupos disponibles:
+
+   Legacy UNIX Compatibility
+   Smart Card Support
+   Console Internet Tools
+   Development Tools
+
+...salida omitida... Algunos grupos se instalan a través de grupos de entorno y están ocultos de forma predeterminada. Enumere estos grupos ocultos con el
+
+dnf group list hidden command.
+
+El comando dnf group info muestra información sobre un grupo. Incluye una lista de nombres de paquetes obligatorios, predeterminados y opcionales.
+
+user@host:~$ dnf group info 'Security Tools'
+
+Grupo: Herramientas de Seguridad Descripción: Herramientas de seguridad para verificación de integridad y confianza. Paquetes predeterminados:
+
+   scap-security-guide
+
+Paquetes opcionales:
+
+   aide
+   hmaccalc
+   openscap
+   openscap-engine-sce
+   openscap-utils
+   scap-security-guide-doc
+   tpm2-tools
+   tss2
+   udica
+
+El comando dnf group install instala un grupo que instala sus paquetes obligatorios y predeterminados y sus paquetes dependientes.
+
+user@host:~$ sudo dnf group install 'System Tools'
+
+...salida omitida... Instalación de grupos: Herramientas del sistema Resumen de transacciones ========================================================== Instalar 11 paquetes Tamaño total de descarga: 13 M Tamaño instalado: 44 M ¿Está bien? [s/N]: y ...salida omitida... ¡Completo! Visualización del historial de transacciones Todas las transacciones de instalación y eliminación se registran en el archivo /var/log/dnf.rpm.log.
+
+
+
+
+
+6.3. Instalación y actualización de paquetes con DNF
+
+user@host:~$ tail -5 /var/log/dnf.rpm.log
+
+2025-06-11T20:19:56+0000 SUBDEBUG Instalado: samba-client-4.21.3-102.el10.x86_64 2025-06-11T20:19:56+0000 SUBDEBUG Instalado: nmap-4:7.92-3.el10.x86_64 2025-06-11T20:19:56+0000 SUBDEBUG Instalado: zsh-5.9-15.el10.x86_64 2025-06-11T20:19:57+0000 SUBDEBUG Instalado: setserial-2.17-63.el10.x86_64 2025-06-11T20:19:57+0000 SUBDEBUG Instalado: openldap-clients-2.6.8.el10.x86_64 El comando dnf History muestra un resumen de las transacciones de instalación y eliminación.
+
+user@host:~$ dnf history
+
+identificación | Línea de comando | Fecha y hora | Acción(es) | alterado
+
+--------------------------------------------------------------------------------
+    11 | group install System Tool | 2025-06-11 20:19 | Install        |   12 EE
+    10 | install httpd             | 2025-06-11 19:40 | Install        |   11
+     9 | install bind              | 2025-06-10 09:42 | Install        |    2
+
+...resultado omitido... Resumen de comandos DNF Los paquetes se pueden ubicar, instalar, actualizar y eliminar por nombre o por grupos de paquetes.
+
+dnf list [NAME-PATTERN]
+
+Enumere los paquetes instalados y disponibles por nombre.
+
+dnf group list
+
+Listar grupos instalados y disponibles.
+
+dnf search KEYWORD
+
+Busque un paquete por palabra clave.
+
+dnf info PACKAGENAME
+
+Mostrar detalles de un paquete.
+
+dnf install PACKAGENAME
+
+Instalar un paquete.
+
+dnf group install GROUPNAME
+
+Instalar un grupo de paquetes.
+
+dnf upgrade
+
+Actualice todos los paquetes.
+
+dnf remove PACKAGENAME
+
+Quitar un paquete.
+
+dnf history
+
+Mostrar el historial de transacciones. Referencias
+
+dnf(1) and dnf.conf(5) man pages
+
+Para obtener más información, consulte la guía Administración de software con la herramienta DNF en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/managing_software_with_the_dnf_tool Comando: Tarea:
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF 6.4. Ejercicio guiado Instalar y actualizar paquetes con DNF Encuentre, instale y actualice paquetes de software con DNF. Resultados Instalar y eliminar paquetes con dependencias. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-dnf
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale y luego elimine el paquete nmap. 2. Primero, intente utilizar el paquete nmap ejecutando el comando nmap.
+
+[root@servera ~]# nmap
+
+-bash: nmap: comando no encontrado El paquete nmap no está instalado. 2.1. Busque paquetes con nmap como parte de su nombre o resumen.
+
+[root@servera ~]# dnf search nmap
+
+...salida omitida... ========================== Nombre que coincide exactamente: nmap ===========================
+
+nmap.x86_64 : Network exploration tool and security scanner
+
+========================= Nombre y resumen coincidentes: nmap ==========================
+
+nmap-ncat.x86_64 : Nmap's Netcat replacement
+
+2.2. Obtenga más información sobre el paquete nmap. 2.3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado de instalación y actualización de paquetes con DNF
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF 6.4. Ejercicio guiado Instalar y actualizar paquetes con DNF Encuentre, instale y actualice paquetes de software con DNF. Resultados Instalar y eliminar paquetes con dependencias. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-dnf
+
+Instrucciones Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Instale y luego elimine el paquete nmap. 2. Primero, intente utilizar el paquete nmap ejecutando el comando nmap.
+
+[root@servera ~]# nmap
+
+-bash: nmap: comando no encontrado El paquete nmap no está instalado. 2.1. Busque paquetes con nmap como parte de su nombre o resumen.
+
+[root@servera ~]# dnf search nmap
+
+...salida omitida... ========================== Nombre que coincide exactamente: nmap ===========================
+
+nmap.x86_64 : Network exploration tool and security scanner
+
+========================= Nombre y resumen coincidentes: nmap ==========================
+
+nmap-ncat.x86_64 : Nmap's Netcat replacement
+
+2.2. Obtenga más información sobre el paquete nmap. 2.3.
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF
+
+[root@servera ~]# dnf info nmap
+
+...salida omitida... Nombre de paquetes disponibles: nmap Época: 4 Versión: 7.92 Versión: 3.el10 Arquitectura: x86_64 Tamaño: 5,6 M Fuente: nmap-7.92-3.el10.src.rpm Repositorio: rhel-10.0-for-x86_64-appstream-rpms ...salida omitida... Instale el paquete nmap. Cuando se le solicite, presione Y para instalar el paquete.
+
+[root@servera ~]# dnf install nmap
+
+...salida omitida... Dependencias resueltas. =================================================================================== Paquete
+
+        Arch     Version            Repository                             Size
+
+================================================================================== Instalación:
+
+ nmap   x86_64   4:7.92-3.el10      rhel-10.0-for-x86_64-appstream-rpms   5.6 M
+
+Resumen de transacción ================================================================================================ Instalar 1 paquete Tamaño total de descarga: 5,6 M Tamaño instalado: 24 M ¿Está bien [s/n]: y ...salida omitido... ¡Completo! 2.4. Verifique que el paquete nmap esté instalado obteniendo la versión de la herramienta.
+
+[root@servera ~]# nmap -V
+
+Nmap versión 7.92 ( https://nmap.org ) ... salida omitida... 2.5. Elimine el paquete nmap. Cuando se le solicite, presione Y para eliminar el paquete. 2.6.
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF
+
+[root@servera ~]# dnf remove nmap
+
+Dependencias resueltas. =================================================================================== Paquete
+
+        Arch     Version           Repository                              Size
+
+================================================================================== Eliminando:
+
+ nmap   x86_64   4:7.92-3.el10     @rhel-10.0-for-x86_64-appstream-rpms    24 M
+
+Resumen de transacción ================================================================================================ Quitar 1 paquete Espacio liberado: 24 M ¿Está bien? [y/N]: y ...salida omitida... ¡Completa! Instale y luego elimine el grupo de componentes de Herramientas de seguridad. 3. Enumere los grupos de componentes disponibles.
+
+[root@servera ~]# dnf group list
+
+Grupos de entorno disponibles:
+
+   Server with GUI
+   Server
+
+...salida omitida...
+
+   Virtualization Host
+
+Grupos disponibles: ...salida omitida...
+
+   RPM Development Tools
+   Scientific Support
+   Security Tools
+   System Tools
+
+3.1. Obtenga más información sobre el grupo de componentes de Herramientas de seguridad y revise la lista de paquetes incluidos.
+
+[root@servera ~]# dnf group info 'Security Tools'
+
+...output omitted... Grupo: Herramientas de seguridad Descripción: Herramientas de seguridad para verificación de integridad y confianza. Paquetes predeterminados:
+
+   scap-security-guide
+
+Paquetes opcionales:
+
+   aide
+   hmaccalc
+   openscap
+   openscap-engine-sce
+   openscap-utils
+   scap-security-guide-doc
+   tpm2-tools
+   tss2
+   udica
+
+3.2. Instale el grupo de componentes de herramientas de seguridad. Cuando se le solicite, presione Y para instalar el paquete. 3.3.
+
+
+
+
+
+6.4. Ejercicio guiado de instalación y actualización de paquetes con DNF
+
+[root@servera ~]# dnf group install 'Security Tools'
+
+...salida omitida... Instalación de grupos: Resumen de transacciones de herramientas de seguridad =========================================================================================== Instalar 7 paquetes Tamaño total de descarga: 3,3 M Tamaño instalado: 100 M ¿Esto está bien? [s/N]: y ...salida omitida... Instalado:
+
+  libtool-ltdl-2.4.7-13.el10.x86_64
+  libxslt-1.1.39-6.el10.x86_64
+  openscap-1:1.4.1-1.el10.x86_64
+  openscap-scanner-1:1.4.1-1.el10.x86_64
+  scap-security-guide-0.1.76-2.el10.noarch
+  xmlsec1-1:1.2.39-3.el10.x86_64
+  xmlsec1-openssl-1:1.2.39-3.el10.x86_64
+
+¡Completo! Verifique que el grupo Herramientas de seguridad esté instalado.
+
+[root@servera ~]# dnf group list --installed
+
+...salida omitida... Grupos instalados:
+
+   Security Tools
+
+3.4. Elimine el grupo Herramientas de seguridad. Cuando se le solicite, presione Y para eliminar el paquete.
+
+[root@servera ~]# dnf group remove 'Security Tools'
+
+...salida omitida... Eliminando grupos: Resumen de transacciones de herramientas de seguridad ========================================================================================== Quitar 7 paquetes Espacio liberado: 100 M ¿Está bien? [y/N]: y ...salida omitida... Eliminado:
+
+  libtool-ltdl-2.4.7-13.el10.x86_64
+  libxslt-1.1.39-6.el10.x86_64
+  openscap-1:1.4.1-1.el10.x86_64
+  openscap-scanner-1:1.4.1-1.el10.x86_64
+  scap-security-guide-0.1.76-2.el10.noarch
+  xmlsec1-1:1.2.39-3.el10.x86_64
+  xmlsec1-openssl-1:1.2.39-3.el10.x86_64
+
+¡Completo! 3.5. Explore la opción de historial del comando dnf. 4. Muestra el historial reciente de dnf. La historia puede variar en su entorno. 4.1.
+
+
+
+
+
+6.4. Ejercicio guiado Instalación y actualización de paquetes con finalización DNF En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-dnf
+[root@servera ~]# dnf history
+
+identificación | Línea de comando | Fecha y hora | Acción(es) | alterado
+
+--------------------------------------------------------------------------------
+     9 | group remove Security Too | 2025-06-12 00:07 | Removed        |    8
+     8 | group install Security To | 2025-06-11 23:57 | Install        |    8
+     7 | remove nmap               | 2025-06-11 23:41 | Removed        |    1
+     6 | install nmap              | 2025-06-11 23:35 | Install        |    1
+
+...salida omitida... Inspeccione la última ID en su salida del paso anterior. El ID puede variar en su entorno.
+
+[root@servera ~]# dnf history info 9
+
+ID de transacción: 9 Hora de inicio: jueves 12 de junio 00:07:29 2025 Inicio rpmdb: a62d...dada Hora de finalización: jueves 12 de junio 00:07:30 2025 (1 segundo) Fin rpmdb: 85cd...2800 Usuario: Usuario estudiante <estudiante> Código de retorno: Versión exitosa: 10 Línea de comando: eliminación de grupo Herramientas de seguridad Comentario: Paquetes modificados:
+
+    Removed libtool-ltdl-2.4.7-13.el10.x86_64        @@System
+    Removed libxslt-1.1.39-6.el10.x86_64             @@System
+    Removed openscap-1:1.4.1-1.el10.x86_64           @@System
+    Removed openscap-scanner-1:1.4.1-1.el10.x86_64   @@System
+    Removed scap-security-guide-0.1.76-2.el10.noarch @@System
+    Removed xmlsec1-1:1.2.39-3.el10.x86_64           @@System
+    Removed xmlsec1-openssl-1:1.2.39-3.el10.x86_64   @@System
+    Removed @security-tools
+
+4.2. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+6.5. Habilitación de repositorios de software DNF 6.5. Habilitación de repositorios de software DNF Objetivos Habilitar y deshabilitar el uso del servidor de Red Hat o repositorios DNF de terceros. Gestión de repositorios de software De forma predeterminada, los sistemas RHEL incluyen configuración para acceder a los repositorios de Red Hat. En muchas situaciones, debe configurar repositorios adicionales para acceder al software de su organización o de un tercero. Por ejemplo, Adobe proporciona parte de su software para Linux a través de repositorios DNF. En el aula de Red Hat proporcionada para este contenido, el servidor content.example.com aloja repositorios DNF. El comando dnf puede acceder a los repositorios desde un sitio web, un servidor FTP o el sistema de archivos local. Es posible que también necesite habilitar o deshabilitar repositorios para evitar conflictos al instalar paquetes de diferentes fuentes. Puede administrar los repositorios del sistema actualizando manualmente los archivos del repositorio o utilizando DNF. el dnf
+
+repolist all command lists all available repositories and their statuses:
+root@host:~# dnf repolist all
+
+ID de repositorio Nombre de repositorio Estado rhel-10-for-x86_64-appstream-rpms RHEL 10: AppStream (RPM) habilitado rhel-10-for-x86_64-baseos-rpms RHEL 10: BaseOS (RPM) habilitado Nota Las suscripciones de Red Hat otorgan acceso a repositorios específicos. En el pasado, los administradores necesitaban adjuntar suscripciones por sistema. Simple Content Access (SCA) simplifica la forma en que los sistemas acceden a los repositorios. Con SCA, los sistemas pueden acceder a cualquier repositorio desde cualquier suscripción que compre, sin adjuntar una suscripción. Puede habilitar SCA en el Portal del cliente de Red Hat dentro de Mis suscripciones › Asignaciones de suscripción o en su servidor Red Hat Satellite. El comando dnf config-manager puede habilitar y deshabilitar repositorios. Por ejemplo, el siguiente comando
+
+enables the rhel-10-for-x86_64-baseos-debug-rpms repository:
+root@host:~# dnf config-manager --enable rhel-10-for-x86_64-baseos-debug-rpms
+
+Configuración de repositorios DNF Puede configurar repositorios de Red Hat y de terceros actualizando manualmente un archivo de repositorio o utilizando la línea de comandos. Configuración manual Para configurar manualmente un repositorio DNF, puede crear un archivo .repo en el directorio /etc/yum.repos.d/, o
+
+you can add a [repository] section to the /etc/dnf/dnf.conf file. Red Hat recommends using .repo files, and
+
+reservando el archivo dnf.conf para configuraciones de repositorio adicionales. El comando dnf busca ambas ubicaciones por
+
+default; however, the .repo files take precedence. A .repo file contains the URL of the repository, a name, and
+
+si se deben utilizar claves GPG para verificar las firmas del paquete. Si se requieren claves GPG, el archivo .repo también incluye la URL para apuntar a la clave GPG confiable.
+
+
+
+
+
+
+
+## 6.5. Habilitación de repositorios de software DNF
+
+6.5. Habilitación de repositorios de software DNF 6.5. Habilitación de repositorios de software DNF Objetivos Habilitar y deshabilitar el uso del servidor de Red Hat o repositorios DNF de terceros. Gestión de repositorios de software De forma predeterminada, los sistemas RHEL incluyen configuración para acceder a los repositorios de Red Hat. En muchas situaciones, debe configurar repositorios adicionales para acceder al software de su organización o de un tercero. Por ejemplo, Adobe proporciona parte de su software para Linux a través de repositorios DNF. En el aula de Red Hat proporcionada para este contenido, el servidor content.example.com aloja repositorios DNF. El comando dnf puede acceder a los repositorios desde un sitio web, un servidor FTP o el sistema de archivos local. Es posible que también necesite habilitar o deshabilitar repositorios para evitar conflictos al instalar paquetes de diferentes fuentes. Puede administrar los repositorios del sistema actualizando manualmente los archivos del repositorio o utilizando DNF. el dnf
+
+repolist all command lists all available repositories and their statuses:
+root@host:~# dnf repolist all
+
+ID de repositorio Nombre de repositorio Estado rhel-10-for-x86_64-appstream-rpms RHEL 10: AppStream (RPM) habilitado rhel-10-for-x86_64-baseos-rpms RHEL 10: BaseOS (RPM) habilitado Nota Las suscripciones de Red Hat otorgan acceso a repositorios específicos. En el pasado, los administradores necesitaban adjuntar suscripciones por sistema. Simple Content Access (SCA) simplifica la forma en que los sistemas acceden a los repositorios. Con SCA, los sistemas pueden acceder a cualquier repositorio desde cualquier suscripción que compre, sin adjuntar una suscripción. Puede habilitar SCA en el Portal del cliente de Red Hat dentro de Mis suscripciones › Asignaciones de suscripción o en su servidor Red Hat Satellite. El comando dnf config-manager puede habilitar y deshabilitar repositorios. Por ejemplo, el siguiente comando
+
+enables the rhel-10-for-x86_64-baseos-debug-rpms repository:
+root@host:~# dnf config-manager --enable rhel-10-for-x86_64-baseos-debug-rpms
+
+Configuración de repositorios DNF Puede configurar repositorios de Red Hat y de terceros actualizando manualmente un archivo de repositorio o utilizando la línea de comandos. Configuración manual Para configurar manualmente un repositorio DNF, puede crear un archivo .repo en el directorio /etc/yum.repos.d/, o
+
+you can add a [repository] section to the /etc/dnf/dnf.conf file. Red Hat recommends using .repo files, and
+
+reservando el archivo dnf.conf para configuraciones de repositorio adicionales. El comando dnf busca ambas ubicaciones por
+
+default; however, the .repo files take precedence. A .repo file contains the URL of the repository, a name, and
+
+si se deben utilizar claves GPG para verificar las firmas del paquete. Si se requieren claves GPG, el archivo .repo también incluye la URL para apuntar a la clave GPG confiable.
+
+
+
+
+
+6.5. Habilitación de la configuración de la línea de comandos de los repositorios de software DNF El comando dnf config-manager también puede agregar repositorios a la máquina. El siguiente comando crea un archivo .repo utilizando la URL de un repositorio existente.
+
+root@host:~# dnf config-manager \
+
+--add-repo="https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/" Actualización de repositorios de gestión de suscripciones. Agregando repositorio desde: https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/ El archivo .repo correspondiente es visible en el directorio /etc/yum.repos.d/:
+
+root@host:~# cd /etc/yum.repos.d
+root@host:/etc/yum.repos.d# cat \
+
+dl.fedoraproject.org_pub_epel_10_Everything_x86_64_.repo [dl.fedoraproject.org_pub_epel_10_Everything_x86_64_]
+
+name=created by dnf config-manager from https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/
+baseurl=https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/
+enabled=1
+
+Verificación de paquetes firmados El comando rpm utiliza claves GPG para firmar paquetes e importa claves públicas para verificar la integridad y autenticidad de los paquetes. El comando dnf utiliza archivos de configuración del repositorio para proporcionar las ubicaciones de las claves públicas GPG e importa las claves para verificar los paquetes. Las claves se almacenan en varias ubicaciones en el sitio del repositorio remoto, como
+
+https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10. Administrators should download the key
+
+a un archivo local en lugar de utilizar el comando dnf para recuperar la clave de una fuente externa. Por ejemplo, el siguiente archivo .repo utiliza el parámetro gpgkey para hacer referencia a una clave local: [EPEL]
+
+name=EPEL 10
+baseurl=https://dl.fedoraproject.org/pub/epel/10/Everything/x86_64/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-10
+
+Configuración de repositorios mediante paquetes RPM Para simplificar la instalación, algunos repositorios proporcionan un archivo de configuración y una clave pública GPG como parte de un paquete RPM. Puede importar la clave pública GPG utilizando el comando rpm --import. El comando dnf install puede descargar e instalar estos paquetes RPM. Por ejemplo, el siguiente ejemplo importa la clave pública GPG RPM-GPG-KEY-EPEL-10 (EPEL) e instala el RPM del repositorio de paquetes adicionales RHEL 10 para Enterprise Linux (EPEL):
+
+
+
+
+
+6.5. Habilitación de repositorios de software DNF
+
+user@host:~$ rpm --import \
+https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-10
+user@host:~$ dnf install \
+https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
+
+Advertencia Importe la clave GPG de RPM antes de instalar paquetes firmados para asegurarse de que los paquetes provengan de una fuente confiable. Si no se importa la clave RPM GPG, el comando dnf no puede instalar los paquetes firmados. La opción --nogpgcheck del comando dnf ignora las claves GPG que faltan, pero puede resultar en la instalación de paquetes comprometidos o falsificados. Los archivos .repo suelen enumerar varias referencias de repositorios en un solo archivo. Cada referencia del repositorio comienza con un nombre de una sola palabra entre corchetes.
+
+user@host:~$ cat /etc/yum.repos.d/epel.repo
+
+[epel]
+
+name=Extra Packages for Enterprise Linux $releasever - $basearch
+
+#baseurl=https://download.example/pub/epel/$releasever/Everything/$basearch/
+
+metalink=https://mirrors.fedoraproject.org/metalink?
+repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=1
+gpgcheck=1
+countme=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever
+
+...salida omitida... [fuente epel]
+
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Source
+
+#baseurl=https://download.example/pub/epel/$releasever/Everything/source/tree/
+
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-
+source-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever
+gpgcheck=1
+
+Para definir un repositorio, pero no buscarlo de forma predeterminada, inserte el parámetro enable=0. Aunque la configuración dnf-
+
+manager command persistently enables and disables repositories, the dnf command --enablerepo=PATTERN and -
+
+-disablerepo=Las opciones de PATRÓN habilitan y deshabilitan repositorios temporalmente mientras se ejecuta el comando. Referencias
+
+dnf(8), dnf.conf(5), and dnf-config-manager(8) man pages
+
+Para obtener más información, consulte la guía Administración de software con la herramienta DNF en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+único/software_de_administración_con_la_herramienta_dnf
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF 6.6. Ejercicio guiado Habilitar un repositorio de software DNF Configure un servidor para obtener paquetes de un repositorio DNF remoto y luego actualice o instale un paquete desde ese repositorio. Resultados Configurar un sistema para obtener actualizaciones de software desde un servidor del aula y actualizar el sistema para utilizar los paquetes más recientes. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-repo
+
+Instrucciones En este ejercicio guiado, configurará dos repositorios de software en el servidor una máquina. Primero instalas un paquete.
+
+from the custom repository at http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Software
+
+Los mantenedores luego le notifican sobre una actualización disponible para este paquete en el repositorio de erratas. Procedes a instalar
+
+the package from the errata repository: http://repo.example.com/rhel10.0/x86_64/rhcsa-
+
+práctica/erratas. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure la máquina del servidor para usar el repositorio personalizado en
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Disable GPG checking for this
+
+repositorio. 2. Utilice el comando dnf config-manager para agregar el repositorio de paquetes personalizados.
+
+[root@servera ~]# dnf config-manager \
+
+--add-repo "http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht" Añadiendo repositorio desde: http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht 2.1. Examine el archivo del repositorio de software para el repositorio personalizado en el directorio /etc/yum.repos.d. 2.2.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Habilitar un repositorio de software DNF
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF 6.6. Ejercicio guiado Habilitar un repositorio de software DNF Configure un servidor para obtener paquetes de un repositorio DNF remoto y luego actualice o instale un paquete desde ese repositorio. Resultados Configurar un sistema para obtener actualizaciones de software desde un servidor del aula y actualizar el sistema para utilizar los paquetes más recientes. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando lab para preparar su entorno para esto.
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-repo
+
+Instrucciones En este ejercicio guiado, configurará dos repositorios de software en el servidor una máquina. Primero instalas un paquete.
+
+from the custom repository at http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Software
+
+Los mantenedores luego le notifican sobre una actualización disponible para este paquete en el repositorio de erratas. Procedes a instalar
+
+the package from the errata repository: http://repo.example.com/rhel10.0/x86_64/rhcsa-
+
+práctica/erratas. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure la máquina del servidor para usar el repositorio personalizado en
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht. Disable GPG checking for this
+
+repositorio. 2. Utilice el comando dnf config-manager para agregar el repositorio de paquetes personalizados.
+
+[root@servera ~]# dnf config-manager \
+
+--add-repo "http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht" Añadiendo repositorio desde: http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht 2.1. Examine el archivo del repositorio de software para el repositorio personalizado en el directorio /etc/yum.repos.d. 2.2.
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF
+
+[root@servera ~]# cat \
+
+/etc/yum.repos.d/repo.example.com_rhel10.0_x86_64_rhcsa-practice_rht.repo [repo.example.com_rhel10.0_x86_64_rhcsa-practice_rht]
+
+name=created by dnf config-manager from http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht
+enabled=1
+
+Edite el archivo del repositorio personalizado y agregue el parámetro gpgcheck=0 para deshabilitar la verificación de la clave GPG para el repositorio. Simplifique los atributos de nombre e ID del repositorio. El archivo del repositorio debe coincidir con lo siguiente
+
+content:
+
+[derecha]
+
+name=Custom RHT repo
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/rht
+enabled=1
+gpgcheck=0
+
+Guarde y cierre el archivo cuando haya terminado. 2.3. Enumere el nuevo repositorio en el sistema.
+
+[root@servera ~]# dnf repolist rht
+
+ID del repositorio Nombre del repositorio Estado rht Repositorio RHT personalizado habilitado 2.4. Instale el paquete rht-system. 3. Enumere el paquete rht-system para asegurarse de que esté disponible.
+
+[root@servera ~]# dnf list rht-system
+
+Última verificación de vencimiento de metadatos: hace 0:00:03 el martes 7 de octubre a las 22:34:34 de 2025. Paquetes disponibles rht-system.noarch 1.0.0-1 rht 3.1. Instale el paquete rht-system.
+
+[root@servera ~]# dnf install rht-system
+
+Última verificación de vencimiento de metadatos: hace 0:01:06 el martes 7 de octubre a las 22:34:34 de 2025. Dependencias resueltas. ======================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ====================================================================================== Instalación: rht-system noarch 1.0.0-1 rht 3.7 k Resumen de transacciones ============================================================================================= Instalar 1 paquete Tamaño total de descarga: 3,7 k Tamaño instalado: 259 ¿Está bien? [s/N]: y Descargando paquetes: ...salida omitido... Instalado:
+
+  rht-system-1.0.0-1.noarch
+
+¡Completo! 3.2. Verifique que el paquete rht-system esté instalado y anote el número de versión del paquete. 3.3.
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF
+
+[root@servera ~]# dnf list rht-system
+
+Última verificación de vencimiento de metadatos: hace 0:03:46 el martes 7 de octubre a las 22:34:34 de 2025. Paquetes instalados rht-system.noarch 1.0.0-1 @rht Cree el archivo /etc/yum.repos.d/errata.repo desde cero para configurar el repositorio de erratas. 4. Utilice un editor de texto para crear el archivo de repositorio /etc/yum.repos.d/errata.repo con lo siguiente
+
+content:
+
+[erratas]
+
+name=Custom Errata
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata
+enabled=1
+gpgcheck=0
+
+Guarde y cierre el archivo cuando haya terminado. 4.1. Enumere todos los repositorios del sistema para verificar que el nuevo repositorio de erratas esté disponible.
+
+[root@servera ~]# dnf repolist all
+
+ID de repositorio Nombre de repositorio Estado de erratas Erratas personalizadas habilitadas rhel-10.0-for-x86_64-appstream-rpms Red Hat Enterprise Linux 10.0 AppStr habilitado rhel-10.0-for-x86_64-baseos-rpms Red Hat Enterprise Linux 10.0 BaseOS habilitado rht Repositorio RHT personalizado habilitado 4.2. Actualice todos los paquetes de software en la máquina del servidor.
+
+[root@servera ~]# dnf upgrade
+
+...salida omitida... Dependencias resueltas. ========================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ======================================================================================== Actualización: rht-system noarch 1.0.0-2 erratas 7.5 k Resumen de transacciones ================================================================================================== Paquete de actualización 1 Tamaño total de descarga: 7,5 k ¿Está bien? [y/N]: y ...salida omitida... ¡Completo! 4.3. Verifique que el paquete rht-system esté actualizado y anote el número de versión del paquete.
+
+[root@servera ~]# dnf list rht-system
+
+...salida omitida... Paquetes instalados rht-system.noarch 1.0.0-2 @errata 4.4. Deshabilite persistentemente los dos repositorios personalizados sin eliminar sus archivos de configuración. Verifica que ese sistema ya no los utilice. 5.
+
+
+
+
+
+6.6. Ejercicio guiado Habilitar un repositorio de software DNF Finalizar En la máquina de la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-repo
+[root@servera ~]# dnf config-manager --disable rht,errata
+[root@servera ~]# dnf repolist all
+
+ID del repositorio Nombre del repositorio Erratas del estado Erratas personalizadas deshabilitadas rhel-10.0-for-x86_64-appstream-rpms Red Hat Enterprise Linux 10.0 AppStream (dvd) habilitado rhel-10.0-for-x86_64-baseos-rpms Red Hat Enterprise Linux 10.0 BaseOS (dvd) habilitado rht Repositorio RHT personalizado deshabilitado Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM 6.7. Laboratorio de instalación y actualización de software con RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Resultados Administrar repositorios de software. Instalar y actualizar paquetes desde repositorios. Instale un paquete RPM. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade software-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. En la máquina del servidor, configure un repositorio de software personalizado para instalar paquetes específicos. Asigne un nombre a las erratas del repositorio y cree el archivo de repositorio errata.repo. Configure el archivo errata.repo para usar el
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata repository. Do not verify GPG
+
+firmas. 1. En la máquina del servidor, instale el paquete rht-system. 2. Por razones de seguridad, debe eliminar por completo todo el software relacionado con la impresión de la máquina del servidor. La desinstalación de estos paquetes elimina la funcionalidad de impresión. 3. El script de inicio de laboratorio descarga el paquete rhcsa-script-1.0.0-1.noarch.rpm en el directorio /root de la máquina del servidor. Confirme que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor e instálelo utilizando privilegios de root. Verifique que el paquete esté instalado. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Instalación de laboratorio y actualización de software con RPM
+
+6.7. Instalación de laboratorio y actualización de software con RPM 6.7. Laboratorio de instalación y actualización de software con RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Resultados Administrar repositorios de software. Instalar y actualizar paquetes desde repositorios. Instale un paquete RPM. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade software-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. En la máquina del servidor, configure un repositorio de software personalizado para instalar paquetes específicos. Asigne un nombre a las erratas del repositorio y cree el archivo de repositorio errata.repo. Configure el archivo errata.repo para usar el
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata repository. Do not verify GPG
+
+firmas. 1. En la máquina del servidor, instale el paquete rht-system. 2. Por razones de seguridad, debe eliminar por completo todo el software relacionado con la impresión de la máquina del servidor. La desinstalación de estos paquetes elimina la funcionalidad de impresión. 3. El script de inicio de laboratorio descarga el paquete rhcsa-script-1.0.0-1.noarch.rpm en el directorio /root de la máquina del servidor. Confirme que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor e instálelo utilizando privilegios de root. Verifique que el paquete esté instalado. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM
+
+student@workstation:~$ lab finish software-review
+
+
+
+
+
+6.7. Laboratorio de instalación y actualización de software con solución RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Resultados Administrar repositorios de software. Instalar y actualizar paquetes desde repositorios. Instale un paquete RPM. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-review
+
+Instrucciones En la máquina del servidor, configure un repositorio de software personalizado para instalar paquetes específicos. Asigne un nombre a las erratas del repositorio y cree el archivo de repositorio errata.repo. Configure el archivo errata.repo para usar el
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata repository. Do not verify GPG
+
+firmas. 1. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Cree el archivo /etc/yum.repos.d/errata.repo con el siguiente contenido: [errata]
+
+name=Custom Errata Repository
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata
+enabled=1
+gpgcheck=0
+
+1.2. En la máquina del servidor, instale el paquete rht-system. 2. Enumere el paquete rht-system para asegurarse de que esté disponible.
+
+[root@serverb ~]# dnf list rht-system
+
+... salida omitida... Última verificación de vencimiento de metadatos: hace 0:00:39 el viernes 13 de junio a las 00:18:19 de 2025. Paquetes disponibles rht-system.noarch 1.0.0-2 erratas 2.1. Instale la última versión del paquete rht-system. 2.2.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM
+
+[root@serverb ~]# dnf install rht-system
+
+...salida omitida... Dependencias resueltas. ========================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ========================================================================================== Instalación: rht-system noarch 1.0.0-2 erratas 7.5 k Resumen de transacciones ================================================================================================= Instalar 1 paquete Tamaño total de descarga: 7,5 k Tamaño instalado: 300 ¿Está bien? [s/n]: y ... salida omitida... ¡Completo! Por razones de seguridad, debe eliminar por completo todo el software relacionado con la impresión de la máquina del servidor. La desinstalación de estos paquetes elimina la funcionalidad de impresión. 3. Enumere el paquete de tazas instalado.
+
+[root@serverb ~]# dnf list cups
+
+...salida omitida... Paquetes instalados
+
+cups.x86_64        1:2.4.10-11.el10         @rhel-10.0-for-x86_64-appstream-rpms
+
+3.1. Retire el paquete de tazas y sus dependencias.
+
+[root@serverb ~]# dnf remove cups.x86_64
+
+Dependencias resueltas. ========================================================================================== Paquete Versión Arch Tamaño del repositorio ================================================================================== Eliminando:
+
+ cups        x86_64 1:2.4.10-11.el10 @rhel-10.0-for-x86_64-appstream-rpms 8.1 M
+
+Eliminación de dependencias no utilizadas: adobe-mappings-cmap
+
+             noarch 20230622-5.el10  @rhel-10.0-for-x86_64-appstream-rpms  14 M
+
+...salida omitida... Resumen de transacción ================================================================================================= Quitar 55 paquetes Espacio liberado: 114 M ¿Está bien? [s/N]: y ...salida omitida... ¡Completo! 3.2. El script de inicio de laboratorio descarga el paquete rhcsa-script-1.0.0-1.noarch.rpm en el directorio /root de la máquina del servidor. Confirme que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor e instálelo utilizando privilegios de root. Verifique que el paquete esté instalado. 4. Verifique que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor. 4.1.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con evaluación RPM Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+[root@serverb ~]# rpm -q -p -i ~/rhcsa-script-1.0.0-1.noarch.rpm
+
+Nombre: rhcsa-script Versión: 1.0.0 Versión: 1 Arquitectura: noarch Fecha de instalación: (no instalado) Grupo: Tamaño del sistema: 593 Licencia: GPL Firma: (ninguna) RPM de origen: rhcsa-script-1.0.0-1.src.rpm Fecha de compilación: miércoles 23 de marzo 12:24:21 2022 Host de compilación: localhost Empaquetador: Bernardo Gargallo URL: http://example.com Resumen: Guión de práctica de RHCSA Descripción: Un guión de práctica de RHCSA. El paquete cambia el motd. Instale el paquete rhcsa-script-1.0.0-1.noarch.rpm.
+
+[root@serverb ~]# dnf install ~/rhcsa-script-1.0.0-1.noarch.rpm
+
+...salida omitida... Dependencias resueltas. ========================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ========================================================================================= Instalación: rhcsa-script noarch 1.0.0-1 @commandline 7.5 k Resumen de transacciones ================================================================================================ Instalar 1 paquete Tamaño total: 7,5 k Tamaño instalado: 593 ¿Está bien? [s/N]: y ... salida omitida... ¡Completo! 4.2. Verifique que el paquete esté instalado.
+
+[root@serverb ~]# rpm -q rhcsa-script
+
+rhcsa-script-1.0.0-1.noarch [root@serverb ~]# 4.3. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM
+
+student@workstation:~$ lab grade software-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-review
+
+
+
+
+
+6.8. Resumen 6.8. Resumen En esta lección, aprendió a administrar software utilizando la herramienta rpm para el manejo de paquetes y la herramienta dnf para la administración avanzada de software, que incluye la descarga, instalación y actualización de paquetes RPM. El software RHEL está empaquetado en formato de archivo RPM y distribuido en repositorios. Puede instalar, actualizar o eliminar software utilizando las herramientas rpm y dnf. El comando rpm le permite consultar la base de datos RPM local y administrar los paquetes descargados. La utilidad dnf es una poderosa herramienta para administrar paquetes de software para instalar, actualizar, eliminar y consultar paquetes de repositorios configurados. También aprendió que Red Hat Enterprise Linux proporciona los repositorios BaseOS y Application Stream (AppStream). BaseOS proporciona el contenido principal del sistema operativo y AppStream proporciona una variedad de dependencias y paquetes de aplicaciones.
+
+
+
+
+
+
+
+## Resumen
+
+6.8. Resumen 6.8. Resumen En esta lección, aprendió a administrar software utilizando la herramienta rpm para el manejo de paquetes y la herramienta dnf para la administración avanzada de software, que incluye la descarga, instalación y actualización de paquetes RPM. El software RHEL está empaquetado en formato de archivo RPM y distribuido en repositorios. Puede instalar, actualizar o eliminar software utilizando las herramientas rpm y dnf. El comando rpm le permite consultar la base de datos RPM local y administrar los paquetes descargados. La utilidad dnf es una poderosa herramienta para administrar paquetes de software para instalar, actualizar, eliminar y consultar paquetes de repositorios configurados. También aprendió que Red Hat Enterprise Linux proporciona los repositorios BaseOS y Application Stream (AppStream). BaseOS proporciona el contenido principal del sistema operativo y AppStream proporciona una variedad de dependencias y paquetes de aplicaciones.
+
+
+
+
+
+Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak Objetivo Instalar, actualizar y utilizar software de escritorio del catálogo de ecosistemas de Red Hat mediante Flatpak. Secciones Configuración de Flatpak para la instalación de aplicaciones (y ejercicio guiado) Administración de aplicaciones desde Flatpak (y ejercicio guiado) Instalación y actualización de aplicaciones mediante Flatpak (cuestionario)
+
+
+
+
+

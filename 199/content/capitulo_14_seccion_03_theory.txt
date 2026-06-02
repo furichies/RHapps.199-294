@@ -1,0 +1,226 @@
+# 11.3. Edición de archivos de configuración de red
+# Tipo: theory
+# Capítulo: Capítulo 11. Gestión de la configuración de red
+
+11.3. Edición de archivos de configuración de red 11.3. Edición de archivos de configuración de red Objetivos Modificar la configuración de red editando archivos de configuración. Archivos de configuración de conexión Como alternativa al uso del comando nmcli, puede configurar redes editando directamente los archivos de configuración de conexión. Aunque el comando nmcli es el método preferido para la gestión de perfiles, puede crear o modificar manualmente estos archivos de configuración. Esta alternativa es especialmente útil cuando planeas utilizar archivos de configuración iguales o similares para varios servidores. Los perfiles de conexión de NetworkManager se almacenan en el directorio /etc/NetworkManager/system-connections/. Estos archivos utilizan la sintaxis de archivo de claves, que reemplaza el formato ifcfg obsoleto. Cuando agrega o modifica conexiones mediante el comando nmcli, esos cambios también se almacenan persistentemente en este directorio como archivos que terminan con la extensión .nmconnection. Después de cualquier edición manual, debe utilizar el comando nmcli con reload para recargar los archivos de configuración e informar a NetworkManager de los cambios. Para aplicar los cambios, debe activar manualmente la conexión mediante el comando nmcli con up. Sintaxis de archivos de claves NetworkManager emplea una sintaxis de archivos de claves de estilo INI para sus perfiles de conexión de red. Los elementos de configuración están estructurados en secciones (grupos), y cada configuración se representa como un par clave-valor dentro de estos grupos. Esta sintaxis de configuración ofrece beneficios de legibilidad, como especificar direcciones IP como 192.168.0.1/24 en lugar de matrices de enteros menos intuitivas. La siguiente tabla muestra algunos comandos nmcli junto con sus configuraciones equivalentes en el archivo *.nmconnection. Tabla 16. Comparación de la configuración de NetworkManager y la sintaxis del archivo de claves ipv4.method manual [ipv4]
+
+method=manual
+
+Configure direcciones IPv4 de forma estática. ipv4.método automático [ipv4]
+
+method=auto
+
+Obtenga los ajustes de configuración de un servidor DHCPv4.
+
+nmcli con mod
+
+*.nmefecto de archivo de conexión
+
+
+
+
+
+11.3. Edición de archivos de configuración de red ipv4.addresses 192.0.2.1/24 [ipv4]
+
+address1=192.0.2.1/24
+
+Establezca una dirección IPv4 estática y un prefijo de red. Incremente el índice según sea necesario cuando tenga más direcciones IP para configurar. Por ejemplo, utilice dirección2 para definir la dirección IP secundaria. ipv4.puerta de enlace 192.0.2.254 [ipv4]
+
+gateway=192.0.2.254
+
+Configure la puerta de enlace predeterminada. ipv4.dns 8.8.8.8 [ipv4]
+
+dns=8.8.8.8
+
+Modifique /etc/resolv.conf para usar este servidor de nombres. ipv4.dns-búsqueda ejemplo.com [ipv4]
+
+dns-search=example.com
+
+Modifique /etc/resolv.conf para usar este dominio en la directiva de búsqueda. ipv4.ignore-auto-dns verdadero [ipv4]
+
+ignore-auto-dns=true
+
+Ignore la información del servidor DNS del servidor DHCP. manual del método ipv6 [ipv6]
+
+method=manual
+
+Configure direcciones IPv6 de forma estática. ipv6.método automático [ipv6]
+
+method=auto
+
+Configure los ajustes de red con SLAAC a partir de anuncios de enrutadores. ipv6.método dhcp [ipv6]
+
+method=dhcp
+
+Configure los ajustes de red mediante DHCPv6, pero no mediante SLAAC. direcciones ipv6 2001:db8::a/64 [ipv6]
+
+address1=2001:db8::a/64
+
+Establezca una dirección IPv6 estática y un prefijo de red. Cuando se utiliza más de una dirección para una conexión, la clave de dirección2 define la segunda dirección y la clave de dirección3 define la tercera dirección.
+
+nmcli con mod
+
+*.nmefecto de archivo de conexión
+
+
+
+
+
+11.3. Edición de archivos de configuración de red
+
+ipv6.gateway 2001:db8::1
+
+[ipv6]
+
+gateway=2001:db8::1
+
+Configure la puerta de enlace predeterminada. ipv6.dns
+
+fde2:6494:1e09:2::d
+
+[ipv6]
+
+dns=fde2:6494:1e09:2::d
+
+Modifique /etc/resolv.conf para usar este servidor de nombres. ipv6.dns-búsqueda ejemplo.com [ipv6]
+
+dns-search=example.com
+
+Modifique /etc/resolv.conf para usar este dominio en la directiva de búsqueda. ipv6.ignore-auto-dns verdadero [ipv6]
+
+ignore-auto-dns=true
+
+Ignore la información del servidor DNS del servidor DHCP. conexión.autoconexión sí [conexión]
+
+autoconnect=true
+
+Active automáticamente esta conexión al arrancar. conexión.id ens3 [conexión]
+
+id=Main eth0
+
+Establezca el nombre de la conexión. conexión.nombre-interfaz ens3 [conexión]
+
+interface-name=ens3
+
+Asigne una conexión a una interfaz específica. Dirección 802-3-ethernet.mac 00:1A:2B:3C:4D:5E [802-3-ethernet]
+
+mac-address=
+
+00:1A:2B:3C:4D:5E Asocia la conexión con una dirección MAC específica. Ubicaciones de los archivos de configuración Los archivos de configuración de conexión, que se encuentran en el directorio /etc/NetworkManager/system-connections/, normalmente se denominan nombre.nmconnection, donde nombre corresponde al dispositivo o conexión que controla. NetworkManager organiza sus archivos de configuración en los siguientes directorios: /etc/NetworkManager/system-connections/ Este directorio contiene perfiles de conexión persistentes que los usuarios han creado o modificado. /run/NetworkManager/system-connections/ Este directorio almacena perfiles temporales. Estos perfiles se eliminan automáticamente al reiniciar el sistema.
+
+nmcli con mod
+
+*.nmefecto de archivo de conexión
+
+
+
+
+
+11.3. Edición de archivos de configuración de red /usr/lib/NetworkManager/system-connections/ Este directorio contiene perfiles de conexión preconfigurados e inmutables. Ejemplos de edición de archivos de configuración El siguiente archivo de muestra configura una conexión IPv4 estática: [conexión]
+
+id=Wired connection 1
+uuid=27afa607-ee36-43f0-b8c3-9d245cdc4bb3
+type=ethernet
+autoconnect=true
+interface-name=ens4
+
+[ethernet]
+
+mac-address=00:1A:2B:3C:4D:5E
+
+[ipv4]
+
+method=manual
+address1=172.25.0.10/24
+gateway=172.25.0.254
+dns=172.25.254.254
+dns-search=example.com
+
+Para mayor especificidad, la conexión puede incluir la dirección MAC, pero no es obligatorio. En el siguiente escenario, imagine que desea cambiar permanentemente la dirección IP de la conexión static-ens4 de 172.24.250.30 a 172.24.250.40. Para realizar esta tarea editando directamente el archivo de conexión, debe realizar el cambio utilizando un editor de texto, recargar la conexión y luego reactivarla. Primero, verifique la configuración actual de la interfaz. Inicialmente, los comandos ip y nmcli muestran la dirección IP activa 172.25.250.30. Tenga en cuenta que el comando ip muestra información de red en tiempo real, mientras que el comando nmcli con show muestra la configuración persistente que se utiliza durante el inicio del sistema.
+
+root@host:~# ip -4 -br addr show dev ens4
+
+ens4 ARRIBA 172.24.250.30/24
+
+root@host:~# nmcli -f ipv4.addresses con show static-ens4
+ipv4.addresses:                         172.24.250.30/24
+
+A continuación, edite el archivo de conexión para cambiar permanentemente la información de la dirección IP. Para abreviar, este ejemplo usa el editor de flujo sed, aunque puedes usar cualquier editor de texto.
+
+root@host:~# sed -i 's/172.24.250.30/172.24.250.40/' \
+
+/etc/NetworkManager/system-connections/static-ens4.nmconnection Para aplicar los cambios del archivo de conexión, use el comando nmcli con reload para indicarle a NetworkManager que
+
+reload the connection:
+root@host:~# nmcli con reload
+
+Después de recargar, el comando nmcli con show muestra la nueva dirección IP, pero el comando ip aún muestra la dirección original en la configuración de tiempo de ejecución actual.
+
+
+
+
+
+11.3. Edición de archivos de configuración de red
+
+root@host:~# nmcli -f ipv4.addresses con show static-ens4
+ipv4.addresses:                         172.24.250.40/24
+root@host:~# ip -4 -br addr show dev ens4
+
+ens4 UP 172.24.250.30/24 Para ver la nueva dirección IP en la configuración del tiempo de ejecución, se debe reactivar la conexión usando nmcli con
+
+up command:
+root@host:~# nmcli con up static-ens4
+
+Conexión activada exitosamente (ruta activa D-Bus: /org/freedesktop/NetworkManager/ActiveConnection/11)
+
+root@host:~# ip -4 -br addr show dev ens4
+
+ens4 UP 172.24.250.40/24 Referencias
+
+nmcli(1), nm-settings(5), and nm-settings-keyfile(5) man page
+
+Para obtener más información, consulte el capítulo Creación manual de un perfil de NetworkManager en formato de archivo de claves en la guía Configuración y administración de redes en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/configuring_and_managing_networking/index#creación-manual-de-un-perfil-de-networkmanager-en-keyfile-format
+
+
+
+
+
+11.4. Ejercicio guiado Editar archivos de configuración de red 11.4. Ejercicio guiado Editar archivos de configuración de red Modifique la configuración de red editando archivos de configuración. Resultados Configure direcciones de red adicionales en cada sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su sistema para esto
+
+exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-edit
+
+Instrucciones Los nombres de las interfaces de red están determinados por su tipo de bus y el orden de detección de los dispositivos durante el arranque. Los nombres de sus interfaces de red pueden variar según la plataforma del curso y el hardware en uso. En su sistema, ubique el nombre de la interfaz de red (como eth1, ens06 o enp0p2) que está asociado con la dirección Ethernet 52:54:00:01:fa:1e. Utilice este nombre de interfaz para reemplazar el marcador de posición ens4 a lo largo de este ejercicio si es diferente. En la máquina del servidor, muestre la lista de interfaces de red en su sistema usando el comando ip. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. Muestre la lista de interfaces de red en su sistema usando el comando ip. Localice el nombre de la interfaz de red asociada con la dirección Ethernet 52:54:00:01:fa:1e. Registre o recuerde este nombre y utilícelo para reemplazar el marcador de posición ens4 en comandos posteriores.
+
+[student@servera ~]$ ip link
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state Modo DESCONOCIDO DEFAULT grupo predeterminado qlen 1000
+
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:00:fa:0a brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname enx52540000fa0a
+
+3: ens4: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8942 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:01:fa:1e brd ff:ff:ff:ff:ff:ff
+    altname enp0s4
+    altname enx52540001fa1e
+
+1.2. Vea las conexiones de red actuales utilizando el comando nmcli. 2.
+
+
+
+
+

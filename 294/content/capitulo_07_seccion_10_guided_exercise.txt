@@ -1,0 +1,307 @@
+# Ejercicio Guiado: Reutilización de contenido con roles de sistema
+# Tipo: guided_exercise
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Reutilización de contenido con roles de
+sistema
+Usar uno de los roles de sistema junto con tareas para configurar la sincronización temporal y
+la zona horaria de los hosts gestionados.
+Resultados
+• Instalar los roles de sistema de Red Hat Enterprise Linux.
+• Buscar y usar la documentación de roles de sistema.
+• Usar el rol redhat.rhel_system_roles.timesync en un playbook para configurar la
+sincronización temporal en hosts remotos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-system
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-system.
+[student@workstation ~]$ cd ~/role-system
+[student@workstation role-system]$
+ 2.
+Instale los roles del sistema en su nodo de control, workstation.lab.example.com.
+Confirme que los roles del sistema se hayan instalado mediante ansible-galaxy.
+2.1.
+Use el comando ansible-galaxy collection list para mostrar las
+colecciones instaladas.
+[student@workstation role-system]$ ansible-galaxy collection list
+2.2.
+Cree el directorio collections.
+[student@workstation role-system]$ mkdir -p collections
+2.3.
+El directorio ./collections no es una ubicación de búsqueda predeterminada para
+las colecciones. Agregue la clave collections_paths al archivo ansible.cfg, de
+modo que se busque en el directorio ./collections.
+RH294-RHEL9.0-es-3-20240620
+341
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[defaults]
+inventory=./inventory
+remote_user=devops
+collections_paths=./collections:~/.ansible/collections:/usr/share/ansible/collections
+2.4.
+Use el comando ansible-galaxy para instalar la colección
+redhat.rhel_system_roles desde el tarball provisto.
+[student@workstation role-system]$ ansible-galaxy collection \
+> install -p collections/ redhat-rhel_system_roles-1.19.3.tar.gz
+Process install dependency map
+Starting collection install process
+Installing 'redhat.rhel_system_roles:1.19.3' to '/home/student/role-system/
+collections/ansible_collections/redhat/rhel_system_roles'
+redhat.rhel_system_roles:1.19.3 was installed successfully
+2.5.
+Use el comando ansible-galaxy collection list para verificar que los roles
+del sistema ahora estén disponibles.
+[student@workstation role-system]$ ansible-galaxy collection list
+# /home/student/role-system/collections/ansible_collections
+Collection               Version
+------------------------ -------
+redhat.rhel_system_roles 1.19.3
+ 3.
+Cree el playbook configure_time.yml con un play que se dirija al grupo de hosts
+database_servers y ejecute el rol redhat.rhel_system_roles.timesync en su
+sección roles.
+---
+- name: Time Synchronization
+  hosts: database_servers
+  roles:
+    - redhat.rhel_system_roles.timesync
+ 4.
+La documentación del rol contiene una descripción de cada variable del rol, incluido el valor
+predeterminado de la variable. Determine las variables de rol que debe anular para cumplir
+con los requisitos de sincronización temporal.
+Coloque los valores de las variables de rol en un archivo denominado timesync.yml.
+Debido a que los valores de estas variables se aplican a todos los hosts del inventario,
+coloque el archivo timesync.yml en el subdirectorio group_vars/all.
+4.1.
+Consulte la sección Variables de rol del archivo README.md para conocer el rol
+redhat.rhel_system_roles.timesync.
+[student@workstation role-system]$ cat \
+> collections/ansible_collections/redhat/rhel_system_roles/roles/timesync/README.md
+...output omitted...
+Role Variables
+342
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+--------------
+...output omitted...
+# List of NTP servers
+timesync_ntp_servers:
+  - hostname: foo.example.com   # Hostname or address of the server
+    minpoll: 4                  # Minimum polling interval (default 6)
+    maxpoll: 8                  # Maximum polling interval (default 10)
+    iburst: yes                 # Flag enabling fast initial synchronization
+                                # (default no)
+    pool: no                    # Flag indicating that each resolved address
+                                # of the hostname is a separate NTP server
+                                # (default no)
+...output omitted...
+# Name of the package which should be installed and configured for NTP.
+# Possible values are "chrony" and "ntp". If not defined, the currently active
+# or enabled service will be configured. If no service is active or enabled, a
+# package specific to the system and its version will be selected.
+timesync_ntp_provider: chrony
+...output omitted...
+4.2.
+Cree el subdirectorio group_vars/all.
+[student@workstation role-system]$ mkdir -pv group_vars/all
+mkdir: created directory 'group_vars'
+mkdir: created directory 'group_vars/all'
+4.3.
+Cree un archivo group_vars/all/timesync.yml, agregue definiciones de
+variables para satisfacer los requisitos de sincronización temporal. El archivo ahora
+contiene lo siguiente:
+---
+#redhat.rhel_system_roles.timesync variables for all hosts
+timesync_ntp_provider: chrony
+timesync_ntp_servers:
+  - hostname: classroom.example.com
+    iburst: yes
+ 5.
+Agregue dos tareas al archivo configure_time.yml para obtener y establecer
+condicionalmente la zona horaria para cada host. Asegúrese de que ambas tareas se
+ejecuten después del rol redhat.rhel_system_roles.timesync.
+Debido a que los hosts no pertenecen a la misma zona horaria, use una variable
+(host_timezone) para el nombre de la zona horaria.
+5.1.
+Cree una sección post_tasks en el playbook configure_time.yml y, luego,
+agregue la primera tarea.
+RH294-RHEL9.0-es-3-20240620
+343
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+  post_tasks:
+    - name: Get time zone
+      ansible.builtin.command: timedatectl show
+      register: current_timezone
+      changed_when: false
+5.2.
+Agregue una segunda tarea para establecer la zona horaria, pero solo cuando la zona
+horaria sea incorrecta. Dado que el registro del sistema y otros servicios usan la zona
+horaria del sistema, reinicie cada host cuando se modifique la zona horaria. Agregue
+una palabra clave notify a la tarea, con un valor asociado de reboot host. La
+sección post_tasks del play debe decir:
+    - name: Set time zone
+      ansible.builtin.command: "timedatectl set-timezone {{ host_timezone }}"
+      when: host_timezone not in current_timezone.stdout
+      notify: reboot host
+5.3.
+Agregue el manejador reboot host al play Time Synchronization. El playbook
+completo ahora contiene lo siguiente:
+---
+- name: Time Synchronization
+  hosts: database_servers
+  roles:
+    - redhat.rhel_system_roles.timesync
+  post_tasks:
+    - name: Get time zone
+      ansible.builtin.command: timedatectl show
+      register: current_timezone
+      changed_when: false
+    - name: Set time zone
+      ansible.builtin.command: "timedatectl set-timezone {{ host_timezone }}"
+      when: host_timezone not in current_timezone.stdout
+      notify: reboot host
+  handlers:
+    - name: reboot host
+      ansible.builtin.reboot:
+ 6.
+Para cada centro de datos, cree un archivo llamado timezone.yml con un valor apropiado
+para la variable host_timezone. Use el comando timedatectl list-timezones para
+encontrar la cadena de zona horaria válida para cada centro de datos.
+6.1.
+Cree los subdirectorios group_vars para los grupos de hosts na_datacenter y
+europe_datacenter.
+344
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+[student@workstation role-system]$ mkdir -pv \
+> group_vars/{na_datacenter,europe_datacenter}
+mkdir: created directory 'group_vars/na_datacenter'
+mkdir: created directory 'group_vars/europe_datacenter'
+6.2.
+Use el comando timedatectl list-timezones para determinar la zona horaria
+para los centros de datos de EE. UU. y Europa:
+[student@workstation role-system]$ timedatectl list-timezones | grep Chicago
+America/Chicago
+[student@workstation role-system]$ timedatectl list-timezones | grep Helsinki
+Europe/Helsinki
+6.3.
+Cree el timezone.yml para ambos centros de datos:
+[student@workstation role-system]$ echo "host_timezone: America/Chicago" > \
+> group_vars/na_datacenter/timezone.yml
+[student@workstation role-system]$ echo "host_timezone: Europe/Helsinki" > \
+> group_vars/europe_datacenter/timezone.yml
+ 7.
+Ejecute el playbook configure_time.yml.
+7.1.
+Use el comando ansible-navigator run --syntax-check para validar la
+sintaxis del playbook.
+[student@workstation role-system]$ ansible-navigator run \
+> -m stdout configure_time.yml --syntax-check
+playbook: /home/student/role-system/configure_time.yml
+7.2.
+Ejecute el playbook configure_time.yml.
+[student@workstation role-system]$ ansible-navigator run \
+> -m stdout configure_time.yml
+PLAY [Time Synchronization] **************************************************
+TASK [Gathering Facts] *******************************************************
+ok: [serverb.lab.example.com]
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.timesync : Set version specific variables] ****
+...output omitted...
+TASK [redhat.rhel_system_roles.timesync : Enable timemaster] *****************
+skipping: [servera.lab.example.com]
+skipping: [serverb.lab.example.com]
+RUNNING HANDLER [redhat.rhel_system_roles.timesync : restart chronyd] ********
+changed: [servera.lab.example.com]
+changed: [serverb.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+345
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [Get time zone] *********************************************************
+ok: [servera.lab.example.com]
+ok: [serverb.lab.example.com]
+TASK [Set time zone] *********************************************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+RUNNING HANDLER [reboot host] ************************************************
+changed: [serverb.lab.example.com]
+changed: [servera.lab.example.com]
+PLAY RECAP *******************************************************************
+servera.lab.example.com    : ok=18   changed=6    unreachable=0    failed=0   
+ skipped=25   rescued=0    ignored=0
+serverb.lab.example.com    : ok=18   changed=6    unreachable=0    failed=0   
+ skipped=25   rescued=0    ignored=0
+ 8.
+Verifique la configuración de zona horaria de cada servidor. Use los siguientes comandos
+para ver la salida del comando date en las máquinas servera y serverb.
+nota
+Las zonas horarias reales enumeradas variarán según la época del año y si el horario
+de verano está activo.
+[student@workstation role-system]$ ssh servera date
+Tue Aug 16 07:43:33 PM CDT 2022
+[student@workstation role-system]$ ssh serverb date
+Wed Aug 17 03:43:41 AM EEST 2022
+Cada servidor tiene una configuración de zona horaria basada en su ubicación geográfica.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-system
+346
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Trabajo de laboratorio
+Simplificación de playbooks con roles y
+Ansible Content Collections
+Crear roles de Ansible que usan variables, archivos, plantillas, tareas y manejadores.
+Resultados
+• Cree roles de Ansible que usen variables, archivos, plantillas, tareas y manejadores para
+configurar un servidor web de desarrollo.
+• En un playbook, use un rol que esté alojado en un repositorio remoto.
+• Use un rol de sistema de Red Hat Enterprise Linux en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-review
+Instrucciones
+Su organización debe proporcionar un único servidor web para alojar el código de desarrollo para
+todos los desarrolladores web. Tiene la tarea de escribir un playbook para configurar este servidor
+web de desarrollo.
+El servidor web de desarrollo debe cumplir varios requisitos:
+• La configuración del servidor de desarrollo debe coincidir con la configuración del servidor de
+producción. El servidor de producción se debe configurar mediante un rol Ansible, desarrollado
+por el equipo de infraestructura de la organización.
+• Cada desarrollador recibe un directorio en el servidor de desarrollo para alojar el código y el
+contenido. Se accede al contenido de cada desarrollador con un puerto asignado no estándar.
+• SELinux está configurado en modo de ejecución y está usando la política de destino.
+Su playbook debe:
+• Usar un rol para configurar directorios y puertos para cada desarrollador del servidor web. Debe
+escribir este rol.
+Este rol depende de un rol para configurar Apache que fue escrito por su organización. Debe
+especificar la versión v1.4 del rol para definir la dependencia. La URL del repositorio de Git de
+la dependencia es: git@workstation.lab.example.com:infra/apache.
+RH294-RHEL9.0-es-3-20240620
+347
+
+

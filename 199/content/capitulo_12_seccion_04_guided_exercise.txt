@@ -1,0 +1,140 @@
+# Ejercicio Guiado: Ejercicio guiado Gestionar procesos con control de trabajos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos 9.4. Ejercicio guiado Administrar procesos con control de trabajos Controle los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Resultados Utilice el control de trabajos para suspender y reiniciar procesos de usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-control
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estas dos terminales se denominan izquierda y derecha. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado control en el directorio /home/student/bin. Cambie los permisos del script para que sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree un archivo llamado control en el directorio /home/student/bin con el siguiente contenido: #!/bin/bash
+
+while true; do
+  echo -n "$@ " >> ~/control_outfile
+  sleep 1
+
+done El script de control agrega argumentos de línea de comandos al archivo ~/control_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso. 2.2. Haga que el archivo de control sea ejecutable.
+
+[student@servera ~]$ chmod +x /home/student/bin/control
+
+2.3. Ejecute el script de control. El script agrega continuamente la palabra "técnico" y un espacio al archivo ~/control_outfile en intervalos de un segundo. 3.
+
+
+
+
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos
+
+[student@servera ~]$ control technical
+
+En el shell del terminal derecho, verifique que el nuevo proceso esté escribiendo en el archivo /home/student/control_outfile. Mantenga el comando tail ejecutándose para verificar los estados de salida en los pasos siguientes.
+
+[student@servera ~]$ tail -f ~/control_outfile
+
+técnico técnico técnico técnico ...salida omitida... 4. Suspenda el proceso en ejecución y confirme que el proceso esté detenido. 5. En el terminal izquierdo, presione Ctrl+Z para suspender el proceso en ejecución. El shell devuelve el ID del trabajo entre corchetes. ^Z [1]+ Control técnico detenido [estudiante@servera ~]$ 5.1. En el shell del terminal derecho, confirme que la salida del proceso esté detenida. técnico técnico técnico técnico ...sin más salida... 5.2. Reinicie el trabajo en segundo plano y verifique que el proceso esté activo nuevamente. 6. En el terminal izquierdo, use el comando jobs para ver la lista de trabajos y recuperar el número de trabajo.
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido El signo más (+) indica el trabajo predeterminado. 6.1. Utilice el comando bg para reiniciar el trabajo de control en segundo plano.
+
+[student@servera ~]$ bg
+
+[1]+ control técnico & 6.2. Utilice el comando jobs para verificar que el trabajo de control se esté ejecutando nuevamente.
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico de ejecución & 6.3. En el shell del terminal derecho, confirme que el comando tail esté generando resultados. ...salida omitida... técnico técnico técnico técnico técnico técnico técnico técnico 6.4. En el shell del terminal izquierdo, inicie dos procesos de control más para agregarlos al archivo ~/output. Utilice el operador comercial (&) para iniciar los procesos en segundo plano. Reemplace el argumento técnico con documentos y luego con base de datos. Reemplazar los argumentos ayuda a diferenciar entre los tres procesos. 7.
+
+
+
+
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos
+
+[student@servera ~]$ control documents &
+
+[2] 6579
+
+[student@servera ~]$ control database &
+
+[3] 6654 Verifique que los tres procesos se estén ejecutando. 8. En el shell del terminal izquierdo, use el comando jobs para ver los tres procesos en ejecución.
+
+[student@servera ~]$ jobs
+
+[1] Control técnico de ejecución y [2]- Documentos de control de ejecución y [3]+ Base de datos de control de ejecución y 8.1. En el shell del terminal derecho, verifique que los tres procesos se agreguen al archivo. ...salida omitida... base de datos de documentos técnicos base de datos de documentos técnicos base de datos de documentos técnicos base de datos de documentos técnicos ...salida omitida... 8.2. Suspender el proceso técnico de control, y confirmar que se encuentra suspendido. 9. En la carcasa del terminal izquierdo, coloque en primer plano el proceso técnico de control. Presione Ctrl+Z para suspender el proceso. Verificar que el proceso esté suspendido.
+
+[student@servera ~]$ fg %1
+
+control técnico ^Z [1]+ control técnico detenido
+
+[student@servera ~]$ jobs
+
+[1]+ Técnico de control detenido [2] Documentos de control en ejecución & [3]- Base de datos de control en ejecución & 9.1. En el shell del terminal derecho, verifique que el proceso técnico de control ya no envíe resultados. base de datos documentos base de datos documentos base de datos ...no hay más resultados... 9.2. Terminar el proceso de documentos de control y verificar que esté terminado. 10. En el terminal izquierdo, ejecute el proceso de documentos de control en primer plano. Presione Ctrl+C para finalizar el proceso. Verifique que el proceso haya finalizado.
+
+[student@servera ~]$ fg %2
+
+documentos de control ^C
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido [3]- Base de datos de control en ejecución & 10.1. En el shell del terminal derecho, verifique que el proceso de documentos de control ya no envíe resultados. 10.2.
+
+
+
+
+
+9.4. Ejercicio guiado Administrar procesos con control de trabajos Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish processes-control
+
+...salida omitida... base de datos base de datos base de datos base de datos base de datos base de datos base de datos base de datos ...no hay más resultados... En el shell del terminal izquierdo, vea los trabajos restantes. Los trabajos suspendidos tienen un estado de T. Los otros trabajos en segundo plano están inactivos y tienen un estado de S.
+
+[student@servera ~]$ ps jT
+
+PPID PID PGID ... STAT ... COMANDO 14783 14784 14784 ... Ss ... -bash 14784 14977 14977 ... T ... /bin/bash /home/student/bin/control técnico 14784 15189 15189 ... S ... /bin/bash /home/student/bin/control base de datos 14977 15408 14977 ... T ... suspensión 1 15189 15587 15189 ... S ... suspensión 1 14784 15588 15588 ... R+ ... ps jT La salida puede diferir de su entorno porque omite algunas columnas no esenciales para centrarse en información relevante del proceso. 11. Finalice el proceso de la base de datos de control y confirme que haya finalizado. 12. En el terminal izquierdo, vea los trabajos actuales.
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido [3]- Base de datos de control en ejecución & 12.1. Utilice el comando fg con el ID del trabajo para ejecutar el proceso de la base de datos de control en primer plano. Presione Ctrl+C para finalizar el proceso. Verifique que el proceso haya finalizado.
+
+[student@servera ~]$ fg %3
+
+base de datos de control ^C
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido 12.2. En el shell del terminal derecho, use el comando Ctrl+C para detener el comando tail. Elimine el archivo ~/control_outfile. ...salida omitida... ^C
+
+[student@servera ~]$ rm ~/control_outfile
+
+13. Cierre el terminal adicional. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+14.
+
+
+
+
+
+9.5. Envío de Señales a Procesos 9.5. Envío de señales a procesos Objetivos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Control de procesos con señales Una señal es una interrupción de software que se entrega a un proceso. Las señales informan eventos a un programa en ejecución. Los eventos que generan una señal pueden ser un error, un evento externo (una solicitud de E/S o un temporizador expirado) o mediante el uso explícito de un comando de envío de señal o una secuencia de teclado. La siguiente tabla enumera las señales fundamentales que los administradores de sistemas utilizan para la gestión de procesos de rutina. Consulte las señales por su nombre corto (HUP) o propio (SIGHUP). Tabla 11. Señales fundamentales de gestión de procesos 1 HUP Hangup: Informa la terminación del proceso de control de una terminal. También solicita la reinicialización del proceso (recarga de configuración) sin terminación. 2 INT Interrupción del teclado: provoca la terminación del programa. Se puede bloquear o manipular. Enviado presionando la secuencia de teclas INTR (Interrupción) ( Ctrl+C ). 3 SALIR Salir del teclado: similar a SIGINT; agrega un volcado de proceso al finalizar. Enviado presionando la secuencia de teclas SALIR ( Ctrl+\ ). 9 KILL Matar, imbloqueable: Provoca la terminación abrupta del programa. No se puede bloquear, ignorar,
+
+or handled; consistently fatal.
+
+15 predeterminado TERM Terminar: Provoca la terminación del programa. A diferencia de SIGKILL, se puede bloquear, ignorar o manejar. Permite que el programa complete operaciones esenciales y se autolimpie antes de su finalización. 18 CONT Continuar: enviado a un proceso para reanudarlo si se detiene. No se puede bloquear. Incluso si se maneja, siempre reanuda el proceso. 19 STOP Parada, imbloqueable: Suspende el proceso. No se puede bloquear ni manipular. 20 Detención del teclado TSTP: a diferencia de SIGSTOP, se puede bloquear, ignorar o manejar. Enviado presionando la secuencia de teclas suspender ( Ctrl+Z ). Definición del nombre de la señal
+
+
+
+
+

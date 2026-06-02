@@ -1,0 +1,86 @@
+# Ejercicio Guiado: Ejercicio guiado para reparar un sistema de archivos dañado en el momento del arranque
+# Tipo: guided_exercise
+# Capítulo: Capítulo 17. Control y solución de problemas del proceso de arranque
+
+17.6. Ejercicio guiado para reparar un sistema de archivos dañado en el momento del arranque 17.6. Ejercicio guiado Reparar un sistema de archivos dañado en el momento del arranque Repare un sistema de archivos dañado o mal configurado que hace que el proceso de arranque se detenga prematuramente. Resultados Diagnosticar problemas del sistema de archivos y recuperar el sistema. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-repairing
+
+Instrucciones Acceda a la consola de la máquina del servidor y reinicie la máquina. Observe que el proceso de inicio no se completa. 1. Reinicie la máquina del servidor enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. El proceso de arranque no se completa. 1.1. Abra un shell de emergencia desde el menú del cargador de arranque. Nota Como alternativa, puede omitir este paso esperando a que se complete el proceso de inicio y a que el sistema abra un shell de emergencia. Si adopta este enfoque, continúe con el Paso 3. 2. Cuando aparezca el menú del cargador de arranque, presione cualquier tecla para interrumpir la cuenta regresiva, excepto la tecla Enter. 2.1. Presione E para editar la entrada predeterminada actual. 2.2. Utilice las teclas del cursor para ir a la línea que comienza con el texto de Linux. 2.3. Presione Fin o Ctrl+E para mover el cursor al final de la línea. 2.4. Agregue la cadena systemd.unit=emergency.target al final de la línea. Nota Si el texto en la consola es difícil de ver, considere cambiar la resolución al editar la línea del kernel en la entrada del cargador de arranque. Para cambiar la resolución de la consola, agregue el parámetro video=640x480 o vga=ask en el
+
+line that starts with the linux word, after the systemd.unit=emergency.target parameter.
+
+Para la mayoría de las consolas, una resolución de 640x480 es suficiente. Al utilizar el parámetro vga=ask, puede elegir una resolución más adecuada para su entorno. 2.5. Presione Ctrl+X para iniciar usando la configuración modificada. 2.6.
+
+
+
+
+
+17.6. Ejercicio guiado Reparar un sistema de archivos dañado en el momento del arranque Inicie sesión en el shell de emergencia. Utilice redhat como contraseña. ...salida omitida... Proporcione la contraseña de root para mantenimiento (o presione Control-D para continuar): redhat [root@servera ~]# 3. Determine qué sistemas de archivos monta actualmente la unidad systemd. La unidad systemd monta el sistema de archivos raíz en modo de solo lectura.
+
+[root@servera ~]# mount
+
+...salida omitida...
+
+/dev/sda3 on / type xfs (ro,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+...salida omitida... 4. Vuelva a montar el sistema de archivos raíz en modo lectura/escritura.
+
+[root@servera ~]# mount -o remount,rw /
+
+5. Intente montar todos los demás sistemas de archivos. La opción -a del comando mount monta todos los sistemas de archivos enumerados en el archivo /etc/fstab que aún no están montados.
+
+[root@servera ~]# mount -a
+mount: /fakeroot: mount point does not exist.
+       dmesg(1) may have more information after failed mount system call.
+
+6. Edite el archivo /etc/fstab para solucionar el problema. 7. Modifique la línea incorrecta del archivo /etc/fstab para montar correctamente el sistema de archivos raíz. Reemplace el punto de montaje /fakeroot con el punto de montaje /. El UUID del dispositivo del sistema de archivos raíz puede diferir en su sistema. UUID=15507695-22bb-4c65-94e6-a438e095983f / xfs defaults 0 0 ...salida omitida... 7.1. Vuelva a cargar la unidad systemd para que el sistema registre la nueva configuración del archivo /etc/fstab.
+
+[root@servera ~]# systemctl daemon-reload
+
+7.2. Verifique que el archivo /etc/fstab ahora sea correcto intentando montar todas las entradas.
+
+[root@servera ~]# mount -a
+
+8. Reinicie el sistema y espere a que se complete el inicio. El sistema ahora debería iniciarse como se esperaba.
+
+[root@servera ~]# systemctl reboot
+
+9. Verifique que pueda iniciar sesión como usuario estudiante. Utilice estudiante como contraseña.
+
+servera login: student
+
+Contraseña: estudiante [estudiante@servera ~]$ 10. Cierre la consola de la máquina del servidor. 11.
+
+
+
+
+
+17.6. Ejercicio guiado Reparar un sistema de archivos dañado al finalizar el tiempo de inicio En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-repairing
+
+
+
+
+
+17.7. Control de laboratorio y solución de problemas del proceso de arranque 17.7. Control de laboratorio y solución de problemas del proceso de arranque Administre el arranque de un sistema, controle los servicios y repare problemas de tiempo de arranque solucionando los problemas. Resultados Diagnosticar y solucionar problemas de arranque. Establezca el objetivo de unidad systemd predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade boot-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-review
+
+Abra la consola de la máquina del servidor. Reinicie la máquina del servidor. El proceso de arranque no se completa. Solucione el problema de arranque para que el sistema arranque como se esperaba. 1. Cambie el objetivo de unidad systemd predeterminado en la máquina serverb para que el sistema inicie automáticamente una interfaz gráfica cuando se inicie. No hay ninguna interfaz gráfica instalada en la máquina del servidor. Establezca sólo el destino predeterminado y no instale los paquetes. 2. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 3.
+
+
+
+
+

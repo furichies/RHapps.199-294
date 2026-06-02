@@ -1,0 +1,207 @@
+# Ejercicio Guiado: Dispositivos de almacenamiento con montaje automático de ejercicios guiados
+# Tipo: guided_exercise
+# Capítulo: Capítulo 20. Acceso al almacenamiento conectado a la red
+
+20.4. Ejercicio guiado de dispositivos de almacenamiento con montaje automático 20.4. Ejercicio guiado Montaje automático de dispositivos de almacenamiento Monte automáticamente dispositivos de almacenamiento cuando se acceda a ellos y desmóntelos cuando ya no estén en uso activo, configurando el montador automático. Resultados Instale los paquetes necesarios para el montador automático. Configure mapas de montaje automático directos e indirectos, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-autofs
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante e instale el paquete autofs. Utilice estudiante como contraseña. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1.1. Instale el paquete autofs. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo dnf install autofs
+
+[sudo] contraseña para estudiante: estudiante...salida omitida... ¿Está bien? [y/N]: y...salida omitida... ¡Completa! 1.2. Monte manualmente la exportación serverb:/shares NFS en el directorio /home/student/nfs. Utilice el comando grep para ver todas las instancias del texto RED en el directorio /home/student/nfs. 2. Monte manualmente la exportación NFS serverb:/shares en el directorio /home/student/nfs.
+
+[student@servera ~]$ sudo mount -t nfs serverb:/shares /home/student/nfs
+
+2.1. Busque todas las instancias del texto ROJO en el directorio /home/student/nfs. 2.2.
+
+
+
+
+
+20.4. Dispositivos de almacenamiento con montaje automático de ejercicios guiados
+
+[student@servera ~]$ grep -r RED /home/student/nfs
+/home/student/nfs/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/nfs/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/nfs/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno!
+
+/home/student/nfs/south/house.txt:You are facing the south side of a RED house. There is no door 
+
+Aquí, y todas las ventanas están tapiadas. Cree un montaje autofs directo e indirecto para la exportación NFS serverb:/shares. El montaje directo debe
+
+mount on the /home/student/direct directory. The indirect mount must mount on the
+
+/home/estudiante/directorio indirecto. Monte sincrónicamente ambos soportes en modo lectura/escritura. 3. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 3.1. Agregue el siguiente contenido en el archivo /etc/auto.master: /- /etc/auto.direct /home/student/indirect /etc/auto.indirect 3.2. Configure un archivo de mapa para montar la exportación NFS serverb:/shares para el montaje automático directo. Crea el
+
+/etc/auto.direct file with the following content:
+/home/student/direct -fstype=nfs,rw,sync serverb:/shares
+
+3.3. Configure un archivo de mapa para montar la exportación NFS serverb:/shares para el montaje automático indirecto. Crea el
+
+/etc/auto.indirect file with the following content:
+
+* -fstype=nfs,rw,servidor de sincronizaciónb:/shares/& 3.4. Inicie y habilite el servicio autofs.
+
+[root@servera ~]# systemctl enable --now autofs
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/autofs.service' → '/usr/lib/systemd/system/autofs.service'. 3.5. Regrese a la máquina del servidor como usuario estudiante.
+
+[root@servera ~]# exit
+
+[estudiante@servera ~]$ 3.6. En el directorio /home/student/direct, vea todas las instancias del texto ROJO. La exportación NFS no se monta hasta que acceda a los archivos dentro del montaje. 4. Verifique que no haya exportaciones en la máquina del servidorb montadas en el directorio directo. 4.1.
+
+
+
+
+
+20.4. Dispositivos de almacenamiento con montaje automático de ejercicios guiados
+
+[student@servera ~]$ mount | grep serverb
+serverb:/shares on /home/student/nfs type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/south on /home/student/nfs/south type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/west on /home/student/nfs/west type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+Busque todas las instancias del texto ROJO en el directorio /home/student/direct.
+
+[student@servera ~]$ grep -r RED /home/student/direct
+/home/student/direct/south/house.txt:You are facing the south side of a RED house. There is no door 
+
+Aquí, y todas las ventanas están tapiadas.
+
+/home/student/direct/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/direct/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/direct/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno! 4.2. Verifique que las exportaciones NFS ahora estén montadas.
+
+[student@servera ~]$ mount | grep serverb
+serverb:/shares on /home/student/nfs type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/south on /home/student/nfs/south type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/west on /home/student/nfs/west type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares on /home/student/direct type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/south on /home/student/direct/south type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+serverb:/shares/west on /home/student/direct/west type nfs4 
+
+(rw,relatime,vers=4.2,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,
+
+timeo=600,retrans=2,sec=sys,clientaddr=172.25.250.10,local_lock=none, addr=172.25.250.11)
+
+4.3. En el directorio /home/student/indirect, busque todas las instancias del texto RED. No puede encontrar el texto ROJO en los directorios a los que aún no se ha accedido. 5. Busque todas las instancias del texto ROJO antes de acceder a cualquier directorio en la exportación NFS. No se produce ningún resultado porque el montaje automático no montó la exportación NFS.
+
+[student@servera ~]$ grep -r RED /home/student/indirect
+
+5.1. Acceda al directorio /home/student/indirect/west enumerando el contenido del directorio.
+
+[student@servera ~]$ ls /home/student/indirect/west
+
+Buzón de campo.txt 5.2. Encuentra las instancias del texto ROJO. No puede encontrar instancias del texto RED en el directorio /home/student/indirect/south. 5.3.
+
+
+
+
+
+20.4. Ejercicio guiado Montaje automático de dispositivos de almacenamiento Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish nfsclient-autofs
+[student@servera ~]$ grep -r RED /home/student/indirect
+/home/student/indirect/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/indirect/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/indirect/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno! Acceda al directorio /home/student/indirect/south enumerando el contenido del directorio.
+
+[student@servera ~]$ ls /home/student/indirect/south
+
+casa.txt 5.4. Verifique que se muestren todas las instancias del texto ROJO.
+
+[student@servera ~]$ grep -r RED /home/student/indirect
+/home/student/indirect/south/house.txt:You are facing the south side of a `RED house. There is no 
+
+puerta aquí, y todas las ventanas están tapiadas.
+
+/home/student/indirect/west/field.txt:You are standing in an open field west of a RED house, with a 
+
+puerta de entrada tapiada.
+
+/home/student/indirect/west/mailbox/leaflet.txt:WELCOME TO RED HAT!
+/home/student/indirect/west/mailbox/leaflet.txt:RED HAT Enterprise Linux is an operating system of 
+
+herramientas poderosas y conveniencia. Con él, explorarás algunas de las tecnologías más sorprendentes jamás vistas. ¡Ninguna computadora debería estar sin uno! 5.5. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada. 6.
+
+
+
+
+
+20.5. Almacenamiento conectado a la red de acceso al laboratorio 20.5. Acceso al laboratorio Almacenamiento conectado a la red Acceda al almacenamiento conectado a la red que proporciona el protocolo NFS, ya sea manualmente o mediante el montador automático. Resultados Instale los paquetes necesarios para configurar el montador automático. Configure un mapa indirecto del montador automático, con recursos de un servidor NFSv4 preconfigurado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start nfsclient-review
+
+Instrucciones Una empresa de soporte de TI utiliza la máquina serverb para compartir los subdirectorios de administración, producción y operación del directorio /shares. Configure la máquina del servidor para acceder a los directorios exportados en el directorio /remote. Los usuarios de los grupos de administradores, producción y operadores deben tener permisos de lectura/escritura en los directorios exportados /shares/management, /shares/production y /shares/operation, respectivamente. El usuario manager1 pertenece al grupo de administradores, dbuser1 pertenece al grupo de producción y el usuario contratista1 pertenece al grupo de operadores. En la máquina del servidor, instale el paquete autofs. 1. En la máquina del servidor, monte manualmente la exportación NFS serverb:/shares en el directorio /mnt. Esta tarea le ayuda a verificar que las exportaciones estén configuradas con el acceso y los permisos correctos. Desmonte el directorio /mnt. 2. En la máquina del servidor, cree un mapa indirecto de montaje automático para montar las exportaciones NFS junto con todos los subdirectorios en el directorio /remote. Utilice el archivo /etc/auto.master.d/shares.autofs para el mapa maestro y el archivo /etc/auto.shares para
+
+the mapping file. Synchronously mount the serverb:/shares/& NFS export in the read/write mode.
+
+Inicie el servicio autofs y configúrelo para que se inicie automáticamente. 3. Como usuario manager1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/management. Enumere el contenido del directorio /remote/management y vea el contenido del archivo /remote/management/Welcome.txt. Luego, cree el archivo /remote/management/test.txt con TEST1 como texto. Regrese como usuario root en la máquina del servidor. 4. Como usuario dbuser1 en la máquina del servidor, verifique que pueda acceder al directorio /remote/production. 5.
+
+
+
+
+

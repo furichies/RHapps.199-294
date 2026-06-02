@@ -1,0 +1,60 @@
+# 3.1. Editar archivos de texto desde la línea de comando
+# Tipo: theory
+# Capítulo: Capítulo 3. Edición de archivos de texto
+
+3.1. Edición de archivos de texto desde la línea de comandos 3.1. Edición de archivos de texto desde la línea de comandos Objetivos Crear, ver y editar archivos de texto utilizando el editor Vim. Edición de archivos con Vim El principio de diseño fundamental de Linux es que admite el almacenamiento de información y ajustes de configuración en archivos basados ​​en texto. Estos archivos siguen varias estructuras, como listas de configuraciones, formatos similares a INI, XML estructurado o YAML, y otros. La ventaja de almacenar archivos en una estructura basada en texto es que se pueden editar con cualquier editor de texto. Vim es una versión mejorada del editor vi, que se distribuye con sistemas Linux y UNIX. Vim es un editor eficiente y altamente configurable que proporciona edición en pantalla dividida, formato de color y resaltado para editar texto. Beneficios del editor Vim Cuando un sistema usa un indicador de shell de solo texto, debe saber cómo usar al menos un editor de texto para editar archivos. Luego puede editar archivos de configuración basados ​​en texto desde una ventana de terminal o inicios de sesión remotos a través del comando ssh o la consola web. Tampoco necesita acceso a un escritorio gráfico para editar archivos en un servidor, y es posible que ese servidor no necesite ejecutar un entorno de escritorio gráfico. La razón clave para aprender Vim es que casi siempre se instala de forma predeterminada en un servidor para editar archivos basados ​​en texto. El estándar de interfaz de sistema operativo portátil (POSIX) especifica el editor vi en Linux, y muchos otros sistemas operativos similares a UNIX hacen lo mismo. Vim también se utiliza a menudo como implementación de vi en otras distribuciones o sistemas operativos estándar. Por ejemplo, macOS actualmente incluye una instalación ligera de Vim de forma predeterminada. Por lo tanto, las habilidades de Vim que se aprenden para Linux también podrían resultar útiles en otros lugares. Instalación de Vim Puede instalar el editor Vim en Red Hat Enterprise Linux utilizando uno de dos paquetes. Estos paquetes proporcionan diferentes funciones y comandos de Vim para editar archivos basados ​​en texto. Con el paquete vim-minimal, puede instalar el editor vi con funciones principales. Esta instalación liviana incluye solo las funciones principales y el comando vi básico. Puede abrir un archivo para editarlo usando el comando vi.
+
+user@host:~$ vi filename
+
+Alternativamente, puede utilizar el paquete mejorado con vim para instalar el editor Vim. Este paquete proporciona un conjunto más completo de funciones, un sistema de ayuda en línea y un programa de tutoriales. Utilice el comando vim para iniciar Vim en este modo mejorado.
+
+user@host:~$ vim filename
+
+Las funciones principales del editor Vim están disponibles en ambos comandos. Si está instalado vim-enhanced, entonces se establece un alias de shell para que, si los usuarios habituales ejecutan el comando vi, obtengan automáticamente el comando vim. Este alias no se aplica al usuario root ni a otros usuarios con UID.
+
+
+
+
+
+3.1. Edición de archivos de texto desde la línea de comandos por debajo de 200 (que utilizan los servicios del sistema). Si vim-enhanced está instalado y un usuario normal desea utilizar el comando vi, es posible que tenga que utilizar el comando \vi para anular el alias temporalmente. Puede utilizar \vi --version y vim --version para comparar los conjuntos de características de los dos comandos. Modos de funcionamiento de Vim El editor Vim ofrece varios modos de funcionamiento, como el modo de comando, el modo de comando extendido, el modo de edición y el modo visual. Como usuario de Vim, verifique siempre el modo actual, porque el efecto de las pulsaciones de teclas varía entre los modos. Figura 6. Moverse entre modos de Vim Cuando abre Vim por primera vez, se inicia en modo comando, que se utiliza para navegar, cortar y pegar, y otras modificaciones de texto. Al presionar la pulsación de tecla requerida se accede a funciones de edición específicas. Una pulsación de tecla I ingresa al modo de inserción, donde todo el texto escrito se convierte en contenido del archivo. Al presionar Esc se regresa al modo de comando. Una pulsación de tecla V ingresa al modo visual, donde se pueden seleccionar varios caracteres para la manipulación del texto. Utilice Shift+V para multilínea y Ctrl+V para selección de bloque. Para salir del modo visual, utilice las pulsaciones de teclas V, Shift+V o Ctrl+V. La pulsación de tecla : inicia el modo de comando extendido para tareas como escribir el archivo (para guardarlo) y salir del editor Vim. Nota Si no está seguro de qué modo está usando Vim, presione Esc varias veces para volver al modo de comando. Puede presionar con seguridad la tecla Esc en el modo comando repetidamente. El flujo de trabajo básico de Vim Vim tiene pulsaciones de teclas eficientes y coordinadas para tareas de edición avanzadas. Aunque Vim ofrece muchos beneficios, sus capacidades pueden abrumar a los nuevos usuarios.
+
+
+
+
+
+3.1. Edición de archivos de texto desde la línea de comandos Nota Primero, tómese el tiempo para familiarizarse con las capacidades básicas de Vim. Luego, amplíe su vocabulario de Vim aprendiendo más pulsaciones de teclas de Vim. El ejercicio de esta sección utiliza el comando vimtutor. Este tutorial, del paquete vim mejorado, es una excelente manera de aprender las funciones principales de Vim. Red Hat recomienda que aprenda las siguientes teclas y comandos de Vim. La tecla U deshace la edición más reciente. La tecla X elimina un solo carácter. La tecla H mueve el cursor hacia la izquierda. La tecla J mueve el cursor hacia abajo. La tecla K mueve el cursor hacia arriba. La tecla L mueve el cursor hacia la derecha. La tecla A agrega texto al final de la línea actual. El comando :w escribe (guarda) el archivo y permanece en modo comando para realizar más ediciones. El comando :wq escribe (guarda) el archivo y sale de Vim. El :q! El comando cierra Vim y descarta todos los cambios de archivo realizados después de la última escritura. Reorganizar el texto existente En Vim, puede tirar y colocar (copiar y pegar) utilizando los caracteres de comando Y y P. Coloque el cursor en el primer carácter a seleccionar y luego ingrese al modo visual. Utilice las teclas de flecha para expandir la selección visual. Cuando esté listo, presione Y para guardar la selección en la memoria. Coloque el cursor en la nueva ubicación y luego presione P para colocar la selección en el cursor. Modo visual en Vim El modo visual es útil para resaltar y manipular texto en diferentes líneas y columnas. Puede ingresar varios modos visuales en Vim usando las siguientes combinaciones de teclas. Modo de carácter: V Modo de línea: Shift+V Modo de bloque: Ctrl+V El modo de carácter resalta oraciones en un bloque de texto. La palabra VISUAL aparece en la parte inferior de la pantalla. Presione V para ingresar al modo de carácter visual. Presione Shift+V para ingresar al modo de línea. VISUAL LINE aparece en la parte inferior de la pantalla. El modo de bloque visual es un método eficaz para manipular archivos de datos. Presione la tecla Ctrl+V para ingresar al bloque visual desde el cursor. BLOQUE VISUAL aparece en la parte inferior de la pantalla. Utilice las teclas de flecha para resaltar la sección que desea cambiar. Archivos de configuración de Vim Los archivos de configuración /etc/vimrc y ~/.vimrc alteran el comportamiento del editor de Vim para todo el sistema o para un usuario específico, respectivamente. Con estos archivos de configuración, puede especificar comportamientos como el espaciado de tabulación predeterminado, resaltado de sintaxis, combinaciones de colores y más. Modificar el comportamiento del editor Vim es particularmente útil cuando se trabaja con lenguajes como YAML, que tienen requisitos de sintaxis estrictos. Considere el siguiente archivo ~/.vimrc,
+
+
+
+
+
+3.1. Edición de archivos de texto desde la línea de comandos que establece la tabulación predeterminada (indicada por los caracteres ts) en dos espacios al editar archivos YAML. El archivo también incluye el parámetro de número establecido para mostrar los números de línea al editar cualquier archivo.
+
+user@host:~$ cat ~/.vimrc
+autocmd FileType yaml setlocal ts=2
+
+set number Una lista completa de las opciones de configuración de vimrc está disponible en las referencias. Referencias a la página de manual de vim(1) El comando :help en vim (si el paquete mejorado con vim está instalado). Manual de referencia de Vim: Opciones de Vim
+
+
+
+
+
+3.2. Ejercicio guiado Editar archivos de texto desde la línea de comandos 3.2. Ejercicio guiado Editar archivos de texto desde la línea de comandos Cree, vea y edite archivos de texto usando el editor Vim. Resultados Adquiera competencia en Vim utilizando el comando vimtutor. Editar archivos con Vim. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start edit-file
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Ejecute el comando vimtutor. Lea la pantalla de bienvenida y realice la Lección 1.1. Nota Al ejecutar el comando vimtutor, es posible que vea un mensaje que indica que no existe una versión localizada del archivo del tutorial. Se espera este comportamiento. Vim usa automáticamente la versión en inglés predeterminada y puedes continuar con el tutorial. En la presentación, las teclas de flecha del teclado ayudan a navegar por la ventana. Inicialmente, cuando se desarrolló el editor vi, los usuarios no podían confiar en tener teclas de flecha o asignaciones de teclado funcionales para que las teclas de flecha movieran el cursor. Por lo tanto, el editor vi fue diseñado inicialmente para mover el cursor mediante el uso de comandos con teclas de caracteres estándar, como H, J, K y L, convenientemente agrupados. Aquí hay una manera de recordarlos: quedarse atrás, saltar hacia abajo, patear, saltar hacia adelante.
+
+[student@servera ~]$ vimtutor
+
+2. En la ventana de vimtutor, realice la Lección 1.2. Esta lección le enseña cómo salir sin conservar los cambios no deseados. Todos los cambios se pierden. En algunos casos, perder los cambios es una opción más segura que dejar un archivo crítico en un estado incorrecto. 3. En la ventana de vimtutor, realice la Lección 1.3. 4.
+
+
+
+
+

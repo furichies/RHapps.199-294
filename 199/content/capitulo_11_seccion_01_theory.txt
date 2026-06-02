@@ -1,0 +1,74 @@
+# 8.1. Identificación de sistemas de archivos y dispositivos de bloque
+# Tipo: theory
+# Capítulo: Capítulo 8. Acceso a medios extraíbles
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloques 8.1. Identificación de sistemas de archivos y dispositivos de bloques Objetivos Hacer coincidir un dispositivo de almacenamiento en bloques con el sistema de archivos que utiliza un directorio en particular y determinar la cantidad de espacio libre en ese sistema de archivos. Sistemas de archivos y dispositivos de almacenamiento Red Hat Enterprise Linux (RHEL) utiliza el sistema de archivos de extensiones (XFS) como sistema de archivos local predeterminado. RHEL admite el sistema de archivos Extended File System (ext4) para administrar archivos locales. A partir de RHEL 10, el sistema de archivos Extensible File Allocation Table (exFAT) es compatible con el uso de medios extraíbles. Montaje de sistemas de archivos Acceda al contenido de un sistema de archivos montándolo en un directorio vacío. Este directorio se llama punto de montaje. Cuando el directorio esté montado, use el comando ls para enumerar su contenido. Muchos sistemas de archivos se montan automáticamente cuando se inicia el sistema. Un punto de montaje difiere ligeramente de una letra de unidad de Microsoft Windows, donde cada sistema de archivos es una entidad separada. Los puntos de montaje permiten que varios dispositivos de sistema de archivos estén disponibles en una única estructura de árbol. Este punto de montaje es similar a NTFS.
+
+mounted folders in Microsoft Windows.
+
+Uso de dispositivos de bloque Un dispositivo de bloque es un archivo que proporciona acceso de bajo nivel a dispositivos de almacenamiento. Un dispositivo de bloque que representa una unidad de disco duro o un dispositivo de estado sólido (SSD) generalmente se divide en varios dispositivos de bloque más pequeños, y una partición debe formatearse con un sistema de archivos antes de que se pueda montar su sistema de archivos. El directorio /dev almacena archivos de dispositivos de bloque, que RHEL crea automáticamente para todos los dispositivos. En los sistemas RHEL, el
+
+first detected Serial ATA (SATA), Serial Attached SCSI (SAS), SCSI, or USB hard drive is called the /dev/sda device;
+the second is the /dev/sdb device; and so on. These names represent the entire hard drive.
+
+Tabla 9. Nomenclatura de dispositivos de bloque Almacenamiento conectado SATA/SAS/USB (controlador SCSI) /dev/sda, /dev/sdb, /dev/sdc,…​ Almacenamiento paravirtualizado (VM) virtio-blk /dev/vda, /dev/vdb, /dev/vdc,…​ Almacenamiento paravirtualizado (VM) virtio-scsi /dev/sda, /dev/sdb, /dev/sdc, …​ Almacenamiento conectado NVMe (SSD) /dev/nvme0, /dev/nvme1, …​ Almacenamiento SD/MMC/eMMC (tarjetas SD) /dev/mmcblk0, /dev/mmcblk1, …​ Tipo de dispositivo Patrón de nomenclatura del dispositivo
+
+
+
+
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloque Particiones de disco Por lo general, un dispositivo de almacenamiento se divide en varias particiones. Con las particiones, puede compartimentar un disco: las distintas particiones pueden formatearse con diferentes sistemas de archivos o usarse para otros fines. Por ejemplo, una partición puede contener directorios de inicio de usuarios, mientras que otra partición puede contener registros y datos del sistema. Incluso cuando la partición del directorio de inicio está cargada con datos, es posible que la partición del sistema aún tenga espacio disponible. Las particiones son dispositivos de bloqueo por derecho propio. Por ejemplo, en el primer almacenamiento conectado a SATA, la primera partición es el disco /dev/sda1. La segunda partición del mismo almacenamiento es el disco /dev/sda2. La tercera partición en el tercer dispositivo de almacenamiento conectado a SATA es el disco /dev/sdc3, y así sucesivamente. Los dispositivos de almacenamiento paravirtualizados tienen un sistema de nombres similar. Por ejemplo, la primera partición del primer dispositivo de almacenamiento es el disco /dev/vda1. La segunda partición del segundo dispositivo de almacenamiento es el disco /dev/vdb2, y así sucesivamente. Un dispositivo SSD conectado a NVMe nombra sus particiones de manera diferente a un dispositivo conectado a SATA. Para los dispositivos de almacenamiento NVMe, la parte nvmeX del nombre se refiere al dispositivo; la parte nY se refiere al espacio de nombres; y la parte pZ se refiere a la partición. Por ejemplo, la primera partición para el primer espacio de nombres en el primer disco es la partición /dev/nvme0n1p1. La tercera partición para el primer espacio de nombres en el segundo disco es la partición /dev/nvme1n1p3, y así sucesivamente. Las tarjetas MultiMediaCard (MMC) o Secure Digital (SD) a veces pueden tener un sistema de nombres similar al de los dispositivos SATA (/dev/sdN). En algunos casos, las tarjetas SD o MMC pueden tener nombres como /dev/mmcblk0p1, donde la parte mmcblkX del nombre se refiere al dispositivo de almacenamiento y la parte pY del nombre se refiere al número de partición de ese dispositivo. Una lista ampliada del archivo de dispositivo /dev/sda1 en la máquina host revela el tipo de archivo b, que significa bloque
+
+device:
+user@host:~$ ls -l /dev/sda1
+brw-rw----. 1 root disk 8, 1 Jun 12 05:06 /dev/sda1
+
+Volúmenes lógicos Otra forma de organizar discos y particiones es con la gestión de volúmenes lógicos (LVM). LVM agrega dispositivos de bloque en un grupo de volúmenes. El espacio en disco del grupo de volúmenes se separa en volúmenes lógicos, que son el equivalente funcional de una partición en un disco físico. El sistema LVM asigna nombres a grupos de volúmenes y volúmenes lógicos en el momento de su creación. LVM crea un directorio en el directorio /dev que coincide con el nombre del grupo y crea un enlace simbólico dentro de ese nuevo directorio con el mismo nombre que el volumen lógico. Ese archivo de volumen lógico estará entonces disponible para ser montado. Por ejemplo, cuando están presentes un grupo de volúmenes myvg y el volumen lógico mylv, la ruta completa al volumen lógico es el archivo /dev/myvg/mylv. Nota El nombre del dispositivo de volumen lógico mencionado anteriormente establece un vínculo simbólico al archivo del dispositivo que accede a él, que puede variar entre arranques. Otra forma del nombre del dispositivo de volumen lógico, que se vincula desde archivos en el directorio /dev/mapper, se utiliza a menudo para vínculos simbólicos al archivo del dispositivo. Examinar sistemas de archivos Utilice el comando df para mostrar una descripción general de los dispositivos de sistemas de archivos locales y remotos, que incluye el espacio total en disco, el espacio en disco utilizado, el espacio libre en disco y el porcentaje de todo el espacio en disco.
+
+
+
+
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloque El siguiente ejemplo muestra los sistemas de archivos y los puntos de montaje en la máquina host:
+
+user@host:~$ df
+
+Sistema de archivos 1K bloques Usado Disponible Uso% Montado en /dev/sda3 10213356 2458040 7755316 25% /devtmpfs 4096 0 4096 0% /dev tmpfs 873064 0 873064 0% /dev/shm tmpfs 349228 10784 338444 4% /ejecutar tmpfs 1024 0 1024 0% /ejecutar/credentials/systemd-journald... /dev/sda2 204580 8580 196000 5% /boot/efi tmpfs 1024 0 1024 0% /run/credentials/getty@tty1... tmpfs 1024 0 1024 0% /run/credentials/serial-getty@... tmpfs 174612 4 174608 1% /run/user/1000 La partición muestra que hay dos sistemas de archivos físicos montados en los directorios raíz (/) y /boot/efi que existen comúnmente en las máquinas virtuales. Los dispositivos tmpfs y devtmpfs son sistemas de archivos en la memoria del sistema. Todos los archivos escritos en los sistemas de archivos tmpfs o devtmpfs desaparecen después de reiniciar el sistema. Las opciones -h o -H del comando df son opciones legibles por humanos para mejorar la legibilidad de los tamaños de salida. La opción -h informa en KiB (210), MiB (220) o GiB (230), mientras que la opción -H informa en unidades SI: KB (103), MB (106) o GB (109). Los fabricantes de discos duros suelen utilizar unidades SI cuando anuncian sus productos. Vea los sistemas de archivos en la máquina host con todas las unidades convertidas a un formato legible por humanos:
+
+user@host:~$ df -h
+
+Tamaño del sistema de archivos utilizado % de uso disponible Montado en /dev/sda3 20G 6,6G 14G 33% /devtmpfs 4,0M 0 4,0M 0% /dev tmpfs 2,8G 84K 2,8G 1% /dev/shm tmpfs 1,2G 18M 1,1G 2% /run tmpfs 1,0M 0 1,0M 0% /run/credentials/systemd-journald.service /dev/sda2 200M 8,4M 192M 5% /boot/efi /dev/sr0 536K 536K 0 100% /run/media/meta-data tmpfs 567M 128K 567M 1% /run/user/1000 Utilice el comando du para obtener un desglose detallado del uso del disco dentro de un árbol de directorios específico. De forma predeterminada, el comando muestra de forma recursiva el tamaño de todos los archivos y subdirectorios en el directorio de trabajo actual, utilizando unidades de 1024 bytes. Para que el resultado sea más fácil de leer, puede agregar las opciones -h o -H para mostrar los tamaños en un formato legible por humanos, que es similar al comando df. El siguiente ejemplo muestra cómo mostrar un informe de uso del disco en formato legible por humanos para /usr/share
+
+directory:
+root@host:~# du -h /usr/share
+
+...salida omitida... 4.0K /usr/share/mdadm 8.0K /usr/share/cmake/bash-completion 8.0K /usr/share/cmake 4.0K /usr/share/at 366M /usr/share Para mostrar solo un resumen del uso total del disco para un archivo o directorio, agregue la opción -s al comando du. También puede proporcionar varios directorios como argumentos para el comando.
+
+
+
+
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloque
+
+[root@host ~]# du -sh /etc /boot /var
+
+23M /etc 170M /boot 133M /var Referencias a las páginas man de df(1) y du(1) Para obtener más información, consulte la guía Administración de sistemas de archivos en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+único/managing_file_systems/index
+
+
+
+
+
+8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloques 8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloque Elija las respuestas correctas a las siguientes preguntas: ¿Cuál es el nombre de archivo del dispositivo de un disco duro SATA completo en el directorio /dev? 1. /dev/vda a. /dev/sda1 b. /dev/vg_install/lv_home c. /dev/sda d. ¿Qué comando muestra los sistemas de archivos con los puntos de montaje? 2. du-H a. dfb. duc. lsfs d. ¿Qué comando muestra el informe de uso del disco en formato legible por humanos para el directorio /home? 3.
+
+ls /home
+
+a. dfb. du -h /casa c. du /home d. ¿Cuál es el nombre de archivo de dispositivo correcto para la tercera partición del segundo disco virtio-blk conectado a una máquina virtual? 4. /dev/vdb3 a. /dev/sdb3 b. /dev/sda3 c. /dev/vda3 d. ¿Qué comando proporciona una descripción general de los puntos de montaje del sistema de archivos y el espacio libre disponible en unidades SI? 5. df a. df-hb. gl -Hc. du-h d.
+
+
+
+
+

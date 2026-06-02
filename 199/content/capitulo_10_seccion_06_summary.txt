@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak
+
+7.6. Resumen 7.6. Resumen En esta lección, aprendió a configurar Flatpak y lo utilizó para administrar software. Flatpak utiliza repositorios remotos que almacenan las aplicaciones y los tiempos de ejecución necesarios para ejecutar esas aplicaciones en un entorno de ejecución aislado. Los repositorios remotos permiten la resolución automática de dependencias. Puede utilizar la interfaz de línea de comandos para instalar, actualizar, enumerar, eliminar y obtener información de metadatos sobre aplicaciones Flatpak y dependencias de tiempo de ejecución. Al utilizar la herramienta gráfica del software GNOME, puede instalar y desinstalar aplicaciones Flatpak como lo haría con los paquetes RPM.
+
+
+
+
+
+Capítulo 8. Acceso a medios extraíbles Objetivo Acceder a los sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Secciones Identificación de sistemas de archivos y dispositivos de bloques (y cuestionario) Montaje y desmontaje de sistemas de archivos (y ejercicio guiado) Localización de archivos en un sistema de archivos (y ejercicio guiado) Acceso al laboratorio Medios extraíbles
+
+
+
+
+

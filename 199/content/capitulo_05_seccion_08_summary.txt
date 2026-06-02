@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 2. Administrar archivos desde la línea de comandos
+
+2.8. Resumen 2.8. Resumen En esta lección, aprendió a administrar y organizar archivos dentro de la jerarquía del sistema de archivos mediante la línea de comandos. Para señalar varios nombres de archivos a los mismos datos, puede crear enlaces físicos y enlaces simbólicos. Aprendió a hacer referencia a archivos utilizando sus rutas absolutas, que comienzan con una barra diagonal (/), y a hacer referencia a archivos utilizando sus rutas relativas, que no comienzan con una barra diagonal. Puede utilizar comandos en combinación con los caracteres especiales punto (.), doble punto (..) y tilde (~) para hacer referencia a la ruta relativa de un archivo en el sistema de archivos. También aprendió que el shell Bash proporciona funciones de coincidencia, expansión y sustitución de patrones para ayudarlo a ejecutar comandos de manera eficiente.
+
+
+
+
+
+Capítulo 3. Edición de archivos de texto Objetivo Crear, ver y editar archivos de texto desde la línea de comandos. Secciones Edición de archivos de texto desde la línea de comandos (y ejercicio guiado)
+
+
+
+
+

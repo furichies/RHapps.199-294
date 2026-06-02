@@ -1,0 +1,290 @@
+# Administración del proceso de arranque y procesos programados
+# Tipo: theory
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Administración del proceso de arranque y
+procesos programados
+Objetivos
+• Administrar el inicio del servicio, programar procesos con at, cron y systemd, reiniciar los
+hosts gestionados con reboot y controlar el destino de inicio predeterminado en los hosts
+gestionados.
+Programación de trabajos para la futura ejecución
+Red Hat Enterprise Linux proporciona varios mecanismos que puede usar para programar
+comandos a fin de que se ejecuten en algún momento en el futuro. El comando at programa
+trabajos que se ejecutan una vez en un momento específico. El subsistema Cron programa
+trabajos para que se ejecuten en un programa recurrente, ya sea en el archivo personal crontab
+de un usuario, en la configuración Cron del sistema en /etc/crontab o como un archivo en
+/etc/cron.d. El subsistema systemd también proporciona unidades de temporizador que
+pueden iniciar unidades de servicio en un horario establecido.
+Programación de trabajos que se ejecutan una sola vez
+La programación rápida y de una vez se realiza con el módulo ansible.posix.at. Se crea la
+tarea para que se ejecute en una hora futura y se la retiene hasta el momento de ejecutarse.
+Opciones para el módulo ansible.posix.at
+Opción
+Comentarios
+command
+El comando para programar la ejecución en el futuro.
+count
+El número entero de unidades a partir de ahora que se debe
+ejecutar el trabajo. (Debe usarse con units).
+units
+Especifica si count se mide en minutos, horas, días o
+semanas.
+script_file
+Un archivo de script existente programado para que se ejecute
+en el futuro.
+state
+El valor predeterminado (present) agrega un trabajo;
+absent elimina un trabajo coincidente si está presente.
+unique
+Si se establece en true, si un trabajo coincidente ya está
+presente, no se agrega un nuevo trabajo.
+En el siguiente ejemplo, la tarea que se muestra usa at para programar el comando userdel -r
+tempuser para que se ejecute en 20 minutos.
+440
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+- name: Remove tempuser
+  ansible.posix.at:
+    command: userdel -r tempuser
+    count: 20
+    units: minutes
+    unique: true
+Programación de trabajos repetidos con Cron
+Puede configurar un comando que se ejecute en una programación repetida mediante Cron.
+Para configurar trabajos de Cron, use el módulo ansible.builtin.cron. La opción name es
+obligatoria y se inserta en crontab como una descripción del trabajo repetido. El módulo también
+lo usa para determinar si el trabajo Cron ya existe o qué trabajo Cron se debe modificar o eliminar.
+Algunos parámetros de uso común del módulo ansible.builtin.cron incluyen:
+Opciones para el módulo ansible.builtin.cron
+Opciones
+Comentarios
+name
+El comentario que identifica el trabajo de Cron.
+job
+El comando que se ejecutará.
+minute, hour, day, month,
+weekday
+El valor del campo en la especificación de tiempo para el
+trabajo en la entrada crontab. Si no se establece, se asume
+"*" (todos los valores).
+state
+Si se establece en present, crea el trabajo Cron (el
+predeterminado); absent lo elimina.
+user
+El trabajo Cron se ejecuta como este usuario. Si no se
+especifica cron_file, el trabajo se establece en el archivo
+crontab de ese usuario.
+cron_file
+Si está configurado, cree un trabajo Cron del sistema en
+cron_file. Debe especificar user y una especificación de
+tiempo. Si usa una ruta relativa, el archivo se crea en /etc/
+cron.d.
+Esta primera tarea de ejemplo crea un trabajo Cron en el archivo personal crontab del usuario
+testing. Ejecuta su script personal backup-home-dir a las 16:00 todos los viernes. Puede
+iniciar sesión como ese usuario y ejecutar crontab -l después de ejecutar el playbook para
+confirmar que funcionó.
+- name: Schedule backups for my home directory
+  ansible.builtin.cron:
+    name: Backup my home directory
+    user: testing
+    job: /home/testing/bin/backup-home-dir
+    minute: 0
+    hour: 16
+    weekday: 5
+RH294-RHEL9.0-es-3-20240620
+441
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+En el siguiente ejemplo, la tarea crea un trabajo Cron del sistema en el archivo /etc/cron.d/
+flush_bolt que ejecuta un comando como root para vaciar la caché de Bolt cada mañana a las
+11:45.
+- name: Schedule job to flush the Bolt cache
+  ansible.builtin.cron:
+    name: Flush Bolt cache
+    cron_file: flush_bolt
+    user: "root"
+    minute: 45
+    hour: 11
+    job: "php ./app/nut cache:clear"
+Advertencia
+No use cron_file para modificar el archivo /etc/crontab. El archivo que
+especifique solo debe mantenerse por Ansible y solo debe contener la entrada
+especificada por la tarea.
+Control de las unidades de temporizador de Systemd
+El módulo ansible.builtin.systemd se puede usar para habilitar o deshabilitar las unidades
+de temporizador systemd existentes que ejecutan trabajos recurrentes (generalmente unidades
+de servicio systemd que finalmente salen).
+En el siguiente ejemplo, se deshabilita y se detiene el temporizador systemd que completa
+automáticamente la caché de paquetes dnf en Red Hat Enterprise Linux 9.
+- name: Disable dnf makecache
+  ansible.builtin.systemd:
+    name: dnf-makecache.timer
+    state: stopped
+    enabled: false
+Gestión de servicios
+Puede elegir entre dos módulos para administrar servicios o recargar daemons:
+ansible.builtin.systemd y ansible.builtin.service.
+El módulo ansible.builtin.service está diseñado para funcionar con varios sistemas
+de gestión de servicios, incluidos systemd, Upstart, SysVinit, init BSD y otros. Dado que
+proporciona una interfaz genérica para el sistema de inicialización, ofrece un conjunto básico de
+opciones para iniciar, detener, reiniciar y habilitar servicios y otros daemons.
+- name: Start and enable nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+442
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+El módulo ansible.builtin.systemd está diseñado para funcionar solo con systemd, pero
+ofrece opciones de configuración adicionales específicas para ese sistema y administrador de
+servicios.
+El siguiente ejemplo que usa ansible.builtin.systemd es equivalente al ejemplo anterior
+que usa ansible.builtin.service:
+- name: Start nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true
+En el siguiente ejemplo se recarga el daemon httpd, pero antes de que lo haga, se ejecuta
+systemctl daemon-reload para recargar la configuración systemd completa.
+- name: Reload web server
+  ansible.builtin.systemd:
+    name: httpd
+    state: reloaded
+    daemon_reload: true
+Configuración de un objetivo de arranque
+predeterminado
+El módulo ansible.builtin.systemd no puede establecer el objetivo de arranque
+predeterminado. Puede usar el módulo ansible.builtin.command para establecer el objetivo
+de arranque predeterminado.
+- name: Change default systemd target
+  hosts: all
+  gather_facts: false
+  vars:
+    systemd_target: "multi-user.target" 
+  tasks:
+    - name: Get current systemd target
+      ansible.builtin.command:
+        cmd: systemctl get-default 
+      changed_when: false 
+      register: target 
+    - name: Set default systemd target
+      ansible.builtin.command:
+        cmd: systemctl set-default {{ systemd_target }} 
+      when: systemd_target not in target['stdout'] 
+      become: true 
+Esta variable contiene el nombre del objetivo predeterminado que desea.
+Esto obtiene el objetivo actual.
+RH294-RHEL9.0-es-3-20240620
+443
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Debido a que solo se trata de recopilar información, la tarea nunca debe informar changed.
+La variable target contiene la información que se recopiló.
+Este comando establece el objetivo predeterminado.
+Omita esta tarea si el objetivo predeterminado actual ya es el destino predeterminado
+deseado. Esto asegura que la tarea sea idempotente.
+Esta es la única tarea en este play que requiere acceso root.
+Reinicio de hosts gestionados.
+Puede usar el módulo dedicado ansible.builtin.reboot para reiniciar los hosts gestionados
+durante la ejecución del playbook. Este módulo reinicia el host gestionado y espera hasta que el
+host gestionado vuelva a funcionar antes de continuar con la ejecución del playbook. El módulo
+determina que un host gestionado está respaldado esperando hasta que Ansible pueda ejecutar
+un comando en el host gestionado.
+En el siguiente ejemplo simple se desencadena de inmediato un reinicio:
+- name: Reboot now
+  ansible.builtin.reboot:
+De forma predeterminada, el playbook espera hasta 600 segundos antes de decidir que el reinicio
+falló y otros 600 segundos antes de decidir que el comando de prueba falló. Puede ajustar este
+valor para que los tiempos de espera sean cada 180 segundos. Por ejemplo:
+- name: Reboot, shorten timeout
+  ansible.builtin.reboot:
+    reboot_timeout: 180
+Algunas otras opciones útiles para el módulo incluyen:
+Opciones para el módulo ansible.builtin.reboot
+Opciones
+Comentarios
+pre_reboot_delay
+El tiempo de espera antes de reiniciar. En Linux, esto se mide
+en minutos y, si es inferior a 60, se redondea a 0.
+msg
+El mensaje que se mostrará a los usuarios antes de reiniciar.
+test_command
+El comando que se usa para determinar si el host gestionado
+se puede usar y está listo para más tareas de Ansible después
+del reinicio. El valor predeterminado es whoami.
+444
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Referencias
+Módulo ansible.posix.at: programar la ejecución de un comando o archivo de
+script mediante el comando at: documentación de Ansible
+https://docs.ansible.com/ansible/latest/collections/ansible/posix/at_module.html
+Módulo ansible.builtin.cron: gestionar las entradas cron.d y crontab:
+documentación de Ansible
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+cron_module.html
+Módulo ansible.builtin.reboot: reiniciar una máquina: documentación de
+Ansible
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+reboot_module.html
+Módulo ansible.builtin.service module: gestión de servicios: documentación de
+Ansible
+https://docs.ansible.com/ansible/latest/modules/service_module.html
+Módulo ansible.builtin.systemd: gestión de unidades systemd: documentación
+de Ansible
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+systemd_module.html
+RH294-RHEL9.0-es-3-20240620
+445
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Ejercicio Guiado
+Administración del proceso de arranque y
+procesos programados
+Gestionar el proceso de inicio, programar trabajos recurrentes y reiniciar los hosts
+gestionados.
+Resultados
+• Programar un trabajo Cron.
+• Eliminar un solo trabajo específico de Cron de un archivo crontab.
+• Programar una tarea de at.
+• Establecer el destino de arranque predeterminado en los hosts gestionados.
+• Reiniciar los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos, incluido el directorio del proyecto /home/student/system-process.
+[student@workstation ~]$ lab start system-process
+Instrucciones
+ 1.
+Cambie al directorio /home/student/system-process.
+[student@workstation ~]$ cd ~/system-process
+[student@workstation system-process]$
+ 2.
+Cree el playbook create_crontab_file.yml en el directorio de trabajo.
+Configure el playbook para usar el módulo ansible.builtin.cron para crear un
+archivo crontab denominado /etc/cron.d/add-date-time que programa un trabajo
+cron recurrente. El trabajo debe ejecutarse con el usuario devops cada dos minutos
+comenzando a las 09:00 y terminando a las 16:59 de lunes a viernes. El trabajo debe
+adjuntar la fecha y hora del archivo /home/devops/my_datetime_cron_job.
+2.1.
+Cree el playbook create_crontab_file.yml y agregue las líneas necesarias
+para iniciar el play. Debe apuntar a los hosts gestionados del grupo webservers y
+habilitar el aumento de privilegios.
+446
+RH294-RHEL9.0-es-3-20240620
+
+

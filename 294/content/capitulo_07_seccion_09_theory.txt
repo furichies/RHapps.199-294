@@ -1,0 +1,455 @@
+# Reutilización de contenido con roles de sistema
+# Tipo: theory
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Reutilización de contenido con roles de
+sistema
+Objetivos
+• Escribir playbooks que aprovechen los roles del sistema de Red Hat Enterprise Linux para
+realizar operaciones estándares.
+Roles de sistema
+Roles del sistema son un conjunto de roles de Ansible que puede usar para configurar y gestionar
+diversos componentes, subsistemas y paquetes de software incluidos en Red Hat Enterprise
+Linux. Los roles del sistema proporcionan automatización para muchas tareas comunes de
+configuración del sistema, incluida la sincronización de la hora, las redes, el firewall, el ajuste y el
+registro.
+Estos roles están destinados a proporcionar una API de automatización que sea uniforme en
+varias versiones principales y secundarias de Red Hat Enterprise Linux. El artículo de la base
+de conocimiento en https://access.redhat.com/articles/3050101 documenta las
+versiones de Red Hat Enterprise Linux en sus hosts gestionados que admiten roles específicos.
+Gestión simplificada de la configuración
+Los roles del sistema pueden ayudarlo a simplificar la automatización en varias versiones de
+Red Hat Enterprise Linux. Por ejemplo, el servicio de sincronización de hora recomendado es
+diferente en diferentes versiones de Red Hat Enterprise Linux.
+• Se prefiere el servicio chronyd en RHEL 9.
+• Se prefiere el servicio ntpd en RHEL 6.
+En un entorno con una combinación de versiones de Red Hat Enterprise Linux, debe gestionar los
+archivos de configuración para ambos servicios.
+Puede usar un playbook de Ansible que ejecute el rol redhat.rhel_system_roles.timesync
+para configurar la sincronización de la hora para los hosts gestionados que ejecutan cualquiera de
+las versiones de Red Hat Enterprise Linux.
+Con los roles del sistema, ya no necesita mantener los archivos de configuración para ambos
+servicios.
+Soporte para roles de sistema
+Los roles del sistema se proporcionan como Ansible Content Collections
+redhat.rhel_system_roles certificadas por Red Hat a través del centro de automatización
+para los clientes de Red Hat Ansible Automation Platform, como parte de su suscripción.
+Además, los roles se proporcionan como un paquete RPM (rhel-system-roles) con Red Hat
+Enterprise Linux 9 para su uso con la versión de Ansible Core proporcionada por ese sistema
+operativo. Estos roles del sistema tienen los mismos beneficios de soporte de ciclo de vida que la
+suscripción a Red Hat Enterprise Linux.
+La mayoría de los roles de sistema son "totalmente soportados" y tienen interfaces estables.
+Para cualquier rol del sistema con "soporte completo", Red Hat se esfuerza por garantizar que
+332
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+los nombres de las variables del rol y cómo funcionan no se modifiquen en futuras versiones. Por
+lo tanto, la refactorización del playbook debido a actualizaciones en el rol del sistema debe ser
+mínima.
+Algunos roles del sistema se encuentran en Technology Preview. Estos se prueban y son estables,
+pero pueden estar sujetos a cambios futuros que sean incompatibles con el estado actual del rol.
+Se recomiendan pruebas de integración para los playbooks que incorporan roles de Technology
+Preview. Los playbooks pueden requerir la refactorización si las variables del rol cambian en una
+versión futura del rol.
+Puede acceder a la documentación de los roles del sistema en ansible-navigator
+o revisando la documentación en el Portal de clientes de Red Hat en  Tareas
+de administración y configuración mediante roles del sistema en RHEL  [https://
+access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html-single/
+administration_and_configuration_tasks_using_system_roles_in_rhel/index.].
+Instalación de Ansible Content Collection de los roles
+del sistema
+Puede instalar Ansible Content Collection redhat.rhel_system_roles con el comando
+ansible-galaxy collection install. Un proyecto de Ansible puede especificar esta
+dependencia creando un archivo collections/requirements.yml. En el siguiente ejemplo,
+se supone que su proyecto está configurado para extraer Ansible Content Collections del centro
+de automatización.
+---
+collections:
+  - name: redhat.rhel_system_roles
+El siguiente comando instala las colecciones necesarias para un proyecto determinado en el
+directorio collections/ del proyecto.
+[user@demo demo-project]$ ansible-galaxy collection \
+> install -p collections/ -r collections/requirements.yml
+...output omitted...
+nota
+El desarrollo upstream se realiza a través del proyecto Linux System Roles; sus
+versiones de desarrollo de los roles del sistema se proporcionan a través de Ansible
+Galaxy como Ansible Content Collection fedora.linux_system_roles.
+Red Hat no admite estos roles.
+Ejemplo: rol de sincronización de tiempos
+Supongamos que necesita configurar la sincronización temporal de NTP en sus servidores web.
+Podría escribir la automatización usted mismo para realizar cada una de las tareas necesarias.
+Pero la colección de roles del sistema incluye un rol que puede realizar la configuración,
+redhat.rhel_system_roles.timesync.
+En la documentación de este rol se describen todas las variables que afectan el comportamiento
+del rol y se incluyen tres fragmentos de playbook que ilustran diferentes configuraciones de
+sincronización temporal.
+RH294-RHEL9.0-es-3-20240620
+333
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Para configurar manualmente los servidores NTP, el rol tiene una variable llamada
+timesync_ntp_servers. Esta variable define una lista de servidores NTP para usar. Cada ítem
+de la lista se compone de uno o más atributos. Los dos atributos clave son hostname y iburst.
+Atributo
+Propósito
+hostname
+El nombre de host de un servidor NTP con el que se puede
+sincronizar.
+iburst
+Un valor booleano que habilita o deshabilita la sincronización
+inicial rápida. Se establece de forma predeterminada en no en el
+rol; normalmente debe establecerse en yes.
+Dada esta información, el siguiente ejemplo es un play que usa el rol
+redhat.rhel_system_roles.timesync para configurar los hosts gestionados a fin de
+obtener el tiempo de tres servidores NTP usando la sincronización inicial rápida.
+- name: Time Synchronization Play
+  hosts: webservers
+  vars:
+    timesync_ntp_servers:
+      - hostname: 0.rhel.pool.ntp.org
+        iburst: yes
+      - hostname: 1.rhel.pool.ntp.org
+        iburst: yes
+      - hostname: 2.rhel.pool.ntp.org
+        iburst: yes
+  roles:
+    - redhat.rhel_system_roles.timesync
+Este ejemplo establece las variables de rol en una sección vars del play, pero una mejor práctica
+sería configurarlas como variables de inventario para hosts o grupos de hosts.
+Considere un proyecto de guía con la siguiente estructura:
+[user@demo demo-project]$ tree
+.
+├── ansible.cfg
+├── group_vars
+│   └── webservers
+│       └── timesync.yml
+├── inventory
+└── timesync_playbook.yml
+Define las variables de sincronización temporal que anulan los valores predeterminados de
+rol para los hosts en el grupo webservers en el inventario. A continuación, se muestra un
+ejemplo de cómo se vería este archivo:
+334
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+timesync_ntp_servers:
+  - hostname: 0.rhel.pool.ntp.org
+    iburst: yes
+  - hostname: 1.rhel.pool.ntp.org
+    iburst: yes
+  - hostname: 2.rhel.pool.ntp.org
+    iburst: yes
+El contenido del playbook se simplifica a lo siguiente:
+- name: Time Synchronization Play
+  hosts: webservers
+  roles:
+    - redhat.rhel_system_roles.timesync
+Esta estructura separa claramente el rol, el código del playbook y los ajustes de configuración. El
+código del playbook es simple, fácil de leer y no debe requerir una refactorización compleja. El
+contenido de rol es mantenido y soportado por Red Hat. Todas las configuraciones se manejan
+como variables de inventario.
+Esta estructura también soporta un entorno dinámico y heterogéneo. Los hosts con nuevos
+requisitos de sincronización temporal se pueden colocar en un nuevo grupo de hosts. Las variables
+apropiadas se definen en un archivo YAML y se colocan en el subdirectorio correspondiente
+group_vars (o host_vars).
+Ejemplo: rol de SELinux
+Como otro ejemplo, el rol redhat.rhel_system_roles.selinux simplifica la administración
+de ajustes de configuración de SELinux. Este rol se implementa usando los módulos de Ansible
+relacionados con SELinux. La ventaja de usar este rol en lugar de escribir sus propias tareas es que
+lo exime de la responsabilidad de escribir esas tareas. En su lugar, proporciona variables al rol para
+configurarlo, y el código mantenido en el rol garantizará que se aplique la configuración deseada
+de SELinux.
+Este rol puede ejecutar las siguientes tareas:
+• Establecer el modo de ejecución o permisivo
+• Ejecutar restorecon en partes de la jerarquía del sistema de archivos
+• Configurar valores booleanos de SELinux
+• Configurar de manera persistente los contextos de archivos de SELinux
+• Configurar asignaciones de usuarios de SELinux
+Llamada al rol de SELinux
+A veces, el rol SELinux debe garantizar que los hosts gestionados se reinicien para aplicar
+completamente los cambios. Sin embargo, el rol nunca reinicia los hosts, lo que le permite
+controlar cómo se maneja el reinicio. Por lo tanto, es un poco más complicado de lo habitual usar
+correctamente este rol en un play.
+El rol establecerá una variable booleana, selinux_reboot_required, en true y fallará si se
+necesita un reinicio. Puede usar una estructura block/rescue para recuperarse de la falla, ya
+sea que falle el play si la variable no se configura en true o reinicia el host gestionado y vuelve a
+ejecutar el rol si está en true. El bloque en su play debe verse parecido a lo siguiente:
+RH294-RHEL9.0-es-3-20240620
+335
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+    - name: Apply SELinux role
+      block:
+        - include_role:
+            name: redhat.rhel_system_roles.selinux
+      rescue:
+        - name: Check for failure for other reasons than required reboot
+          ansible.builtin.fail:
+          when: not selinux_reboot_required
+        - name: Restart managed host
+          ansible.builtin.reboot:
+        - name: Reapply SELinux role to complete changes
+          include_role:
+            name: redhat.rhel_system_roles.selinux
+Configuración del rol de SELinux
+Las variables usadas para configurar el rol redhat.rhel_system_roles.selinux se
+describen en la documentación del rol. En los siguientes ejemplos, se muestran algunas formas de
+usar este rol.
+La variable selinux_state establece el modo en que se ejecuta SELinux. Puede establecerse
+en enforcing, permissive o disabled. Si no está configurada, el modo no se cambia.
+selinux_state: enforcing
+La variable selinux_booleans toma una lista de valores booleanos de SELinux para ajustarse.
+Cada ítem de la lista es un diccionario de variables: name del booleano, state (tanto en on como
+en off), e independientemente de que el ajuste deba ser persistent en los reinicios.
+Este ejemplo establece httpd_enable_homedirs en on continuamente:
+selinux_booleans:
+  - name: 'httpd_enable_homedirs'
+    state: 'on'
+    persistent: 'yes'
+La variable selinux_fcontexts requiere una lista de contextos de archivo para establecerse
+continuamente (o eliminarse) y funciona de manera similar al comando selinux fcontext.
+En el siguiente ejemplo, se garantiza que la política tenga una regla para establecer el tipo de
+SELinux predeterminado para todos los archivos de /srv/www en httpd_sys_content_t.
+selinux_fcontexts:
+  - target: '/srv/www(/.*)?'
+    setype: 'httpd_sys_content_t'
+    state: 'present'
+La variable selinux_restore_dirs especifica una lista de directorios en los que se puede
+ejecutar el comando restorecon:
+336
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+selinux_restore_dirs:
+  - /srv/www
+La variable selinux_ports toma una lista de puertos que deben tener un tipo específico de
+SELinux.
+selinux_ports:
+  - ports: '82'
+    setype: 'http_port_t'
+    proto: 'tcp'
+    state: 'present'
+Existen otras variables y opciones para este rol. Consulte la documentación del rol para obtener
+más información.
+Uso de roles del sistema solo con Ansible Core
+nota
+Esta sección es relevante si planea usar roles del sistema sin una suscripción a
+Red Hat Ansible Automation Platform, mediante el uso de la versión de Ansible Core
+que se proporciona con Red Hat Enterprise Linux 9.
+Si no tiene una suscripción a Red Hat Ansible Automation Platform, pero tiene sistemas Red Hat
+Enterprise Linux, puede usar roles de sistema con la versión de Ansible Core proporcionada con
+RHEL.
+Esa versión de Ansible Core solo es compatible con roles del sistema y otro código de
+automatización proporcionado por Red Hat. Además, no incluye ansible-navigator, por lo
+que debe usar herramientas como ansible-playbook que tratan su nodo de control como el
+entorno de ejecución para ejecutar su automatización.
+Debido a que ansible-playbook no usa entornos de ejecución, la única Ansible Content
+Collection que tiene disponible de forma predeterminada es la colección ansible.builtin.
+Otros paquetes incluidos en Red Hat Enterprise Linux pueden agregar Ansible Content
+Collections adicionales al nodo de control.
+Instalación del paquete RPM de roles del sistema
+Asegúrese de que su nodo de control esté registrado con Red Hat Subscription Manager y tenga
+una suscripción a Red Hat Enterprise Linux. También debe instalar el paquete RPM ansible-
+core.
+Para instalar el paquete RPM rhel-system-roles, asegúrese de que el repositorio de paquetes
+de AppStream esté habilitado. Para Red Hat Enterprise Linux 9 en la arquitectura del procesador
+x86_64, este es el repositorio rhel-9-for-x86_64-appstream-rpms. Luego puede instalar
+instale el paquete.
+[user@controlnode ~]$ sudo dnf install rhel-system-roles
+RH294-RHEL9.0-es-3-20240620
+337
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Si usa Ansible Core desde una instalación básica de Red Hat Enterprise Linux
+para su nodo de control y no tiene una suscripción a Red Hat Ansible Automation
+Platform en ese nodo, entonces su nodo de control debe ser una instalación
+completamente actualizada de la versión más reciente de Red Hat Enterprise Linux.
+También debe usar la versión más reciente de los paquetes ansible-core y
+rhel-system-roles.
+Después de la instalación, la colección se instala en el directorio /usr/share/ansible/
+collections/ansible_collections/redhat/rhel_system_roles en su nodo de
+control. Los roles individuales también se instalan en el directorio /usr/share/ansible/roles
+para compatibilidad con versiones anteriores:
+[user@controlnode ~]$ ls -1F /usr/share/ansible/roles/
+linux-system-roles.certificate@
+linux-system-roles.cockpit@
+linux-system-roles.crypto_policies@
+linux-system-roles.firewall@
+linux-system-roles.ha_cluster@
+linux-system-roles.kdump@
+linux-system-roles.kernel_settings@
+linux-system-roles.logging@
+linux-system-roles.metrics@
+linux-system-roles.nbde_client@
+linux-system-roles.nbde_server@
+linux-system-roles.network@
+linux-system-roles.postfix@
+linux-system-roles.selinux@
+linux-system-roles.ssh@
+linux-system-roles.sshd@
+linux-system-roles.storage@
+linux-system-roles.timesync@
+linux-system-roles.tlog@
+linux-system-roles.vpn@
+rhel-system-roles.certificate/
+rhel-system-roles.cockpit/
+rhel-system-roles.crypto_policies/
+rhel-system-roles.firewall/
+rhel-system-roles.ha_cluster/
+rhel-system-roles.kdump/
+rhel-system-roles.kernel_settings/
+rhel-system-roles.logging/
+rhel-system-roles.metrics/
+rhel-system-roles.nbde_client/
+rhel-system-roles.nbde_server/
+rhel-system-roles.network/
+rhel-system-roles.postfix/
+rhel-system-roles.selinux/
+rhel-system-roles.ssh/
+rhel-system-roles.sshd/
+rhel-system-roles.storage/
+338
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+rhel-system-roles.timesync/
+rhel-system-roles.tlog/
+rhel-system-roles.vpn/
+El nombre upstream correspondiente de cada rol está vinculado al rol de sistema RHEL. Esto
+permite que cualquiera de los dos nombres hagan referencia a roles individuales en un playbook.
+Importante
+Si está usando ansible-playbook para ejecutar su playbook y este hace
+referencia a un rol del sistema que se instaló usando el FQCN del paquete RPM,
+debe usar la versión redhat.rhel_system_roles de su nombre. Por ejemplo,
+puede hacer referencia al rol firewall como:
+• redhat.rhel_system_roles.firewall (su FQCN en la colección)
+• rhel-system-roles.firewall (su nombre como rol independiente)
+• linux-system-roles.firewall (su nombre como rol independiente
+upstream)
+No puede usar fedora.linux_system_roles.firewall porque la colección
+fedora.linux_system_roles no está instalada en el sistema.
+Además, los nombres de roles independientes solo funcionan si /usr/share/
+ansible/roles está en su configuración roles_path.
+Acceso a la documentación para roles de sistema
+Si está trabajando con roles del sistema en Red Hat Enterprise Linux y no tiene ansible-
+navigator disponible, existen otras formas de obtener documentación sobre los roles del
+sistema.
+La documentación oficial para los roles del sistema se encuentra en  Tareas de
+administración y configuración mediante roles del sistema en RHEL  [https://
+access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html-single/
+administration_and_configuration_tasks_using_system_roles_in_rhel/index].
+Sin embargo, si instaló los roles del sistema desde el paquete RPM, la documentación también
+está disponible en el directorio /usr/share/doc/rhel-system-roles/.
+[user@controlnode ~]$ ls -1 /usr/share/doc/rhel-system-roles/
+certificate
+cockpit
+collection
+crypto_policies
+firewall
+ha_cluster
+kdump
+kernel_settings
+logging
+metrics
+nbde_client
+nbde_server
+network
+postfix
+selinux
+RH294-RHEL9.0-es-3-20240620
+339
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+ssh
+sshd
+storage
+timesync
+tlog
+vpn
+El directorio de documentación de cada rol contiene un archivo README.md. El archivo
+README.md contiene una descripción del rol, junto con la información de uso del rol.
+El archivo README.md también describe las variables de rol que afectan el comportamiento
+del rol. A menudo el archivo README.md contiene un fragmento de playbook que muestra la
+configuración de variables para un escenario de configuración común.
+Algunos directorios de documentación de roles contienen ejemplos de playbooks. Cuando
+use un rol por primera vez, revise los playbooks de ejemplo adicionales en el directorio de
+documentación.
+Ejecución de playbooks sin el navegador de contenido de
+automatización
+Puede usar el comando ansible-playbook para ejecutar un playbook que usa roles de sistema
+en Red Hat Enterprise Linux cuando no tiene Red Hat Ansible Automation Platform o ansible-
+navigator.
+La sintaxis de ansible-playbook es muy similar a ansible-navigator run -m stdout y
+toma muchas de las mismas opciones.
+[user@controlnode ~]$ ansible-playbook playbook.yml
+Referencias
+Red Hat Enterprise Linux (RHEL) System Roles
+https://access.redhat.com/articles/3050101
+Red Hat Enterprise Linux System Roles Ansible Collection
+https://console.redhat.com/ansible/automation-hub/repo/published/redhat/
+rhel_system_roles
+Alcance del soporte para el paquete Ansible Core incluido en los repositorios
+de AppStream de RHEL 9 y RHEL 8.6 y posteriores
+https://access.redhat.com/articles/6325611
+Uso de Ansible en RHEL 9
+https://access.redhat.com/articles/6393321
+Roles de sistema de Linux
+https://linux-system-roles.github.io/
+Ansible Collection de roles del sistema Linux
+https://galaxy.ansible.com/fedora/linux_system_roles
+340
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Ejercicio Guiado
+Reutilización de contenido con roles de
+sistema
+Usar uno de los roles de sistema junto con tareas para configurar la sincronización temporal y
+la zona horaria de los hosts gestionados.
+Resultados
+• Instalar los roles de sistema de Red Hat Enterprise Linux.
+• Buscar y usar la documentación de roles de sistema.
+• Usar el rol redhat.rhel_system_roles.timesync en un playbook para configurar la
+sincronización temporal en hosts remotos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-system
+Instrucciones
+ 1.
+Cambie al directorio /home/student/role-system.
+[student@workstation ~]$ cd ~/role-system
+[student@workstation role-system]$
+ 2.
+Instale los roles del sistema en su nodo de control, workstation.lab.example.com.
+Confirme que los roles del sistema se hayan instalado mediante ansible-galaxy.
+2.1.
+Use el comando ansible-galaxy collection list para mostrar las
+colecciones instaladas.
+[student@workstation role-system]$ ansible-galaxy collection list
+2.2.
+Cree el directorio collections.
+[student@workstation role-system]$ mkdir -p collections
+2.3.
+El directorio ./collections no es una ubicación de búsqueda predeterminada para
+las colecciones. Agregue la clave collections_paths al archivo ansible.cfg, de
+modo que se busque en el directorio ./collections.
+RH294-RHEL9.0-es-3-20240620
+341
+
+

@@ -1,0 +1,91 @@
+# Ejercicio Guiado: Ejercicio guiado Operar SELinux
+# Tipo: guided_exercise
+# Capítulo: Capítulo 14. Gestión de la seguridad con SELinux
+
+14.2. Ejercicio guiado Operar SELinux 14.2. Ejercicio guiado Operar SELinux Controle el modo SELinux actual y ajuste el modo SELinux predeterminado que se utiliza en el momento del arranque. Resultados Ver y configurar el modo SELinux actual. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-opsmode
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cambie el modo SELinux predeterminado al modo permisivo. 2. Utilice el comando getenforce para verificar el modo SELinux actual en la máquina del servidor.
+
+[root@servera ~]# getenforce
+
+Hacer cumplir 2.1. Edite el archivo de configuración /etc/selinux/config para cambiar el parámetro SELINUX del modo obligatorio al modo permisivo. ...salida omitida... SELINUX=permisivo ...salida omitida... 2.2. Utilice el comando setenforce para cambiar el parámetro SELINUX al modo permisivo.
+
+[root@servera ~]# setenforce 0
+
+2.3. Utilice el comando getenforce para verificar el modo SELinux actual.
+
+[root@servera ~]# getenforce
+
+Permisivo 2.4. Cambie el modo SELinux predeterminado nuevamente al modo obligatorio en el archivo de configuración. 3.
+
+
+
+
+
+14.2. Ejercicio guiado Operar SELinux Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-opsmode
+
+Edite el archivo de configuración /etc/selinux/config para cambiar el parámetro SELINUX del modo permisivo al modo obligatorio. ...salida omitida... SELINUX=aplicando ...salida omitida... 3.1. Utilice el comando setenforce para configurar el modo SELinux actual en el modo de aplicación.
+
+[root@servera ~]# setenforce 1
+
+3.2. Utilice el comando getenforce para confirmar que SELinux esté configurado en el modo de aplicación.
+
+[root@servera ~]# getenforce
+
+Hacer cumplir 3.3. Reinicie la máquina del servidor para implementar la configuración persistente.
+
+[root@servera ~]# systemctl reboot
+
+...salida omitida...
+
+student@workstation:~$
+
+4. Verifique el modo SELinux en la máquina del servidor. 5. Inicie sesión en la máquina del servidor como usuario estudiante. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 5.1. Utilice el comando getenforce para verificar el modo SELinux actual.
+
+[student@servera ~]$ getenforce
+
+Hacer cumplir 5.2. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux 14.3. Control de contextos de archivos SELinux Objetivos Controlar los contextos de archivos SELinux en la política del sistema para cambiar los contextos de los archivos según la configuración de la política y establecer manualmente contextos no estándar. Contexto SELinux inicial Todos los recursos, como procesos, archivos y puertos, están etiquetados con un contexto SELinux. SELinux mantiene una base de datos basada en archivos de políticas de etiquetado de archivos en el directorio /etc/selinux/targeted/contexts/files. Los archivos nuevos obtienen una etiqueta predeterminada cuando su nombre de archivo coincide con una política de etiquetado existente. Cuando el nombre de un archivo nuevo no coincide con una política de etiquetado existente, el archivo hereda la misma etiqueta que el directorio principal. Con la herencia de etiquetado, todos los archivos siempre se etiquetan cuando se crean, independientemente de si existe una política explícita para un archivo. Cuando los archivos se crean en ubicaciones predeterminadas que tienen una política de etiquetado existente, o cuando existe una política para una ubicación personalizada, los archivos nuevos se etiquetan con un contexto SELinux correcto. Sin embargo, si un archivo se crea en una ubicación inesperada sin una política de etiquetado existente, es posible que la etiqueta heredada no sea correcta para el propósito previsto del nuevo archivo. Además, copiar un archivo a una nueva ubicación puede hacer que el contexto SELinux de ese archivo cambie, donde el nuevo contexto está determinado por la política de etiquetado de la nueva ubicación, o por la herencia del directorio principal si no existe ninguna política. El contexto SELinux de un archivo se puede conservar durante la copia para conservar la etiqueta de contexto que se determinó para la ubicación original del archivo. Por ejemplo, el comando cp -p conserva todos los atributos del archivo durante la copia cuando sea posible, y el comando cp --
+
+preserve=context command preserves only SELinux contexts.
+
+El comando ls -Z muestra el contexto SELinux de un archivo o directorio. Nota Copiar un archivo siempre crea un inodo de archivo, y los atributos de ese inodo, incluido el contexto SELinux, deben configurarse inicialmente, como se analizó anteriormente. Sin embargo, mover un archivo normalmente no crea un inodo si el movimiento ocurre dentro del mismo sistema de archivos, sino que mueve el nombre del archivo del inodo existente a una nueva ubicación. Debido a que no es necesario inicializar los atributos del inodo existente, un archivo que se mueve con el comando mv conserva su contexto SELinux a menos que establezca un nuevo contexto en el archivo con la opción -Z. Después de copiar o mover un archivo, verifique que tenga el contexto SELinux apropiado y configúrelo correctamente si es necesario. El siguiente ejemplo demuestra cómo funciona este proceso. Cree dos archivos en el directorio /tmp.
+
+root@host:~# touch /tmp/file1 /tmp/file2
+
+Ambos archivos reciben el tipo de contexto user_tmp_t debido a la herencia del contexto del directorio principal.
+
+
+
+
+

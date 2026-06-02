@@ -1,0 +1,293 @@
+# Administración de archivos de configuración de Ansible
+# Tipo: theory
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Administración de archivos de
+configuración de Ansible
+Objetivos
+• Describir dónde se encuentran los archivos de configuración de Ansible, cómo los selecciona
+Ansible y editarlos para aplicar los cambios a la configuración predeterminada.
+Configuración de Ansible
+Puede crear y editar dos archivos en cada uno de los directorios de su proyecto Ansible que
+configuran el comportamiento de Ansible y el comando ansible-navigator. Un directorio de
+proyectos de Ansible es un directorio desde el cual ejecuta sus playbooks mediante el comando
+ansible-navigator.
+• ansible.cfg, que configura el comportamiento de varias herramientas de Ansible.
+• ansible-navigator.yml, que cambia las opciones predeterminadas para el comando
+ansible-navigator.
+Gestión de la configuración de Ansible
+Cree un archivo de configuración ansible.cfg en cada uno de sus directorios de proyectos de
+Ansible. El archivo de configuración de Ansible consiste en varias secciones; cada sección contiene
+parámetros definidos como pares de clave-valor. Los títulos de las secciones se incluyen entre
+paréntesis. Para la operación básica, use las siguientes dos secciones:
+• [defaults], que establece valores predeterminados para la operación de Ansible
+• [privilege_escalation], que configura el modo en que Ansible realiza el aumento de
+privilegios en hosts gestionados
+El siguiente es un archivo ansible.cfg de muestra:
+[defaults]
+inventory = ./inventory 
+remote_user = user 
+ask_pass = false 
+[privilege_escalation]
+become = true 
+become_method = sudo 
+become_user = root 
+become_ask_pass = false 
+El parámetro inventory especifica la ruta a un archivo de inventario estático o a un
+directorio que contenga múltiples archivos de inventario estático y scripts de inventario
+dinámico.
+El parámetro remote_user especifica el nombre de usuario que Ansible usa para
+conectarse a los hosts gestionados. En un entorno de ejecución de automatización
+RH294-RHEL9.0-es-3-20240620
+33
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+basado en contenedores ejecutado por ansible-navigator, esto es root de forma
+predeterminada.
+El parámetro ask_pass especifica si se debe solicitar o no una contraseña SSH. Establece
+false de forma predeterminada. Establezca este parámetro en true para la autenticación
+SSH basada en contraseña, o en false para la autenticación de clave pública SSH. Si usa el
+comando ansible-navigator, establecer este parámetro en true requiere deshabilitar
+los artefactos del playbook y usar el modo de salida estándar.
+El parámetro become especifica si se debe cambiar automáticamente el usuario en el host
+gestionado (por lo general, a root) después de la conexión. Establece false de forma
+predeterminada. Si bien puede establecer este parámetro en true para habilitar el aumento
+de privilegios para todos los plays, puede decidir habilitar el aumento de privilegios solo en
+los plays, bloques o tareas que requieren privilegios elevados.
+El parámetro become_method especifica cómo cambiar de usuario. El valor predeterminado
+es sudo, aunque hay otros métodos disponibles, como su.
+El parámetro become_user especifica a qué usuario cambiar en el host gestionado.
+Establece root de forma predeterminada.
+El parámetro become_ask_pass especifica si se debe solicitar o no una contraseña para
+el parámetro become_method. Establece false de forma predeterminada. Si usa el
+comando ansible-navigator, establecer este parámetro en true requiere deshabilitar
+los artefactos del playbook y usar el modo de salida estándar.
+Importante
+El comando ansible-playbook también puede usar un archivo .ansible.cfg
+en su directorio de inicio o el archivo /etc/ansible/ansible.cfg, pero el
+comando ansible-navigator no usa estos archivos locales en su sistema.
+Escalación de privilegios
+Algunas tareas, como la instalación de software, solo pueden completarse si el usuario tiene
+privilegios elevados. Si sus playbooks se conectan a su host gestionado como un usuario regular,
+debe habilitar el aumento de privilegios para que esas tareas se realicen correctamente.
+En Red Hat Enterprise Linux 8 y 9, la configuración predeterminada del archivo /etc/sudoers
+garantiza que todos los usuarios en el grupo wheel tengan la capacidad de usar sudo para
+convertirse en root después de ingresar su contraseña.
+Si su archivo de configuración de Ansible usa el parámetro become_method = sudo, puede
+usar el archivo /etc/sudoers como ejemplo para otorgar acceso sudo a usuarios o grupos
+adicionales. Cree un archivo en el directorio /etc/sudoers.d y asegúrese de que el archivo sea
+propiedad de root.
+Las siguientes líneas de un archivo /etc/sudoers muestran que se requiere y no se requiere una
+contraseña:
+## Allows people in group wheel to run all commands
+%wheel  ALL=(ALL)       ALL
+## Same thing without a password
+# %wheel        ALL=(ALL)       NOPASSWD: ALL
+34
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Si sus usuarios y grupos deben ingresar una contraseña para los comandos sudo, establezca el
+parámetro become_ask_pass en true en la sección [privilege_escalation] de su archivo
+de configuración de Ansible.
+Examine las implicaciones de seguridad del enfoque que elija para el aumento de privilegios. Las
+distintas organizaciones e implementaciones pueden tener distintas ventajas y desventajas para
+considerar.
+Ajustes de conexión
+De forma predeterminada, Ansible se conecta a los hosts gestionados mediante el protocolo SSH.
+Para ajustar este comportamiento y otras configuraciones de conexión, actualice los parámetros
+en la sección [defaults] del archivo de configuración de Ansible.
+Establezca el parámetro remote_user para conectarse a sus hosts gestionados con un usuario
+específico. Si el parámetro remote_user no está definido, Ansible intenta conectarse con el
+usuario root cuando usa el comando ansible-navigator.
+Si tiene claves SSH privadas configuradas que le permiten autenticarse con el usuario remoto
+en los hosts gestionados, Ansible inicia sesión de forma automática. Establezca el parámetro
+ask_pass si prefiere usar la autenticación basada en contraseña con el comando ansible-
+navigator.
+Puede configurar la autenticación SSH basada en claves; para ello, genere un par de claves SSH y,
+luego, copie la clave pública en sus hosts gestionados:
+• Si aún no tiene un par de claves SSH, ejecute el comando ssk-keygen para generar un par de
+claves SSH:
+[user@controlnode ~]$ ssh-keygen
+...output omitted...
+• Use el comando ssh-copy-id para copiar su clave pública en un host gestionado. Por ejemplo,
+si su archivo ansible.cfg usa el parámetro remote_user = devops y usted desea copiar
+su clave pública en el host host.example.com, ejecute el siguiente comando:
+[user@controlnode ~]$ ssh-copy-id devops@host.example.com
+...output omitted...
+En lugar de copiar manualmente su clave pública en cada host, puede copiar su clave pública
+en todos sus hosts gestionados mediante la creación y ejecución de un playbook similar a la
+siguiente:
+---
+- name: Deploy public key to all hosts
+  hosts: all
+  tasks:
+    - name: Copy public SSH key
+      ansible.posix.authorized_key:
+        user: devops
+        key: "{{ lookup('ansible.builtin.file', '~/.ssh/id_rsa.pub') }}"
+        state: present
+RH294-RHEL9.0-es-3-20240620
+35
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Dado que el host gestionado aún no tendría configurada la autenticación basada en claves SSH,
+tendría que ejecutar el playbook con las opciones --ask-pass, --pae false y -m stdout
+para que el comando ansible-navigator run solicite autenticarse como usuario remoto.
+Importante
+El comando ansible-navigator run puede colgarse o no ejecutarse si el
+comando debe solicitarle información, como una contraseña, y no deshabilitó los
+artefactos del playbook (--pae false) y no usó el modo de salida estándar (-m
+stdout).
+Determinación de los ajustes de configuración actuales
+El comando ansible-navigator config muestra la configuración actual de Ansible. El
+comando muestra el valor real que usa Ansible para cada parámetro y de qué fuente recupera ese
+valor, archivo de configuración o variable de entorno.
+La siguiente salida es del comando ansible-navigator config que se ejecuta desde un
+directorio /home/student/project/ que contiene un archivo ansible.cfg:
+   Name                        Default Source                            Current
+...output omitted...
+44│Default ask pass            True    default                           False
+45│Default ask vault pass      True    default                           False
+46│Default become              False   /home/student/project/ansible.cfg True
+47│Default become ask pass     False   /home/student/project/ansible.cfg True
+ ...output omitted...
+50│Default become method       False   /home/student/project/ansible.cfg sudo
+51│Default become user         False   /home/student/project/ansible.cfg root
+ ...output omitted...
+En el ejemplo anterior, cada línea describe un parámetro de configuración de Ansible.
+• El valor True en la columna Default para los parámetros Default ask pass y Default
+ask vault pass significa que los parámetros están usando sus valores predeterminados.
+El valor actual para ambos parámetros es False y los valores se muestran en la columna
+Current.
+• Los parámetros Default become y Default become ask pass se han configurado
+manualmente en True en el archivo de configuración /home/student/project/
+ansible.cfg. La columna Default es False para estos dos parámetros. La columna
+Source proporciona la ruta al archivo de configuración que define estos parámetros, y la
+columna Current muestra que el valor para estos dos parámetros es True.
+• El parámetro Default become method tiene el valor actual de sudo y el parámetro Default
+become user tiene el valor actual de root.
+Para salir del modo interactivo del comando ansible-navigator config, presione Esc o
+escriba :q y presione Enter.
+36
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Gestión de la configuración para el navegador de
+contenido de automatización
+Puede crear un archivo de configuración (o archivo de ajustes) para ansible-navigator para
+anular los valores predeterminados de sus ajustes de configuración. El archivo de configuración
+puede estar en formato JSON (.json) o YAML (.yml o .yaml). Esta discusión se centra en el
+formato YAML.
+El navegador de contenido de automatización busca un archivo de configuración en el siguiente
+orden y usa el primer archivo que encuentra:
+• Si se establece la variable de entorno ANSIBLE_NAVIGATOR_CONFIG, use el archivo de
+configuración en la ubicación que especifica.
+• Un archivo ansible-navigator.yml en su directorio de proyecto actual de Ansible.
+• Un archivo .ansible-navigator.yml en su directorio de inicio (observe que el nombre del
+archivo contiene un punto al comienzo del nombre).
+Al igual que el archivo de configuración de Ansible, cada proyecto puede tener su propio archivo
+de configuración del navegador de contenido de automatización.
+El siguiente archivo ansible-navigator.yml configura algunos ajustes comunes:
+---
+ansible-navigator:
+  execution-environment: 
+    image: utility.lab.example.com/ee-supported-rhel8:latest 
+    pull:
+      policy: missing 
+  playbook-artifact: 
+    enable: false 
+  mode: stdout 
+La sección execution-environment configura los ajustes para el entorno de ejecución de
+automatización que usa el comando ansible-navigator.
+La clave image define el nombre de la imagen del contenedor que se usará para el entorno
+de ejecución de automatización.
+La clave policy anidada debajo de la sección pull indica que solo se extraiga la imagen del
+contenedor si aún no existe en la máquina local.
+La sección playbook-artifact configura los ajustes para los archivos JSON que Ansible
+genera cada vez que ejecuta un playbook. Cada archivo JSON generado registra información
+sobre la ejecución de un playbook específico. Puede usar estos archivos para revisar los
+resultados de la ejecución de un playbook o para solucionar problemas del playbook.
+La clave enable anidada debajo de la sección playbook-artifact deshabilita la
+generación de artefactos de playbook cuando se usa el comando ansible-navigator
+run. Los artefactos del playbook se deben deshabilitar cuando se le solicite una contraseña
+al ejecutar un playbook. Puede anular temporalmente esta configuración desde la línea de
+comandos con la opción --pae.
+La clave mode define el modo de salida para el comando ansible-navigator. El valor para
+esta clave debe establecerse en interactive (predeterminado) o stdout. Puede anular
+temporalmente esta configuración desde la línea de comandos con la opción -m.
+RH294-RHEL9.0-es-3-20240620
+37
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+nota
+Las configuraciones más complejas para el navegador de contenido de
+automatización se tratan en el curso Developing Advanced Automation with Red Hat
+Ansible Automation Platform (DO374). Consulte https://ansible.readthedocs.io/
+projects/navigator/settings/ para obtener más documentación sobre la
+configuración que puede usar en este archivo.
+Comentarios de archivos de configuración
+Tanto el archivo ansible.cfg como ansible-navigator.yml soportan el signo de número
+(#) al comienzo de una línea como carácter de comentario. El numeral al inicio de una línea
+comenta toda la línea.
+Además, el archivo ansible.cfg soporta el punto y coma (;) como carácter de comentario. El
+punto y coma comenta todo hacia la derecha en la línea.
+Referencias
+Páginas del manual: ssh-keygen(1) y ssh-copy-id(1)
+Configuración de Ansible: documentación Ansible
+https://docs.ansible.com/ansible/latest/installation_guide/intro_configuration.html
+Configuración de ansible-navigator: Documentación de Ansible Navigator
+https://ansible.readthedocs.io/projects/navigator/settings/
+38
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Administración de archivos de
+configuración de Ansible
+Editar archivos de configuración de Ansible para personalizar su entorno de Ansible.
+Resultados
+• Usted deberá ser capaz de crear archivos de configuración para configurar su entorno de
+Ansible con parámetros personalizados persistentes.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-manage
+Instrucciones
+ 1.
+Cambie al directorio /home/student/playbook-manage.
+[student@workstation ~]$ cd ~/playbook-manage
+[student@workstation playbook-manage]$
+ 2.
+Configure el navegador de contenido de automatización.
+2.1.
+Cree el archivo /home/student/playbook-manage/ansible-navigator.yml.
+Configure el navegador de contenido de automatización para usar la imagen
+del entorno de ejecución utility.lab.example.com/ee-supported-
+rhel8:latest y solo extraiga la imagen si falta. También configure el navegador de
+contenido de automatización para deshabilitar los artefactos de playbooks. El archivo
+debe contar con el siguiente contenido:
+---
+ansible-navigator:
+  execution-environment:
+    image: utility.lab.example.com/ee-supported-rhel8:latest
+    pull:
+      policy: missing
+  playbook-artifact:
+    enable: false
+2.2.
+Ejecute el comando ansible-navigator images para enumerar las imágenes del
+entorno de ejecución disponibles.
+RH294-RHEL9.0-es-3-20240620
+39
+
+

@@ -1,0 +1,131 @@
+# Ejercicio Guiado: Ejercicio guiado para ampliar un volumen lógico
+# Tipo: guided_exercise
+# Capítulo: Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+16.4. Ejercicio guiado Ampliar un volumen lógico 16.4. Ejercicio guiado Ampliar un volumen lógico Ampliar un volumen lógico para aumentar el almacenamiento disponible y ampliar su sistema de archivos para utilizar el almacenamiento adicional. Resultados Ampliar el almacenamiento de un volumen lógico existente. Amplíe el sistema de archivos de un volumen lógico para utilizar el almacenamiento disponible. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-extend
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree la tercera partición con un tamaño de 512 MiB en el dispositivo de almacenamiento /dev/sdb. Configure la partición al tipo de partición LVM de Linux y registre la partición con el kernel. 2. Cree la tercera partición con un tamaño de 512 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart third 514MiB 1026MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Configure la tercera partición al tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 3 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Registre la nueva partición con el kernel.
+
+[root@servera ~]# udevadm settle
+
+2.3. Etiquete la tercera partición como un volumen físico.
+
+[root@servera ~]# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+3. Utilizando la tercera partición, extienda el sistema de archivos en lv_servera LV a un tamaño total de 700 MiB. 4. Extienda el vg_servera VG usando el PV /dev/sdb3. 4.1.
+
+
+
+
+
+16.4. Ejercicio guiado Extender un volumen lógico Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que
+
+[root@servera ~]# vgextend vg_servera /dev/sdb3
+  Volume group "vg_servera" successfully extended
+
+Amplíe el lv_servera LV a 700 MiB.
+
+[root@servera ~]# lvextend -L 700M /dev/vg_servera/lv_servera
+  Size of logical volume vg_servera/lv_servera changed from 400.00 MiB (100 extents) to 700.00 MiB 
+
+(175 extensiones).
+
+  Logical volume vg_servera/lv_servera successfully resized.
+
+4.2. Amplíe el sistema de archivos XFS montado en /data utilizando el espacio libre en el LV.
+
+[root@servera ~]# xfs_growfs /data
+
+...salida omitida... los bloques de datos cambiaron de 102400 a 179200 4.3. Verifique que el tamaño del LV esté extendido y que el contenido aún esté presente en el volumen. 5. Verifique el tamaño del VI extendido.
+
+[root@servera ~]# lvdisplay /dev/vg_servera/lv_servera
+  --- Logical volume ---
+  LV Path                /dev/vg_servera/lv_servera
+  LV Name                lv_servera
+  VG Name                vg_servera
+  LV UUID                a7N74m-RwUN-ik3H-ZuhJ-adQW-dACp-3Qek3d
+  LV Write Access        read/write
+  LV Creation host, time servera, 2025-06-23 21:04:31 +0000
+  LV Status              available
+  # open                 1
+  LV Size                700.00 MiB
+  Current LE             175
+  Segments               3
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           253:0
+
+5.1. Verifique el nuevo tamaño del sistema de archivos.
+
+[root@servera ~]# df -h /data
+
+Tamaño del sistema de archivos utilizado Disponibilidad Uso% Montado en /dev/mapper/vg_servera-lv_servera 636M 33M 604M 6% /data 5.2. Verifique que los archivos copiados anteriormente todavía estén presentes.
+
+[root@servera ~]# ls /data | wc -l
+
+30 5.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada. 6.
+
+
+
+
+
+16.4. Ejercicio guiado Ampliar un volumen lógico Los recursos de ejercicios anteriores no afectan los ejercicios siguientes.
+
+student@workstation:~$ lab finish lvm-extend
+
+
+
+
+
+16.5. Reemplazo de volúmenes físicos y administración de LVM 16.5. Reemplazo de volúmenes físicos y administración de objetivos de LVM Reemplazar volúmenes físicos pequeños o defectuosos en un grupo de volúmenes y retirar volúmenes lógicos, grupos de volúmenes o volúmenes físicos inactivos cuando ya no sean necesarios. Reemplazo de un volumen físico en un grupo de volúmenes Es posible que se enfrente a una situación en la que deba reemplazar un PV en un VG debido a una falla de hardware, espacio insuficiente u otros motivos. LVM proporciona herramientas de línea de comandos para realizar esta operación de forma segura, incluso con LV activos y montados. Ampliar el almacenamiento del grupo de volúmenes Es posible que necesite agregar más espacio en disco para ampliar un VG. Puede agregar volúmenes físicos a un VG para ampliar su tamaño disponible. Prepare el dispositivo físico y cree el volumen físico si no existe.
+
+root@host:~# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+El comando vgextend agrega el nuevo PV al VG. Este comando extiende el VG vg01 por el tamaño de PV /dev/sdb3.
+
+root@host:~# vgextend vg01 /dev/sdb3
+  Volume group "vg01" successfully extended
+
+Reducir el almacenamiento del grupo de volumen Reducir el almacenamiento de un VG implica eliminar los PV no utilizados del VG. El comando pvmove mueve datos de extensiones en un PV a extensiones en otro PV con suficientes extensiones libres en el mismo VG. Puede continuar usando el LV del mismo VG al reducir el almacenamiento. Utilice el comando pvmove -Una opción para realizar una copia de seguridad automática de los metadatos del VG después de un cambio. Esta opción utiliza el comando vgcfgbackup para realizar una copia de seguridad de los metadatos automáticamente.
+
+root@host:~# pvmove -A y /dev/sdb1
+  /dev/sdb1: Moved: 2.74%
+  ...output omitted...
+  /dev/sdb1: Moved: 100.00%
+
+Advertencia Antes de usar el comando pvmove, haga una copia de seguridad de los datos almacenados en todos los LV del VG. Una pérdida de energía inesperada durante la operación podría dejar el VG en un estado inconsistente, lo que podría causar una pérdida de datos en los LV. Utilice el comando vgreduce para eliminar un PV de un VG.
+
+
+
+
+

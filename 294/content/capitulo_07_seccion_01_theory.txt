@@ -1,0 +1,390 @@
+# Descripción de la estructura del rol
+# Tipo: theory
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Descripción de la estructura del rol
+Objetivos
+• Describir el propósito de un rol de Ansible, su estructura y cómo se usan los roles en los
+playbooks.
+Estructuración de playbooks de Ansible con roles
+A medida que desarrolla más playbooks, probablemente descubrirá que tiene muchas
+oportunidades para volver a usar el código de playbooks que ya ha escrito. Tal vez podría volver
+a usar un play para configurar una base de datos MySQL para una aplicación para configurar
+una base de datos MySQL para otra aplicación, con diferentes nombres de host, contraseñas y
+usuarios.
+Ese play puede ser largo y complejo, con muchos archivos incluidos o importados, y con tareas y
+manejadores para gestionar diversas situaciones. Copiar todo ese código en otro playbook podría
+ser un trabajo no menor.
+Los roles de Ansible facilitan la reutilización del código genérico de Ansible. Puede empaquetar
+todas las tareas, variables, archivos, plantillas y otros recursos necesarios para aprovisionar
+infraestructura o implementar aplicaciones en una estructura de directorios estandarizada. Copie
+un rol de un proyecto a otro copiando el directorio, luego llame al rol dentro de un play.
+Un rol bien escrito puede tomar variables pasadas del playbook. Estas variables pueden ajustar el
+comportamiento de los roles mediante la configuración de todos los nombres de host específicos
+del sitio, direcciones IP, nombres de usuario, contraseñas y otros detalles locales específicos.
+Por ejemplo, podría escribir un rol con el fin de implementar un servidor de base de datos para
+soportar variables que configuran el nombre de host, el usuario administrador de la base de datos
+y la contraseña, y otros parámetros que necesitan personalización para su instalación.
+También puede garantizar que se establezcan valores predeterminados razonables para esas
+variables en el rol, si no se establecen en el play que invoca el rol.
+Los roles Ansible tienen los siguientes beneficios:
+• Los roles agrupan el contenido, lo que permite intercambiar el código fácilmente con otros.
+• Los roles pueden definir los elementos fundamentales de un tipo de sistema, como un servidor
+web, servidor de base de datos o repositorio de git.
+• Los roles hacen que los proyectos más grandes sean más manejables.
+• Los roles se pueden desarrollar en paralelo por diferentes usuarios.
+Además de escribir, usar, volver a usar y compartir sus propios roles, puede obtener roles de
+otras fuentes. Puede encontrar roles mediante el uso de paquetes de distribución, como Ansible
+Content Collections. O puede descargar roles desde el centro de automatización de Red Hat, un
+centro de automatización privado y desde el sitio web de Ansible Galaxy de la comunidad.
+Red Hat Enterprise Linux incluye algunos roles en el paquete rhel-system-roles. Aprenderá
+más sobre rhel-system-roles más adelante en este capítulo.
+278
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Análisis de la estructura de roles de Ansible
+Una función Ansible se define mediante una estructura estandarizada de subdirectorios y archivos.
+El directorio de nivel superior define el nombre del propio rol. Los archivos se organizan en
+subdirectorios que se nombran de acuerdo con el propósito de cada archivo en el rol, como tasks
+y handlers.
+Los subdirectorios files y templates contienen archivos a los que hacen referencia tareas en
+otros playbooks y archivos de tareas.
+El siguiente comando tree muestra la estructura de directorio del rol user.example.
+[user@host roles]$ tree user.example
+user.example/
+├── defaults
+│   └── main.yml
+├── files
+├── handlers
+│   └── main.yml
+├── meta
+│   └── main.yml
+├── README.md
+├── tasks
+│   └── main.yml
+├── templates
+├── tests
+│   ├── inventory
+│   └── test.yml
+└── vars
+    └── main.yml
+Subdirectorios del rol de Ansible
+Subdirectorio
+Función
+defaults
+El archivo main.yml en este directorio contiene los valores
+predeterminados de variables del rol que se pueden sobrescribir cuando
+se usa un rol. Estas variables tienen poca prioridad y están destinadas a
+modificarse y personalizarse en los plays.
+files
+Este directorio contiene archivos estáticos a los que hacen referencia las
+tareas de los roles.
+handlers
+El archivo main.yml en este directorio contiene las definiciones del
+administrador de roles.
+meta
+El archivo main.yml en este directorio contiene información acerca del
+rol, incluido el autor, la licencia, las plataformas y las dependencias de roles
+opcionales.
+tasks
+El archivo main.yml en este directorio contiene las definiciones de las
+tareas de los roles.
+RH294-RHEL9.0-es-3-20240620
+279
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Subdirectorio
+Función
+templates
+Este directorio contiene plantillas Jinja2 a las que hacen referencia las
+tareas de los roles.
+tests
+Este directorio puede contener un inventario y un playbook de test.yml
+que se pueden usar para probar un rol.
+vars
+El archivo main.yml en este directorio define los valores de la variable
+del rol. A menudo, estas variables se utilizan para fines internos dentro del
+rol. Estas variables tienen una alta prioridad y no están diseñadas para ser
+cambiadas cuando se usan en un playbook.
+No todos los roles tienen todos estos directorios.
+Definición de variables y valores predeterminados
+Las variables del rol se definen mediante la creación de un archivo vars/main.yml con pares de
+clave-valor en la jerarquía del directorio del rol. Se hace referencia a estas variables en los archivos
+de tareas de rol como cualquier otra variable: {{ VAR_NAME }}. Estas variables tienen una alta
+prioridad y no se las puede reemplazar por variables de inventario. Estas variables son usadas por
+el funcionamiento interno del rol.
+Las variables predeterminadas permiten que se establezcan valores predeterminados para las
+variables que se pueden usar en un play para configurar el rol o personalizar su comportamiento.
+Estas variables se definen mediante la creación de un archivo defaults/main.yml con pares de
+clave-valor en la jerarquía del directorio del rol. Las variables predeterminadas tienen la prioridad
+más baja de cualquiera de las variables disponibles.
+Los valores de las variables predeterminadas pueden reemplazarse con cualquier otra variable,
+incluidas las variables de inventario. El objetivo de estas variables es proporcionarle a la persona
+que escribe un play que utiliza el rol una manera de personalizar o controlar exactamente lo que
+va a hacer. Puede usar las variables predeterminadas para proporcionarle información al rol de que
+necesita configurar o implementar algo correctamente.
+Defina una variable específica en vars/main.yml o defaults/main.yml, pero no en ambos
+lugares. Utilice variables predeterminadas cuando desee que los valores de las variables se
+reemplacen.
+Importante
+Los roles no deben tener datos específicos del sitio ni contener secretos como
+contraseñas o claves privadas, ya que se supone que los roles son genéricos,
+reutilizables y que se pueden compartir libremente. Por lo tanto, los detalles
+específicos del sitio no deben ser codificados en ellos.
+Los secretos deben proporcionarse al rol a través de otros medios. Este requisito es
+una de las razones por las que puede querer establecer variables de rol al invocar a
+un rol. Las variables de rol establecidas en el play podrían proporcionar el secreto, o
+apuntar a un archivo cifrado por Ansible Vault que contenga el secreto.
+Uso de roles de Ansible en un play
+Hay varias formas de invocar roles en un play. Los dos métodos principales son:
+280
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+• Puede incluirlos o importarlos como una tarea en su lista tasks.
+• Puede crear una lista roles que ejecute roles específicos antes de las tareas de su play.
+El primer método es el más flexible, pero el segundo método también se usa comúnmente y se
+inventó antes que el primer método.
+Importación e inclusión de roles como tareas
+Los roles se pueden agregar a un play mediante una tarea ordinaria. Use el módulo
+ansible.builtin.import_role para importar estadísticamente un rol y el módulo
+ansible.builtin.include_role para incluir dinámicamente un rol.
+El siguiente play muestra cómo se puede importar un rol usando una tarea con el módulo
+ansible.builtin.import_role. El play de ejemplo ejecuta la tarea A normal task
+primero, luego importa el rol role2.
+- name: Run a role as a task
+  hosts: remote.example.com
+  tasks:
+    - name: A normal task
+      ansible.builtin.debug:
+        msg: 'first task'
+    - name: A task to import role2 here
+      ansible.builtin.import_role:
+        name: role2
+Con el módulo ansible.builtin.import_role, Ansible trata el rol como una importación
+estática y lo analiza durante el procesamiento inicial del playbook.
+En el ejemplo anterior, cuando se analiza el playbook:
+• Si roles/role2/tasks/main.yml existe, Ansible agrega las tareas en ese archivo al play.
+• Si roles/role2/handlers/main.yml existe, Ansible agrega los manejadores en ese archivo
+al play.
+• Si roles/role2/defaults/main.yml existe, Ansible agrega las variables predeterminadas
+en ese archivo al play.
+• Si roles/role2/vars/main.yml existe, Ansible agrega las variables en ese archivo al
+play (posiblemente anulando los valores de las variables predeterminadas del rol debido a la
+precedencia).
+Importante
+Debido a que ansible.builtin.import_role se procesa cuando se analiza
+el playbook, los manejadores del rol, las variables predeterminadas y las variables
+del rol están expuestas a todas las tareas y funciones del play y se puede acceder a
+ellas mediante tareas y funciones que la preceden en el play (incluso aunque el rol
+todavía no se haya ejecutado).
+También puede establecer variables para el rol al invocar a la tarea, de la misma manera que puede
+establecer variables de tarea:
+RH294-RHEL9.0-es-3-20240620
+281
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+- name: Run a role as a task
+  hosts: remote.example.com
+  tasks:
+    - name: A task to include role2 here
+      ansible.builtin.import_role:
+        name: role2
+      vars:
+        var1: val1
+        var2: val2
+El módulo ansible.builtin.include_role funciona de manera similar, pero incluye
+dinámicamente el rol cuando el playbook se está ejecutando en lugar de importarlo estáticamente
+cuando el playbook se analiza inicialmente.
+Una diferencia clave entre los dos módulos es cómo manejan las palabras clave, los condicionales y
+los bucles al nivel de tarea:
+• ansible.builtin.import_role aplica los condicionales y los bucles de la tarea a cada una
+de las tareas que se importan.
+• ansible.builtin.include_role aplica los condicionales y los bucles de la tarea a la
+declaración que determina si el rol está incluido o no.
+Además, cuando incluye un rol, sus variables de rol y las variables predeterminadas no se exponen
+al resto del play, a diferencia de ansible.builtin.import_role.
+Uso de una sección de roles en un play
+Otra forma de invocar roles en un play es enumerarlos en una sección roles. La sección roles
+es muy similar a la sección tasks, excepto que en lugar de consistir en una lista de tareas,
+consiste en una lista de roles.
+En el siguiente play de ejemplo, se ejecuta el rol role1 y, a continuación, se ejecuta el rol role2.
+---
+- name: A play that only has roles
+  hosts: remote.example.com
+  roles:
+    - role: role1
+    - role: role2
+Por cada rol especificado, las tareas, los manejadores, las variables y las dependencias de los roles
+se importan al play en el orden en que aparecen en la lista.
+Cuando usa una sección roles para importar roles a un play, los roles se ejecutan primero, antes
+que cualquier tarea que defina para ese play. No importa si la sección roles aparece antes o
+después de la sección tasks en el play.
+---
+- name: Roles run before tasks
+  hosts: remote.example.com
+  tasks:
+    - name: A task
+      ansible.builtin.debug:
+282
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        msg: "This task runs after the role."
+  roles:
+    - role: role1
+Debido a que los roles se ejecutan primero, generalmente tiene sentido enumerar la sección
+roles antes de la sección tasks, si debe tener ambas. El play anterior se puede reescribir de la
+siguiente manera sin cambiar la forma en que se ejecuta:
+---
+- name: Roles run before tasks
+  hosts: remote.example.com
+  roles:
+    - role: role1
+  tasks:
+    - name: A task.
+      ansible.builtin.debug:
+        msg: "This task runs after the role."
+Importante
+No se requiere una sección tasks en un play. De hecho, generalmente es
+una buena práctica evitar las secciones roles y tasks en un play para evitar
+confusiones sobre el orden en que se ejecutan los roles y las tareas.
+Si debe tener una sección tasks y roles, es mejor crear tareas que usen
+ansible.builtin.import_role y ansible.builtin.include_role para
+que se ejecuten en los puntos correctos en la ejecución del play.
+En el siguiente ejemplo, se establecen valores para dos variables de rol de role2, var1 y var2.
+Las variables defaults y vars se anulan cuando se usa role2.
+---
+- name: A play that runs the second role with variables
+  hosts: remote.example.com
+  roles:
+    - role: role1
+    - role: role2
+      var1: val1
+      var2: val2
+Otra sintaxis del playbook equivalente que puede ver en este caso es:
+---
+- name: A play that runs the second role with variables
+  hosts: remote.example.com
+  roles:
+    - role: role1
+    - { role: role2, var1: val1, var2: val2 }
+Hay situaciones en las que esto puede ser más difícil de leer, aunque sea más compacto.
+RH294-RHEL9.0-es-3-20240620
+283
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Importante
+Ansible busca líneas de roles duplicadas en la sección roles. Si se enumeran dos
+roles con exactamente los mismos parámetros, el rol solo se ejecuta una vez.
+Por ejemplo, la siguiente sección roles solo ejecuta role1 una vez:
+roles:
+  - { role: role1, service: "httpd" }
+  - { role: role2, var1: true }
+  - { role: role1, service: "httpd" }
+Para ejecutar el mismo rol por segunda vez, debe tener diferentes parámetros
+definidos:
+roles:
+  - { role: role1, service: "httpd" }
+  - { role: role2, var1: true }
+  - { role: role1, service: "postfix" }
+Secciones de tareas especiales
+Hay dos secciones de tareas especiales, pre_tasks y post_tasks, que se usan ocasionalmente
+con las secciones roles. La sección pre_tasks es una lista de tareas, similar a tasks, pero
+estas tareas se ejecutan antes que cualquiera de los roles en la sección roles. Si alguna de las
+tareas en la sección pre-tasks notifica a un manejador, las tareas del manejador se ejecutan
+antes que los roles o las tareas normales.
+Los plays también soportan una palabra clave post_tasks. Estas tareas se ejecutan después de
+las tasks del play y los manejadores notificados por las tasks del play.
+El siguiente play muestra un ejemplo con pre_tasks, roles, tasks, post_tasks y handlers.
+Es raro que un play tenga todas estas secciones.
+- name: Play to illustrate order of execution
+  hosts: remote.example.com
+  pre_tasks:
+    - name: This task runs first
+      ansible.builtin.debug:
+        msg: This task is in pre_tasks
+      notify: my handler
+      changed_when: true
+  roles:
+    - role: role1
+  tasks:
+    - name: This task runs after the roles
+      ansible.builtin.debug:
+        msg: This task is in tasks
+      notify: my handler
+      changed_when: true
+  post_tasks:
+    - name: This task runs last
+      ansible.builtin.debug:
+284
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+        msg: This task is in post_tasks
+      notify: my handler
+      changed_when: true
+  handlers:
+    - name: my handler
+      ansible.builtin.debug:
+        msg: Running my handler
+En el ejemplo anterior, se ejecuta una tarea ansible.builtin.debug en cada sección tasks y
+en el rol de la sección roles. Cada una de esas tareas notifica al manejador my handler, lo que
+significa que la tarea my handler se ejecuta tres veces:
+• Después de que se ejecuten todas las tareas pre_tasks
+• Después de que se ejecuten todas las tareas roles y tasks
+• Después de que se ejecuten todas las post_tasks
+nota
+En general, si cree que necesita las secciones pre_tasks y post_tasks en su play
+porque está usando roles, considere importar los roles como tareas e incluir solo
+una sección tasks. Alternativamente, podría ser más sencillo tener varios plays en
+su playbook.
+Referencias
+Roles: Documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html
+RH294-RHEL9.0-es-3-20240620
+285
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Cuestionario
+Descripción de la estructura del rol
+Elija las respuestas correctas para las siguientes preguntas:
+ 1.
+¿Cuál de las siguientes declaraciones describe mejor los roles?
+a. Configuración que permite que usuarios específicos ejecuten playbooks de Ansible.
+b. Playbooks para un centro de datos.
+c. Recopilación de archivos de tareas YAML e ítems complementarios dispuestos en una
+estructura específica.
+ 2. ¿Qué subdirectorio de roles contiene archivos Jinja2 a los que hacen referencia las
+tareas de los roles?
+a. Manejadores
+b. Archivos
+c. Plantillas
+d. Variables
+e. Meta
+ 3. ¿Cómo se usa un rol en un play para que sus variables de rol y las variables
+predeterminadas estén expuestas al resto del play?
+a. Use la palabra clave pre_tasks.
+b. Use la palabra clave post_tasks.
+c. Use el módulo ansible.builtin.import_role.
+d. Use el módulo ansible.builtin.include_role.
+ 4. ¿Qué archivo en la jerarquía de directorio de un rol debe contener los valores
+predeterminados de variables que se pueden usar como parámetros para el rol?
+a. defaults/main.yml
+b. meta/main.yml
+c. vars/main.yml
+d. El archivo del inventario del host.
+286
+RH294-RHEL9.0-es-3-20240620
+
+

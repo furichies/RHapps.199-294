@@ -1,0 +1,611 @@
+# Trabajo de laboratorio: Simplificación de playbooks con roles y Ansible Content Collections
+# Tipo: lab
+# Capítulo: Capítulo 7. Simplificación de playbooks con roles y Ansible Content Collections
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Trabajo de laboratorio
+Simplificación de playbooks con roles y
+Ansible Content Collections
+Crear roles de Ansible que usan variables, archivos, plantillas, tareas y manejadores.
+Resultados
+• Cree roles de Ansible que usen variables, archivos, plantillas, tareas y manejadores para
+configurar un servidor web de desarrollo.
+• En un playbook, use un rol que esté alojado en un repositorio remoto.
+• Use un rol de sistema de Red Hat Enterprise Linux en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-review
+Instrucciones
+Su organización debe proporcionar un único servidor web para alojar el código de desarrollo para
+todos los desarrolladores web. Tiene la tarea de escribir un playbook para configurar este servidor
+web de desarrollo.
+El servidor web de desarrollo debe cumplir varios requisitos:
+• La configuración del servidor de desarrollo debe coincidir con la configuración del servidor de
+producción. El servidor de producción se debe configurar mediante un rol Ansible, desarrollado
+por el equipo de infraestructura de la organización.
+• Cada desarrollador recibe un directorio en el servidor de desarrollo para alojar el código y el
+contenido. Se accede al contenido de cada desarrollador con un puerto asignado no estándar.
+• SELinux está configurado en modo de ejecución y está usando la política de destino.
+Su playbook debe:
+• Usar un rol para configurar directorios y puertos para cada desarrollador del servidor web. Debe
+escribir este rol.
+Este rol depende de un rol para configurar Apache que fue escrito por su organización. Debe
+especificar la versión v1.4 del rol para definir la dependencia. La URL del repositorio de Git de
+la dependencia es: git@workstation.lab.example.com:infra/apache.
+RH294-RHEL9.0-es-3-20240620
+347
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+• Use el rol redhat.rhel_system_roles.selinux para configurar SELinux para permitir
+que los host externos accedan a los puertos HTTP no estándares usados por el servidor web.
+Se le proporcionará un archivo de variable selinux.yml que puede usar en el directorio
+group_vars para pasar la configuración correcta al rol.
+1.
+Cambie al directorio /home/student/role-review.
+2.
+Use el comando ansible-galaxy collection install para instalar la colección
+redhat.rhel_system_roles desde el archivo de almacenamiento tar provisto, luego
+verifique que se haya instalado correctamente.
+3.
+Cree un playbook denominado web_dev_server.yml con un solo play denominado
+Configure Dev Web Server. Configure el play para apuntar al grupo de hosts
+dev_webserver. No agregue ningún rol ni tarea al play todavía.
+Asegúrese de que el play obligue a los manejadores a ejecutarse, ya que puede encontrar un
+error al desarrollar el playbook.
+4.
+Verifique la sintaxis del playbook y, luego, ejecútelo. Se debe aprobar la comprobación de la
+sintaxis y el playbook debe ejecutarse correctamente. El play solo recopila datos porque aún
+no tiene roles ni tareas.
+5.
+Asegúrese de instalar los roles que sean dependencias de roles en su playbook.
+Por ejemplo, el rol apache.developer_configs que escriba más adelante en este trabajo
+de laboratorio depende del rol infra.apache.
+Cree un archivo roles/requirements.yml. Este archivo instala el rol desde el repositorio
+de Git en git@workstation.lab.example.com:infra/apache, use la versión v1.4 y
+asígnele el nombre infra.apache localmente.
+Puede suponer que las claves SSH están configuradas para permitirle obtener roles de ese
+repositorio automáticamente. Instale el rol con el comando ansible-galaxy.
+6.
+Inicie un nuevo rol llamado apache.developer_configs en el subdirectorio roles.
+Agregue el rol infra.apache como una dependencia para el nuevo rol, usando la misma
+información de nombre, fuente, versión y sistema de control de versión del archivo roles/
+requirements.yml.
+El archivo developer_tasks.yml del directorio del proyecto contiene tareas para el rol.
+Mueva este archivo a la ubicación correcta en la jerarquía del directorio del rol para el archivo
+de tareas que se usa para este rol y reemplace el archivo existente en esa ubicación.
+El archivo developer.conf.j2 del directorio del proyecto es una plantilla de Jinja2 usada
+por el archivo de tareas. Mueva este archivo a la ubicación correcta para los archivos de
+plantilla usados por este rol.
+7.
+El rol apache.developer_configs crea una cuenta de usuario y configura una
+instancia de servidor web para la lista de usuarios definida en la variable denominada
+web_developers.
+El archivo web_developers.yml del directorio del proyecto define la variable
+web_developers que es la lista de usuarios del rol.
+Revise este archivo y colóquelo en la ubicación correcta para definir la variable
+web_developers para el grupo de hosts del servidor web de desarrollo de su inventario.
+8.
+Agregue el rol apache.developer_configs al play en el playbook
+web_dev_server.yml.
+9.
+Verifique la sintaxis del playbook y, luego, ejecútelo. La verificación de la sintaxis debe
+aprobarse, pero el playbook debe fallar cuando el rol infra.apache intenta reiniciar
+Apache HTTPD.
+348
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+10.
+Apache HTTPD no pudo reiniciarse en el paso anterior porque los puertos de red que usa
+para sus desarrolladores están etiquetados con los contextos de SELinux incorrectos.
+Puede usar el archivo de variable proporcionado, selinux.yml, con el rol
+redhat.rhel_system_roles.selinux para corregir el problema.
+Cree una sección pre_tasks para su play en el playbook web_dev_server.yml. En esa
+sección, use una tarea para incluir el rol redhat.rhel_system_roles.selinux en una
+estructura block/rescue para que se lo aplique correctamente.
+Mueva el archivo selinux.yml a la ubicación correcta, de modo que sus variables se
+configuren para el grupo de hosts dev_webserver.
+11.
+Verifique el playbook web_dev_server.yml final y ejecute una comprobación de sintaxis.
+Se debe aprobar la comprobación de la sintaxis.
+Valide que el playbook web_dev_server.yml pase una comprobación de sintaxis.
+12.
+Ejecute el playbook web_dev_server.yml. Debe ser capaz de realizarse de manera
+correcta.
+13.
+Pruebe la configuración del servidor web de desarrollo. Verifique que todos los extremos
+sean accesibles y proporcionen el contenido de cada desarrollador.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade role-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-review
+RH294-RHEL9.0-es-3-20240620
+349
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Solución
+Simplificación de playbooks con roles y
+Ansible Content Collections
+Crear roles de Ansible que usan variables, archivos, plantillas, tareas y manejadores.
+Resultados
+• Cree roles de Ansible que usen variables, archivos, plantillas, tareas y manejadores para
+configurar un servidor web de desarrollo.
+• En un playbook, use un rol que esté alojado en un repositorio remoto.
+• Use un rol de sistema de Red Hat Enterprise Linux en un playbook.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start role-review
+Instrucciones
+Su organización debe proporcionar un único servidor web para alojar el código de desarrollo para
+todos los desarrolladores web. Tiene la tarea de escribir un playbook para configurar este servidor
+web de desarrollo.
+El servidor web de desarrollo debe cumplir varios requisitos:
+• La configuración del servidor de desarrollo debe coincidir con la configuración del servidor de
+producción. El servidor de producción se debe configurar mediante un rol Ansible, desarrollado
+por el equipo de infraestructura de la organización.
+• Cada desarrollador recibe un directorio en el servidor de desarrollo para alojar el código y el
+contenido. Se accede al contenido de cada desarrollador con un puerto asignado no estándar.
+• SELinux está configurado en modo de ejecución y está usando la política de destino.
+Su playbook debe:
+• Usar un rol para configurar directorios y puertos para cada desarrollador del servidor web. Debe
+escribir este rol.
+Este rol depende de un rol para configurar Apache que fue escrito por su organización. Debe
+especificar la versión v1.4 del rol para definir la dependencia. La URL del repositorio de Git de
+la dependencia es: git@workstation.lab.example.com:infra/apache.
+350
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+• Use el rol redhat.rhel_system_roles.selinux para configurar SELinux para permitir
+que los host externos accedan a los puertos HTTP no estándares usados por el servidor web.
+Se le proporcionará un archivo de variable selinux.yml que puede usar en el directorio
+group_vars para pasar la configuración correcta al rol.
+1.
+Cambie al directorio /home/student/role-review.
+[student@workstation ~]$ cd ~/role-review
+[student@workstation role-review]$
+2.
+Use el comando ansible-galaxy collection install para instalar la colección
+redhat.rhel_system_roles desde el archivo de almacenamiento tar provisto, luego
+verifique que se haya instalado correctamente.
+2.1.
+Use el comando ansible-galaxy collection install para instalar la colección
+redhat.rhel_system_roles desde el archivo de almacenamiento tar provisto.
+[student@workstation role-review]$ ansible-galaxy collection \
+> install -p collections/ redhat-rhel_system_roles-1.19.3.tar.gz
+Starting galaxy collection install process
+Process install dependency map
+Starting collection install process
+Installing 'redhat.rhel_system_roles:1.19.3' to '/home/student/role-review/
+collections/ansible_collections/redhat/rhel_system_roles'
+redhat.rhel_system_roles:1.19.3 was installed successfully
+2.2.
+Use el comando ansible-galaxy collection list para verificar que la
+colección se haya instalado correctamente y los roles del sistema ahora estén
+disponibles.
+[student@workstation role-review]$ ansible-galaxy collection list
+# /home/student/role-review/collections/ansible_collections
+Collection               Version
+------------------------ -------
+redhat.rhel_system_roles 1.19.3
+...output omitted...
+3.
+Cree un playbook denominado web_dev_server.yml con un solo play denominado
+Configure Dev Web Server. Configure el play para apuntar al grupo de hosts
+dev_webserver. No agregue ningún rol ni tarea al play todavía.
+Asegúrese de que el play obligue a los manejadores a ejecutarse, ya que puede encontrar un
+error al desarrollar el playbook.
+El playbook /home/student/role-review/web_dev_server.yml completo incluye el
+siguiente contenido:
+---
+- name: Configure Dev Web Server
+  hosts: dev_webserver
+  force_handlers: true
+RH294-RHEL9.0-es-3-20240620
+351
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+4.
+Verifique la sintaxis del playbook y, luego, ejecútelo. Se debe aprobar la comprobación de la
+sintaxis y el playbook debe ejecutarse correctamente. El play solo recopila datos porque aún
+no tiene roles ni tareas.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml --syntax-check
+playbook: /home/student/role-review/web_dev_server.yml
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml
+PLAY [Configure Dev Web Server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.
+Asegúrese de instalar los roles que sean dependencias de roles en su playbook.
+Por ejemplo, el rol apache.developer_configs que escriba más adelante en este trabajo
+de laboratorio depende del rol infra.apache.
+Cree un archivo roles/requirements.yml. Este archivo instala el rol desde el repositorio
+de Git en git@workstation.lab.example.com:infra/apache, use la versión v1.4 y
+asígnele el nombre infra.apache localmente.
+Puede suponer que las claves SSH están configuradas para permitirle obtener roles de ese
+repositorio automáticamente. Instale el rol con el comando ansible-galaxy.
+5.1.
+Cree un subdirectorio roles para el proyecto de playbook.
+[student@workstation role-review]$ mkdir -v roles
+mkdir: created directory 'roles'
+5.2.
+Cree un archivo roles/requirements.yml y agregue una entrada para el rol
+infra.apache. Use la versión v1.4 del repositorio de git del rol.
+El archivo roles/requirements.yml completo cuenta con el siguiente contenido:
+- name: infra.apache
+  src: git@workstation.lab.example.com:infra/apache
+  scm: git
+  version: v1.4
+5.3.
+Instale las dependencias del proyecto.
+[student@workstation role-review]$ ansible-galaxy role install \
+> -r roles/requirements.yml -p roles
+Starting galaxy role install process
+- extracting infra.apache to /home/student/role-review/roles/infra.apache
+- infra.apache (v1.4) was installed successfully
+6.
+Inicie un nuevo rol llamado apache.developer_configs en el subdirectorio roles.
+352
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Agregue el rol infra.apache como una dependencia para el nuevo rol, usando la misma
+información de nombre, fuente, versión y sistema de control de versión del archivo roles/
+requirements.yml.
+El archivo developer_tasks.yml del directorio del proyecto contiene tareas para el rol.
+Mueva este archivo a la ubicación correcta en la jerarquía del directorio del rol para el archivo
+de tareas que se usa para este rol y reemplace el archivo existente en esa ubicación.
+El archivo developer.conf.j2 del directorio del proyecto es una plantilla de Jinja2 usada
+por el archivo de tareas. Mueva este archivo a la ubicación correcta para los archivos de
+plantilla usados por este rol.
+6.1.
+Use el comando ansible-galaxy role init para crear un esqueleto de rol para el
+rol apache.developer_configs.
+[student@workstation role-review]$ cd roles
+[student@workstation roles]$ ansible-galaxy role init apache.developer_configs
+- Role apache.developer_configs was created successfully
+[student@workstation roles]$ cd ..
+[student@workstation role-review]$
+6.2.
+Modifique el archivo roles/apache.developer_configs/meta/main.yml del rol
+apache.developer_configs para reflejar una dependencia del rol infra.apache.
+Después de la edición, la variable dependencies se define de la siguiente manera:
+dependencies:
+  - name: infra.apache
+    src: git@workstation.lab.example.com:infra/apache
+    scm: git
+    version: v1.4
+6.3.
+Reemplace el archivo tasks/main.yml del rol con el archivo
+developer_tasks.yml.
+[student@workstation role-review]$ mv -v developer_tasks.yml \
+> roles/apache.developer_configs/tasks/main.yml
+renamed 'developer_tasks.yml' -> 'roles/apache.developer_configs/tasks/main.yml'
+6.4.
+Coloque el archivo developer.conf.j2 en el directorio templates del rol.
+[student@workstation role-review]$ mv -v developer.conf.j2 \
+> roles/apache.developer_configs/templates/
+renamed 'developer.conf.j2' -> 'roles/apache.developer_configs/templates/
+developer.conf.j2'
+7.
+El rol apache.developer_configs crea una cuenta de usuario y configura una
+instancia de servidor web para la lista de usuarios definida en la variable denominada
+web_developers.
+El archivo web_developers.yml del directorio del proyecto define la variable
+web_developers que es la lista de usuarios del rol.
+Revise este archivo y colóquelo en la ubicación correcta para definir la variable
+web_developers para el grupo de hosts del servidor web de desarrollo de su inventario.
+RH294-RHEL9.0-es-3-20240620
+353
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+7.1.
+Revise el archivo web_developers.yml.
+---
+web_developers:
+  - username: jdoe
+    name: John Doe
+    user_port: 9081
+  - username: jdoe2
+    name: Jane Doe
+    user_port: 9082
+Se define una variable name, username y user_port para cada desarrollador web.
+7.2.
+Coloque el archivo web_developers.yml en el subdirectorio group_vars/
+dev_webserver.
+[student@workstation role-review]$ mkdir -pv group_vars/dev_webserver
+mkdir: created directory 'group_vars'
+mkdir: created directory 'group_vars/dev_webserver'
+[student@workstation role-review]$ mv -v web_developers.yml \
+> group_vars/dev_webserver/
+renamed 'web_developers.yml' -> 'group_vars/dev_webserver/web_developers.yml'
+8.
+Agregue el rol apache.developer_configs al play en el playbook
+web_dev_server.yml.
+Asegúrese de que el playbook /home/student/role-review/web_dev_server.yml
+incluya el siguiente contenido:
+---
+- name: Configure Dev Web Server
+  hosts: dev_webserver
+  force_handlers: true
+  roles:
+    - apache.developer_configs
+9.
+Verifique la sintaxis del playbook y, luego, ejecútelo. La verificación de la sintaxis debe
+aprobarse, pero el playbook debe fallar cuando el rol infra.apache intenta reiniciar
+Apache HTTPD.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml --syntax-check
+playbook: /home/student/role-review/web_dev_server.yml
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml
+PLAY [Configure Dev Web Server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+...output omitted...
+TASK [apache.developer_configs : Create user accounts] *************************
+354
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+changed: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John
+ Doe', 'user_port': 9081})
+changed: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane
+ Doe', 'user_port': 9082})
+...output omitted...
+RUNNING HANDLER [infra.apache : restart firewalld] *****************************
+changed: [servera.lab.example.com]
+RUNNING HANDLER [infra.apache : restart apache] ********************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg": "Unable to
+ restart service httpd: Job for httpd.service failed because the control process
+ exited with error code.\nSee \"systemctl status httpd.service\" and \"journalctl
+ -xeu httpd.service\" for details.\n"}
+NO MORE HOSTS LEFT *************************************************************
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=14   changed=12   unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+Se produce un error al reiniciar el servicio httpd. El daemon de servicio httpd no puede
+enlazar a los puertos HTTP no estándares, debido al contexto de SELinux en esos puertos.
+10.
+Apache HTTPD no pudo reiniciarse en el paso anterior porque los puertos de red que usa
+para sus desarrolladores están etiquetados con los contextos de SELinux incorrectos.
+Puede usar el archivo de variable proporcionado, selinux.yml, con el rol
+redhat.rhel_system_roles.selinux para corregir el problema.
+Cree una sección pre_tasks para su play en el playbook web_dev_server.yml. En esa
+sección, use una tarea para incluir el rol redhat.rhel_system_roles.selinux en una
+estructura block/rescue para que se lo aplique correctamente.
+Mueva el archivo selinux.yml a la ubicación correcta, de modo que sus variables se
+configuren para el grupo de hosts dev_webserver.
+10.1.
+Agregue la sección pre_tasks al final del play en el playbook
+web_dev_server.yml.
+Puede revisar el archivo /home/student/role-review/collections/
+ansible_collections/redhat/rhel_system_roles/tests/selinux/
+tests_port.yml para obtener un esquema básico de cómo aplicar el rol.
+Asegúrese de que la sección pre_tasks incluya el siguiente contenido:
+...output omitted...
+  pre_tasks:
+    - name: Verify SELinux configuration
+      block:
+        - name: Apply SELinux role
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+      rescue:
+        # Fail if failed for a different reason than selinux_reboot_required.
+        - name: Handle general failure
+          ansible.builtin.fail:
+RH294-RHEL9.0-es-3-20240620
+355
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+            msg: "SELinux role failed."
+          when: not selinux_reboot_required
+        - name: Restart managed host
+          ansible.builtin.reboot:
+            msg: "Ansible rebooting system for updates."
+        - name: Reapply SELinux role to complete changes
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+10.2. El archivo selinux.yml contiene definiciones de variables para el rol
+redhat.rhel_system_roles.selinux. Utilice el archivo para definir variables para
+el grupo de hosts del play.
+[student@workstation role-review]$ cat selinux.yml
+---
+# variables used by redhat.rhel_system_roles.selinux
+selinux_policy: targeted
+selinux_state: enforcing
+selinux_ports:
+  - ports:
+      - "9081"
+      - "9082"
+    proto: 'tcp'
+    setype: 'http_port_t'
+    state: 'present'
+[student@workstation role-review]$ mv -v selinux.yml \
+> group_vars/dev_webserver/
+renamed 'selinux.yml' -> 'group_vars/dev_webserver/selinux.yml'
+11.
+Verifique el playbook web_dev_server.yml final y ejecute una comprobación de sintaxis.
+Se debe aprobar la comprobación de la sintaxis.
+Asegúrese de que el playbook web_dev_server.yml final incluya el siguiente contenido:
+---
+- name: Configure Dev Web Server
+  hosts: dev_webserver
+  force_handlers: true
+  roles:
+    - apache.developer_configs
+  pre_tasks:
+    - name: Verify SELinux configuration
+      block:
+        - name: Apply SELinux role
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+      rescue:
+        # Fail if failed for a different reason than selinux_reboot_required.
+        - name: Handle general failure
+356
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+          ansible.builtin.fail:
+            msg: "SELinux role failed."
+          when: not selinux_reboot_required
+        - name: Restart managed host
+          ansible.builtin.reboot:
+            msg: "Ansible rebooting system for updates."
+        - name: Reapply SELinux role to complete changes
+          ansible.builtin.include_role:
+            name: redhat.rhel_system_roles.selinux
+nota
+El comando ansible-navigator run ejecuta las tareas del play en el orden
+correcto, independientemente de si pre_tasks está al final del play o en la
+posición "correcta" del orden de ejecución en el archivo del playbook.
+Aún así ejecuta las tareas del play en el orden correcto.
+Valide que el playbook web_dev_server.yml pase una comprobación de sintaxis.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml --syntax-check
+playbook: /home/student/role-review/web_dev_server.yml
+12.
+Ejecute el playbook web_dev_server.yml. Debe ser capaz de realizarse de manera
+correcta.
+[student@workstation role-review]$ ansible-navigator run \
+> -m stdout web_dev_server.yml
+PLAY [Configure Dev Web Server] ************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Apply SELinux role] ******************************************************
+...output omitted...
+TASK [redhat.rhel_system_roles.selinux : Set an SELinux label on a port] *******
+changed: [servera.lab.example.com] => (item={'ports': ['9081', '9082'], 'proto':
+ 'tcp', 'setype': 'http_port_t', 'state': 'present'})
+TASK [redhat.rhel_system_roles.selinux : Set linux user to SELinux user mapping]
+ ***
+TASK [redhat.rhel_system_roles.selinux : Get SELinux modules facts] ************
+ok: [servera.lab.example.com]
+TASK [redhat.rhel_system_roles.selinux : include_tasks] ************************
+skipping: [servera.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+357
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+TASK [infra.apache : Apache Package is installed] ******************************
+ok: [servera.lab.example.com]
+TASK [infra.apache : Apache Service is started] ********************************
+changed: [servera.lab.example.com]
+...output omitted...
+TASK [apache.developer_configs : Create user accounts] *************************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Give student access to all accounts] **********
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Create content directory] *********************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Create skeleton index.html if needed] *********
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Set firewall port] ****************************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+TASK [apache.developer_configs : Copy Per-Developer Config files] **************
+ok: [servera.lab.example.com] => (item={'username': 'jdoe', 'name': 'John Doe',
+ 'user_port': 9081})
+ok: [servera.lab.example.com] => (item={'username': 'jdoe2', 'name': 'Jane Doe',
+ 'user_port': 9082})
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=21   changed=2    unreachable=0    failed=0   
+ skipped=16   rescued=0    ignored=0
+358
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+13.
+Pruebe la configuración del servidor web de desarrollo. Verifique que todos los extremos
+sean accesibles y proporcionen el contenido de cada desarrollador.
+[student@workstation role-review]$ curl servera
+This is the production server on servera.lab.example.com
+[student@workstation role-review]$ curl servera:9081
+This is index.html for user: John Doe (jdoe)
+[student@workstation role-review]$ curl servera:9082
+This is index.html for user: Jane Doe (jdoe2)
+[student@workstation role-review]$
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade role-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish role-review
+RH294-RHEL9.0-es-3-20240620
+359
+
+
+capítulo 7 |  Simplificación de playbooks con roles y Ansible Content Collections
+Resumen
+• Los roles de Ansible lo ayudan a volver a usar y compartir el código de Ansible.
+• Ansible Content Collections_ distribuye roles, módulos y otros complementos (plug-ins) de
+Ansible relacionados que puede usar en proyectos de Ansible y entornos de ejecución de
+automatización.
+• Use el comando ansible-galaxy para gestionar los roles de Ansible y Ansible Content
+Collections.
+• Red Hat proporciona Ansible Content Collections certificadas por Red Hat a través de un
+centro de automatización de servicios basados en la nube. Red Hat y sus partners admiten estas
+Ansible Content Collections.
+• Puede distribuir Ansible Content Collections certificadas por Red Hat o sus propias Ansible
+Content Collections desde un centro de automatización privado en las instalaciones.
+• Ansible Galaxy proporciona una librería de roles de Ansible de terceros y Ansible Content
+Collections que son gestionadas por la comunidad y no son admitidas por Red Hat.
+• Los roles del sistema (redhat.rhel_system_roles) se proporcionan como un paquete
+RPM o como una Ansible Content Collection que consta de varios roles destinados a ayudarlo a
+configurar subsistemas de hosts gestionados en varias versiones de Red Hat Enterprise Linux.
+• Los roles y Ansible Content Collections que necesita un proyecto se pueden especificar
+mediante archivos requirements.yml y se pueden instalar en su proyecto de Ansible
+manualmente mediante ansible-galaxy.
+360
+RH294-RHEL9.0-es-3-20240620
+
+

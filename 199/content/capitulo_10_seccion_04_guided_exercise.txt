@@ -1,0 +1,251 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar aplicaciones desde Flatpak
+# Tipo: guided_exercise
+# Capítulo: Capítulo 7. Instalación y actualización de aplicaciones mediante Flatpak
+
+7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak 7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak Enumere, busque, instale, elimine y obtenga información de metadatos de aplicaciones mediante Flatpak. Resultados Utilice comandos Flatpak para administrar aplicaciones y tiempos de ejecución. Instalar aplicaciones y revisar su información. Desinstale las aplicaciones Flatpak y sus dependencias. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start flatpak-application
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, verifique que los repositorios remotos rhel y myrepo Flatpak estén configurados.
+
+student@workstation:~$ flatpak remotes
+
+Nombre Opciones rhel system,oci,no-gpg-verify myrepo user,no-gpg-verify 1. Verifique que no haya aplicaciones Flatpak presentes en el sistema.
+
+student@workstation:~$ flatpak list --app
+
+2. Identifique e instale codium y Obsidian Flatpaks en modo de instalación de usuario desde el repositorio remoto de myrepo. 3. Enumere los objetos Flatpak disponibles desde el repositorio remoto de myrepo. Tenga en cuenta los identificadores y ramas de la aplicación.
+
+student@workstation:~$ flatpak remote-ls myrepo
+
+Nombre ID de aplicación Versión Rama codium com.vscodium.codium estable Obsidian md.obsidian.Obsidian plataforma freedesktop estable org.freedesktop.Platform 24.08 plataforma de desarrollo freedesktop org.freedesktop.Sdk 24.08 3.1. Instale las últimas versiones disponibles de los paquetes codium y Obsidian utilizando los triples de identificadores que utiliza la rama estable. 3.2.
+
+
+
+
+
+7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak
+
+student@workstation:~$ flatpak install com.vscodium.codium//stable \
+
+md.obsidian.Obsidian//stable Buscando coincidencias... Tiempo de ejecución requerido para md.obsidian.Obsidian/x86_64/stable (runtime/org.freedesktop.Platform/x86_64/24.08) encontrado en myrepo remoto ¿Quieres instalarlo? [Y/n]: y Tiempo de ejecución requerido para com.vscodium.codium/x86_64/stable (runtime/org.freedesktop.Sdk/x86_64/24.08) encontrado en myrepo remoto ¿Quieres instalarlo? [T/n]: sí
+
+md.obsidian.Obsidian permissions:
+ ipc     network    pulseaudio    ssh-auth    x11    dri    file access [1]    tags [2]
+  [1] /media, /mnt, /run/media, home, xdg-run/app/com.discordapp.Discord:create, xdg-run/gnupg:ro, 
+
+~/.local/share/fonts:ro
+
+  [2] proprietary
+com.vscodium.codium permissions:
+  ipc         network               fallback-x11          pulseaudio                   ssh-auth       
+
+dispositivos wayland x11
+
+  devel       file access [1]       dbus access [2]       system dbus access [3]
+  [1] host, xdg-config/kdeglobals:ro, xdg-run/gnupg:ro
+  [2] com.canonical.AppMenu.Registrar, org.freedesktop.Flatpak, org.freedesktop.secrets, 
+
+org.kde.kwalletd5
+
+  [3] org.freedesktop.login1
+
+¿Continuar con estos cambios en la instalación del usuario? [T/n]: sí
+
+  ID                              Branch   Op  Remote   Download
+
+1. [ ✓] org.freedesktop.Platform 24.08 en myrepo 253,5 MB / 264,5 MB 2. [ ✓ ] md.obsidian.Obsidian estable en myrepo 200,4 MB / 197,9 MB 3. [ ✓] org.freedesktop.Sdk 24.08 en myrepo 358,6 MB / 622,0 MB 4. [✓] com.vscodium.codium estable en myrepo 129,9 MB / 139,4 MB Instalando 1/4… ████████████████████ 100% 19.8 MB/s 00:00 Instalando 2/4… ████████████████████ 100% 15.4 MB/s 00:00 Instalando 3/4… ████████████████████ 100% 9.7 MB/s 00:00 Instalando 4/4… ████████████████████ 100% 21,7 MB/s 00:00 Instalación completa. Verifique que las aplicaciones se hayan instalado correctamente. Tenga en cuenta que la dependencia del tiempo de ejecución también está instalada.
+
+student@workstation:~$ flatpak list
+
+Nombre ID de aplicación Versión Rama Inst... VSCodium com.vscodium.codium 1.100.23258 usuario estable Obsidian md.obsidian.Obsidian 1.8.10 usuario estable Freedesktop Pl… ….freedesktop.Platform freedesktop-sdk-24.08.19 24.08 usuario Freedesktop SDK org.freedesktop.Sdk freedesktop-sdk-24.08.19 24.08 usuario 4. Recupere información adicional sobre las aplicaciones instaladas. 5. Recupere información para la aplicación VSCodium. 5.1.
+
+
+
+
+
+7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak
+
+student@workstation:~$ flatpak info com.vscodium.codium
+
+VSCodium: edición de código sin telemetría
+
+          ID: com.vscodium.codium
+         Ref: app/com.vscodium.codium/x86_64/stable
+        Arch: x86_64
+      Branch: stable
+     Version: 1.100.23258
+     License: MIT
+      Origin: myrepo
+  Collection: org.flathub.Stable
+
+Instalación: usuario
+
+   Installed: 411.0 MB
+     Runtime: org.freedesktop.Sdk/x86_64/24.08
+         Sdk: org.freedesktop.Sdk/x86_64/24.08
+      Commit: 8855...74b6
+      Parent: 73d7...33e2
+     Subject: feat: :tada: Update VSCodium v1.100.23258 (0b11b6c4d859)
+        Date: 2025-05-16 23:57:37 +0000
+
+Recuperar información para la aplicación Obsidian.
+
+student@workstation:~$ flatpak info md.obsidian.Obsidian
+
+Obsidian: base de conocimientos basada en Markdown
+
+          ID: md.obsidian.Obsidian
+         Ref: app/md.obsidian.Obsidian/x86_64/stable
+        Arch: x86_64
+      Branch: stable
+     Version: 1.8.10
+     License: LicenseRef-proprietary=https://obsidian.md/eula
+      Origin: myrepo
+  Collection: org.flathub.Stable
+
+Instalación: usuario
+
+   Installed: 634.3 MB
+     Runtime: org.freedesktop.Platform/x86_64/24.08
+         Sdk: org.freedesktop.Sdk/x86_64/24.08
+      Commit: 9f43...e633
+      Parent: 79b5...9a9c
+     Subject: Update gh module (91b101008d04)
+        Date: 2025-05-30 04:52:34 +0000
+
+5.2. Desde el escritorio gráfico de GNOME, inicie las aplicaciones VSCodium y Obsidian para verificar que estén instaladas correctamente. 6. Haga clic en el logotipo de Red Hat en la esquina superior izquierda de la pantalla para abrir la descripción general de actividades. 6.1. En el cuadro de búsqueda, ingrese vscodium y haga clic en el ícono VSCodium para abrir la aplicación. 6.2. Verifique que la aplicación se inicie correctamente. Explora su interfaz y cierra la aplicación cuando hayas terminado. 6.3. En el cuadro de búsqueda, ingrese obsidiana y haga clic en el ícono de Obsidiana para abrir la aplicación. 6.4. Haga clic en Inicio rápido para explorar la aplicación y ciérrela cuando haya terminado. 6.5. Desinstale el paquete VSCodium Flatpak con todas sus dependencias. 7. Intente eliminar el tiempo de ejecución org.freedesktop.Sdk antes de desinstalar la aplicación que depende de él. Recibes un mensaje de error. 7.1.
+
+
+
+
+
+7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak
+
+student@workstation:~$ flatpak uninstall org.freedesktop.Sdk
+
+Información: aplicaciones que utilizan la rama 24.08 del tiempo de ejecución org.freedesktop.Sdk:
+
+   com.vscodium.codium
+
+¿Realmente eliminar? [t/n]: sí
+
+        ID                         Branch       Op
+
+1. org.freedesktop.Sdk 24.08 r ¿Continuar con estos cambios en la instalación del usuario? [T/n]: sí
+
+       ID                         Branch       Op
+
+1. [✗] org.freedesktop.Sdk 24.08 r Error: No se puede eliminar org.freedesktop.Sdk/x86_64/24.08, es necesario para: com.vscodium.codium
+
+error: Failed to uninstall org.freedesktop.Sdk: Can't remove org.freedesktop.Sdk/x86_64/24.08, it 
+is needed for: com.vscodium.codium
+
+Ejecute el comando de desinstalación de flatpak nuevamente y especifique el paquete codium y el tiempo de ejecución del Sdk. Puede utilizar identificadores de formato abreviado porque no hay otras versiones instaladas para esos objetos. Flatpak establece la prioridad de desinstalación automáticamente, independientemente del orden de los identificadores en el comando.
+
+student@workstation:~$ flatpak uninstall Sdk codium
+
+Se encontró la referencia instalada 'runtime/org.freedesktop.Sdk/x86_64/24.08' (usuario). ¿Es esto correcto? [Y/n]: y Se encontró la referencia instalada 'app/com.vscodium.codium/x86_64/stable' (usuario). ¿Es esto correcto? [T/n]: sí
+
+        ID                         Branch       Op
+
+1. com.vscodium.codium stable r 2. org.freedesktop.Sdk 24.08 r ¿Continuar con estos cambios en la instalación del usuario? [T/n]: sí
+
+        ID                         Branch       Op
+
+1. [-] com.vscodium.codium stable r 2. [-] org.freedesktop.Sdk 24.08 r Desinstalando 1/2… Desinstalando 2/2… 7.2. Verifique que los objetos Flatpak ya no estén instalados.
+
+student@workstation:~$ flatpak list
+
+Nombre ID de aplicación Versión Rama Inst... Obsidian md.obsidian.Obsidian 1.8.9 usuario estable Freedesktop Platform org.freedesktop.Platform freedesktop-sdk-24.08 24.08 usuario 7.3. Desde el escritorio GNOME, desinstale Obsidian Flatpak con todas sus dependencias utilizando la herramienta gráfica del software GNOME. 8. Desde el entorno de escritorio gráfico GNOME, haga clic en el logotipo de Red Hat en la esquina superior izquierda y luego seleccione Software en el panel, o use el botón Mostrar aplicaciones para abrir la aplicación. 8.1. Haga clic en la pestaña Instalado. En la sección Aplicaciones, busque Obsidian y haga clic en Desinstalar. Haga clic en Desinstalar para confirmar. 8.2. En la sección Complementos, busque Freedesktop Platform. Haga clic en Desinstalar y haga clic en Desinstalar nuevamente cuando se le solicite confirmación. 8.3. Cierre la herramienta de software GNOME. 8.4. Verifique que todos los objetos Flatpak se eliminen de la máquina de la estación de trabajo. 9.
+
+
+
+
+
+7.4. Ejercicio guiado Administrar aplicaciones desde Flatpak Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish flatpak-application
+
+Verifique que no haya objetos Flatpak presentes en el disco.
+
+student@workstation:~$ flatpak list
+
+9.1.
+
+
+
+
+
+7.5. Prueba de instalación y actualización de aplicaciones mediante Flatpak 7.5. Prueba Instalar y actualizar aplicaciones usando Flatpak Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando enumera todos los repositorios remotos de Flatpak que están configurados en su sistema? 1.
+
+flatpak remotes
+
+a.
+
+flatpak show-remotes
+
+b.
+
+flatpak get-remotes
+
+do.
+
+flatpak list-remotes
+
+d. ¿Cuál es el papel de un sandbox en Flatpak? 2. Para proporcionar acceso a la red. a. Para gestionar los permisos de los usuarios. b. Para mejorar el rendimiento de la ejecución. do. Aislar aplicaciones del sistema. d. ¿Qué comando agrega un repositorio remoto Flatpak? 3.
+
+flatpak remote-enable
+
+a.
+
+flatpak remote-add
+
+b.
+
+flatpak remote-install
+
+do.
+
+flatpak remote-set
+
+d. Está configurando un nuevo sistema Linux y desea instalar aplicaciones utilizando Flatpak. El Proyecto Fedora alberga un registro remoto que se puede utilizar en diferentes distribuciones. Usted decide agregar este repositorio y desea que esté disponible para todos los usuarios del sistema. ¿Qué comando agrega el repositorio de Fedora en todo el sistema? 4.
+
+flatpak remote-add fedora https://registry.fedoraproject.org
+
+a.
+
+flatpak remote-add --if-not-exists fedora
+oci+https://registry.fedoraproject.org
+
+b.
+
+flatpak remote-add --user fedora oci+https://registry.fedoraproject.org
+
+do.
+
+flatpak remote-add --system fedora oci+https://registry.fedoraproject.org
+
+d. Al agregar un repositorio remoto Flatpak, ¿qué opción evita sobrescribir un repositorio existente? 5. --saltar-existente a. --sobrescribir b. --si-no-existe c. --sin reemplazo d. Está solucionando problemas en un sistema Linux donde un usuario deshabilitó el repositorio Fedora Flatpak. Debe volver a habilitar el repositorio para actualizar algunos paquetes. ¿Qué comando vuelve a habilitar el repositorio de Fedora? 6.
+
+flatpak remote-modify --activate fedora
+
+a.
+
+flatpak remote-modify --add fedora
+
+b.
+
+flatpak remote-modify --enable fedora
+
+do.
+
+flatpak remote-modify --start fedora
+
+d.
+
+
+
+
+

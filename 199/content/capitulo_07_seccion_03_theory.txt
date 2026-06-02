@@ -1,0 +1,153 @@
+# 4.3. Obtener acceso de superusuario
+# Tipo: theory
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.3. Obtener acceso de superusuario 4.3. Obtención de acceso de superusuario Objetivos Cambie a la cuenta de superusuario para administrar un sistema Linux y conceda acceso de superusuario a otros usuarios mediante Sudo. El superusuario La mayoría de los sistemas operativos tienen un superusuario que tiene todo el poder sobre el sistema. En Red Hat Enterprise Linux, el superusuario es el usuario root. Este usuario tiene el poder de anular los privilegios regulares en el sistema de archivos y usted puede usarlo para gestionar y administrar el sistema. Para tareas como instalar o eliminar software y administrar archivos y directorios del sistema, los usuarios deben escalar sus privilegios al usuario raíz. Por lo general, sólo el usuario root puede controlar la mayoría de los dispositivos, pero se aplican algunas excepciones. Por ejemplo, los usuarios habituales pueden controlar dispositivos extraíbles, como dispositivos USB. Por lo tanto, los usuarios normales pueden agregar y eliminar archivos y administrar un dispositivo extraíble, pero solo el usuario raíz puede administrar los discos duros de forma predeterminada. Este privilegio ilimitado, sin embargo, conlleva responsabilidad. El usuario root tiene poder ilimitado para dañar el sistema: puede eliminar archivos y directorios, eliminar cuentas de usuario, agregar puertas traseras, etc. Si la cuenta de usuario root se ve comprometida, entonces el sistema está en peligro y usted podría perder el control administrativo. Red Hat anima a los administradores de sistemas a iniciar sesión siempre como usuarios normales y a escalar privilegios a root solo cuando sea necesario. Importante En RHEL 10, la cuenta raíz no tiene una contraseña válida de forma predeterminada, por lo que no puede iniciar sesión directamente como usuario raíz con una contraseña. La cuenta raíz en Linux es similar a la cuenta de administrador local en Microsoft Windows. En Linux, la mayoría de los administradores de sistemas inician sesión en el sistema como usuarios sin privilegios y utilizan varias herramientas para obtener privilegios de root temporalmente. Advertencia Los usuarios de Microsoft Windows pueden estar familiarizados con la práctica de iniciar sesión como usuario administrador local.
+
+to perform system administrator duties. Today, this practice is not recommended; users obtain privileges to
+
+realizar la administración por membresía en el grupo de Administradores. De manera similar, en RHEL, Red Hat recomienda que los administradores del sistema nunca inicien sesión directamente como root. En cambio, los administradores del sistema inician sesión como un usuario normal y utilizan mecanismos para obtener temporalmente privilegios de superusuario (su, sudo o PolicyKit, por ejemplo). Cuando se inicia sesión como root, todo el entorno de escritorio se ejecuta innecesariamente con privilegios administrativos. Una vulnerabilidad de seguridad que normalmente podría comprometer sólo una cuenta de usuario normal puede potencialmente comprometer todo el sistema. Cambio de cuentas de usuario Con el comando su, los usuarios pueden cambiar a una cuenta de usuario diferente. Si ejecuta el comando su desde una cuenta de usuario normal con otra cuenta de usuario como parámetro, debe proporcionar la contraseña de la cuenta a la que cambiar.
+
+
+
+
+
+4.3. Obtención de acceso de superusuario Cuando el usuario root ejecuta el comando su, no es necesario ingresar la contraseña del usuario. Este ejemplo utiliza el comando su de la cuenta usuario01 para cambiar a la cuenta usuario02:
+
+user01@host:~$ su - user02
+
+Contraseña: usuario02_contraseña
+
+user02@host:~$
+
+Si omite el nombre de usuario, entonces el comando su o su - intenta cambiar a root de forma predeterminada.
+
+user01@host:~$ su -
+
+Contraseña: contraseña_raíz
+
+root@host:~#
+
+El comando su inicia un shell interactivo sin inicio de sesión, pero el comando su - (con la opción de guión) inicia un shell de inicio de sesión interactivo. La diferencia entre los dos comandos es que el shell se inicializa de maneras ligeramente diferentes cuando se inicia, dependiendo de si se trata de un shell de inicio de sesión o de un shell sin inicio de sesión.
+
+su -
+
+Inicia una nueva sesión de inicio de sesión interactiva como el usuario al que está cambiando y utiliza la configuración del entorno del usuario de destino. su Inicia un shell interactivo como el usuario al que está cambiando, pero utiliza parcialmente la configuración del entorno del usuario original. Generalmente, los administradores deben ejecutar el comando su - para obtener un shell con la configuración del entorno del usuario de destino. Este enfoque garantiza que el shell resultante se inicialice de la misma manera que lo haría si ese usuario iniciara sesión como de costumbre. Para
+
+more information, refer to the bash(1) man page.
+
+Ejecutar comandos con Sudo En RHEL 10, la cuenta raíz no tiene una contraseña válida de forma predeterminada. En otras palabras, no existe una contraseña que permita a un usuario autenticarse y acceder a la cuenta raíz, ya sea intentando iniciar sesión directamente como raíz o intentando utilizar el comando su. Importante El administrador del sistema podría establecer una contraseña para la cuenta raíz, lo que le permitiría convertirse en usuario raíz con el comando su si conoce esa contraseña. Por razones de seguridad, los administradores del sistema normalmente no establecen una contraseña válida para la cuenta raíz. En ese caso, para obtener acceso a la cuenta raíz, los usuarios deben usar una contraseña normal para iniciar sesión en una cuenta de usuario normal y luego usar la
+
+sudo command to become the root user or to run commands as the root user.
+
+A diferencia del comando su, el comando sudo normalmente requiere que los usuarios ingresen su propia contraseña para la autenticación, no la contraseña de la cuenta de usuario a la que intentan acceder. Es decir, los usuarios que utilizan el comando sudo para ejecutar comandos como usuario root no necesitan conocer la contraseña de root. En cambio, utilizan sus propias contraseñas para autenticar el acceso.
+
+
+
+
+
+4.3. Obtener acceso de superusuario Importante De forma predeterminada, el comando sudo almacena en caché su contraseña durante cinco minutos después de una autenticación exitosa. Como resultado, no necesita ingresar su contraseña varias veces si ejecuta una serie rápida de comandos sudo. Puede ejecutar el comando sudo -k para eliminar inmediatamente su contraseña del caché. Además, puede configurar el comando sudo para permitir que usuarios específicos ejecuten cualquier comando como otro usuario, o solo algunos comandos como ese usuario. Por ejemplo, si configura el comando sudo para permitir que el usuario user01 ejecute
+
+the usermod command as root, then you can run the following command to lock or unlock a user account:
+user01@host:~$ sudo usermod -L user02
+
+[sudo] contraseña para usuario01: usuario01_contraseña
+
+user01@host:~$ su - user02
+
+Contraseña: usuario02_contraseña
+
+su: Authentication failure
+user01@host:~$
+
+Si un usuario intenta ejecutar un comando como otro usuario y la configuración de Sudo no lo permite, Sudo bloquea el comando, registra el intento y envía un correo electrónico al usuario raíz de forma predeterminada.
+
+user02@host:~$ sudo tail /var/log/secure
+
+[sudo] contraseña para usuario02: usuario02_contraseña usuario02 no está en el archivo sudoers.  Este incidente será reportado.
+
+user02@host:~$
+
+Otro beneficio del comando sudo es que registra de forma predeterminada todos los comandos ejecutados en el archivo /var/log/secure.
+
+user01@host:~$ sudo tail /var/log/secure
+
+... salida omitida... 9 de marzo 20:45:46 host sudo[2577]: usuario01: TTY=pts/0; PWD=/casa/usuario01; USUARIO=raíz; COMMAND=/sbin/usermod -L user02 ...salida omitida... En Red Hat Enterprise Linux 7 y versiones posteriores, todos los miembros del grupo wheel pueden usar sudo para ejecutar comandos como cualquier usuario, incluido root, usando su propia contraseña. Advertencia Históricamente, los sistemas UNIX utilizan la membresía del grupo de ruedas para otorgar o controlar el acceso de superusuario. RHEL 6 y versiones anteriores no otorgan al grupo de ruedas ningún privilegio especial de forma predeterminada. Los administradores del sistema que anteriormente utilizaron este grupo para un propósito no estándar deben actualizar su configuración anterior para evitar que usuarios inesperados y no autorizados obtengan acceso administrativo en sistemas RHEL 7 y posteriores. Obtener un Shell raíz interactivo con Sudo Para acceder a la cuenta raíz con el comando sudo, utilice el comando sudo -i. Este comando cambia a la cuenta raíz y ejecuta el shell predeterminado de ese usuario (generalmente bash) y los scripts de inicio de sesión interactivos asociados. Para ejecutar el shell sin los scripts interactivos, utilice el comando sudo -s. Por ejemplo, un administrador puede obtener un shell interactivo como raíz en una instancia de AWS Elastic Cloud Computing (EC2) mediante la autenticación de clave pública SSH para iniciar sesión como usuario normal de ec2. Luego, ejecute el comando sudo -i para
+
+
+
+
+
+4.3. Al obtener acceso de superusuario, acceda al shell del usuario root.
+
+ec2-user@host:~$ sudo -i
+
+[sudo] contraseña para ec2-user: ec2-user_password
+
+root@host:~#
+
+Nota Por razones de seguridad, el comando sudo modifica el entorno de shell que configura antes de ejecutar comandos o iniciar sesiones interactivas, según la configuración de sus archivos de configuración. Con la configuración predeterminada, el entorno resultante es similar al que obtendría si iniciara sesión como ese usuario para iniciar una nueva sesión. Configurar Sudo El archivo /etc/sudoers es el archivo de configuración principal para el comando sudo. Para evitar problemas si varios administradores intentan editar el archivo al mismo tiempo, puede editarlo sólo con el comando especial visudo. El editor visudo también valida el archivo para garantizar que no haya errores de sintaxis. Por ejemplo, la siguiente línea del archivo /etc/sudoers habilita el acceso sudo para los miembros del grupo wheel: %wheel ALL=(ALL:ALL) ALL La cadena %wheel es el usuario o grupo al que se aplica la regla. El signo de porcentaje (%) antes de la palabra rueda especifica un grupo. El comando ALL=(ALL:ALL) especifica que en cualquier host con este archivo (el primer ALL), los usuarios del grupo de rueda pueden ejecutar comandos como cualquier otro usuario (el segundo ALL) y como cualquier otro grupo (el tercer ALL) en el sistema. El comando ALL final especifica que los usuarios del grupo de ruedas pueden ejecutar cualquier comando. De forma predeterminada, el archivo /etc/sudoers también incluye el contenido de cualquier archivo en el directorio /etc/sudoers.d como parte del archivo de configuración. Con esta jerarquía, puede agregar acceso sudo para un usuario colocando un archivo apropiado en ese directorio. Importante Puede habilitar o deshabilitar el acceso a sudo copiando un archivo en el directorio o eliminándolo del directorio. En este curso, creará y eliminará archivos en el directorio /etc/sudoers.d para configurar el acceso a sudo para usuarios y grupos. Para habilitar el acceso completo a sudo para el usuario user01, puede crear el archivo /etc/sudoers.d/user01 con lo siguiente
+
+content:
+user01        ALL=(ALL)       ALL
+
+Para habilitar el acceso completo a sudo para el grupo group01, puede crear el archivo /etc/sudoers.d/group01 con el
+
+following content:
+
+%group01 ALL=(ALL) ALL Para permitir que los usuarios del grupo de juegos ejecuten el comando id como usuario operador, puede crear el
+
+/etc/sudoers.d/games file with the following content:
+
+
+
+
+
+4.3. Obtención de acceso de superusuario %games ALL=(operator) /bin/id También puede configurar sudo para permitir que un usuario ejecute comandos como otro usuario sin ingresar su contraseña, usando el comando NOPASSWD: ALL:
+
+ansible        ALL=(ALL)       NOPASSWD: ALL
+
+Aunque se aplican riesgos de seguridad obvios al otorgar este nivel de acceso a un usuario o grupo, los administradores de sistemas suelen utilizar este enfoque con instancias en la nube, máquinas virtuales y sistemas de aprovisionamiento para configurar servidores. Debe proteger la cuenta con este acceso y requerir autenticación de clave pública SSH para que un usuario en un sistema remoto pueda acceder a ella. Por ejemplo, la imagen de máquina de Amazon (AMI) oficial para Red Hat Enterprise Linux en Amazon Web Services Marketplace se envía con las contraseñas de usuario raíz y ec2 bloqueadas. La cuenta de usuario de ec2 está configurada para permitir el acceso interactivo remoto a través de la autenticación de clave pública SSH. El usuario ec2-user también puede ejecutar cualquier comando como
+
+root without a password, because the last line of the AMI's /etc/sudoers file is set up as follows:
+ec2-user        ALL=(ALL)       NOPASSWD: ALL
+
+Puede volver a habilitar el requisito de ingresar una contraseña para sudo o introducir otros cambios para reforzar la seguridad como parte de la configuración del sistema. Referencias info libc persona (Manual de referencia de la biblioteca GNU C) Sección 30.2: La persona de un proceso (El paquete glibc-doc debe estar instalado para que este nodo de información esté disponible). Páginas man su(1), sudo(8), visudo(8), sudoers(5) y bash(1)
+
+
+
+
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario 4.4. Ejercicio guiado Obtenga acceso de superusuario Cambie a la cuenta de superusuario para administrar un sistema Linux y otorgue acceso de superusuario a otros usuarios mediante Sudo. Resultados Utilice Sudo para cambiar al usuario raíz y acceder al shell interactivo como usuario raíz sin conocer la contraseña del superusuario. Verifique el comportamiento del comando su cambiando de usuario directamente y abriendo un shell de inicio de sesión. Utilice privilegios de Sudo como usuario normal para administrar un archivo restringido. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-superuser
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Explore el entorno de shell del usuario estudiante. Ver la información actual del usuario y grupo y mostrar el directorio de trabajo actual. Vea también las variables de entorno que especifican el directorio de inicio del usuario y las ubicaciones de los archivos ejecutables del usuario. 2. Ver la información actual del usuario y del grupo.
+
+[student@servera ~]$ id
+uid=1000(student) gid=1000(student) groups=1000(student),10(wheel) 
+context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+
+2.1. Muestra el directorio de trabajo actual.
+
+[student@servera ~]$ pwd
+
+/casa/estudiante 2.2. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[student@servera ~]$ echo $HOME
+
+/casa/estudiante
+
+[student@servera ~]$ echo $PATH
+/home/student/.local/bin:/home/student/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+2.3. Cambie al usuario root en un shell sin inicio de sesión y explore el nuevo entorno del shell. 3. Conviértase en usuario root utilizando el comando sudo su. Utilice estudiante como contraseña. 3.1.
+
+
+
+
+

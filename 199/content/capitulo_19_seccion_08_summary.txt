@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+16.8. Resumen 16.8. Resumen En esta lección, aprendió sobre Logical Volume Manager y cómo utiliza volúmenes físicos, grupos de volúmenes y volúmenes lógicos para proporcionar espacio de almacenamiento flexible. Cada componente tiene comandos específicos para su gestión. El comando pvcreate crea los PV; el comando vgcreate crea los VG; y el comando lvcreate crea los LV. El comando vgextend agrega un PV a un VG existente y el comando lvextend aumenta el tamaño de un LV. Los comandos resize2fs y xfs_growfs cambian el tamaño del sistema de archivos en un LV después de modificar su tamaño. El comando pvmove mueve datos de un PV a otro, lo que libera espacio en el PV original y permite eliminarlo o reutilizarlo. El comando lvremove elimina los LV; el comando vgremove elimina los VG; y el comando pvremove elimina los PV.
+
+
+
+
+
+Capítulo 17. Control y resolución de problemas del proceso de inicio Objetivo Administrar cómo se inicia el sistema para controlar qué servicios se inician y solucionar y reparar problemas de tiempo de inicio. Secciones Administrar el cargador de arranque y la línea de comandos del kernel (y ejercicio guiado) Explorar el proceso de arranque y seleccionar un destino de arranque (y ejercicio guiado) Reparar sistemas de archivos dañados en el momento del arranque (y ejercicio guiado) Laboratorio de control y solución de problemas del proceso de arranque
+
+
+
+
+

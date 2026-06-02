@@ -1,0 +1,230 @@
+# Ejercicio Guiado: Ejercicio guiado Crear volúmenes lógicos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+16.2. Ejercicio guiado Crear volúmenes lógicos 16.2. Ejercicio guiado Crear volúmenes lógicos Cree volúmenes lógicos, formatéelos con un sistema de archivos y móntelos. Resultados Cree volúmenes físicos, grupos de volúmenes y volúmenes lógicos con herramientas LVM. Cree sistemas de archivos en volúmenes lógicos y móntelos de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start lvm-create
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Etiquete el dispositivo de almacenamiento /dev/sdb con la etiqueta gpt y cree dos particiones de dispositivo físico con un tamaño de 256 MiB. Configure ambas particiones al tipo de partición LVM de Linux y registre las particiones con el kernel. 2. Utilice la etiqueta gpt para la partición /dev/sdb:
+
+[root@servera ~]# parted /dev/sdb mklabel gpt
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.1. Crea la primera partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart first 1MiB 257MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.2. Establezca la primera partición en el tipo de partición LVM de Linux.
+
+[root@servera ~]# parted /dev/sdb set 1 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.3. Crea la segunda partición con un tamaño de 256 MiB.
+
+[root@servera ~]# parted /dev/sdb mkpart second 257MiB 513MiB
+
+Información: Es posible que necesite actualizar /etc/fstab. 2.4. Configure la segunda partición al tipo de partición LVM de Linux. 2.5.
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos
+
+[root@servera ~]# parted /dev/sdb set 2 lvm on
+
+Información: Es posible que necesite actualizar /etc/fstab. Registre las nuevas particiones con el kernel.
+
+[root@servera ~]# udevadm settle
+
+2.6. Enumere las particiones en el dispositivo de almacenamiento /dev/sdb usando MiB como unidad de visualización. En la columna Número, los valores 1 y 2 corresponden a las particiones de dispositivo /dev/sdb1 y /dev/sdb2. La columna Banderas indica el tipo de partición.
+
+[root@servera ~]# parted /dev/sdb unit mib print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5120MiB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1.00MiB 257MiB 256MiB primer lvm 2 257MiB 513MiB 256MiB segundo nivel 2.7. Etiquete las dos nuevas particiones como volúmenes físicos.
+
+[root@servera ~]# pvcreate /dev/sdb1 /dev/sdb2
+  Physical volume "/dev/sdb1" successfully created.
+  Physical volume "/dev/sdb2" successfully created.
+  Creating devices file /etc/lvm/devices/system.devices
+
+3. Cree el grupo de volúmenes vg_servera utilizando los dos nuevos PV.
+
+[root@servera ~]# vgcreate vg_servera /dev/sdb1 /dev/sdb2
+  Volume group "vg_servera" successfully created
+
+4. Cree el volumen lógico lv_servera utilizando el VG vg_servera con un tamaño de 400 MiB. El /dev/vg_servera/lv_servera LV se crea sin un sistema de archivos.
+
+[root@servera ~]# lvcreate -n lv_servera -L 400M vg_servera
+  Logical volume "lv_servera" created.
+
+5. Formatee el LV recién creado con el sistema de archivos XFS y móntelo de forma persistente en el directorio /data. 6. Formatee lv_servera LV con el sistema de archivos XFS.
+
+[root@servera ~]# mkfs -t xfs /dev/vg_servera/lv_servera
+
+...salida omitida...
+
+meta-data=/dev/vg_servera/lv_servera isize=512    agcount=4, agsize=25600 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+
+...salida omitida...
+
+data     =                       bsize=4096   blocks=102400, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+
+...salida omitida... 6.1. Cree el directorio /data como punto de montaje.
+
+[root@servera ~]# mkdir /data
+
+6.2. Para montar de forma persistente el sistema de archivos recién creado, agregue el siguiente contenido en el archivo /etc/fstab: 6.3.
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos /dev/vg_servera/lv_servera /data xfs defaults 0 0 Actualice el demonio systemd con el nuevo archivo de configuración /etc/fstab.
+
+[root@servera ~]# systemctl daemon-reload
+
+6.4. Monte el lv_servera LV.
+
+[root@servera ~]# mount /data
+
+6.5. Verifique que se pueda acceder al sistema de archivos montado copiando los archivos de configuración del directorio /etc. 7. Verifique que pueda copiar los archivos de configuración al directorio /data.
+
+[root@servera ~]# cp -a /etc/*.conf /data
+
+7.1. Muestra el número de archivos en el directorio /data.
+
+[root@servera ~]# ls /data | wc -l
+
+30 7.2. Muestra la información del LVM. 8. Vea la información de PV de /dev/sdb2. El resultado muestra que vg_servera VG usa el PV. El PV tiene un tamaño de 256 MiB y un tamaño de extensión física de 4 MiB. El PV contiene 63 PE, de los cuales 27 PE están disponibles para su asignación y 36 PE están actualmente asignados a LV. Utilice el siguiente cálculo para asignar el tamaño del volumen en MiB:
+
+[root@servera ~]# pvdisplay /dev/sdb2
+  --- Physical volume ---
+  PV Name               /dev/sdb2
+  VG Name               vg_servera
+  PV Size               256.00 MiB / not usable 4.00 MiB
+  Allocatable           yes
+  PE Size               4.00 MiB
+  Total PE              63
+  Free PE               26
+  Allocated PE          37
+  PV UUID               1u3ddN-vh6P-enWw-LO0N-XqkS-lQVg-yWzU6N
+
+8.1. Total 252 MiB (63 PE x 4 MiB) Gratis 104 MiB (26 PE x 4 MiB) Asignados 148 MiB (37 PE x 4 MiB) Vea la información de VG para vg_servera VG. El resultado muestra un tamaño VG de 504 MiB con un tamaño PE de 4 MiB. El tamaño disponible del VG es 104 MiB. 8.2.
+
+
+
+
+
+16.2. Ejercicio guiado Crear volúmenes lógicos Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que
+
+[root@servera ~]# vgdisplay vg_servera
+  --- Volume group ---
+  VG Name               vg_servera
+  System ID
+  Format                lvm2
+  Metadata Areas        2
+  Metadata Sequence No  2
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                1
+  Open LV               1
+  Max PV                0
+  Cur PV                2
+  Act PV                2
+  VG Size               504.00 MiB
+  PE Size               4.00 MiB
+  Total PE              126
+  Alloc PE / Size       100 / 400.00 MiB
+  Free  PE / Size       26 / 108.00 MiB
+  VG UUID               7pCGdT-20Mc-gQox-ZmJg-O8Rt-dExh-pJNH5N
+
+Vea la información de lv_servera LV. El resultado muestra el nombre de VG para crear el LV. También muestra un tamaño LV de 400 MiB y un tamaño LE de 100.
+
+[root@servera ~]# lvdisplay /dev/vg_servera/lv_servera
+  --- Logical volume ---
+  LV Path                /dev/vg_servera/lv_servera
+  LV Name                lv_servera
+  VG Name                vg_servera
+  LV UUID                JAxU5K-zg0x-zyoa-Liti-Lc0M-6vBs-g22itT
+  LV Write Access        read/write
+  LV Creation host, time servera, 2025-06-19 20:58:52 +0000
+  LV Status              available
+  # open                 1
+  LV Size                400.00 MiB
+  Current LE             100
+  Segments               2
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:0
+
+8.3. Vea el espacio libre en disco en unidades legibles por humanos. El resultado muestra el tamaño total de 336 MiB con el tamaño disponible de 310 MiB.
+
+[root@servera ~]# df -h /data
+
+Tamaño del sistema de archivos utilizado % de uso disponible Montado en /dev/mapper/vg_servera-lv_servera 336M 27M 310M 8% /data 8.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+9.
+
+
+
+
+
+16.2. Los recursos de creación de volúmenes lógicos de ejercicios guiados de ejercicios anteriores no afectan los ejercicios siguientes.
+
+student@workstation:~$ lab finish lvm-create
+
+
+
+
+
+16.3. Ampliación de un volumen lógico 16.3. Ampliación de un volumen lógico Objetivos Aumentar el almacenamiento disponible en un volumen lógico y ampliar su sistema de archivos o espacio de intercambio para utilizar el almacenamiento adicional. Aumente la capacidad de almacenamiento en un volumen lógico Un beneficio de utilizar volúmenes lógicos es aumentar su tamaño sin experimentar tiempo de inactividad. Agregue extensiones físicas gratuitas al LV desde el VG para ampliar la capacidad del LV y ampliar el sistema de archivos. Utilice el comando vgdisplay para confirmar que el grupo de volúmenes tiene suficiente espacio libre para la extensión LV. Utilice el comando lvextend para extender el LV:
+
+root@host:~# lvextend -L +500M /dev/vg01/lv01
+  Size of logical volume vg01/lv01 changed from 512.00 MiB (128 extents) to 1012.00 MiB (253 extents).
+  Logical volume vg01/lv01 successfully resized.
+
+Este comando aumenta el tamaño del volumen lógico lv01 en 500 MiB. El signo más (+) delante del tamaño significa
+
+adding this value to the existing size; otherwise, without the plus sign, the value defines the final size of the LV.
+
+La opción lvextend del comando -l espera el número de PE como argumento. La opción lvextend del comando -L espera tamaños en bytes, mebibytes, gibibytes o similares. Extender un sistema de archivos XFS al tamaño de volumen lógico El comando xfs_growfs ayuda a expandir el sistema de archivos para ocupar el LV extendido. El sistema de archivos de destino debe ser
+
+mounted before you use the xfs_growfs command. You can continue to use the file system when resizing.
+
+Utilice el comando xfs_growfs para expandir el sistema de archivos XFS:
+
+root@host:~# xfs_growfs /mnt/data/
+
+...salida omitida... los bloques de datos cambiaron de 131072 a 259072 Importante Ejecute siempre el comando xfs_growfs después de ejecutar el comando lvextend. Utilice el lvextend
+
+command -r option to run the two steps consecutively. An XFS file system must be mounted before resizing;
+
+si el sistema de archivos no está montado, la opción -r crea un directorio de punto de montaje temporal para realizar la operación. Alternativamente, después de extender el LV, puede cambiar el tamaño del sistema de archivos usando el comando fsadm. Este comando tiene un alcance más amplio porque admite varios otros sistemas de archivos. Extender un sistema de archivos EXT4 al tamaño de volumen lógico Los pasos para extender LV usando el sistema de archivos ext4 son los mismos que para LV usando el sistema de archivos XFS, excepto por el paso para cambiar el tamaño del sistema de archivos.
+
+
+
+
+

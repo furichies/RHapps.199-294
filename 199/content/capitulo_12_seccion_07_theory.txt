@@ -1,0 +1,88 @@
+# 9.7. Actividad del proceso de seguimiento
+# Tipo: theory
+# Capítulo: Capítulo 9. Monitoreo y gestión de procesos Linux
+
+9.7. Actividad del Proceso de Monitoreo 9.7. Objetivos de la actividad de proceso de monitoreo Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Carga promedio La carga promedio es una medida que proporciona el kernel de Linux para representar la carga percibida del sistema durante un período de tiempo. Se puede utilizar como un indicador aproximado de cuántas solicitudes de recursos del sistema están pendientes para determinar si la carga del sistema aumenta o disminuye. El kernel recopila el número de carga actual cada cinco segundos en función de la cantidad de procesos en estados ejecutables e ininterrumpibles. Este número se informa como un promedio móvil exponencial durante los últimos 1, 5 y 15 minutos. Calcular el promedio de carga El promedio de carga es una medida aproximada de cuántos procesos están esperando actualmente a que se complete una solicitud antes de hacer cualquier otra cosa. La solicitud podría ser de tiempo de CPU para ejecutar el proceso. Alternativamente, la solicitud podría ser para que se complete una operación de E/S de disco crítica y el proceso no se puede ejecutar en la CPU hasta que se complete la solicitud, aunque la CPU esté inactiva. De cualquier manera, la carga del sistema se ve afectada y el sistema parece ejecutarse más lentamente porque los procesos están esperando para ejecutarse. El número de carga es un promedio acumulado del número de procesos que están listos para ejecutarse en una CPU (en el estado de proceso R) o que están esperando que se complete el disco o la E/S (en el estado de proceso D). Algunos sistemas UNIX consideran sólo el uso de la CPU o la longitud de la cola de ejecución para indicar la carga del sistema. Linux también incluye el uso de disco o red, porque el uso elevado de estos recursos puede afectar significativamente el rendimiento del sistema como carga de la CPU. Para promedios de carga elevados con actividad mínima de la CPU, examine la actividad del disco y de la red. Interpretación de los valores promedio de carga El comando uptime es una forma de mostrar el promedio de carga actual. Este comando imprime la hora actual, cuánto tiempo ha estado funcionando la máquina, cuántas sesiones de usuario se están ejecutando y el promedio de carga actual.
+
+user@host:~$ uptime
+
+15:29:03 hasta 14 min, 2 usuarios, carga promedio: 2,92, 4,48, 5,20 Los tres valores para el promedio de carga representan la carga durante los últimos 1, 5 y 15 minutos. Estos valores indican si la carga del sistema parece estar aumentando o disminuyendo. Si la principal contribución al promedio de carga proviene de procesos que están esperando la CPU, entonces puede calcular el valor de carga aproximado por CPU para determinar si el sistema está experimentando una espera significativa. Utilice el comando lscpu para determinar la cantidad de CPU en un sistema. En el siguiente ejemplo, el sistema es un sistema de un solo socket de doble núcleo con dos hiperprocesos por núcleo. Linux trata esta configuración de CPU como un sistema de cuatro CPU para fines de programación.
+
+
+
+
+
+9.7. Actividad del proceso de seguimiento
+
+user@host:~$ lscpu
+
+Arquitectura: x86_64 Modo(s) de operación de CPU: 32 bits, 64 bits Orden de bytes: CPU(s) Little Endian: 4 Lista de CPU(s) en línea: 0-3 Hilos por núcleo: 2 Núcleos por socket: 2 Socket(s): 1 Nodo(s) NUMA: 1 ... salida omitida... Imagine que la única contribución al número de carga proviene de procesos que necesitan tiempo de CPU. Por lo tanto, puede dividir los valores promedio de carga mostrados por la cantidad de CPU lógicas en el sistema. Un valor inferior a 1 indica un uso adecuado de los recursos y tiempos de espera mínimos. Un valor superior a 1 indica saturación de recursos y cierto retraso en el procesamiento.
+
+# From ``lscpu``, the system has four logical CPUs, so divide by 4:
+#                               load average: 2.92, 4.48, 5.20
+#           divide by number of logical CPUs:    4     4     4
+#                                             ----  ----  ----
+#                       per-CPU load average: 0.73  1.12  1.30
+
+#
+
+# This system's load average appears to be decreasing.
+# With a load average of 2.92 on four CPUs, all CPUs were in use ~73% of the time.
+# During the last 5 minutes, the system was overloaded by ~12%.
+# During the last 15 minutes, the system was overloaded by ~30%.
+
+Una cola de CPU inactiva tiene un número de carga de 0. Cada proceso que espera una CPU suma 1 al número de carga. Si un proceso se está ejecutando en una CPU, entonces el número de carga es 1 y el recurso (la CPU) está en uso, pero no hay solicitudes en espera. Si ese proceso se ejecuta durante un minuto completo, entonces su contribución al promedio de carga de un minuto es 1. Sin embargo, los procesos que están en un estado de suspensión ininterrumpida para E/S críticas debido a un disco ocupado o un recurso de red también se incluyen en el recuento y aumentan el promedio de carga. Aunque no indican el uso de la CPU, estos procesos se agregan al recuento de la cola porque esperan recursos y no pueden ejecutarse en una CPU hasta que obtengan los recursos. Esta métrica todavía se considera carga del sistema debido a limitaciones de recursos que hacen que los procesos no se ejecuten. Hasta la saturación de recursos, el promedio de carga permanece por debajo de 1, porque rara vez se encuentran tareas esperando en la cola. El promedio de carga aumenta solo cuando la saturación de recursos hace que las solicitudes permanezcan en cola y la rutina de cálculo de carga las cuenta. Cuando el uso de recursos se acerca al 100 %, cada solicitud adicional comienza a experimentar un tiempo de espera del servicio. Monitoreo de procesos en tiempo real El comando superior muestra una vista dinámica de los procesos del sistema y un encabezado de resumen seguido de una lista de procesos o subprocesos. A diferencia de la salida del comando ps estático, el comando top se actualiza continuamente en un intervalo configurable y proporciona reordenamiento, clasificación y resaltado de columnas. Puede realizar cambios persistentes en la configuración superior.
+
+user@host:~$ top
+
+...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16486 root 20 0 0 0 0 I 0.3 0.0 0:00.03 kworker/1:1-events 16811 estudiante 20 0 232736 5624 3448 R 0.3 0.3 0:00.02 arriba
+
+   1 root     20   0   48740  40544  10352 S   0.0   2.0   0:07.37 systemd
+   2 root     20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+   3 root     20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_release
+
+...salida omitida... Las columnas de salida superiores predeterminadas son las siguientes:
+
+
+
+
+
+9.7. Monitoreo de actividad del proceso PID: El ID del proceso. USUARIO: El nombre de usuario del propietario del proceso. VIRT: la memoria virtual es toda la memoria que utiliza el proceso, incluido el conjunto residente, las bibliotecas compartidas y cualquier página de memoria asignada o intercambiada (etiquetada como VSZ en el comando ps). RES: La memoria residente es la memoria física que utiliza el proceso, incluidos los objetos residentes compartidos (etiquetados como RSS en el comando ps). S: El estado del proceso puede ser uno de los siguientes estados: D: Inactividad ininterrumpida R: En ejecución o ejecutable S: Inactivo T: Detenido o rastreado Z: Zombie TIME: El tiempo de CPU es el tiempo total de procesamiento desde que se inició el proceso. El tiempo de CPU se puede alternar para incluir un tiempo acumulado de todos los procesos secundarios anteriores. COMANDO: El nombre del comando del proceso. Tabla 12. Pulsaciones de teclas fundamentales en la ayuda superior del Comando H para pulsaciones de teclas interactivas. L , T , M Alterna entre carga, subprocesos y líneas de encabezado de memoria. 1 Alternar entre CPU individuales o un resumen de todas las CPU en el encabezado. S Cambie la frecuencia de actualización (pantalla), en segundos decimales (como 0,5, 1, 5). B Alternar resaltado inverso para procesos en ejecución; el valor predeterminado es solo negrita. Shift+B Habilita el uso de negrita en la visualización, en el encabezado y para procesos en ejecución. Mayús+H Alternar hilos; mostrar resumen del proceso o hilos individuales. U , Shift+U Filtrar por cualquier nombre de usuario (efectivo, real). Shift+M Ordena la lista de procesos por uso de memoria, en orden descendente. Shift+P Ordenar la lista de procesos por uso del procesador, en orden descendente. K Mata un proceso. Cuando se le solicite, ingrese PID y luego señalice. R Renice un proceso. Cuando se le solicite, ingrese PID y luego nice_value. Propósito clave
+
+
+
+
+
+9.7. Monitoreo de actividad del proceso Mayús+W Escribe (guarda) la configuración de pantalla actual para usarla en el siguiente reinicio superior. P Renunciar. F Administre las columnas habilitando o deshabilitando campos. También puede configurar el campo de clasificación para arriba. Nota Las pulsaciones de teclas S, K y R no están disponibles cuando el comando superior se inicia en modo seguro. Referencias a las páginas man ps(1), top(1), uptime(1) y w(1) Propósito clave
+
+
+
+
+
+9.8. Actividad del proceso de seguimiento del ejercicio guiado 9.8. Ejercicio guiado Monitorear la actividad del proceso Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Resultados Gestionar procesos en tiempo real. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-monitor
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado monitor en el nuevo directorio para generar una carga de CPU artificial. Haga que el archivo de secuencia de comandos del monitor sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree el archivo de secuencia de comandos del monitor en el directorio /home/student/bin con el siguiente contenido. #!/bin/bash mientras sea verdadero
+
+  var=1
+  while (( var < 60000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+done El script del monitor se ejecuta hasta que finaliza el proceso. El script genera una carga artificial de CPU al realizar sesenta mil cálculos de suma. Después de generar la carga de la CPU, duerme durante un segundo, restablece la variable y repite. 2.2. Cambie el permiso del archivo del monitor para que sea ejecutable. 2.3.
+
+
+
+
+

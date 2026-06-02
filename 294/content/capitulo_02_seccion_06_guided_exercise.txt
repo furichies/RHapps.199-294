@@ -1,0 +1,265 @@
+# Ejercicio Guiado: Escritura y ejecución de playbooks
+# Tipo: guided_exercise
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Ejercicio Guiado
+Escritura y ejecución de playbooks
+Escribir y ejecutar un playbook de Ansible.
+Resultados
+• Usted deberá ser capaz de escribir un playbook con una sintaxis YAML básica y una
+estructura de playbook de Ansible, y ejecutarlo correctamente con el comando ansible-
+navigator run.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start playbook-basic
+Instrucciones
+El directorio del proyecto Ansible /home/student/playbook-basic se ha creado en la
+máquina workstation para este ejercicio. Este directorio ya tiene un archivo de configuración
+ansible.cfg. También tiene un archivo de inventario denominado inventory que
+define un grupo web, que incluye los hosts gestionados serverc.lab.example.com y
+serverd.lab.example.com como miembros.
+En este ejercicio, crea un playbook denominado site.yml en el directorio del proyecto. Este
+playbook contiene un play, que se destina a miembros del grupo de hosts web. El playbook usa
+tareas para garantizar que se cumplan las siguientes condiciones en los hosts gestionados:
+• El paquete httpd está presente, con el módulo ansible.builtin.dnf.
+• El archivo files/index.html local se copia en /var/www/html/index.html en cada host
+gestionado, con el módulo ansible.builtin.copy.
+• El servicio httpd se inicia y se habilita con el módulo ansible.builtin.service.
+Puede usar el comando ansible-navigator doc para poder entender las palabras clave
+necesarias para cada uno de los módulos.
+Después de que se escriba el playbook, valide su sintaxis y, luego, use el comando ansible-
+navigator run para ejecutar el playbook a fin de implementar la configuración.
+ 1.
+Cambie al directorio /home/student/playbook-basic.
+[student@workstation ~]$ cd ~/playbook-basic
+[student@workstation playbook-basic]$
+54
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+ 2.
+Cree un nuevo playbook denominado /home/student/playbook-basic/site.yml.
+Comience a escribir un play que destine los hosts en el grupo de hosts web.
+2.1.
+Cree y abra ~/playbook-basic/site.yml. La primera línea del archivo deberían
+ser tres guiones para indicar el inicio del playbook.
+---
+2.2.
+La siguiente línea inicia el play. Debe iniciar con un guion y un espacio antes de la
+primera palabra clave en el play. Asígnele al play el nombre de una cadena arbitraria
+que documente el propósito del play, con la palabra clave name.
+---
+- name: Install and start Apache HTTPD
+2.3.
+Agregue un par palabra clave-valor hosts para especificar que el play se ejecute
+en hosts en el grupo de hosts web del inventario. Asegúrese de que la palabra clave
+hosts tenga una sangría de dos espacios para que se alinee con la palabra clave
+name en la línea anterior.
+El archivo site.yml completo debe contar con el siguiente contenido:
+---
+- name: Install and start Apache HTTPD
+  hosts: web
+ 3.
+Continúe editando el archivo /home/student/playbook-basic/site.yml y
+agregue una palabra clave tasks y las tres tareas para su play que se especificaron en las
+instrucciones.
+3.1.
+Agregue una palabra clave tasks con una sangría de dos espacios (alineada con la
+palabra clave hosts) para iniciar la lista de tareas. El archivo ahora debe contar con el
+siguiente contenido:
+---
+- name: Install and start Apache HTTPD
+  hosts: web
+  tasks:
+3.2.
+Agregue la primera tarea. Aplique una sangría de cuatro espacios e inicie la tarea con
+un guion y un espacio; luego, asigne un nombre a la tarea, como Ensure httpd
+package is present. Use el módulo ansible.builtin.dnf para esta tarea.
+Agregue una sangría de dos espacios más a las palabras clave del módulo; configure
+el nombre del paquete en httpd y el estado del paquete en present. La tarea debe
+contar con el siguiente contenido:
+    - name: Ensure httpd package is present
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+3.3.
+Agregue la segunda tarea. Haga coincidir el formato de la tarea anterior y asígnele
+un nombre a la tarea, como Correct index.html is present. Use el módulo
+RH294-RHEL9.0-es-3-20240620
+55
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+ansible.builtin.copy. Configure las palabras clave del módulo para establecer
+la clave src en files/index.html y la clave dest en /var/www/html/
+index.html. La tarea debe contar con el siguiente contenido:
+    - name: Correct index.html is present
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+3.4.
+Agregue una tercera tarea para iniciar y habilitar el servicio httpd. Haga coincidir
+el formato de las dos tareas anteriores y asígnele un nombre a la nueva tarea, como
+Ensure httpd is started. Use el módulo ansible.builtin.service
+para esta tarea. Establezca la clave name del servicio en httpd, la clave state
+en started y la clave enabled en true. La tarea debe contar con el siguiente
+contenido:
+    - name: Ensure httpd is started
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+3.5.
+Su playbook de Ansible site.yml completo debe coincidir con el siguiente ejemplo.
+Asegúrese de que la sangría de las palabras clave de su play, la lista de tareas y las
+palabras clave de cada tarea sean todas correctas.
+---
+- name: Install and start Apache HTTPD
+  hosts: web
+  tasks:
+    - name: Ensure httpd package is present
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+    - name: Correct index.html is present
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+    - name: Ensure httpd is started
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+Guarde el archivo y salga.
+ 4.
+Antes de ejecutar el playbook, ejecute el comando ansible-navigator run --
+syntax-check para validar su sintaxis. Corrija cualquier error antes de continuar. Debe ver
+una salida similar a la siguiente:
+56
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+[student@workstation playbook-basic]$ ansible-navigator run \
+> -m stdout site.yml --syntax-check
+playbook: /home/student/playbook-basic/site.yml
+ 5.
+Ejecute su playbook. Lea la salida generada para garantizar que todas las tareas se hayan
+completado satisfactoriamente.
+[student@workstation playbook-basic]$ ansible-navigator run \
+> -m stdout site.yml
+PLAY [Install and start Apache HTTPD] ******************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+TASK [Ensure httpd package is present]
+ ************************************************
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [Correct index.html is present] *******************************************
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+TASK [Ensure httpd is started]
+ ********************************************************
+changed: [serverd.lab.example.com]
+changed: [serverc.lab.example.com]
+PLAY RECAP *********************************************************************
+serverc.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverd.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 6.
+Si todo fue bien, usted deberá ser capaz de ejecutar el playbook por segunda vez y ver
+todas las tareas completas sin cambios en los hosts gestionados.
+[student@workstation playbook-basic]$ ansible-navigator run \
+> -m stdout site.yml
+PLAY [Install and start Apache HTTPD] ******************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+TASK [Ensure httpd package is present]
+ ************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+RH294-RHEL9.0-es-3-20240620
+57
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+TASK [Correct index.html is present] *******************************************
+ok: [serverc.lab.example.com]
+ok: [serverd.lab.example.com]
+TASK [Ensure httpd is started]
+ ********************************************************
+ok: [serverd.lab.example.com]
+ok: [serverc.lab.example.com]
+PLAY RECAP *********************************************************************
+serverc.lab.example.com    : ok=4    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+serverd.lab.example.com    : ok=4    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 7.
+Use el comando curl para verificar que serverc.lab.example.com y
+serverd.lab.example.com se hayan configurado como un servidor HTTPD.
+[student@workstation playbook-basic]$ curl serverc.lab.example.com
+This is a test page.
+[student@workstation playbook-basic]$ curl serverd.lab.example.com
+This is a test page.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish playbook-basic
+58
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Implementación de varios plays
+Objetivos
+• Escribir un playbook que use múltiples plays con aumento de privilegios por play y aprovechar
+eficazmente el navegador de contenido de automatización para encontrar nuevos módulos en
+Ansible Content Collections disponibles a fin de implementar tareas para un play.
+Escritura de varios plays
+Un playbook es un archivo YAML que contiene una lista de uno o más plays. Recuerde que un solo
+play es una lista ordenada de tareas para ejecutar respecto de hosts seleccionados del inventario.
+Por lo tanto, si un playbook contiene varios plays, cada play podría aplicar sus tareas a un conjunto
+de hosts diferente.
+Esto puede ser muy útil cuando se organiza una implementación compleja que puede involucrar
+diferentes tareas en diferentes hosts. Puede escribir un playbook que ejecute un play respecto de
+un conjunto de hosts y que, cuando este finaliza, ejecute otro play respecto de otro conjunto de
+hosts.
+Escribir un playbook que contenga varios plays es muy sencillo. Cada play en el playbook se
+escribe como un ítem de lista de nivel superior en el playbook. Cada play es un ítem de una lista
+que contiene las palabras clave de plays habituales.
+En el siguiente ejemplo se muestra un playbook simple con dos plays. El primer play se ejecuta
+respecto de web.example.com y el segunda, respecto de database.example.com.
+---
+# This is a simple playbook with two plays
+- name: First play
+  hosts: web.example.com
+  tasks:
+    - name: First task
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+    - name: Second task
+      ansible.builtin.service:
+        name: httpd
+        enabled: true
+- name: Second play
+  hosts: database.example.com
+  tasks:
+    - name: First task
+      ansible.builtin.service:
+        name: mariadb
+        enabled: true
+RH294-RHEL9.0-es-3-20240620
+59
+
+

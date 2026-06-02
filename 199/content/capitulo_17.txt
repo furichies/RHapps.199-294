@@ -1,0 +1,1229 @@
+# Capítulo 14. Gestión de la seguridad con SELinux
+
+## 14.1. Operando SELinux
+
+14.1. Operando SELinux 14.1. Operación de SELinux Objetivos Describir cómo funciona SELinux y controlar el modo SELinux predeterminado y actual. SELinux Architecture Security Enhanced Linux (SELinux) es una característica de seguridad crítica de Linux. El acceso a archivos, puertos y otros recursos se controla a nivel granular. A los procesos se les permite acceder solo a los recursos que especifican su política SELinux o su configuración booleana. Los permisos de archivos controlan el acceso a los archivos para un usuario o grupo específico. Sin embargo, los permisos de archivos no impiden que un usuario autorizado con acceso a archivos utilice un archivo para un fin no deseado. Por ejemplo, con acceso de escritura a un archivo, otros editores o programas aún pueden abrir y modificar un archivo de datos estructurados que está diseñado para que escriba únicamente un programa específico. Estas operaciones podrían provocar daños en los archivos o un problema de seguridad de los datos. Los permisos de archivos no impiden dicho acceso no deseado, porque no controlan cómo se utiliza un archivo, sino sólo quién puede leerlo, escribirlo o ejecutarlo. SELinux consta de políticas específicas de la aplicación que los desarrolladores de la aplicación definen para declarar qué acciones y accesos están permitidos para cada ejecutable binario, archivo de configuración y archivo de datos que utiliza la aplicación. Esta política se conoce como política dirigida porque una política define las actividades de una aplicación. Las políticas declaran las etiquetas predefinidas que se configuran en programas, archivos y puertos de red individuales. Uso de SELinux SELinux impone un conjunto de reglas de acceso que definen explícitamente acciones permitidas entre procesos y recursos. No se permite ninguna acción que no esté definida en una regla de acceso. Como sólo se permiten acciones definidas, las aplicaciones con un diseño de seguridad deficiente siguen estando protegidas contra el uso malicioso. Las aplicaciones o servicios con una política específica se ejecutan en un dominio confinado, mientras que una aplicación sin una política se ejecuta de forma ilimitada y sin ninguna protección SELinux. Las políticas específicas individuales se pueden deshabilitar para ayudar con el desarrollo y la depuración de políticas de seguridad y aplicaciones. SELinux tiene los siguientes modos operativos: Aplicación: SELinux aplica las políticas de seguridad en todo el sistema. El modo de aplicación es el modo predeterminado y recomendado en Red Hat Enterprise Linux. Permisivo: SELinux carga las políticas y está activo, pero en lugar de imponer reglas de control de acceso, registra las violaciones de acceso. Este modo es útil para probar y solucionar problemas de aplicaciones y reglas. Deshabilitado: SELinux está desactivado y las violaciones de SELinux no se implementan ni se registran. Este modo también evita etiquetar archivos o directorios con contextos de seguridad, lo que dificulta la habilitación de SELinux en el futuro. Se desaconseja encarecidamente deshabilitar SELinux. Importante RHEL ya no admite la configuración de la opción SELINUX=disabled en el archivo /etc/selinux/config.
+
+
+
+
+
+14.1. Operación de SELinux Conceptos de SELinux El objetivo principal de SELinux es proteger los datos del usuario del uso inadecuado por parte de aplicaciones o servicios del sistema comprometidos. La mayoría de los administradores de Linux están familiarizados con el modelo de seguridad estándar de permisos de archivos de usuarios, grupos y mundos, que se conoce como Control de acceso discrecional (DAC) porque los administradores establecen los permisos de archivos según sus necesidades. SELinux proporciona una capa adicional de seguridad basada en objetos, que se define en reglas granulares. Esta capa de seguridad se conoce como Control de acceso obligatorio (MAC). Las políticas MAC se aplican a todos los usuarios y no se pueden omitir para usuarios específicos mediante ajustes de configuración discrecionales. Por ejemplo, el puerto de firewall abierto de un servidor web permite el acceso anónimo remoto a un cliente web. Sin embargo, un usuario malintencionado que acceda a ese puerto podría intentar comprometer un sistema a través de una vulnerabilidad existente. Si una vulnerabilidad compromete los permisos del usuario y grupo de Apache, entonces un usuario malintencionado podría acceder directamente al contenido raíz del documento /var/www/html, o a los directorios /tmp y /var/tmp del sistema, u otros archivos y directorios accesibles. Las políticas de SELinux son reglas de seguridad que definen cómo procesos específicos acceden a archivos, directorios y puertos relevantes. Cada entidad de recurso, como un archivo, proceso, directorio o puerto, tiene una etiqueta de contexto SELinux. La etiqueta de contexto coincide con una regla de política SELinux definida para permitir que un proceso acceda al recurso etiquetado. De forma predeterminada, una política SELinux no permite ningún acceso a menos que una regla explícita lo otorgue. Cuando no se define ninguna regla de permiso, no se permite ningún acceso. Las etiquetas SELinux tienen campos de usuario, rol, tipo y nivel de seguridad. La política dirigida, que está habilitada en RHEL de forma predeterminada, define reglas utilizando el contexto de tipo. Los nombres de contexto de tipo normalmente terminan con _t. Figura 17. Conceptos de reglas de acceso a políticas de contexto de archivo SELinux Por ejemplo, un proceso de servidor web está etiquetado con el contexto de tipo httpd_t. Los archivos y directorios del servidor web en el directorio /var/www/html/ y otras ubicaciones están etiquetados con el contexto de tipo httpd_sys_content_t. Los archivos temporales en los directorios /tmp y /var/tmp tienen contextos de tipo tmp_t como etiqueta. Los puertos del servidor web tienen como etiqueta el contexto de tipo http_port_t. Un proceso del servidor web Apache se ejecuta con el contexto de tipo httpd_t. Una regla de política permite que el servidor Apache acceda a archivos y directorios etiquetados con el contexto de tipo httpd_sys_content_t. De forma predeterminada, los archivos en el directorio /var/www/html tienen el contexto de tipo httpd_sys_content_t. De forma predeterminada, una política de servidor web no permite reglas para el uso de archivos etiquetados como tmp_t, como en los directorios /tmp y /var/tmp, por lo que no permite el acceso. Con SELinux habilitado, un usuario malintencionado que utilice un proceso Apache comprometido aún no tendría acceso a los archivos del directorio /tmp. Un proceso del servidor MariaDB se ejecuta con el contexto de tipo mysqld_t. De forma predeterminada, los archivos en el directorio /data/mysql tienen el contexto de tipo mysqld_db_t. Un servidor MariaDB puede acceder a los archivos etiquetados mysqld_db_t, pero no tiene reglas para permitir el acceso a archivos para otros servicios, como los archivos etiquetados httpd_sys_content_t.
+
+
+
+
+
+14.1. Operación de SELinux Figura 18. Flujo de toma de decisiones de SELinux Muchos comandos que enumeran recursos utilizan la opción -Z para administrar contextos de SELinux. Por ejemplo, ps, ls, cp y
+
+mkdir commands all use the -Z option.
+
+En el siguiente ejemplo, utilice la opción -Z del comando ps para ver los contextos SELinux de los procesos:
+
+root@host:~# ps axZ
+
+ETIQUETA PID TTY COMANDO DE HORA DE ESTADO
+
+system_u:system_r:init_t:s0      1 ?    Ss    0:03 /usr/lib/systemd/systemd...
+system_u:system_r:kernel_t:s0    2 ?    S     0:00 [kthreadd]
+system_u:system_r:kernel_t:s0    3 ?    S     0:00 [pool_workqueue_release]
+system_u:system_r:kernel_t:s0    4 ?    I<    0:00 [kworker/R-rcu_gp]
+system_u:system_r:kernel_t:s0    5 ?    I<    0:00 [kworker/R-sync_wq]
+
+...salida omitida... En el siguiente ejemplo, utilice la opción -Z del comando ps para ver el contexto SELinux del servicio httpd:
+
+root@host:~# ps -ZC httpd
+
+ETIQUETA PID TTY TIEMPO CMD
+
+system_u:system_r:httpd_t:s0       6780 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6781 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6782 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6783 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0       6789 ?        00:00:00 httpd
+
+En el siguiente ejemplo, utilice la opción -Z del comando ls para ver el contexto SELinux del directorio /var/www:
+
+root@host:~# ls -Z /var/www
+system_u:object_r:httpd_sys_script_exec_t:s0 cgi-bin
+system_u:object_r:httpd_sys_content_t:s0 html
+
+Cambiar el modo SELinux Utilice el comando getenforce para ver el modo SELinux actual:
+
+
+
+
+
+14.1. Operando SELinux
+
+root@host:~# getenforce
+
+Aplicación Utilice el comando setenforce para cambiar el modo SELinux:
+
+root@host:~# setenforce
+usage:  setenforce [ Enforcing | Permissive | 1 | 0 ]
+
+Utilice el comando setenforce para cambiar al modo permisivo:
+
+root@host:~# setenforce 0
+
+Utilice el comando getenforce para ver el modo SELinux actual:
+
+root@host:~# getenforce
+
+Permisivo Alternativamente, configure el modo SELinux en el momento del arranque con un parámetro del kernel. Pase el parámetro del kernel enforcing=0 a
+
+boot the system into the permissive mode, or pass the enforcing=1 kernel parameter to boot into the enforcing
+mode. You can disable SELinux by passing the selinux=0 kernel parameter, or pass selinux=1 to enable SELinux.
+
+Red Hat recomienda reiniciar el servidor cuando cambia el modo SELinux del modo permisivo al modo obligatorio. Un reinicio garantiza que los servicios que se inician en el modo permisivo estén confinados en el siguiente inicio. Establezca el modo SELinux predeterminado Para configurar SELinux de manera persistente, use el archivo /etc/selinux/config. En el siguiente ejemplo predeterminado, la configuración establece SELinux en el modo obligatorio. Los comentarios enumeran otros valores válidos, como los modos permisivo y deshabilitado.
+
+# This file controls the state of SELinux on the system.
+# SELINUX= can take one of these three values:
+#     enforcing - SELinux security policy is enforced.
+#     permissive - SELinux prints warnings instead of enforcing.
+#     disabled - No SELinux policy is loaded.
+
+...salida omitida... SELINUX=aplicando
+
+# SELINUXTYPE= can take one of these three values:
+#     targeted - Targeted processes are protected,
+#     minimum - Modification of targeted policy. Only selected processes are protected.
+#     mls - Multi Level Security protection.
+
+SELINUXTYPE=targeted El sistema lee este archivo en el momento del arranque e inicia SELinux en consecuencia. Los argumentos del kernel selinux=0|1 y enforcing=0|1 anulan esta configuración.
+
+
+
+
+
+14.1. Operación de SELinux Referencias páginas man de getenforce(8), setenforce(8) y selinux_config(5) Para obtener más información sobre SELinux para Red Hat Enterprise Linux 10, consulte el capítulo Introducción a SELinux en la guía Uso de SELinux en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_selinux/index#getting-started-with-selinux Para obtener más información sobre los estados y modos de SELinux para Red Hat Enterprise Linux 10, consulte el capítulo Cómo cambiar los estados y modos de SELinux en la guía Uso de SELinux en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/using_selinux/index#cambiando-estados-y-modos-de-selinux
+
+
+
+
+
+14.2. Ejercicio guiado Operar SELinux 14.2. Ejercicio guiado Operar SELinux Controle el modo SELinux actual y ajuste el modo SELinux predeterminado que se utiliza en el momento del arranque. Resultados Ver y configurar el modo SELinux actual. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-opsmode
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cambie el modo SELinux predeterminado al modo permisivo. 2. Utilice el comando getenforce para verificar el modo SELinux actual en la máquina del servidor.
+
+[root@servera ~]# getenforce
+
+Hacer cumplir 2.1. Edite el archivo de configuración /etc/selinux/config para cambiar el parámetro SELINUX del modo obligatorio al modo permisivo. ...salida omitida... SELINUX=permisivo ...salida omitida... 2.2. Utilice el comando setenforce para cambiar el parámetro SELINUX al modo permisivo.
+
+[root@servera ~]# setenforce 0
+
+2.3. Utilice el comando getenforce para verificar el modo SELinux actual.
+
+[root@servera ~]# getenforce
+
+Permisivo 2.4. Cambie el modo SELinux predeterminado nuevamente al modo obligatorio en el archivo de configuración. 3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Operar SELinux
+
+14.2. Ejercicio guiado Operar SELinux 14.2. Ejercicio guiado Operar SELinux Controle el modo SELinux actual y ajuste el modo SELinux predeterminado que se utiliza en el momento del arranque. Resultados Ver y configurar el modo SELinux actual. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-opsmode
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cambie el modo SELinux predeterminado al modo permisivo. 2. Utilice el comando getenforce para verificar el modo SELinux actual en la máquina del servidor.
+
+[root@servera ~]# getenforce
+
+Hacer cumplir 2.1. Edite el archivo de configuración /etc/selinux/config para cambiar el parámetro SELINUX del modo obligatorio al modo permisivo. ...salida omitida... SELINUX=permisivo ...salida omitida... 2.2. Utilice el comando setenforce para cambiar el parámetro SELINUX al modo permisivo.
+
+[root@servera ~]# setenforce 0
+
+2.3. Utilice el comando getenforce para verificar el modo SELinux actual.
+
+[root@servera ~]# getenforce
+
+Permisivo 2.4. Cambie el modo SELinux predeterminado nuevamente al modo obligatorio en el archivo de configuración. 3.
+
+
+
+
+
+14.2. Ejercicio guiado Operar SELinux Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-opsmode
+
+Edite el archivo de configuración /etc/selinux/config para cambiar el parámetro SELINUX del modo permisivo al modo obligatorio. ...salida omitida... SELINUX=aplicando ...salida omitida... 3.1. Utilice el comando setenforce para configurar el modo SELinux actual en el modo de aplicación.
+
+[root@servera ~]# setenforce 1
+
+3.2. Utilice el comando getenforce para confirmar que SELinux esté configurado en el modo de aplicación.
+
+[root@servera ~]# getenforce
+
+Hacer cumplir 3.3. Reinicie la máquina del servidor para implementar la configuración persistente.
+
+[root@servera ~]# systemctl reboot
+
+...salida omitida...
+
+student@workstation:~$
+
+4. Verifique el modo SELinux en la máquina del servidor. 5. Inicie sesión en la máquina del servidor como usuario estudiante. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 5.1. Utilice el comando getenforce para verificar el modo SELinux actual.
+
+[student@servera ~]$ getenforce
+
+Hacer cumplir 5.2. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux 14.3. Control de contextos de archivos SELinux Objetivos Controlar los contextos de archivos SELinux en la política del sistema para cambiar los contextos de los archivos según la configuración de la política y establecer manualmente contextos no estándar. Contexto SELinux inicial Todos los recursos, como procesos, archivos y puertos, están etiquetados con un contexto SELinux. SELinux mantiene una base de datos basada en archivos de políticas de etiquetado de archivos en el directorio /etc/selinux/targeted/contexts/files. Los archivos nuevos obtienen una etiqueta predeterminada cuando su nombre de archivo coincide con una política de etiquetado existente. Cuando el nombre de un archivo nuevo no coincide con una política de etiquetado existente, el archivo hereda la misma etiqueta que el directorio principal. Con la herencia de etiquetado, todos los archivos siempre se etiquetan cuando se crean, independientemente de si existe una política explícita para un archivo. Cuando los archivos se crean en ubicaciones predeterminadas que tienen una política de etiquetado existente, o cuando existe una política para una ubicación personalizada, los archivos nuevos se etiquetan con un contexto SELinux correcto. Sin embargo, si un archivo se crea en una ubicación inesperada sin una política de etiquetado existente, es posible que la etiqueta heredada no sea correcta para el propósito previsto del nuevo archivo. Además, copiar un archivo a una nueva ubicación puede hacer que el contexto SELinux de ese archivo cambie, donde el nuevo contexto está determinado por la política de etiquetado de la nueva ubicación, o por la herencia del directorio principal si no existe ninguna política. El contexto SELinux de un archivo se puede conservar durante la copia para conservar la etiqueta de contexto que se determinó para la ubicación original del archivo. Por ejemplo, el comando cp -p conserva todos los atributos del archivo durante la copia cuando sea posible, y el comando cp --
+
+preserve=context command preserves only SELinux contexts.
+
+El comando ls -Z muestra el contexto SELinux de un archivo o directorio. Nota Copiar un archivo siempre crea un inodo de archivo, y los atributos de ese inodo, incluido el contexto SELinux, deben configurarse inicialmente, como se analizó anteriormente. Sin embargo, mover un archivo normalmente no crea un inodo si el movimiento ocurre dentro del mismo sistema de archivos, sino que mueve el nombre del archivo del inodo existente a una nueva ubicación. Debido a que no es necesario inicializar los atributos del inodo existente, un archivo que se mueve con el comando mv conserva su contexto SELinux a menos que establezca un nuevo contexto en el archivo con la opción -Z. Después de copiar o mover un archivo, verifique que tenga el contexto SELinux apropiado y configúrelo correctamente si es necesario. El siguiente ejemplo demuestra cómo funciona este proceso. Cree dos archivos en el directorio /tmp.
+
+root@host:~# touch /tmp/file1 /tmp/file2
+
+Ambos archivos reciben el tipo de contexto user_tmp_t debido a la herencia del contexto del directorio principal.
+
+
+
+
+
+
+
+## 14.3. Controlar los contextos de archivos SELinux
+
+14.3. Controlar los contextos de archivos SELinux 14.3. Control de contextos de archivos SELinux Objetivos Controlar los contextos de archivos SELinux en la política del sistema para cambiar los contextos de los archivos según la configuración de la política y establecer manualmente contextos no estándar. Contexto SELinux inicial Todos los recursos, como procesos, archivos y puertos, están etiquetados con un contexto SELinux. SELinux mantiene una base de datos basada en archivos de políticas de etiquetado de archivos en el directorio /etc/selinux/targeted/contexts/files. Los archivos nuevos obtienen una etiqueta predeterminada cuando su nombre de archivo coincide con una política de etiquetado existente. Cuando el nombre de un archivo nuevo no coincide con una política de etiquetado existente, el archivo hereda la misma etiqueta que el directorio principal. Con la herencia de etiquetado, todos los archivos siempre se etiquetan cuando se crean, independientemente de si existe una política explícita para un archivo. Cuando los archivos se crean en ubicaciones predeterminadas que tienen una política de etiquetado existente, o cuando existe una política para una ubicación personalizada, los archivos nuevos se etiquetan con un contexto SELinux correcto. Sin embargo, si un archivo se crea en una ubicación inesperada sin una política de etiquetado existente, es posible que la etiqueta heredada no sea correcta para el propósito previsto del nuevo archivo. Además, copiar un archivo a una nueva ubicación puede hacer que el contexto SELinux de ese archivo cambie, donde el nuevo contexto está determinado por la política de etiquetado de la nueva ubicación, o por la herencia del directorio principal si no existe ninguna política. El contexto SELinux de un archivo se puede conservar durante la copia para conservar la etiqueta de contexto que se determinó para la ubicación original del archivo. Por ejemplo, el comando cp -p conserva todos los atributos del archivo durante la copia cuando sea posible, y el comando cp --
+
+preserve=context command preserves only SELinux contexts.
+
+El comando ls -Z muestra el contexto SELinux de un archivo o directorio. Nota Copiar un archivo siempre crea un inodo de archivo, y los atributos de ese inodo, incluido el contexto SELinux, deben configurarse inicialmente, como se analizó anteriormente. Sin embargo, mover un archivo normalmente no crea un inodo si el movimiento ocurre dentro del mismo sistema de archivos, sino que mueve el nombre del archivo del inodo existente a una nueva ubicación. Debido a que no es necesario inicializar los atributos del inodo existente, un archivo que se mueve con el comando mv conserva su contexto SELinux a menos que establezca un nuevo contexto en el archivo con la opción -Z. Después de copiar o mover un archivo, verifique que tenga el contexto SELinux apropiado y configúrelo correctamente si es necesario. El siguiente ejemplo demuestra cómo funciona este proceso. Cree dos archivos en el directorio /tmp.
+
+root@host:~# touch /tmp/file1 /tmp/file2
+
+Ambos archivos reciben el tipo de contexto user_tmp_t debido a la herencia del contexto del directorio principal.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+root@host:~# ls -Z /tmp/file*
+unconfined_u:object_r:user_tmp_t:s0 /tmp/file1
+unconfined_u:object_r:user_tmp_t:s0 /tmp/file2
+
+El directorio /var/www/html tiene el contexto httpd_sys_content_t.
+
+root@host:~# ls -Zd /var/www/html/
+system_u:object_r:httpd_sys_content_t:s0 /var/www/html/
+
+Mueva un archivo del directorio /tmp al directorio /var/www/html.
+
+root@host:~# mv /tmp/file1 /var/www/html/
+
+Copie el otro archivo al mismo directorio.
+
+root@host:~# cp /tmp/file2 /var/www/html/
+
+El archivo movido conservó su etiqueta original y el archivo copiado heredó la etiqueta del directorio de destino. La función de usuario de SELinux es unconfined_u, la función de SELinux es object_r y el nivel de sensibilidad (el más bajo posible) es s0. Las configuraciones y funciones avanzadas de SELinux utilizan estos valores.
+
+root@host:~# ls -Z /var/www/html/file*
+unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+
+Cambiar el contexto de SELinux Puede administrar el contexto de SELinux en los archivos utilizando los comandos semanage fcontext, recoverycon y chcon. El método recomendado para cambiar el contexto de un archivo es crear una política de contexto de archivo mediante el comando semanage fcontext y luego aplicar el contexto especificado en la política al archivo mediante el comando restaurarcon. Este método garantiza que pueda volver a etiquetar el archivo en su contexto correcto con el comando restaurarcon siempre que sea necesario. La ventaja de este método es que no necesita recordar cuál se supone que es el contexto y puede corregir el contexto en un conjunto de archivos. El comando chcon cambia el contexto SELinux directamente en los archivos, sin hacer referencia a la política SELinux del sistema. El comando chcon es útil para probar y depurar; sin embargo, cambiar contextos manualmente con este método es temporal. Aunque los contextos de archivos que puede cambiar manualmente sobreviven al reinicio, es posible que se reemplacen si ejecuta el
+
+restorecon command to relabel the contents of the file system.
+
+Importante Cuando se produce un cambio de etiqueta del sistema SELinux, todos los archivos de un sistema se etiquetan con sus valores predeterminados de política. Cuando utiliza el comando restaurarcon en un archivo, cualquier contexto que cambie manualmente en el archivo se reemplaza si no coincide con las reglas de la política SELinux. El siguiente ejemplo crea un directorio con el contexto SELinux default_t, que heredó del directorio /parent. Crea el directorio /virtual
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+root@host:~# mkdir /virtual
+
+Vea el contexto del archivo del directorio /virtual.
+
+root@host:~# ls -Zd /virtual
+unconfined_u:object_r:default_t:s0 /virtual
+
+El comando chcon establece el contexto del archivo del directorio /virtual al tipo httpd_sys_content_t.
+
+root@host:~# chcon -t httpd_sys_content_t /virtual
+
+Vea el contexto del archivo actualizado del directorio /virtual.
+
+root@host:~# ls -Zd /virtual
+unconfined_u:object_r:httpd_sys_content_t:s0 /virtual
+
+El comando restaurarcon restablece el contexto al valor predeterminado de default_t. Tenga en cuenta el mensaje reetiquetado.
+
+root@host:~# restorecon -v /virtual
+
+Reetiquetado /virtual de unconfined_u:object_r:httpd_sys_content_t:s0 a unconfined_u:object_r:default_t:s0 Ver el contexto del archivo actualizado del directorio /virtual.
+
+root@host:~# ls -Zd /virtual
+unconfined_u:object_r:default_t:s0 /virtual
+
+Definir políticas de contexto de archivos predeterminado de SELinux El comando semanage fcontext muestra y modifica las políticas que determinan los contextos de archivos predeterminados. Puede enumerar todas las reglas de política de contexto de archivos ejecutando el comando semanage fcontext -l. Estas reglas utilizan una sintaxis de expresión regular extendida para especificar la ruta y los nombres de los archivos. Al visualizar políticas, la expresión regular extendida más común es (/.*)?, que generalmente se agrega al nombre de un directorio. Esta notación recibe el nombre humorístico de pirata, porque parece una cara con un parche en el ojo y una mano en forma de gancho al lado. Esta sintaxis se describe como "un conjunto de caracteres que comienzan con una barra diagonal y siguen cualquier número de caracteres, donde el conjunto puede existir o no existir". La expresión coincide con el directorio en sí, incluso cuando está vacío, y también coincide con casi cualquier nombre de archivo creado dentro de ese directorio. Por ejemplo, la siguiente regla especifica que el directorio /var/www/cgi-bin y cualquier archivo en él o en sus subdirectorios (y en sus subdirectorios, etc.) tienen la
+
+system_u:object_r:httpd_sys_script_exec_t:s0 SELinux context, unless a more specific rule overrides this
+
+uno.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+/var/www/cgi-bin(/.*)?  all files  system_u:object_r:httpd_sys_script_exec_t:s0
+
+Nota La opción de campo Todos los archivos del ejemplo anterior es el tipo de archivo predeterminado que utiliza el comando semanage cuando no especifica uno. Esta opción se aplica a todos los tipos de archivos que puedes usar con el comando semanage; son los mismos que los tipos de archivos estándar que se muestran en la lección Control del acceso a archivos (RH0020L). Puede obtener más información en la página del manual semanage-fcontext(8). Operaciones básicas de contexto de archivos La siguiente tabla es una referencia para las opciones del comando semanage fcontext para agregar, eliminar o enumerar archivos SELinux.
+
+context policies:
+
+Tabla 20. El comando semanage fcontext -a, --add Agrega un registro del tipo de objeto especificado. -d, --delete Elimina un registro del tipo de objeto especificado. -l, --list Listar registros del tipo de objeto especificado. Para administrar contextos SELinux, instale los paquetes Policycoreutils y Policycoreutils-python-utils, que contienen los comandos restaurarcon y semanage. Para restablecer todos los archivos en un directorio al contexto de política predeterminado, primero use el comando semanage fcontext -l para ubicar y verificar que exista la política correcta con el contexto de archivo deseado. Luego, use el comando recoverycon en el nombre del directorio con comodín para restablecer todos los archivos de forma recursiva. En el siguiente ejemplo, vea los contextos de los archivos antes y después de usar los comandos semanage y recoverycon. Primero, verifique el contexto SELinux para los archivos:
+
+root@host:~# ls -Z /var/www/html/file*
+unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+
+Luego, use el comando semanage fcontext -l para enumerar los contextos de archivos SELinux predeterminados:
+
+root@host:~# semanage fcontext -l
+
+...salida omitida...
+
+/var/www(/.*)?       all files    system_u:object_r:httpd_sys_content_t:s0
+
+...salida omitida... La salida del comando semanage indica que todos los archivos y subdirectorios en el directorio /var/www tienen el contexto httpd_sys_content_t de forma predeterminada. Al ejecutar el comando restaurarcon en el directorio comodín se restaura la opción Descripción
+
+
+
+
+
+14.3. Control de contextos de archivos SELinux Contexto predeterminado en todos los archivos y subdirectorios.
+
+root@host:~# restorecon -Rv /var/www/
+
+Se volvió a etiquetar /var/www/html/file1 de unconfined_u:object_r:user_tmp_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Vea el contexto del archivo de los archivos /var/www/html/file*.
+
+root@host:~# ls -Z /var/www/html/file*
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file1
+unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+
+El siguiente ejemplo utiliza el comando semanage para agregar una política de contexto para un nuevo directorio. Primero, cree el directorio /virtual.
+
+root@host:~# mkdir /virtual
+
+Cree el archivo /virtual/index.html.
+
+root@host:~# touch /virtual/index.html
+
+Vea el contexto SELinux para el directorio /virtual.
+
+root@host:~# ls -Zd /virtual/
+unconfined_u:object_r:default_t:s0 /virtual
+
+Vea el contexto SELinux para el archivo /virtual/index.html.
+
+root@host:~# ls -Z /virtual/
+unconfined_u:object_r:default_t:s0 index.html
+
+Utilice el comando semanage fcontext para agregar una política de contexto de archivo SELinux para el directorio.
+
+root@host:~# semanage fcontext -a -t httpd_sys_content_t '/virtual(/.*)?'
+
+Utilice el comando recoverycon en el directorio comodín para establecer el contexto predeterminado en el directorio y todos los archivos que contiene.
+
+root@host:~# restorecon -RFvv /virtual
+
+Reetiquetado /virtual de unconfined_u:object_r:default_t:s0 a system_u:object_r:httpd_sys_content_t:s0 Reetiquetado /virtual/index.html de unconfined_u:object_r:default_t:s0 a
+
+system_u:object_r:httpd_sys_content_t:s0
+
+Vea el contexto SELinux para el directorio /virtual.
+
+root@host:~# ls -Zd /virtual/
+drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 /virtual/
+
+Vea el contexto SELinux para el archivo /virtual/index.html.
+
+root@host:~# ls -Z /virtual/
+
+-rw-r--r--. root root system_u:object_r:httpd_sys_content_t:s0 index.html Utilice el comando semanage fcontext con la opción -C para ver cualquier personalización local de la política predeterminada.
+
+
+
+
+
+14.3. Controlar los contextos de archivos SELinux
+
+root@host:~# semanage fcontext -l -C
+
+Contexto de tipo fcontext de SELinux
+
+/virtual(/.*)?       all files    system_u:object_r:httpd_sys_content_t:s0
+
+Referencias
+
+chcon(1), restorecon(8), semanage(8), and semanage-fcontext(8) man pages
+
+
+
+
+
+14.4. Ejercicio guiado de control de contextos de archivos SELinux 14.4. Ejercicio guiado Control de contextos de archivos SELinux Vea y establezca contextos de archivos SELinux en archivos según la configuración de políticas. Resultados Configure el servidor HTTP Apache para publicar contenido web desde una raíz de documento no estándar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-filecontexts
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servidor HTTP Apache para usar un directorio de documentos en una ubicación no estándar. 2. Cree el directorio /personalizado.
+
+[root@servera ~]# mkdir /custom
+
+2.1. Cree el archivo /custom/index.html que contiene This is SERVERA. texto.
+
+[root@servera ~]# echo 'This is SERVERA.' > /custom/index.html
+
+2.2. Configure Apache para utilizar la nueva ubicación del directorio. Edite el archivo de configuración de Apache /etc/httpd/conf/httpd.conf y reemplace las dos apariciones del directorio /var/www/html con el directorio /custom. ...salida omitida... DocumentRoot "/custom" ...salida omitida... <Directorio "/custom"> ...salida omitida... 2.3. Inicie y habilite el servicio web Apache y luego confirme que el servicio se esté ejecutando. 3. Inicie y habilite el servicio web Apache mediante el comando systemctl. 3.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Control de ejercicios guiados Contextos de archivos SELinux
+
+14.4. Ejercicio guiado de control de contextos de archivos SELinux 14.4. Ejercicio guiado Control de contextos de archivos SELinux Vea y establezca contextos de archivos SELinux en archivos según la configuración de políticas. Resultados Configure el servidor HTTP Apache para publicar contenido web desde una raíz de documento no estándar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-filecontexts
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servidor HTTP Apache para usar un directorio de documentos en una ubicación no estándar. 2. Cree el directorio /personalizado.
+
+[root@servera ~]# mkdir /custom
+
+2.1. Cree el archivo /custom/index.html que contiene This is SERVERA. texto.
+
+[root@servera ~]# echo 'This is SERVERA.' > /custom/index.html
+
+2.2. Configure Apache para utilizar la nueva ubicación del directorio. Edite el archivo de configuración de Apache /etc/httpd/conf/httpd.conf y reemplace las dos apariciones del directorio /var/www/html con el directorio /custom. ...salida omitida... DocumentRoot "/custom" ...salida omitida... <Directorio "/custom"> ...salida omitida... 2.3. Inicie y habilite el servicio web Apache y luego confirme que el servicio se esté ejecutando. 3. Inicie y habilite el servicio web Apache mediante el comando systemctl. 3.1.
+
+
+
+
+
+14.4. Control de ejercicios guiados Contextos de archivos SELinux
+
+[root@servera ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. Verifique que el servicio se esté ejecutando.
+
+[root@servera ~]# systemctl status httpd
+
+● httpd.service: el servidor HTTP Apache
+
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; preset: disabled)
+     Active: active (running) since Fri 2025-06-06 13:42:54 UTC; 55s ago
+
+Invocación: 68210ceb6dd649d3b87f633c1a980775
+
+       Docs: man:httpd.service(8)
+   Main PID: 2104 (httpd)
+
+...salida omitida... 06 de junio 13:42:54 servera systemd[1]: Iniciando httpd.service - El servidor HTTP Apache... 06 de junio 13:42:54 servera (httpd)[2104]: httpd.service: referenciado pero sin configurar... 06 de junio 13:42:54 servera httpd[2104]: Servidor configurado, escuchando en: puerto 80 06 de junio 13:42:54 servera systemd[1]: httpd.service iniciado: el servidor HTTP Apache. 3.2. Abra una nueva terminal en la máquina de la estación de trabajo y use el comando curl para intentar ver el
+
+http://servera/index.html web page. You get an error message that you do not have permission to access
+
+el archivo.
+
+student@workstation:~$ curl http://servera/index.html
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"> <html><head> <title>403 Prohibido</title> </head><body> <h1>Prohibido</h1> <p>No tienes permiso para acceder a este recurso.</p> </body></html> 4. En la máquina del servidor, inspecciona la causa raíz del problema y establece la httpd_sys_content_t Contexto SELinux para el archivo /custom/index.html. 5. Compare los contextos SELinux de los directorios /custom/ y /var/www/html.
+
+[root@servera ~]# ls -ldZ /custom /var/www/html
+drwxr-xr-x. 2 root root unconfined_u:object_r:default_t:s0       24 Jul  3 19:46 /custom
+drwxr-xr-x. 2 root root system_u:object_r:httpd_sys_content_t:s0  6 Jan 27 00:00 /var/www/html
+
+5.1. Defina una regla de contexto de archivo SELinux que establezca el contexto httpd_sys_content_t para el directorio /custom y todos los archivos que contiene.
+
+[root@servera ~]# semanage fcontext -a -t httpd_sys_content_t '/custom(/.*)?'
+
+5.2. Aplique los contextos del archivo SELinux para el directorio /custom.
+
+[root@servera ~]# restorecon -Rv /custom
+
+Reetiquetado /personalizado de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Se volvió a etiquetar /custom/index.html de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+5.3. Intente ver http://servera/index.html nuevamente en la máquina de la estación de trabajo con el comando curl. Deberías ver Esto es SERVERA. mensaje. 6.
+
+
+
+
+
+14.4. Ejercicio guiado Control de contextos de archivos SELinux Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-filecontexts
+student@workstation:~$ curl http://servera/index.html
+
+Este es SERVERA. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+14.5. Ajuste de la política SELinux ajustando valores booleanos 14.5. Ajuste de la política de SELinux ajustando los objetivos booleanos Ajuste el sistema cambiando el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. SELinux Booleanos Un desarrollador de aplicaciones o servicios escribe una política específica de SELinux para definir el comportamiento permitido de la aplicación específica. Un desarrollador puede incluir un comportamiento de aplicación opcional en la política de SELinux que se puede habilitar cuando el comportamiento está permitido en un sistema específico. Los booleanos de SELinux habilitan o deshabilitan el comportamiento opcional de la política de SELinux. Con los booleanos, puedes ajustar selectivamente el comportamiento de una aplicación. Estos comportamientos opcionales son específicos de la aplicación y deben descubrirse y seleccionarse para cada aplicación de destino. Los valores booleanos específicos del servicio están documentados en la página de manual de SELinux de ese servicio. Por ejemplo, el servicio httpd del servidor web tiene su página de manual httpd(8) y una página de manual httpd_selinux(8) para documentar su política SELinux, incluidos los tipos de procesos admitidos, contextos de archivos y los comportamientos booleanos disponibles. Las páginas de manual de SELinux las proporciona el paquete selinux-policy-doc. Utilice el comando getsebool para enumerar los booleanos disponibles para las políticas específicas en este sistema y el estado booleano actual. Utilice el comando setsebool para habilitar o deshabilitar el estado de ejecución de estos comportamientos. El
+
+setsebool -P command makes the setting persistent by writing to the policy file. Only privileged users can set
+
+Booleanos de SELinux. En el siguiente ejemplo, utilice el comando getsebool para enumerar todos los booleanos disponibles junto con el estado:
+
+root@host:~# getsebool -a
+
+abrt_anon_write --> desactivado abrt_handle_event --> desactivado abrt_upload_watch_anon_write --> activado ... salida omitida... Ejemplo de política Httpd booleana La política de servicio httpd incluye el booleano httpd_enable_homedirs, que permite compartir directorios personales con el servicio httpd. Normalmente, el usuario solo puede acceder al directorio de inicio local de un usuario cuando inicia sesión en el sistema local. Alternativamente, los directorios principales se comparten y se accede a ellos mediante un protocolo de intercambio remoto de archivos, como NFS. En ambos escenarios, los directorios principales no se comparten mediante el servicio httpd de forma predeterminada y no están disponibles para el usuario a través de un navegador. En el siguiente ejemplo, enumere el estado del booleano httpd_enable_homedirs:
+
+root@host:~# getsebool httpd_enable_homedirs
+
+httpd_enable_homedirs --> off Puede habilitar el uso compartido y permitir que los usuarios accedan a sus directorios de inicio con un navegador. Cuando está habilitado, el servicio httpd comparte directorios de inicio que están etiquetados con el contexto del archivo user_home_dir_t. Luego, los usuarios pueden acceder y administrar los archivos de su directorio de inicio desde un navegador.
+
+
+
+
+
+
+
+## 14.5. Ajuste de la política SELinux ajustando valores booleanos
+
+14.5. Ajuste de la política SELinux ajustando valores booleanos 14.5. Ajuste de la política de SELinux ajustando los objetivos booleanos Ajuste el sistema cambiando el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. SELinux Booleanos Un desarrollador de aplicaciones o servicios escribe una política específica de SELinux para definir el comportamiento permitido de la aplicación específica. Un desarrollador puede incluir un comportamiento de aplicación opcional en la política de SELinux que se puede habilitar cuando el comportamiento está permitido en un sistema específico. Los booleanos de SELinux habilitan o deshabilitan el comportamiento opcional de la política de SELinux. Con los booleanos, puedes ajustar selectivamente el comportamiento de una aplicación. Estos comportamientos opcionales son específicos de la aplicación y deben descubrirse y seleccionarse para cada aplicación de destino. Los valores booleanos específicos del servicio están documentados en la página de manual de SELinux de ese servicio. Por ejemplo, el servicio httpd del servidor web tiene su página de manual httpd(8) y una página de manual httpd_selinux(8) para documentar su política SELinux, incluidos los tipos de procesos admitidos, contextos de archivos y los comportamientos booleanos disponibles. Las páginas de manual de SELinux las proporciona el paquete selinux-policy-doc. Utilice el comando getsebool para enumerar los booleanos disponibles para las políticas específicas en este sistema y el estado booleano actual. Utilice el comando setsebool para habilitar o deshabilitar el estado de ejecución de estos comportamientos. El
+
+setsebool -P command makes the setting persistent by writing to the policy file. Only privileged users can set
+
+Booleanos de SELinux. En el siguiente ejemplo, utilice el comando getsebool para enumerar todos los booleanos disponibles junto con el estado:
+
+root@host:~# getsebool -a
+
+abrt_anon_write --> desactivado abrt_handle_event --> desactivado abrt_upload_watch_anon_write --> activado ... salida omitida... Ejemplo de política Httpd booleana La política de servicio httpd incluye el booleano httpd_enable_homedirs, que permite compartir directorios personales con el servicio httpd. Normalmente, el usuario solo puede acceder al directorio de inicio local de un usuario cuando inicia sesión en el sistema local. Alternativamente, los directorios principales se comparten y se accede a ellos mediante un protocolo de intercambio remoto de archivos, como NFS. En ambos escenarios, los directorios principales no se comparten mediante el servicio httpd de forma predeterminada y no están disponibles para el usuario a través de un navegador. En el siguiente ejemplo, enumere el estado del booleano httpd_enable_homedirs:
+
+root@host:~# getsebool httpd_enable_homedirs
+
+httpd_enable_homedirs --> off Puede habilitar el uso compartido y permitir que los usuarios accedan a sus directorios de inicio con un navegador. Cuando está habilitado, el servicio httpd comparte directorios de inicio que están etiquetados con el contexto del archivo user_home_dir_t. Luego, los usuarios pueden acceder y administrar los archivos de su directorio de inicio desde un navegador.
+
+
+
+
+
+14.5. Ajustar la política de SELinux ajustando los valores booleanos Administrar la política booleana La configuración de los valores booleanos de SELinux con el comando setsebool sin la opción -P es temporal y la configuración vuelve a los valores persistentes después de reiniciar. Vea información adicional con el comando semanage boolean -l, que enumera los booleanos de los archivos de políticas, incluido si un booleano es persistente, los valores predeterminados y actuales, y una breve descripción. En el siguiente ejemplo, enumere el booleano httpd_enable_homedirs:
+
+root@host:~# semanage boolean -l | grep httpd_enable_homedirs
+
+httpd_enable_homedirs (off , off) Permitir que httpd habilite homedirs En el siguiente ejemplo, habilite el booleano httpd_enable_homedirs:
+
+root@host:~# setsebool httpd_enable_homedirs on
+
+En el siguiente ejemplo, enumere el booleano httpd_enable_homedirs:
+
+root@host:~# semanage boolean -l | grep httpd_enable_homedirs
+
+httpd_enable_homedirs (activado, desactivado) Permitir que httpd habilite homedirs En el siguiente ejemplo, verifique que el booleano httpd_enable_homedirs esté habilitado:
+
+root@host:~# getsebool httpd_enable_homedirs
+
+httpd_enable_homedirs --> on El ejemplo anterior estableció temporalmente el valor actual del booleano httpd_enable_homedirs en on, hasta que el sistema se reinicie. Para cambiar la configuración predeterminada, use el comando setsebool -P para hacer que la configuración sea persistente:
+
+root@host:~# setsebool -P httpd_enable_homedirs on
+
+Vea la información booleana del archivo de política:
+
+root@host:~# semanage boolean -l | grep httpd_enable_homedirs
+
+httpd_enable_homedirs (activado, activado) Permitir que httpd habilite homedirs Para enumerar solo valores booleanos persistentes con configuraciones personalizadas en comparación con la política original, use el comando semanage boolean -l -C.
+
+root@host:~# semanage boolean -l -C
+
+SELinux Estado booleano Descripción predeterminada httpd_enable_homedirs (activado, activado) Permitir que httpd habilite homedirs Referencias a las páginas man booleans(8), getsebool(8), setsebool(8), semanage(8) y semanage-boolean(8)
+
+
+
+
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos 14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los booleanos Cambie el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Configure el servicio web Apache para publicar contenido web desde el directorio de inicio del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-booleans
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Edite el archivo de configuración /etc/httpd/conf.d/userdir.conf para habilitar la función Apache para que los usuarios puedan publicar contenido web desde su directorio de inicio. Comente la línea en la sección IfModule que establece la variable UserDir en el valor deshabilitado y descomente la línea que establece la variable UserDir en el valor public_html. ...salida omitida... <IfModule mod_userdir.c> ...salida omitida...
+
+    # UserDir disabled
+
+...salida omitida...
+
+    UserDir public_html
+
+...salida omitida... </IfModule> 2. Inicie y habilite el servicio web Apache.
+
+[root@servera ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. 3. Regrese como usuario estudiante en la máquina del servidor. Cree el archivo ~/public_html/index.html con el contenido Esto es para estudiantes en SERVERA. contenido. 4. Regrese como usuario estudiante en la máquina del servidor. 4.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos 14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los booleanos Cambie el comportamiento de la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Configure el servicio web Apache para publicar contenido web desde el directorio de inicio del usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-booleans
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Edite el archivo de configuración /etc/httpd/conf.d/userdir.conf para habilitar la función Apache para que los usuarios puedan publicar contenido web desde su directorio de inicio. Comente la línea en la sección IfModule que establece la variable UserDir en el valor deshabilitado y descomente la línea que establece la variable UserDir en el valor public_html. ...salida omitida... <IfModule mod_userdir.c> ...salida omitida...
+
+    # UserDir disabled
+
+...salida omitida...
+
+    UserDir public_html
+
+...salida omitida... </IfModule> 2. Inicie y habilite el servicio web Apache.
+
+[root@servera ~]# systemctl enable --now httpd
+
+Se creó el enlace simbólico '/etc/systemd/system/multi-user.target.wants/httpd.service' → '/usr/lib/systemd/system/httpd.service'. 3. Regrese como usuario estudiante en la máquina del servidor. Cree el archivo ~/public_html/index.html con el contenido Esto es para estudiantes en SERVERA. contenido. 4. Regrese como usuario estudiante en la máquina del servidor. 4.1.
+
+
+
+
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos
+
+[root@servera ~]# exit
+
+cerrar sesión [estudiante@servera ~]$ Cree el directorio ~/public_html.
+
+[student@servera ~]$ mkdir ~/public_html
+
+4.2. Cree el archivo ~/public_html/index.html con el siguiente contenido:
+
+[student@servera ~]$ echo 'This is student content on SERVERA.' > \
+
+~/public_html/index.html 4.3. Para que el servicio web Apache proporcione el contenido del directorio /home/student/public_html, se debe permitir compartir archivos y subdirectorios en el directorio /home/student. Cuando creó el directorio /home/student/public_html, se configuró automáticamente para permitir que cualquier persona con permiso del directorio de inicio acceda a su contenido. Cambie los permisos del directorio /home/student para permitir que el servicio web Apache acceda al subdirectorio public_html.
+
+[student@servera ~]$ chmod 711 /home/student
+
+4.4. Verifique los permisos del directorio /home/student.
+
+[student@servera ~]$ ls -ld /home/student
+drwx--x--x. 16 student student 4096 Nov  3 09:28 /home/student
+
+4.5. En la máquina de la estación de trabajo, abra el navegador web Firefox e ingrese el
+
+http://servera/~student/index.html address.
+
+Un mensaje de error indica que no tiene permiso para acceder al archivo. 5. Inicie sesión como usuario root en la máquina del servidor. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 6. Utilice el comando getsebool para determinar si algún valor booleano restringe el acceso a los directorios principales para el servicio httpd.
+
+[root@servera ~]# getsebool -a | grep home
+
+...salida omitida... httpd_enable_homedirs --> off ...salida omitida... 7. Utilice el comando setsebool para habilitar el acceso persistente al directorio de inicio para el servicio httpd.
+
+[root@servera ~]# setsebool -P httpd_enable_homedirs on
+
+8. En la máquina de la estación de trabajo, abra el navegador web Firefox e ingrese el
+
+http://servera/~student/index.html address.
+
+9.
+
+
+
+
+
+14.6. Ejercicio guiado Ajuste la política de SELinux ajustando los valores booleanos Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-booleans
+
+Verifica que ahora puedes ver el contenido de Esto es estudiante en SERVERA. mensaje. Es posible que tengas que cerrar y volver a abrir tu navegador web para ver el mensaje. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+10.
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux 14.7. Investigación y resolución de problemas de SELinux Objetivos Investigar problemas que potencialmente se relacionen con SELinux mediante el uso de herramientas de análisis de registros de SELinux e interpretando sus resultados. Solucionar problemas de SELinux Cuando las aplicaciones inesperadamente no funcionan debido a denegaciones de acceso a SELinux, hay métodos y herramientas disponibles para resolver estos problemas. Es útil comenzar por comprender algunos conceptos y comportamientos fundamentales cuando SELinux está habilitado. SELinux consta de políticas específicas que definen explícitamente acciones permitidas. Una entrada de política define un proceso etiquetado y un recurso etiquetado que interactúan. La política establece el tipo de proceso y el contexto del archivo o puerto mediante etiquetas. La entrada de política define un tipo de proceso, una etiqueta de recurso y la acción explícita que se permitirá. Una acción puede ser una llamada al sistema, una función del núcleo u otra rutina de programación específica. Si no se crea ninguna entrada para una relación proceso-recurso-acción específica, entonces se deniega la acción. Cuando se rechaza una acción, el intento se registra con información de contexto. Red Hat Enterprise Linux proporciona una política SELinux específica y estable para casi todos los servicios de la distribución. Por lo tanto, es inusual tener problemas de acceso de SELinux con servicios comunes de RHEL cuando están configurados correctamente. Los problemas de acceso a SELinux ocurren cuando los servicios se implementan incorrectamente o cuando las nuevas aplicaciones tienen políticas incompletas. Considere estos conceptos de solución de problemas antes de realizar cambios amplios en la configuración de SELinux. La mayoría de las denegaciones de acceso indican que SELinux está funcionando correctamente al bloquear acciones inadecuadas. La evaluación de acciones denegadas requiere cierta familiaridad con las acciones de servicio normales y esperadas. El problema más común de SELinux es un contexto incorrecto en archivos nuevos, copiados o movidos. Los contextos de archivos se pueden arreglar cuando una política existente hace referencia a su ubicación. Las características opcionales de la política booleana están documentadas en las páginas del manual de _selinux. La implementación de funciones booleanas generalmente requiere establecer una configuración adicional que no sea SELinux. Las políticas de SELinux no reemplazan ni eluden los permisos de archivos ni las restricciones de la lista de control de acceso. Cuando falla una aplicación o servicio común y se sabe que el servicio tiene una política SELinux funcional, primero consulte la página de manual _selinux del servicio para verificar la etiqueta de tipo de contexto correcta. Vea el proceso afectado y los atributos del archivo para verificar que estén configuradas las etiquetas correctas. Monitorear violaciones de SELinux El servicio de resolución de problemas de SELinux, del paquete setroubleshoot-server, proporciona herramientas para diagnosticar problemas de SELinux. Cuando SELinux niega una acción, se registra un mensaje de Access Vector Cache (AVC) en el archivo de registro de seguridad /var/log/audit/audit.log. El servicio de resolución de problemas de SELinux monitorea los eventos AVC y envía un resumen del evento al archivo /var/log/messages. El resumen de AVC incluye un identificador único de evento (UUID). Utilice el comando sealert -l UUID para ver detalles completos del informe para el evento específico. Utilice el comando sealert -a /var/log/audit/audit.log
+
+
+
+
+
+
+
+## 14.7. Investigación y resolución de problemas de SELinux
+
+14.7. Investigación y resolución de problemas de SELinux 14.7. Investigación y resolución de problemas de SELinux Objetivos Investigar problemas que potencialmente se relacionen con SELinux mediante el uso de herramientas de análisis de registros de SELinux e interpretando sus resultados. Solucionar problemas de SELinux Cuando las aplicaciones inesperadamente no funcionan debido a denegaciones de acceso a SELinux, hay métodos y herramientas disponibles para resolver estos problemas. Es útil comenzar por comprender algunos conceptos y comportamientos fundamentales cuando SELinux está habilitado. SELinux consta de políticas específicas que definen explícitamente acciones permitidas. Una entrada de política define un proceso etiquetado y un recurso etiquetado que interactúan. La política establece el tipo de proceso y el contexto del archivo o puerto mediante etiquetas. La entrada de política define un tipo de proceso, una etiqueta de recurso y la acción explícita que se permitirá. Una acción puede ser una llamada al sistema, una función del núcleo u otra rutina de programación específica. Si no se crea ninguna entrada para una relación proceso-recurso-acción específica, entonces se deniega la acción. Cuando se rechaza una acción, el intento se registra con información de contexto. Red Hat Enterprise Linux proporciona una política SELinux específica y estable para casi todos los servicios de la distribución. Por lo tanto, es inusual tener problemas de acceso de SELinux con servicios comunes de RHEL cuando están configurados correctamente. Los problemas de acceso a SELinux ocurren cuando los servicios se implementan incorrectamente o cuando las nuevas aplicaciones tienen políticas incompletas. Considere estos conceptos de solución de problemas antes de realizar cambios amplios en la configuración de SELinux. La mayoría de las denegaciones de acceso indican que SELinux está funcionando correctamente al bloquear acciones inadecuadas. La evaluación de acciones denegadas requiere cierta familiaridad con las acciones de servicio normales y esperadas. El problema más común de SELinux es un contexto incorrecto en archivos nuevos, copiados o movidos. Los contextos de archivos se pueden arreglar cuando una política existente hace referencia a su ubicación. Las características opcionales de la política booleana están documentadas en las páginas del manual de _selinux. La implementación de funciones booleanas generalmente requiere establecer una configuración adicional que no sea SELinux. Las políticas de SELinux no reemplazan ni eluden los permisos de archivos ni las restricciones de la lista de control de acceso. Cuando falla una aplicación o servicio común y se sabe que el servicio tiene una política SELinux funcional, primero consulte la página de manual _selinux del servicio para verificar la etiqueta de tipo de contexto correcta. Vea el proceso afectado y los atributos del archivo para verificar que estén configuradas las etiquetas correctas. Monitorear violaciones de SELinux El servicio de resolución de problemas de SELinux, del paquete setroubleshoot-server, proporciona herramientas para diagnosticar problemas de SELinux. Cuando SELinux niega una acción, se registra un mensaje de Access Vector Cache (AVC) en el archivo de registro de seguridad /var/log/audit/audit.log. El servicio de resolución de problemas de SELinux monitorea los eventos AVC y envía un resumen del evento al archivo /var/log/messages. El resumen de AVC incluye un identificador único de evento (UUID). Utilice el comando sealert -l UUID para ver detalles completos del informe para el evento específico. Utilice el comando sealert -a /var/log/audit/audit.log
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux para ver todos los eventos existentes. Considere la siguiente secuencia de ejemplo de comandos en un servidor web Apache estándar. Cree el archivo /root/mypage.
+
+root@host:~# touch /root/mypage
+
+Mueva el archivo /root/mypage al directorio /var/www/html.
+
+root@host:~# mv /root/mypage /var/www/html
+
+Inicie el servicio httpd.
+
+root@host:~# systemctl start httpd
+
+Intente acceder al servidor Apache en la URL http://localhost/mypage.
+
+root@host:~# curl http://localhost/mypage
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"> <html><head> <title>403 Prohibido</title> </head><body> <h1>Prohibido</h1> <p>No tienes permiso para acceder a este recurso.</p> </body></html> El servidor web no muestra el contenido y devuelve un error de permiso denegado. Un evento AVC se registra en los archivos /var/log/audit/audit.log y /var/log/messages. Tenga en cuenta el comando sealert y el UUID sugeridos en el mensaje de evento /var/log/messages. Vea los mensajes de registro del archivo /var/log/audit/audit.log.
+
+root@host:~# tail /var/log/audit/audit.log
+
+...salida omitida...
+
+type=AVC msg=audit(1749508506.271:159): avc:  denied  { getattr } for  pid=1984 comm="httpd" 
+path="/var/www/html/mypage" dev="sda3" ino=8805547 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file permissive=0
+
+...salida omitida..._ Ver los mensajes de registro del archivo /var/log/messages.
+
+root@host:~# tail /var/log/messages
+
+...salida omitida... 9 de junio 22:35:06 servera setroubleshoot[2175]: SELinux impide que /usr/sbin/httpd acceda a getattr en
+
+the file /var/www/html/mypage. For complete SELinux messages run: sealert -l a0bca4b2-46a9-4252-b0cd-
+
+6de0dfcdd454 ...salida omitida... La salida del comando sealert describe el evento e incluye el proceso afectado, el archivo accedido y la acción intentada y denegada. El resultado incluye consejos para corregir la etiqueta del archivo, si corresponde. Consejos adicionales describen cómo generar una nueva política para permitir la acción denegada. Utilice los consejos proporcionados sólo cuando sean apropiados para su situación.
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux Importante El resultado del comando sealert incluye una calificación de confianza, que indica el nivel de confianza en que el consejo proporcionado mitiga la denegación. Sin embargo, es posible que ese consejo no sea apropiado para su situación. Por ejemplo, si la denegación de AVC se debe a un archivo colocado en una ubicación incorrecta, entonces el comando sealert podría recomendar ajustar la etiqueta de contexto del archivo o crear una política para esta ubicación y acción. Aunque técnicamente es precisa, no es la solución correcta para su situación. Si la causa principal es una ubicación o un nombre de archivo incorrectos, la solución correcta es mover o cambiar el nombre del archivo y luego restaurar un contexto de archivo correcto.
+
+root@host:~# sealert -l a0bca4b2-46a9-4252-b0cd-6de0dfcdd454
+
+SELinux impide que /usr/sbin/httpd acceda getattr al archivo /var/www/html/mypage. ***** Se sugiere restaurar el complemento (confianza del 99,5) ************************ Si desea corregir la etiqueta. La etiqueta predeterminada de /var/www/html/mypage debe ser httpd_sys_content_t. Entonces puedes ejecutar recoverycon. Es posible que el intento de acceso se haya detenido debido a permisos insuficientes para acceder a un directorio principal, en cuyo caso intente cambiar el siguiente comando en consecuencia. Hacer
+
+# /sbin/restorecon -v /var/www/html/mypage
+
+***** El complemento general (confianza de 1,49) sugiere **************************** Si cree que a httpd se le debe permitir el acceso getattr al archivo mypage de forma predeterminada. Entonces deberías informar esto como un error. Puede generar un módulo de política local para permitir este acceso. Hacer
+
+allow this access for now by executing:
+# ausearch -c 'httpd' --raw | audit2allow -M my-httpd
+# semodule -X 300 -i my-httpd.pp
+
+Información adicional: Contexto de origen system_u:system_r:httpd_t:s0 Contexto de destino unconfined_u:object_r:admin_home_t:s0 Objetos de destino /var/www/html/mypage [ archivo ] Fuente httpd Ruta de origen /usr/sbin/httpd ...salida omitida... Mensajes de auditoría sin procesar
+
+type=AVC msg=audit(1749508506.271:159): avc:  denied  { getattr } for  pid=1984 comm="httpd" 
+path="/var/www/html/mypage" dev="sda3" ino=8805547 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file permissive=0
+type=SYSCALL msg=audit(1749508506.271:159): arch=x86_64 syscall=newfstatat success=no exit=EACCES 
+a0=ffffff9c a1=7fd554011a70 a2=7fd562de19f0 a3=100 items=0 ppid=1982 pid=1984 auid=4294967295 uid=48 gid=48 
+euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 comm=httpd exe=/usr/sbin/httpd 
+subj=system_u:system_r:httpd_t:s0 key=(null)
+
+Hash: httpd,httpd_t,admin_home_t,file,getattr En este ejemplo, el archivo al que se accede está en la ubicación correcta, pero no tiene el contexto de archivo SELinux correcto. La sección Mensajes de auditoría sin procesar muestra información de la entrada del evento /var/log/audit/audit.log. Utilice el
+
+restorecon /var/www/html/mypage command to set the correct context label. To correct multiple files
+
+de forma recursiva, utilice el comando restaurarcon -R en el directorio principal. Utilice el comando ausearch para buscar eventos AVC en el archivo de registro /var/log/audit/audit.log. Utilice la opción -m para especificar el tipo de mensaje AVC y la opción -ts para proporcionar una pista de tiempo, como reciente.
+
+
+
+
+
+14.7. Investigación y resolución de problemas de SELinux
+
+root@host:~# ausearch -m AVC -ts recent
+----
+time->Mon Jun  9 22:35:06 2025
+type=PROCTITLE msg=audit(1749508506.271:159): 
+proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
+type=SYSCALL msg=audit(1749508506.271:159): arch=c000003e syscall=262 success=no exit=-13 a0=ffffff9c 
+a1=7fd554011a70 a2=7fd562de19f0 a3=100 items=0 ppid=1982 pid=1984 auid=4294967295 uid=48 gid=48 euid=48 
+suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 comm="httpd" exe="/usr/sbin/httpd" 
+subj=system_u:system_r:httpd_t:s0 key=(null)
+type=AVC msg=audit(1749508506.271:159): avc:  denied  { getattr } for  pid=1984 comm="httpd" 
+path="/var/www/html/mypage" dev="sda3" ino=8805547 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file permissive=0
+
+Solucionar problemas de SELinux con la consola web La consola web de RHEL incluye herramientas para solucionar problemas de SELinux. Seleccione SELinux en el menú de la izquierda. La ventana de política de SELinux muestra el estado de aplicación actual. La sección de errores de control de acceso de SELinux enumera los problemas actuales de SELinux. Figura 19. Política de SELinux y errores en la consola web. Haga clic en el carácter > para mostrar los detalles del evento. Haga clic en Detalles de la solución para mostrar todos los detalles y consejos del evento. Puede hacer clic en Aplicar esta solución. Después de corregir el problema, la sección de errores de control de acceso de SELinux debería eliminar ese evento de la vista. Si aparece el mensaje Sin alertas de SELinux, entonces ha corregido todos los problemas actuales de SELinux. Referencias página de manual sealert(8)
+
+
+
+
+
+14.8. Ejercicio guiado Investigar y resolver problemas de SELinux 14.8. Ejercicio guiado Investigar y resolver problemas de SELinux Solucionar problemas de SELinux utilizando herramientas de análisis de registros de SELinux e interpretando sus resultados. Resultados Adquirir experiencia con las herramientas de resolución de problemas de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-issues
+
+Instrucciones Desde un navegador web en la estación de trabajo, abra la página web http://servera/index.html. Un mensaje de error indica que no tiene permiso para acceder al archivo. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 2. Utilice el comando less para ver el contenido del archivo /var/log/messages. Utiliza el carácter / y busca el texto del sello. Presione la tecla n hasta llegar a la última aparición, porque es posible que los ejercicios anteriores también hayan generado mensajes SELinux. Copie el comando sealert sugerido para poder usarlo en el siguiente paso. Utilice la tecla q para salir del comando less.
+
+[root@servera ~]# less /var/log/messages
+
+... salida omitida... 6 de junio 18:11:23 servera setroubleshoot[14796]: SELinux impide que /usr/sbin/httpd acceda a getattr
+
+on the file /custom/index.html. For complete SELinux messages run: sealert -l 5a96d815-a187-4024-be5d-
+
+36daf8e0d774 ...salida omitida... 3. Ejecute el comando sealert sugerido. Tenga en cuenta el contexto de origen, los objetos de destino, la política y el modo de aplicación. Encuentre la etiqueta de contexto SELinux correcta para el archivo que el servicio httpd intenta entregar. 4. Ejecute el comando sealert. El resultado explica que el archivo /custom/index.html tiene una etiqueta de contexto incorrecta. 4.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado para investigar y resolver problemas de SELinux
+
+14.8. Ejercicio guiado Investigar y resolver problemas de SELinux 14.8. Ejercicio guiado Investigar y resolver problemas de SELinux Solucionar problemas de SELinux utilizando herramientas de análisis de registros de SELinux e interpretando sus resultados. Resultados Adquirir experiencia con las herramientas de resolución de problemas de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-issues
+
+Instrucciones Desde un navegador web en la estación de trabajo, abra la página web http://servera/index.html. Un mensaje de error indica que no tiene permiso para acceder al archivo. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 2. Utilice el comando less para ver el contenido del archivo /var/log/messages. Utiliza el carácter / y busca el texto del sello. Presione la tecla n hasta llegar a la última aparición, porque es posible que los ejercicios anteriores también hayan generado mensajes SELinux. Copie el comando sealert sugerido para poder usarlo en el siguiente paso. Utilice la tecla q para salir del comando less.
+
+[root@servera ~]# less /var/log/messages
+
+... salida omitida... 6 de junio 18:11:23 servera setroubleshoot[14796]: SELinux impide que /usr/sbin/httpd acceda a getattr
+
+on the file /custom/index.html. For complete SELinux messages run: sealert -l 5a96d815-a187-4024-be5d-
+
+36daf8e0d774 ...salida omitida... 3. Ejecute el comando sealert sugerido. Tenga en cuenta el contexto de origen, los objetos de destino, la política y el modo de aplicación. Encuentre la etiqueta de contexto SELinux correcta para el archivo que el servicio httpd intenta entregar. 4. Ejecute el comando sealert. El resultado explica que el archivo /custom/index.html tiene una etiqueta de contexto incorrecta. 4.1.
+
+
+
+
+
+14.8. Ejercicio guiado para investigar y resolver problemas de SELinux
+
+[root@servera ~]# sealert -l 5a96d815-a187-4024-be5d-36daf8e0d774
+
+SELinux impide que /usr/sbin/httpd acceda getattr al archivo /custom/index.html. ***** Se sugiere el complemento catchall_labels (83,8 de confianza) ******************* Si desea permitir que httpd tenga acceso getattr en el archivo index.html, entonces debe cambiar la etiqueta en /custom/index.html.
+
+# semanage fcontext -a -t FILE_TYPE '/custom/index.html'
+where FILE_TYPE is one of the following: ... abrt_dump_oops_exec_t, abrt_etc_t,
+
+abrt_exec_t, abrt_handle_event_exec_t, abrt_helper_exec_t, abrt_retrace_coredump_exec_t, abrt_retrace_spool_t, abrt_retrace_worker_exec_t, abrt_tmp_t, abrt_upload_watch_tmp_t, abrt_var_cache_t, abrt_var_log_t, abrt_var_run_t, cuentasd_exec_t, acct_data_t, acct_exec_t, admin_crontab_tmp_t, admin_passwd_exec_t, afs_logfile_t, aide_exec_t, aide_log_t, alsa_exec_t, ... Luego ejecute:
+
+restorecon -v '/custom/index.html'
+
+Información adicional: Contexto de origen system_u:system_r:httpd_t:s0 Contexto de destino unconfined_u:object_r:default_t:s0 Objetos de destino /custom/index.html [ archivo ] Fuente httpd Ruta de origen /usr/sbin/httpd Puerto <Desconocido> Servidor hosta Paquetes RPM de origen httpd-core-2.4.63-1.el10.x86_64 Paquetes RPM de destino Política SELinux RPM selinux-policy-targeted-40.13.26-1.el10.noarch Política local RPM selinux-policy-targeted-40.13.26-1.el10.noarch Selinux habilitado Verdadero Tipo de política objetivo Modo de aplicación de la aplicación Nombre del host de aplicación servera Plataforma Linux servera 6.12.0-55.12.1.el10_0.x86_64 #1 SMP
+
+                              PREEMPT_DYNAMIC Tue May 13 02:51:44 EDT 2025
+                              x86_64
+
+Recuento de alertas 6 Visto por primera vez 2025-06-06 13:49:29 UTC Visto por última vez 2025-06-06 18:11:19 UTC ID local 5a96d815-a187-4024-be5d-36daf8e0d774 Mensajes de auditoría sin procesar
+
+type=AVC msg=audit(1749233479.381:1477): avc:  denied  { getattr } for  pid=2114 comm="httpd" 
+path="/custom/index.html" dev="sda3" ino=17265301 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+
+...salida omitida... Verifique el contexto SELinux para el directorio /var/www/html, desde donde el servicio httpd sirve el contenido de forma predeterminada. El contexto httpd_sys_content_t SELinux es apropiado para el archivo /custom/index.html.
+
+[root@servera ~]# ls -ldZ /var/www/html
+drwxr-xr-x. 2 root root system_u:object_r:httpd_sys_content_t:s0 6 Jan 27 00:00 /var/www/html
+
+4.2. La sección Mensajes de auditoría sin procesar del comando sealert contiene información del archivo /var/log/audit/audit.log. Utilice el comando ausearch para buscar ese archivo. La opción -m busca según el tipo de mensaje. La opción -ts establece la fecha y hora de inicio de la búsqueda. La siguiente entrada identifica el proceso y el archivo relevantes que causan la alerta. El proceso es el servidor web httpd Apache, el archivo es
+
+/custom/index.html, and the context is system_r:httpd_t.
+
+5.
+
+
+
+
+
+14.8. Ejercicio guiado Investigar y resolver problemas de SELinux Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-issues
+[root@servera ~]# ausearch -m AVC -ts today
+
+...salida omitida...
+
+----
+time->Fri Jun  6 18:11:19 2025
+type=PROCTITLE msg=audit(1749233479.381:1477): 
+proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
+type=SYSCALL msg=audit(1749233479.381:1477): arch=c000003e syscall=262 success=no exit=-13 a0=ffffff9c 
+a1=7f4aec013a98 a2=7f4afa3e09f0 a3=100 items=0 ppid=2104 pid=2114 auid=4294967295 uid=48 gid=48 euid=48 
+suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 comm="httpd" exe="/usr/sbin/httpd" 
+subj=system_u:system_r:httpd_t:s0 key=(null)
+type=AVC msg=audit(1749233479.381:1477): avc:  denied  { getattr } for  pid=2114 comm="httpd" 
+path="/custom/index.html" dev="sda3" ino=17265301 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+
+Resuelva el problema aplicando el contexto httpd_sys_content_t. 6. Vuelva a configurar la política SELinux para permitir que el servicio httpd acceda al contenido del directorio /custom/.
+
+[root@servera ~]# semanage fcontext -a -t httpd_sys_content_t '/custom(/.*)?'
+
+6.1. Utilice restablecimiento con para aplicar los contextos de archivos SELinux correctos para el directorio /custom, siguiendo la política modificada.
+
+[root@servera ~]# restorecon -Rv /custom
+
+Reetiquetado /personalizado de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Se volvió a etiquetar /custom/index.html de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+6.2. En la máquina de la estación de trabajo, utilice un navegador web para ver la URL http://servera/index.html. Debes ver el Esto es SERVERA. mensaje. 7. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+8.
+
+
+
+
+
+14.9. Laboratorio Administrar la seguridad con SELinux 14.9. Laboratorio Administrar seguridad con SELinux Configure el modo SELinux para el sistema. Actualice los contextos de archivos SELinux en archivos según la configuración de políticas. Ajuste la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Identificar problemas en los archivos de registro del sistema. Ajuste la configuración de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade selinux-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña. 1. Desde un navegador web en la máquina de la estación de trabajo, vea la página web http://serverb/lab.html. ves el
+
+error message: You do not have permission to access this resource.
+
+2. Investigue e identifique el problema de SELinux que impide que el servicio Apache proporcione contenido web. 3. Muestre el contexto SELinux del nuevo directorio de documentos HTTP y el directorio de documentos HTTP original. Resuelva el problema de SELinux que impide que el servidor Apache proporcione contenido web. 4. Verifique que el servidor Apache ahora pueda servir contenido web en la máquina de la estación de trabajo. 5. Regrese a la máquina de la estación de trabajo como usuario estudiante. 6.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: oratorio Administrar la seguridad con SELinux
+
+14.9. Laboratorio Administrar la seguridad con SELinux 14.9. Laboratorio Administrar seguridad con SELinux Configure el modo SELinux para el sistema. Actualice los contextos de archivos SELinux en archivos según la configuración de políticas. Ajuste la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Identificar problemas en los archivos de registro del sistema. Ajuste la configuración de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade selinux-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-review
+
+Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña. 1. Desde un navegador web en la máquina de la estación de trabajo, vea la página web http://serverb/lab.html. ves el
+
+error message: You do not have permission to access this resource.
+
+2. Investigue e identifique el problema de SELinux que impide que el servicio Apache proporcione contenido web. 3. Muestre el contexto SELinux del nuevo directorio de documentos HTTP y el directorio de documentos HTTP original. Resuelva el problema de SELinux que impide que el servidor Apache proporcione contenido web. 4. Verifique que el servidor Apache ahora pueda servir contenido web en la máquina de la estación de trabajo. 5. Regrese a la máquina de la estación de trabajo como usuario estudiante. 6.
+
+
+
+
+
+14.9. Lab Manage Security con la solución SELinux Configure el modo SELinux para el sistema. Actualice los contextos de archivos SELinux en archivos según la configuración de políticas. Ajuste la política del sistema SELinux activando y desactivando los booleanos de SELinux. Resultados Identificar problemas en los archivos de registro del sistema. Ajuste la configuración de SELinux. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start selinux-review
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1. Desde un navegador web en la estación de trabajo, vea la página web http://serverb/lab.html. ves el
+
+error message: You do not have permission to access this resource.
+
+2. Investigue e identifique el problema de SELinux que impide que el servicio Apache proporcione contenido web. 3. Vea el contenido del archivo /var/log/messages. Utilice la tecla / y busque la cadena de sellado. Utilice la tecla q para salir del comando less.
+
+[root@serverb ~]# less /var/log/messages
+
+... salida omitida... 12 de junio 23:20:07 serverb setroubleshoot[2089]: no se pudo recuperar la información de rpm para la ruta '/lab-
+
+content/lab.html':
+
+12 de junio 23:30:32 serverb setroubleshoot[2282]: SELinux impide que /usr/sbin/httpd obtengaattr
+
+access on the file /lab-content/lab.html. For complete SELinux messages run: sealert -l 3ba31d72-
+
+a61a-4162-8064-a961581b9b6a 12 de junio 23:30:32 serverb setroubleshoot[2282]: SELinux impide que /usr/sbin/httpd acceda getattr al archivo /lab-content/lab.html. ...salida omitida... 3.1. Ejecute el comando sealert sugerido. Tenga en cuenta el contexto de origen, los objetos de destino, la política y el modo de aplicación. 3.2.
+
+
+
+
+
+14.9. Laboratorio Administrar la seguridad con SELinux
+
+[root@serverb ~]# sealert -l 3ba31d72-a61a-4162-8064-a961581b9b6a
+
+SELinux impide que /usr/sbin/httpd acceda getattr al archivo /lab-content/lab.html. ***** Se sugiere el complemento catchall_labels (83,8 de confianza) ******************* Si desea permitir que httpd tenga acceso getattr al archivo lab.html, entonces debe cambiar la etiqueta en /lab-content/lab.html.
+
+# semanage fcontext -a -t FILE_TYPE '/lab-content/lab.html'
+where FILE_TYPE is one of the following:
+
+...salida omitida... Información adicional: Contexto de origen system_u:system_r:httpd_t:s0 Contexto de destino unconfined_u:object_r:default_t:s0 Objetos de destino /lab-content/lab.html [ archivo ] Fuente httpd Ruta de origen /usr/sbin/httpd ...salida omitida... ID local 3ba31d72-a61a-4162-8064-a961581b9b6a Mensajes de auditoría sin procesar
+
+type=AVC msg=audit(1749771030.133:236): avc:  denied  { getattr } for  pid=1911 comm="httpd" 
+path="/lab-content/lab.html" dev="sda3" ino=8640016 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+type=SYSCALL msg=audit(1749771030.133:236): arch=x86_64 syscall=newfstatat success=no exit=EACCES 
+a0=ffffff9c a1=7fa59c004928 a2=7fa5aafd49f0 a3=100 items=0 ppid=1908 pid=1911 auid=4294967295 
+uid=48 gid=48 euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 
+comm=httpd exe=/usr/sbin/httpd subj=system_u:system_r:httpd_t:s0 key=(null)
+
+Hash: httpd,httpd_t,default_t,file,getattr La sección Mensajes de auditoría sin procesar del comando sealert contiene información del archivo /var/log/audit/audit.log. Busque ese archivo. La opción -m busca por tipo de mensaje. La opción ts busca según el tiempo. La siguiente entrada identifica el proceso, el archivo y los contextos relevantes que causaron la alerta. El proceso es el servidor web httpd Apache, el archivo es /lab-content/lab.html y
+
+the context is system_r:httpd_t.
+[root@serverb ~]# ausearch -m AVC -ts recent
+
+...salida omitida...
+
+----
+time->Thu Jun 12 23:30:30 2025
+type=PROCTITLE msg=audit(1749771030.133:236): 
+proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
+type=SYSCALL msg=audit(1749771030.133:236): arch=c000003e syscall=262 success=no exit=-13 
+a0=ffffff9c a1=7fa59c004928 a2=7fa5aafd49f0 a3=100 items=0 ppid=1908 pid=1911 auid=4294967295 
+uid=48 gid=48 euid=48 suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295 
+comm="httpd" exe="/usr/sbin/httpd" subj=system_u:system_r:httpd_t:s0 key=(null)
+type=AVC msg=audit(1749771030.133:236): avc:  denied  { getattr } for  pid=1911 comm="httpd" 
+path="/lab-content/lab.html" dev="sda3" ino=8640016 scontext=system_u:system_r:httpd_t:s0 
+tcontext=unconfined_u:object_r:default_t:s0 tclass=file permissive=0
+
+3.3. Muestra el contexto SELinux del nuevo directorio de documentos HTTP y el directorio de documentos HTTP original. Resuelva el problema de SELinux que impide que el servidor Apache proporcione contenido web. 4. Compare el contexto SELinux para los directorios /lab-content y /var/www/html. 4.1.
+
+
+
+
+
+14.9. Lab Administrar seguridad con evaluación SELinux Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade selinux-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish selinux-review
+[root@serverb ~]# ls -dZ /lab-content /var/www/html
+      unconfined_u:object_r:default_t:s0 /lab-content
+system_u:object_r:httpd_sys_content_t:s0 /var/www/html
+
+Cree una regla de contexto de archivo que establezca el tipo predeterminado en httpd_sys_content_ para el directorio /lab-content y todos los archivos que contiene.
+
+[root@serverb ~]# semanage fcontext -a -t httpd_sys_content_t '/lab-content(/.*)?'
+
+4.2. Corrija el contexto SELinux para los archivos en el directorio /lab-content.
+
+[root@serverb ~]# restorecon -Rv /lab-content/
+
+Se volvió a etiquetar /lab-content de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+Se volvió a etiquetar /lab-content/lab.html de unconfined_u:object_r:default_t:s0 a
+
+unconfined_u:object_r:httpd_sys_content_t:s0
+
+4.3. Verifique que el servidor Apache ahora pueda servir contenido web en la máquina de la estación de trabajo. 5. Utilice un navegador web en la máquina de la estación de trabajo para acceder a la URL http://serverb/lab.html. Si se muestra el siguiente contenido, entonces el problema está resuelto. Este es el archivo html para el laboratorio final de SELinux en SERVERB. 5.1. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+14.10. Resumen 14.10. Resumen En esta lección, aprendió sobre SELinux y cómo puede mejorar la seguridad de un sistema Linux. SELinux tiene tres modos: obligatorio, permisivo y deshabilitado, y puede alternar entre ellos para afectar el comportamiento de SELinux. Las políticas de SELinux definen las reglas para el control de acceso obligatorio en un sistema. Los contextos SELinux imponen políticas de seguridad. El comando chcon cambia el contexto de archivos y directorios independientemente de la política de SELinux. El comando semanage fcontext administra la política para modificar los contextos de archivos SELinux, y el comando restaurarcon aplica estos contextos a archivos y directorios. Los booleanos de SELinux habilitan o deshabilitan la configuración opcional de la política de SELinux para ajustar selectivamente el comportamiento de una aplicación. El comando getsebool ve los booleanos de SELinux y su estado actual, y el comando setsebool los habilita o deshabilita, ya sea de manera temporal o persistente. El archivo /var/log/audit/audit.log almacena eventos SELinux en formato sin formato, y el archivo /var/log/messages almacena mensajes genéricos del demonio setroubleshootd. Esos archivos de registro, junto con el comando sealert, pueden analizar eventos de SELinux y brindar sugerencias para resolver problemas.
+
+
+
+
+
+
+
+## Resumen
+
+14.10. Resumen 14.10. Resumen En esta lección, aprendió sobre SELinux y cómo puede mejorar la seguridad de un sistema Linux. SELinux tiene tres modos: obligatorio, permisivo y deshabilitado, y puede alternar entre ellos para afectar el comportamiento de SELinux. Las políticas de SELinux definen las reglas para el control de acceso obligatorio en un sistema. Los contextos SELinux imponen políticas de seguridad. El comando chcon cambia el contexto de archivos y directorios independientemente de la política de SELinux. El comando semanage fcontext administra la política para modificar los contextos de archivos SELinux, y el comando restaurarcon aplica estos contextos a archivos y directorios. Los booleanos de SELinux habilitan o deshabilitan la configuración opcional de la política de SELinux para ajustar selectivamente el comportamiento de una aplicación. El comando getsebool ve los booleanos de SELinux y su estado actual, y el comando setsebool los habilita o deshabilita, ya sea de manera temporal o persistente. El archivo /var/log/audit/audit.log almacena eventos SELinux en formato sin formato, y el archivo /var/log/messages almacena mensajes genéricos del demonio setroubleshootd. Esos archivos de registro, junto con el comando sealert, pueden analizar eventos de SELinux y brindar sugerencias para resolver problemas.
+
+
+
+
+
+Capítulo 15. Gestión del almacenamiento básico Objetivo Gestionar los dispositivos de almacenamiento creando particiones, sistemas de archivos y espacios de intercambio desde la línea de comandos. Secciones Creación y administración de sistemas de archivos en particiones estándar (y ejercicio guiado) Administración del espacio de intercambio (y ejercicio guiado) Práctica de laboratorio Administración del almacenamiento básico
+
+
+
+
+

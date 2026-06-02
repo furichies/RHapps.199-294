@@ -1,0 +1,240 @@
+# Trabajo de laboratorio: oratorio Administrar almacenamiento básico
+# Tipo: lab
+# Capítulo: Capítulo 15. Gestión del almacenamiento básico
+
+15.5. Laboratorio Administrar almacenamiento básico 15.5. Práctica de laboratorio Administrar almacenamiento básico Cree particiones, formatee particiones con un sistema de archivos o un espacio de intercambio, monte el sistema de archivos y active el espacio de intercambio cuando se inicie el sistema. Resultados Mostrar y crear particiones. Formatee una partición con un sistema de archivos XFS y monte el sistema de archivos de forma persistente. Crea espacios de intercambio y actívalos de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start storage-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. La máquina del servidor tiene varios discos sin usar. Utilice el comando parted para crear una partición GPT llamada backup con un tamaño de 2 GB en el disco /dev/sdb. Dado que el comando dividido requiere el uso de compensaciones, es aceptable un tamaño entre 1,8 GB y 2,2 GB. Etiquete la partición de respaldo con el tipo de sistema de archivos XFS. 1. Formatee la partición de respaldo con un sistema de archivos XFS y monte persistentemente el sistema de archivos en el directorio /backup usando el UUID de la partición. 2. En el disco /dev/sdb, cree dos particiones denominadas swap1 y swap2, ambas con un tamaño de 512 MB. Para ambas particiones, configure el tipo de sistema de archivos para alojar espacios de intercambio. Se acepta un tamaño entre 460 MB y 564 MB. 3. Inicialice los espacios de intercambio swap1 y swap2 y configúrelos para que se activen en el arranque. Establezca el orden de prioridad para que se prefiera la partición swap2 a la partición swap1. Configure el espacio de intercambio swap1 para usar una prioridad de 10 y el espacio de intercambio swap2 para usar una prioridad de 20. 4. Reinicie la máquina del servidor. Confirme que el sistema monta automáticamente la partición de respaldo en el directorio /backup. Además, confirme que el sistema active los espacios de intercambio swap1 y swap2. 5. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 6.
+
+
+
+
+
+15.5. Laboratorio Administrar almacenamiento básico
+
+student@workstation:~$ lab grade storage-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish storage-review
+
+
+
+
+
+15.5. Lab Manage Basic Storage Solution Cree particiones, formatee particiones con un sistema de archivos o un espacio de intercambio, monte el sistema de archivos y active el espacio de intercambio cuando se inicie el sistema. Resultados Mostrar y crear particiones. Formatee una partición con un sistema de archivos XFS y monte el sistema de archivos de forma persistente. Crea espacios de intercambio y actívalos de forma persistente. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start storage-review
+
+Instrucciones La máquina del servidor tiene varios discos sin usar. Utilice el comando parted para crear una partición GPT llamada backup con un tamaño de 2 GB en el disco /dev/sdb. Dado que el comando dividido requiere el uso de compensaciones, es aceptable un tamaño entre 1,8 GB y 2,2 GB. Etiquete la partición de respaldo con el tipo de sistema de archivos XFS. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Identifique los discos no utilizados. El dispositivo /dev/sdb no tiene particiones.
+
+[root@serverb ~]# lsblk
+
+NOMBRE MAJ:MIN RM TAMAÑO RO TIPO PUNTOS DE MONTAJE
+
+sda      8:0    0   10G  0 disk
+
+├─sda1 8:1 0 1M 0 parte ├─sda2 8:2 0 200M 0 parte /boot/efi └─sda3 8:3 0 9.8G 0 parte /
+
+sdb      8:16   0    5G  0 disk
+sdc      8:32   0    5G  0 disk
+sdd      8:48   0    5G  0 disk
+sr0     11:0    1  514K  0 rom
+
+1.2. Confirme que el disco /dev/sdb no tenga etiqueta. 1.3.
+
+
+
+
+
+15.5. Laboratorio Administrar almacenamiento básico
+
+[root@serverb ~]# parted /dev/sdb print
+
+Error: /dev/sdb: etiqueta de disco no reconocida Modelo: QEMU QEMU HARDDISK (scsi) Disco /dev/sdb: 5369 MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: desconocido Banderas de disco: Defina el esquema de partición GPT.
+
+[root@serverb ~]# parted /dev/sdb mklabel gpt
+
+Información: Es posible que necesite actualizar /etc/fstab. 1.4. Cree la partición de copia de seguridad con un tamaño de 2 GB y asígnele la etiqueta de tipo de sistema de archivos xfs. Inicie la partición en el sector 2048.
+
+[root@serverb ~]# parted /dev/sdb mkpart backup xfs 2048s 2GB
+
+Información: Es posible que necesite actualizar /etc/fstab. 1.5. Confirme la creación de la partición de respaldo.
+
+[root@serverb ~]# parted /dev/sdb print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5369MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049kB 2000MB 1999MB copia de seguridad 1.6. Utilice el comando udevadm SET para esperar hasta que el archivo del dispositivo que representa la nueva partición esté disponible en el directorio /dev.
+
+[root@serverb ~]# udevadm settle
+
+1.7. Formatee la partición de copia de seguridad con un sistema de archivos XFS y monte de forma persistente el sistema de archivos en el directorio /backup utilizando el UUID de la partición. 2. Formatee la partición /dev/sdb1 con un sistema de archivos XFS.
+
+[root@serverb ~]# mkfs.xfs /dev/sdb1
+meta-data=/dev/sdb1         isize=512    agcount=4, agsize=121984 blks
+         =                  sectsz=512   attr=2, projid32bit=1
+         =                  crc=1        finobt=1, sparse=1, rmapbt=1
+         =                  reflink=1    bigtime=1 inobtcount=1 nrext64=1
+         =                  exchange=0
+data     =                  bsize=4096   blocks=487936, imaxpct=25
+         =                  sunit=0      swidth=0 blks
+naming   =version 2         bsize=4096   ascii-ci=0, ftype=1, parent=0
+log      =internal log      bsize=4096   blocks=16384, version=2
+         =                  sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none              extsz=4096   blocks=0, rtextents=0
+
+Descartando bloques... Listo. 2.1. Cree el punto de montaje /backup. 2.2.
+
+
+
+
+
+15.5. Laboratorio Administrar almacenamiento básico
+
+[root@serverb ~]# mkdir /backup
+
+Antes de agregar el sistema de archivos al archivo /etc/fstab, recupere el UUID de su partición para usarlo en pasos posteriores. El UUID de la partición en su sistema puede ser diferente.
+
+[root@serverb ~]# lsblk --fs /dev/sdb1
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID... sdb1 xfs d85f5387-9791-400a-9a74-f637e7ee68aa 2.3. Edite el archivo /etc/fstab y defina el sistema de archivos. Utilice el UUID de partición que recuperó en el paso anterior. ...salida omitida... UUID=d85f5387-9791-400a-9a74-f637e7ee68aa /backup xfs defaults 0 0 2.4. Actualice el demonio systemd para que el sistema registre la configuración del archivo /etc/fstab.
+
+[root@serverb ~]# systemctl daemon-reload
+
+2.5. Monte manualmente el directorio /backup.
+
+[root@serverb ~]# mount /backup
+
+2.6. Verifique que el directorio /backup se monte correctamente.
+
+[root@serverb ~]# mount | grep /backup
+/dev/sdb1 on /backup type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+2.7. En el disco /dev/sdb, cree dos particiones denominadas swap1 y swap2, ambas con un tamaño de 512 MB. Para ambas particiones, configure el tipo de sistema de archivos para alojar espacios de intercambio. Se acepta un tamaño entre 460 MB y 564 MB. 3. Recupere la posición final de la partición de respaldo que creó en un paso anterior mostrando la tabla de particiones actual en el disco /dev/sdb.
+
+[root@serverb ~]# parted /dev/sdb print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5369MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049kB 2000MB 1999MB xfs backup 3.1. Cree la primera partición llamada swap1 con un tamaño de 512 MB. Establezca la etiqueta del tipo de partición en linux-swap. Utilice la posición final de la partición de copia de seguridad como punto de partida para esta partición: 2000 MB. Establezca la posición final en 2512 MB, que es la ubicación inicial (2000 MB) agregada al tamaño de la partición (512 MB).
+
+[root@serverb ~]# parted /dev/sdb mkpart swap1 linux-swap 2000M 2512M
+
+Información: Es posible que necesite actualizar /etc/fstab. 3.2. Cree la segunda partición llamada swap2 con un tamaño de 512 MB. Establezca la etiqueta del tipo de partición en Linux-
+
+swap. Use the end position of the swap1 partition as the starting point for this partition: 2512 MB. Set the
+
+posición final a 3024 MB, que es la ubicación inicial (2512 MB) agregada al tamaño de la partición (512 MB). 3.3.
+
+
+
+
+
+15.5. Laboratorio Administrar almacenamiento básico
+
+[root@serverb ~]# parted /dev/sdb mkpart swap2 linux-swap 2512M 3024M
+
+Información: Es posible que necesite actualizar /etc/fstab. Muestra la tabla de particiones del disco /dev/sdb.
+
+[root@serverb ~]# parted /dev/sdb print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sdb: 5369 MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049 kB 2000 MB 1999 MB xfs backup 2 2000 MB 2512 MB 513 MB swap1 swap 3 2512 MB 3024 MB 512 MB intercambio2 intercambio 3.4. Utilice el comando udevadm set para que el sistema registre las nuevas particiones.
+
+[root@serverb ~]# udevadm settle
+
+3.5. Inicialice los espacios de intercambio swap1 y swap2 y configúrelos para que se activen en el arranque. Establezca el orden de prioridad para que se prefiera la partición swap2 a la partición swap1. Configure el espacio de intercambio swap1 para usar una prioridad de 10 y el espacio de intercambio swap2 para usar una prioridad de 20. 4. Utilice el comando mkswap para inicializar la partición swap1. Anote el UUID de partición del espacio de intercambio que se utilizará en los pasos futuros. También puede utilizar la opción --fs del comando lsblk para recuperar el UUID de la partición.
+
+[root@serverb ~]# mkswap /dev/sdb2
+
+Configurando swapspace versión 1, tamaño = 489 MiB (512749568 bytes)
+
+no label, UUID=54a08491-2722-4145-911c-317c6919e53d
+
+4.1. Utilice el comando mkswap para inicializar la partición swap2. Anote el UUID de partición del espacio de intercambio que se utilizará en los pasos futuros. También puede utilizar la opción --fs del comando lsblk para recuperar el UUID de la partición.
+
+[root@serverb ~]# mkswap /dev/sdb3
+
+Configurando swapspace versión 1, tamaño = 488 MiB (511700992 bytes)
+
+no label, UUID=353fe8ca-1276-4443-935e-e1ae87039aef
+
+4.2. Edite el archivo /etc/fstab y defina los nuevos espacios de intercambio. Para configurar el espacio de intercambio en la partición swap2 para que sea preferido sobre la partición swap1, déle a la partición swap2 una mayor prioridad usando la opción pri. Configure el espacio de intercambio swap1 para usar una prioridad de 10 y el espacio de intercambio swap2 para usar una prioridad de 20. Use los UUID que recuperó en un paso anterior. ... salida omitida... UUID=54a08491-2722-4145-911c-317c6919e53d swap swap pri=10 0 0 UUID=353fe8ca-1276-4443-935e-e1ae87039aef swap swap pri=20 0 0 4.3. Actualice el demonio systemd para que el sistema registre la configuración del archivo /etc/fstab.
+
+[root@serverb ~]# systemctl daemon-reload
+
+4.4. Activa los dos espacios de intercambio.
+
+[root@serverb ~]# swapon -a
+
+4.5. Verifique que los dos espacios de intercambio estén activados. 4.6.
+
+
+
+
+
+15.5. Evaluación de almacenamiento básico de administración de laboratorio Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+[root@serverb ~]# swapon --show
+
+NOMBRE TIPO TAMAÑO USADO PRIO /dev/sdb2 partición 489M 0B 10 /dev/sdb3 partición 488M 0B 20 Reinicie la máquina del servidor. Confirme que el sistema monta automáticamente la partición de respaldo en el directorio /backup. Además, confirme que el sistema active los espacios de intercambio swap1 y swap2. 5. Reinicie la máquina del servidor.
+
+[root@serverb ~]# systemctl reboot
+
+Conexión al servidor cerrada por el host remoto. Conexión al servidor cerrada.
+
+student@workstation:~$
+
+Nota Después de reiniciar, los nombres de los dispositivos bloqueados, como /dev/sdb, pueden cambiar. Este comportamiento es poco común pero válido, debido a cómo el kernel de Linux enumera dinámicamente los dispositivos. Si el UUID es correcto en el archivo /etc/fstab, entonces el montaje seguirá funcionando correctamente independientemente del cambio de nombre del dispositivo. 5.1. Espere a que se inicie la máquina del servidor y luego inicie sesión como usuario estudiante.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida... [estudiante@servidor ~]$ 5.2. Verifique que el sistema monte automáticamente la partición /dev/sdb1 en el directorio /backup.
+
+[student@serverb ~]$ mount | grep /backup
+/dev/sdb1 on /backup type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+5.3. Verifique que ambos espacios de intercambio estén activados.
+
+[student@serverb ~]$ swapon --show
+
+NOMBRE TIPO TAMAÑO UTILIZADO PRIO /dev/sdb2 partición 489M 0B 10 /dev/sdb3 partición 488M 0B 20 5.4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+6.
+
+
+
+
+
+15.5. Laboratorio Administrar almacenamiento básico
+
+student@workstation:~$ lab grade storage-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish storage-review
+
+
+
+
+
+15.6. Resumen 15.6. Resumen En esta lección, aprendió a administrar dispositivos de almacenamiento local mediante la creación de particiones, sistemas de archivos y espacios de intercambio desde la línea de comandos. Los esquemas de partición son divisiones lógicas de dispositivos de bloques que permiten a los administradores cumplir con requisitos de almacenamiento específicos, como organizar datos, mejorar el rendimiento y mejorar la seguridad. El esquema de partición Master Boot Record (MBR) es el estándar en sistemas que ejecutan firmware BIOS, y el esquema de tabla de particiones GUID (GPT) se utiliza en sistemas que ejecutan firmware UEFI. El comando parted ve, agrega, modifica y elimina particiones en los discos. Es compatible con los esquemas de partición MBR y GPT. El sistema de archivos XFS es el formato de sistema de archivos predeterminado y recomendado para Red Hat Enterprise Linux 10. El comando mkfs.xfs crea un sistema de archivos XFS en una partición de disco. El comando mount adjunta temporalmente un dispositivo a un directorio de punto de montaje. Para montar dispositivos de forma persistente, modifique el archivo /etc/fstab, que enumera y configura los dispositivos que se montarán en el arranque. El kernel utiliza espacio de intercambio para complementar la memoria física del sistema manteniendo páginas de memoria inactivas en el disco. El comando mkswap inicializa los espacios de intercambio en las particiones del disco. El comando swapon activa temporalmente los espacios de intercambio. El comando swapoff los desactiva. Para activar el espacio de intercambio de forma persistente, utilice el archivo /etc/fstab.
+
+
+
+
+

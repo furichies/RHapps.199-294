@@ -1,0 +1,149 @@
+# 13.3. Interpretación y gestión de eventos Syslog
+# Tipo: theory
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.3. Interpretación y gestión de eventos Syslog 13.3. Interpretación y gestión de eventos de Syslog Objetivos Encontrar los archivos de registro de syslog, interpretar los mensajes de syslog y configurar qué mensajes de syslog se graban en qué archivos u otros destinos. Registrar eventos en el sistema Muchos programas utilizan el protocolo syslog para registrar eventos en el sistema. Cada mensaje de registro se clasifica por instalación (el subsistema que produce el mensaje) y prioridad (la gravedad del mensaje). La siguiente tabla enumera las funciones de syslog estándar: Tabla 18. Descripción general de las funciones de Syslog 0 kern Mensajes del kernel 1 usuario Mensajes de nivel de usuario 2 mail Mensajes del sistema de correo 3 demonio Mensajes del demonio del sistema 4 auth Mensajes de autenticación y seguridad 5 syslog Mensajes de syslog internos 6 lpr Mensajes de impresora 7 news Mensajes de noticias de red 8 uucp Mensajes del protocolo UUCP 9 cron Mensajes del demonio de reloj 10 authpriv Mensajes de autorización no del sistema 11 ftp Mensajes del protocolo FTP 16-23 local0 a local7 Mensajes locales personalizados Código Instalación Descripción de la instalación
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog La siguiente tabla enumera las prioridades estándar de Syslog en orden descendente: Tabla 19. Descripción general de las prioridades de Syslog 0 emerg El sistema no se puede utilizar 1 alerta Se debe tomar acción inmediatamente 2 crítico Condición crítica 3 err Condición de error no crítico 4 advertencia Condición de advertencia 5 aviso Evento normal pero significativo 6 información Evento informativo 7 depuración Mensaje de nivel de depuración El servicio Rsyslog El servicio rsyslog implementa syslog registro. El servicio rsyslog utiliza la función y la prioridad de los mensajes de registro para determinar cómo manejarlos. Las reglas especifican la instalación y la prioridad en el archivo /etc/rsyslog.conf y en cualquier archivo en el directorio /etc/rsyslog.d con la extensión .conf. Los paquetes de software pueden agregar reglas instalando un archivo apropiado en el directorio /etc/rsyslog.d. Cada regla de rsyslog consta de un filtro, seguido de una acción. Los filtros seleccionan un subconjunto de los mensajes de syslog mediante varios métodos. Por ejemplo, el método de filtro basado en instalaciones/prioridades indica la instalación y la prioridad de los mensajes de syslog con los que coincide la regla. Un asterisco (*) puede actuar como comodín para hacer coincidir todos los valores posibles de una instalación o prioridad. Las acciones indican cómo manejar los mensajes que coinciden con el filtro especificado. Hay muchas acciones posibles disponibles y una regla puede tener más de una acción. Por ejemplo, una acción puede indicar en qué archivo guardar el mensaje de registro. La siguiente regla en el archivo /etc/rsyslog.conf guarda los mensajes que se envían a la función authpriv de cualquier
+
+priority to the /var/log/secure file:
+
+authpriv.* /var/log/secure Si especifica una prioridad para el selector de una regla, todos los mensajes a esa instalación con la prioridad especificada o superior se registran en la acción asociada con la regla. Código Prioridad Descripción de prioridad
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog La siguiente regla en el archivo /etc/rsyslog.conf guarda los mensajes que se envían a la función authpriv con un
+
+priority of warning or higher (including the err, crit, alert, and emerg priorities) to the /var/log/secure file:
+
+authpriv.warning /var/log/secure A veces, los mensajes de registro coinciden con más de una regla en el archivo rsyslog.conf. En tales casos, el mensaje se almacena en
+
+more than one log file. The none keyword in the priority field indicates that no messages for the indicated facility are
+
+almacenado en el archivo dado, para limitar los mensajes almacenados. En lugar de registrarse en un archivo, los mensajes de syslog también se pueden imprimir en los terminales de todos los usuarios que hayan iniciado sesión. El
+
+rsyslog.conf file has a setting to print all the syslog messages with the emerg priority to the terminals of all
+
+usuarios registrados. Reglas de muestra del servicio Rsyslog #### REGLAS ####
+
+# Log all kernel messages to the console.
+# Logging much else clutters up the screen.
+
+#kern.* /dev/consola
+
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+
+*.info;mail.none;authpriv.none;cron.none /var/log/messages
+
+# The authpriv file has restricted access.
+
+authpriv.* /var/log/secure
+
+# Log all the mail messages in one place.
+
+correo.* -/var/log/maillog
+
+# Log cron stuff
+
+cron.* /var/log/cron
+
+# Everybody gets emergency messages
+
+*.emerg :omusrmsg:*
+
+# Save news errors of level crit and higher in a special file.
+
+uucp,noticias.crit /var/log/spooler
+
+# Save boot messages also to boot.log
+
+local7.* /var/log/boot.log Nota El subsistema syslog tiene muchas más funciones que van más allá del alcance de este curso. Para explorar más, consulte la página de manual rsyslog.conf(5) y la extensa documentación HTML en /usr/share/doc/rsyslog/html/index.html que proporciona el paquete rsyslog-doc. Rotación de archivos de registro El comando logrotate es activado por una unidad de temporizador systemd y rota los archivos de registro para evitar que ocupen demasiado espacio en el directorio /var/log. Cuando se rota un archivo de registro, se le cambia el nombre con una extensión que indica la fecha de rotación.
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog Por ejemplo, se cambió el nombre del archivo /var/log/messages a /var/log/messages-20250620 cuando se rotó el 2025-06-20. Después de rotar el archivo de registro anterior, se crea un nuevo archivo de registro y se notifica al servicio asociado al archivo de registro. Después de aproximadamente cuatro semanas de rotaciones de archivos de registro, el archivo de registro más antiguo se descarta para recuperar espacio en el disco. Un trabajo programado ejecuta el comando logrotate diariamente para verificar los requisitos de rotación de varios archivos de registro. La mayoría de los archivos de registro se rotan semanalmente. El comando logrotate puede rotar los archivos de registro más rápidamente, más lentamente o cuando los archivos de registro alcanzan un tamaño específico. Analizar una entrada de registro Los mensajes de registro comienzan con el mensaje más antiguo al inicio del archivo de registro y el último mensaje al final del archivo de registro. El servicio rsyslog utiliza un formato estándar para registrar entradas en archivos de registro. El siguiente ejemplo ilustra la anatomía de un mensaje de registro en el archivo de registro /var/log/secure. 20 de marzo 20:11:48 localhost sshd[1433]: contraseña fallida para el estudiante del puerto 172.25.0.10 59344 ssh2 20 de marzo 20:11:48: la marca de tiempo de la entrada del registro
+
+localhost: The host that sent the log message
+sshd[1433]: The program or process name and PID number that sent the log message
+
+Contraseña fallida para: El mensaje que se envió Monitorear eventos de registro Monitorear archivos de registro para eventos es útil para reproducir problemas. El comando tail -f /ruta/al/archivo genera las últimas diez líneas del archivo especificado y continúa generando líneas recién escritas en el archivo. Por ejemplo, puede monitorear los intentos de inicio de sesión utilizando una sesión de terminal en dos servidores. Un terminal es para la máquina hostA y el otro terminal es para la máquina hostB. Desde la máquina hostA en la primera terminal, ejecute el comando tail -f y observe el archivo de registro /var/log/secure:
+
+root@hostA:~# tail -f /var/log/secure
+
+...salida omitida... Desde la máquina hostB en la segunda terminal, ejecute el comando ssh y conéctese a la máquina hostA como
+
+root user:
+root@hostB:~# ssh root@hostA
+root@hostA's password: password
+
+...salida omitida...
+
+root@hostA:~#
+
+Los mensajes de registro para el inicio de sesión del usuario root desde la máquina hostB son visibles en el primer terminal del hostA.
+
+machine:
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog... salida omitida... 20 de marzo 09:01:13 hostA sshd[2712]: Contraseña aceptada para root desde 172.25.254.254 puerto 56801 ssh2 20 de marzo 09:01:13 hostA sshd[2712]: pam_unix(sshd:session): sesión abierta para el usuario root por (uid=0) Enviar mensajes de registro manualmente El comando logger envía mensajes al servicio rsyslog. De forma predeterminada, el comando logger envía el mensaje del tipo de usuario con la prioridad de aviso (user.notice) a menos que se especifique lo contrario con la opción -p. El comando logger es útil para probar cambios en la configuración del servicio rsyslog. Por ejemplo, los mensajes de registro que coinciden con la función local7.* o el filtro de prioridad se guardan en el archivo /var/log/boot.log, según una regla establecida en el archivo predeterminado /etc/rsyslog.conf. Por lo tanto, para enviar un mensaje al servicio rsyslog
+
+and to record the message in the /var/log/boot.log log file, execute the following logger command:
+root@host:~# logger -p local7.notice "Log entry created on host"
+
+Nota El comando logger también puede enviar entradas de diario estructuradas al diario del sistema. Para obtener más información, consulte la documentación de la opción --journald en la página del manual de logger(1). Referencias a las páginas man de logger(1), tail(1), rsyslog.conf(5) y logrotate(8)
+
+rsyslog Manual
+
+La documentación HTML en /usr/share/doc/rsyslog/html/index.html, que el
+
+rsyslog-doc package provides.
+
+Para obtener más información, consulte el capítulo Solución de problemas mediante el uso de archivos de registro en la guía de operaciones de recuperación y reducción de riesgos de Red Hat Enterprise Linux 10 en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/operaciones_de_reducción_de_riesgo_y_recuperación/index#solución-de-problemas-mediante-el-uso-de-archivos-de-registro
+
+
+
+
+
+13.4. Ejercicio guiado Interpretar y gestionar eventos Syslog 13.4. Ejercicio guiado Interpretar y administrar eventos Syslog Configure el archivo de registro syslog para redirigir todos los mensajes de registro de una prioridad especificada a un archivo de registro. Resultados Configure el archivo de registro syslog para utilizar el servicio rsyslog para escribir todos los mensajes de registro con prioridad de depuración en un archivo de registro. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-syslog
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice el estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio rsyslog para registrar todos los mensajes con depuración o prioridad superior para cualquier servicio en el archivo de registro /var/log/messages-debug cambiando el archivo de configuración /etc/rsyslog.d/debug.conf. 2. Cree el archivo /etc/rsyslog.d/debug.conf con las entradas necesarias para redirigir todos los mensajes de registro con prioridad de depuración o mayor al archivo de registro /var/log/messages-debug. Esta línea de configuración registra los mensajes de syslog con cualquier función y con el nivel de depuración o de prioridad superior: *.debug /var/log/messages-debug 2.1. El comodín (*) en el campo de facilidad de la línea de configuración indica cualquier facilidad de mensajes de registro. El servicio rsyslog escribe los mensajes coincidentes en el archivo de registro /var/log/messages-debug. Reinicie el servicio rsyslog.
+
+[root@servera ~]# systemctl restart rsyslog
+
+2.2. Verifique que todos los mensajes de registro con prioridad de depuración aparezcan en el archivo de registro /var/log/messages-debug. 3. Genere un mensaje de registro con el tipo de usuario y la prioridad de depuración.
+
+[root@servera ~]# logger -p user.debug "Debug Message Test"
+
+3.1. Vea los últimos 10 mensajes de registro del archivo de registro /var/log/messages-debug y verifique que ve el mensaje de prueba de mensaje de depuración entre los demás mensajes de registro. 3.2.
+
+
+
+
+

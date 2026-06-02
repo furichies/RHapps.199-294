@@ -1,0 +1,135 @@
+# 5.3. Administrar permisos de archivos desde la línea de comandos
+# Tipo: theory
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.3. Administrar permisos de archivos desde la línea de comandos 5.3. Administrar permisos de archivos desde la línea de comandos Objetivos Cambiar los permisos y la propiedad de los archivos con herramientas de línea de comandos. Cambiar permisos de archivos y directorios En Linux, puede configurar permisos en archivos y directorios para definir acceso específico para diferentes conjuntos de usuarios. La principal utilidad para configurar estos permisos es el comando chmod. El comando chmod significa "cambiar modo",
+
+where mode refers to a file's permissions. The following list shows some key characteristics of the chmod command:
+
+Cambia los permisos de archivos y directorios desde la línea de comando. Se necesita una instrucción de permiso seguida de una lista de archivos o directorios para cambiar. Puede configurar la instrucción de permiso de forma simbólica o en notación octal (numérica). Cambiar permisos con el método simbólico El método simbólico para cambiar permisos de archivos utiliza letras para representar las categorías y permisos de usuario, y símbolos para modificar la configuración de permisos. Utilice el comando chmod para modificar los permisos de archivos y directorios. La sintaxis general es la siguiente:
+
+user@host:~$ chmod Who/What/Which file|directory
+
+Quién es la clase de usuario, como se muestra en la siguiente tabla. Si no proporciona una clase de usuario, entonces el comando chmod usa el grupo all como predeterminado. u usuario El propietario del archivo. g group Miembro del grupo del archivo. u otros Usuarios que no sean el propietario del fichero ni miembros del grupo del mismo. a todos Los tres grupos anteriores. Cuál es el operador que modifica los permisos, como en la siguiente tabla. + add Agrega los permisos al archivo. Quién Clase de usuario Descripción Qué Operación Descripción
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos: eliminar Elimina los permisos del archivo. = establecer exactamente Establece exactamente los permisos proporcionados para el archivo. Cuál es el modo y especifica qué permisos establecer para los archivos o directorios, como se muestra en la siguiente tabla. r read Acceso de lectura al archivo. Listado de acceso al directorio. w write Permisos de escritura para el archivo o directorio. x ejecutar Ejecutar permisos sobre el archivo. Permite ingresar al directorio y acceder a archivos y subdirectorios dentro del directorio. X ejecución especial Ejecutar permisos para un directorio, o ejecutar permisos para un archivo si al menos uno de los bits de ejecución está configurado. El método simbólico utiliza letras para representar los grupos de permisos: u para usuario, g para grupo, o para otros y a para todos. Con el método simbólico, no es necesario establecer un grupo de permisos completamente nuevo. En su lugar, puede cambiar uno o más de los permisos existentes. Utilice los caracteres más (+) o menos (-) para agregar o eliminar permisos,
+
+respectively, or use the equal sign (=) to replace the entire set for a group of permissions.
+
+Una sola letra representa los permisos en sí: r para lectura, w para escritura y x para ejecución. Puede usar una X mayúscula como indicador de permiso para agregar permisos de ejecución solo si el archivo es un directorio o si la ejecución ya está configurada para usuario, grupo u otro. El siguiente ejemplo muestra el uso del método simbólico para eliminar el permiso de lectura y escritura para grupos y otros en
+
+the document.pdf file:
+user@host:~$ chmod go-rw document.pdf
+
+Este ejemplo muestra cómo agregar permiso de ejecución para todos en el archivo myscript.sh:
+
+user@host:~$ chmod a+x myscript.sh
+
+Puede utilizar la opción -R del comando chmod para establecer permisos de forma recursiva en los archivos de un árbol de directorios completo. Por ejemplo, el siguiente comando agrega de forma recursiva permisos de lectura, escritura y ejecución para los miembros del grupo propietario del directorio micarpeta y los archivos y directorios que contiene. Qué operación Descripción Qué modo Descripción
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos
+
+user@host:~$ chmod -R g+rwx /home/user/myfolder
+
+También puede utilizar la opción -R del comando chmod con la opción -X para establecer permisos simbólicamente. Con la opción X del comando chmod, puede configurar el permiso de ejecución (búsqueda) en directorios para que se pueda acceder a su contenido, sin cambiar los permisos en la mayoría de los archivos. Sin embargo, tenga cuidado con la opción X, porque si se establece algún permiso de ejecución en un archivo, la opción X también establece el permiso de ejecución especificado en ese archivo. Por ejemplo, el siguiente comando establece recursivamente el acceso de lectura y escritura del grupo al directorio demodir y su contenido, agregando la ejecución grupal solo donde la ejecución ya está configurada para usuario, grupo u otros.
+
+root@host:# chmod -R g+rwX demodir
+
+Cambiar permisos con el método octal Puede utilizar el comando chmod para cambiar los permisos de archivos con el método octal en lugar del método simbólico. En
+
+the following example, the number sign (#) represents three digits:
+user@host:~$ chmod ### file|directory
+
+Con el método octal, puede representar los permisos como un número octal de 3 dígitos (o 4 dígitos, al configurar permisos avanzados). Un solo dígito octal puede representar cualquier valor del 0 al 7. En la representación octal de permisos de 3 dígitos, cada dígito representa un nivel de acceso, de izquierda a derecha: usuario, grupo,
+
+and other. To determine each digit:
+
+Comience con 0. Para agregar permisos de lectura para este nivel de acceso, agregue 4. Para agregar permisos de escritura, agregue 2. Para agregar permisos de ejecución, agregue 1. El siguiente diagrama ilustra cómo los sistemas interpretan el valor del permiso octal 644. Figura 8. Representación visual del método octal Los administradores experimentados suelen utilizar el método octal para implementar permisos en archivos únicos o coincidentes y proporcionar control total de permisos. El siguiente ejemplo muestra el uso del método octal para establecer permisos de lectura y escritura para el usuario y permiso de lectura para
+
+group and other, on the sample.txt file:
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos
+
+user@host:~$ chmod 644 sample.txt
+
+Este ejemplo muestra la configuración de permisos de lectura, escritura y ejecución para usuarios, permisos de lectura y ejecución para grupos y
+
+no permission for other on the sampledir directory:
+user@host:~$ chmod 750 sampledir
+
+Cambio de propiedad de usuario o grupo de archivos y directorios El usuario es propietario del archivo que crea. De forma predeterminada, el propietario del grupo de un archivo nuevo es el grupo principal del usuario que crea el archivo. En Red Hat Enterprise Linux, el grupo principal de un usuario suele ser un grupo privado en el que solo ese usuario es miembro. Para otorgar acceso a un archivo según la membresía del grupo, es posible que deba cambiar el grupo propietario del archivo. Sólo el usuario root puede cambiar el usuario propietario de un archivo. Sin embargo, el propietario del archivo y el usuario raíz pueden establecer la propiedad del grupo. El usuario raíz puede otorgar propiedad del archivo a cualquier grupo, pero los usuarios normales solo pueden cambiar la propiedad del grupo del archivo si son miembros del grupo de destino. Los siguientes ejemplos muestran cómo cambiar la propiedad de archivos y directorios mediante el comando chown (cambiar propietario). Por ejemplo, para otorgar la propiedad del archivo app.conf al usuario estudiante, use el siguiente comando:
+
+root@host:~# chown student app.conf
+
+La opción -R del comando chown cambia recursivamente la propiedad de un árbol de directorios completo. El siguiente comando
+
+grants ownership of the Pictures directory and all files and subdirectories within it to the student user:
+root@host:~# chown -R student Pictures
+
+También puede utilizar el comando chown para cambiar la propiedad del grupo de un archivo precediendo el nombre del grupo con dos puntos (:). Por ejemplo, el siguiente comando cambia la propiedad del grupo del directorio Imágenes a administradores:
+
+root@host:~# chown :admins Pictures
+
+Puede utilizar el comando chown para cambiar tanto el propietario como el grupo al mismo tiempo utilizando la sintaxis propietario:grupo. Por ejemplo, para cambiar la propiedad del directorio Imágenes al usuario visitante y a los invitados.
+
+group, use the following command:
+root@host:~# chown visitor:guests Pictures
+
+En lugar de utilizar el comando chown, algunos usuarios cambian la propiedad del grupo mediante el comando chgrp. Este comando funciona de manera similar al comando chown, excepto que puede usarlo solo para cambiar la propiedad del grupo y el
+
+colon (:) before the group name is not required.
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos Importante Es posible que encuentre una sintaxis de comando chown alternativa que separe propietario y grupo con un punto
+
+instead of a colon:
+root@host:~# chown owner.group filename
+
+Red Hat recomienda no utilizar esta sintaxis y utilizar siempre dos puntos. Debido a que un punto es un carácter válido en un nombre de usuario, el comando chown podría malinterpretar su intención. El comando podría interpretar el usuario y el grupo como un nombre de archivo. En su lugar, utilice sólo dos puntos cuando configure el usuario y el grupo al mismo tiempo. Referencias a las páginas man ls(1), chmod(1), chown(1) y chgrp(1)
+
+
+
+
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos 5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos Cambie los permisos y la propiedad de los archivos con herramientas de línea de comandos. Resultados Crear un directorio al que puedan acceder todos los miembros de un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-cli
+
+Instrucciones El comando de inicio de laboratorio prepara el entorno creando un grupo denominado consultores y creando dos usuarios, consultor1 y consultor2, que son miembros de este grupo. Cree el directorio /home/consultants en la máquina del servidor y cambie el grupo propietario al grupo de consultores. 1. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice redhat como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el directorio /home/consultants.
+
+[root@servera ~]# mkdir /home/consultants
+
+1.2. Cambie la propiedad del grupo del directorio /home/consultants al grupo de consultores.
+
+[root@servera ~]# chown :consultants /home/consultants
+
+1.3. Modifique los permisos del grupo de consultores para permitir que los miembros de su grupo creen archivos y eliminen archivos del directorio /home/consultants. También configure el directorio para prohibir que otros accedan a los archivos. 2. Verifique que los permisos del grupo de consultores permitan a los miembros de su grupo crear y eliminar archivos en el directorio /home/consultants. Tenga en cuenta que el grupo de consultores actualmente no tiene permiso de escritura. 2.1.
+
+
+
+
+

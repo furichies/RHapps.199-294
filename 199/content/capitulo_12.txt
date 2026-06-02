@@ -1,0 +1,1275 @@
+# Capítulo 9. Monitoreo y gestión de procesos Linux
+
+## 9.1. Procesos y ciclo de vida del proceso
+
+9.1. Procesos y Ciclo de Vida de los Procesos 9.1. Procesos y objetivos del ciclo de vida del proceso Identificar los procesos que se están ejecutando actualmente en un sistema, determinar sus estados de proceso actuales y recopilar información sobre el uso de los recursos del sistema. Definición de proceso Un proceso es una instancia en ejecución de un programa ejecutable iniciado. Desde el momento en que se crea un proceso,
+
+consists of the following items:
+
+Un espacio de direcciones de memoria asignada Propiedades de seguridad, incluidas credenciales de propiedad y privilegios Uno o más subprocesos de ejecución de código de programa Un estado de proceso El entorno de un proceso es una lista de información que incluye los siguientes elementos: Variables locales y globales Un contexto de programación actual Recursos del sistema asignados, como descriptores de archivos y puertos de red Un proceso principal existente duplica su propio espacio de direcciones, que se conoce como bifurcación de proceso, para crear una estructura de proceso secundario. A cada nuevo proceso se le asigna un ID de proceso único (PID) con fines de seguimiento y seguridad. El PID y el ID del proceso principal (PPID) son elementos del nuevo entorno de proceso. Cualquier proceso puede crear un proceso hijo. Todos los procesos son descendientes del primer proceso del sistema, systemd, en un sistema Red Hat. Figura 15. Ciclo de vida del proceso A través de la rutina fork, un proceso hijo hereda identidades de seguridad, descriptores de archivos anteriores y actuales, privilegios de puertos y recursos, variables de entorno y código de programa. Luego, un proceso hijo puede ejecutar su propio código de programa. Normalmente, un proceso principal duerme cuando se ejecuta el proceso secundario y establece una solicitud de espera para que se indique cuando se completa el proceso secundario. Una vez que el proceso hijo sale, cierra o descarta sus recursos y su entorno, y deja un recurso zombie, que es una entrada en la tabla de procesos. El proceso padre, al que se le indica que se active cuando el proceso hijo sale, limpia la tabla de procesos de la entrada del proceso hijo y libera el último recurso del proceso hijo. Luego, el proceso principal continúa con la ejecución de su propio código de programa.
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso Estados de proceso En un sistema operativo multitarea, cada CPU (o núcleo de CPU) puede trabajar en un proceso a la vez. A medida que se ejecuta un proceso, sus requisitos inmediatos de tiempo de CPU y asignación de recursos cambian. A los procesos se les asigna un estado, que cambia según lo dictan las circunstancias. El siguiente diagrama y tabla describen los estados del proceso de Linux en detalle. Figura 16. Estados de procesos de Linux Tabla 10. Estados de procesos de Linux ejecutando R TASK_RUNNING: El proceso se está ejecutando en una CPU o está esperando para ejecutarse. El proceso puede estar ejecutando rutinas de usuario o rutinas de kernel (llamadas al sistema), o estar en cola y listo cuando se encuentra en el estado En ejecución (o Ejecutable). Nombre Bandera Nombre y descripción del estado definido por el kernel
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso en suspensión S TASK_INTERRUPTIBLE: El proceso está esperando alguna condición: una solicitud de hardware, acceso a recursos del sistema o una señal. Cuando un evento o señal satisface la condición, el proceso vuelve a Ejecutar. D TASK_UNINTERRUPTIBLE: este proceso también está inactivo, pero a diferencia del estado S, no responde a señales. Este estado se utiliza sólo cuando la interrupción del proceso puede provocar un estado impredecible del dispositivo. K TASK_KILLABLE: Igual que el estado D ininterrumpible, pero modificado para permitir que una tarea en espera responda a la señal para finalizarla (salir por completo). Las empresas de servicios públicos a menudo muestran procesos que se pueden eliminar como estado D. I TASK_REPORT_IDLE: un subconjunto del estado D que se utiliza para subprocesos del kernel. El kernel no cuenta estos procesos al calcular el promedio de carga. Se establecen los indicadores TASK_UNINTERRUPTIBLE y TASK_NOLOAD. Este estado es similar a TASK_KILLABLE y acepta señales fatales. Detenido T TASK_STOPPED: El proceso se detiene (suspende), generalmente al ser señalado por un usuario u otro proceso. El proceso puede continuar (reanudarse) mediante otra señal para volver a ejecutarse. T TASK_TRACED: un proceso que se está depurando también se detiene temporalmente y comparte el indicador de estado T. Zombie Z EXIT_ZOMBIE: un proceso hijo envía señales a su padre cuando sale. Se liberan todos los recursos excepto la identidad del proceso (PID). X EXIT_DEAD: cuando el proceso principal limpia (cosecha) la estructura del proceso secundario restante, el proceso ahora se libera por completo. Este estado no se puede observar en las utilidades de listado de procesos. Interpretación de los estados de los procesos Comprender cómo se comunica el núcleo con los procesos y cómo los procesos se comunican entre sí puede ayudarle a solucionar problemas de un sistema. El sistema asigna un estado a cada nuevo proceso. La columna S del comando superior o la columna STAT del comando ps muestra el estado de cada proceso. En un sistema con una sola CPU, solo se puede ejecutar un proceso a la vez. Varios procesos pueden estar en estado R. Sin embargo, no todos los procesos se ejecutan consecutivamente; algunos de ellos se encuentran en estado de espera. Nombre Bandera Nombre y descripción del estado definido por el kernel
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso
+
+user@host:~$ top
+
+PID USUARIO PR NI VIRT RES SHR S %CPU %MEM TIME+ COMANDO
+
+  1 root  20   0   49516  41072  10164 S   0.0   0.7   0:02.30  systemd
+  2 root  20   0       0      0      0 S   0.0   0.0   0:00.00  kthreadd
+  3 root  20   0       0      0      0 S   0.0   0.0   0:00.00  pool_workqueue_release
+
+...salida omitida...
+
+user@host:~$ ps aux
+
+USUARIO PID %CPU %MEM VSZ RSS TTY STAT COMANDO DE HORA DE INICIO ...salida omitida...
+
+root         2  0.0  0.0      0     0 ?        S    11:57   0:00 [kthreadd]
+student   2496  0.0  0.0 231132  3872 pts/0    R+   16:45   0:00 ps aux
+
+...salida omitida... Utilice señales para suspender, detener, reanudar, terminar o interrumpir procesos. Los procesos pueden recibir señales del kernel, de otros procesos y de otros usuarios en el mismo sistema. Listado de procesos El comando ps enumera información detallada para los procesos actuales: Identificación de usuario (UID), que determina los privilegios del proceso Identificación única del proceso (PID) Cantidad de CPU utilizada y tiempo real transcurrido Cantidad de memoria asignada La ubicación de salida estándar del proceso, que se conoce como terminal de control El estado actual del proceso Importante La versión Linux del comando ps admite los siguientes formatos de opciones: Opciones UNIX (POSIX), que se pueden agrupar y deben estar precedidas por un guión (-). Opciones BSD, que se pueden agrupar y no deben usarse con un guión. Opciones largas de GNU, precedidas por dos guiones. Por ejemplo, el comando ps -aux no es lo mismo que el comando ps aux. El comando ps aux comúnmente utilizado muestra todos los procesos, incluidos los procesos sin una terminal de control. En los siguientes ejemplos, los subprocesos del kernel programados se muestran entre paréntesis en la parte superior de la lista.
+
+user@host:~$ ps aux
+
+USUARIO PID %CPU %MEM VSZ RSS TTY STAT COMANDO DE HORA DE INICIO
+
+root   1  0.1  0.2 171820 16140 ?   Ss   16:47  0:01 /usr/lib/systemd/systemd ...
+root   2  0.0  0.0      0     0 ?   S    16:47  0:00 [kthreadd]
+root   3  0.0  0.0      0     0 ?   I<   16:47  0:00 [rcu_gp]
+root   4  0.0  0.0      0     0 ?   I<   16:47  0:00 [rcu_par_gp]
+root   6  0.0  0.0      0     0 ?   I<   16:47  0:00 [kworker/0:0H-events_highpri]
+
+...salida omitida... La lista larga (el comando ps lax) proporciona más detalles y devuelve resultados más rápidamente al evitar búsquedas de nombres de usuarios.
+
+
+
+
+
+9.1. Procesos y ciclo de vida del proceso
+
+user@host:~$ ps lax
+
+F UID PID PPID PRI NI VSZ RSS WCHAN STAT TTY TIME COMMAND 4 0 1 0 20 0 17820 1140 - Ss ?   0:01 /usr/lib/systemd/systemd ... 1 0 2 0 20 0 0 0 - S ?   0:00 [kthreadd] 1 0 3 2 0 -20 0 0 - I<?   0:00 [rcu_gp] 1 0 4 2 0 -20 0 0 - Yo <?   0:00 [rcu_par_gp] 1 0 6 2 0 -20 0 0 - Yo< ?   0:00 [kworker/0:0H-events_...] ...salida omitida... La sintaxis similar de UNIX utiliza las opciones -ef para mostrar todos los procesos.
+
+user@host:~$ ps -ef
+
+UID PID PPID C TIEMPO TTY TIEMPO CMD
+
+root  1    0     0 16:47 ?    00:00:01 /usr/lib/systemd/systemd ...
+root  2    0     0 16:47 ?    00:00:00 [kthreadd]
+root  3    2     0 16:47 ?    00:00:00 [rcu_gp]
+root  4    2     0 16:47 ?    00:00:00 [rcu_par_gp]
+root  6    2     0 16:47 ?    00:00:00 [kworker/0:0H-events_highpri]
+
+...salida omitida... La salida predeterminada del comando ps está ordenada por número de ID de proceso (PID). Inicialmente, puede parecer que la salida usa un orden cronológico, pero el kernel reutiliza los ID de proceso, por lo que el orden está menos estructurado de lo que parece. Utilice las opciones del comando ps -O o --sort para ordenar la salida. El orden de visualización coincide con el de la tabla de procesos del sistema, que reutiliza las filas de la tabla cuando los procesos mueren y se generan. De forma predeterminada, el comando ps sin opciones selecciona todos los procesos con el ID de usuario efectivo (EUID) del usuario actual y selecciona los procesos asociados con el terminal que ejecuta el comando. Los procesos zombies se enumeran con la etiqueta saliente o inactivo. Puede utilizar la opción --forest del comando ps para mostrar los procesos en formato de árbol para poder ver las relaciones entre los procesos principales y secundarios. Referencias a las páginas man de ps(1), top(1) y signal(7)
+
+
+
+
+
+9.2. Procesos de cuestionarios y ciclo de vida del proceso 9.2. Procesos del cuestionario y ciclo de vida del proceso Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando se utiliza principalmente para enumerar los procesos actualmente en ejecución? 1. agradable a. lsp b. matar c. PD d. renice e. ¿Qué estado representa un proceso detenido o suspendido? 2.D a. Rb. Sc. T d. Z e. ¿Qué estado representa un proceso que liberó todos sus recursos excepto su PID? 3.D a. Rb. Sc. T d. Z e. ¿Qué operación de Linux crea un nuevo proceso hijo al clonar el espacio de direcciones del padre? 4. ejecutivo a. tenedor b. zombi c. llamada al sistema d. cosechar e. ¿Qué estado representa un proceso que está inactivo hasta que se cumple alguna condición? 5.D a. Rb. Sc. T d. Z e.
+
+
+
+
+
+
+
+## Cuestionario: Procesos de prueba y ciclo de vida del proceso
+
+9.2. Procesos de cuestionarios y ciclo de vida del proceso 9.2. Procesos del cuestionario y ciclo de vida del proceso Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando se utiliza principalmente para enumerar los procesos actualmente en ejecución? 1. agradable a. lsp b. matar c. PD d. renice e. ¿Qué estado representa un proceso detenido o suspendido? 2.D a. Rb. Sc. T d. Z e. ¿Qué estado representa un proceso que liberó todos sus recursos excepto su PID? 3.D a. Rb. Sc. T d. Z e. ¿Qué operación de Linux crea un nuevo proceso hijo al clonar el espacio de direcciones del padre? 4. ejecutivo a. tenedor b. zombi c. llamada al sistema d. cosechar e. ¿Qué estado representa un proceso que está inactivo hasta que se cumple alguna condición? 5.D a. Rb. Sc. T d. Z e.
+
+
+
+
+
+9.2. Procesos de prueba y la solución del ciclo de vida del proceso ¿Qué comando se utiliza principalmente para enumerar los procesos actualmente en ejecución? 1. agradable a. lsp b. matar c. PD d. renice e. ¿Qué estado representa un proceso detenido o suspendido? 2.D a. Rb. Sc. T d. Z e. ¿Qué estado representa un proceso que liberó todos sus recursos excepto su PID? 3.D a. Rb. Sc. T d. Z e. ¿Qué operación de Linux crea un nuevo proceso hijo al clonar el espacio de direcciones del padre? 4. ejecutivo a. tenedor b. zombi c. llamada al sistema d. cosechar e. ¿Qué estado representa un proceso que está inactivo hasta que se cumple alguna condición? 5.D a. Rb. Sc. T d. Z e.
+
+
+
+
+
+9.3. Gestión de Procesos con Control de Trabajos 9.3. Gestión de procesos con objetivos de control de trabajos Controlar los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Trabajos y sesiones Con la función de shell de control de trabajos, puede ejecutar y administrar múltiples comandos en una única instancia de shell. Se asocia un trabajo con cada canalización que se ingresa en un símbolo del shell. Todos los procesos en esa canalización son parte del trabajo y son miembros del mismo grupo de procesos. Puede considerar que una canalización mínima es solo un comando que se ingresa en el símbolo del shell para crear un trabajo con un solo miembro. Sólo un trabajo a la vez puede leer señales de entrada y generadas por el teclado desde una ventana de terminal particular. Los procesos que forman parte de ese trabajo son procesos de primer plano de esa terminal de control. Un proceso en segundo plano de ese terminal de control es cualquier otro trabajo asociado con ese terminal. Los procesos en segundo plano de un terminal no pueden leer entradas ni recibir interrupciones generadas por el teclado desde el terminal, pero pueden escribir en el terminal. Es posible que un trabajo en segundo plano esté detenido (suspendido) o que se esté ejecutando. Si un trabajo en segundo plano en ejecución intenta leer desde la terminal, el kernel lo suspende automáticamente y el proceso permanece en estado detenido hasta que se mueve al primer plano. Cada terminal se ejecuta en su propia sesión y puede tener un proceso en primer plano y cualquier número de procesos en segundo plano. Un trabajo que se ejecuta en su propia sesión pertenece a su terminal de control. El comando ps muestra el nombre del dispositivo del terminal de control en la columna TTY.
+
+user@host:~$ ps
+    PID TTY          TIME CMD
+   2328 pts/0    00:00:00 bash
+   8910 pts/0    00:00:00 ps
+
+Algunos procesos, como los demonios del sistema, los inicia el sistema y no desde una terminal de control. Estos procesos no son miembros de un trabajo y no pueden ponerse en primer plano. El comando ps muestra un signo de interrogación (?) en la columna TTY para estos procesos. Utilice el comando ps j para buscar información sobre procesos y sesiones, así como detalles sobre trabajos. En el siguiente ejemplo, el comando de suspensión está actualmente suspendido y el estado del proceso es T (detenido).
+
+user@host:~$ ps j
+
+PPID PID PGID SID TTY TPGID STAT UID HORA COMANDO ...salida omitida... 8527 8528 8528 8528 pts/0 8633 Ss 1000 0:00 -bash 8528 8559 8559 8528 pts/0 8633 T 1000 0:00 dormir 10000 8528 8633 8633 8528 pts/0 8633 R+ 1000 0:00 ps j El PID es el ID de proceso único del proceso. El ID del proceso principal (PPID) es el PID del proceso principal que inició (bifurcó) este proceso. El PGID es el PID del líder del grupo de procesos, normalmente el primer proceso en la canalización del trabajo.
+
+
+
+
+
+
+
+## 9.3. Gestión de procesos con control de trabajos
+
+9.3. Gestión de Procesos con Control de Trabajos 9.3. Gestión de procesos con objetivos de control de trabajos Controlar los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Trabajos y sesiones Con la función de shell de control de trabajos, puede ejecutar y administrar múltiples comandos en una única instancia de shell. Se asocia un trabajo con cada canalización que se ingresa en un símbolo del shell. Todos los procesos en esa canalización son parte del trabajo y son miembros del mismo grupo de procesos. Puede considerar que una canalización mínima es solo un comando que se ingresa en el símbolo del shell para crear un trabajo con un solo miembro. Sólo un trabajo a la vez puede leer señales de entrada y generadas por el teclado desde una ventana de terminal particular. Los procesos que forman parte de ese trabajo son procesos de primer plano de esa terminal de control. Un proceso en segundo plano de ese terminal de control es cualquier otro trabajo asociado con ese terminal. Los procesos en segundo plano de un terminal no pueden leer entradas ni recibir interrupciones generadas por el teclado desde el terminal, pero pueden escribir en el terminal. Es posible que un trabajo en segundo plano esté detenido (suspendido) o que se esté ejecutando. Si un trabajo en segundo plano en ejecución intenta leer desde la terminal, el kernel lo suspende automáticamente y el proceso permanece en estado detenido hasta que se mueve al primer plano. Cada terminal se ejecuta en su propia sesión y puede tener un proceso en primer plano y cualquier número de procesos en segundo plano. Un trabajo que se ejecuta en su propia sesión pertenece a su terminal de control. El comando ps muestra el nombre del dispositivo del terminal de control en la columna TTY.
+
+user@host:~$ ps
+    PID TTY          TIME CMD
+   2328 pts/0    00:00:00 bash
+   8910 pts/0    00:00:00 ps
+
+Algunos procesos, como los demonios del sistema, los inicia el sistema y no desde una terminal de control. Estos procesos no son miembros de un trabajo y no pueden ponerse en primer plano. El comando ps muestra un signo de interrogación (?) en la columna TTY para estos procesos. Utilice el comando ps j para buscar información sobre procesos y sesiones, así como detalles sobre trabajos. En el siguiente ejemplo, el comando de suspensión está actualmente suspendido y el estado del proceso es T (detenido).
+
+user@host:~$ ps j
+
+PPID PID PGID SID TTY TPGID STAT UID HORA COMANDO ...salida omitida... 8527 8528 8528 8528 pts/0 8633 Ss 1000 0:00 -bash 8528 8559 8559 8528 pts/0 8633 T 1000 0:00 dormir 10000 8528 8633 8633 8528 pts/0 8633 R+ 1000 0:00 ps j El PID es el ID de proceso único del proceso. El ID del proceso principal (PPID) es el PID del proceso principal que inició (bifurcó) este proceso. El PGID es el PID del líder del grupo de procesos, normalmente el primer proceso en la canalización del trabajo.
+
+
+
+
+
+9.3. Gestión de procesos con control de trabajos El SID es el PID del líder de sesión, que (para un trabajo) suele ser el shell interactivo que se ejecuta en su terminal de control. Ejecución de trabajos en segundo plano Puede iniciar cualquier comando o canalización en segundo plano agregando un signo (&) al comando. El shell Bash muestra un número de trabajo (único para la sesión) y el ID del proceso (PID) del nuevo proceso hijo. El shell no espera a que finalice el proceso hijo, sino que muestra el indicador del shell. En el siguiente ejemplo, el comando de suspensión se ejecuta en segundo plano con el operador & y hace una pausa de 10 000 segundos. El resultado muestra el número de trabajo que asigna el shell ([1]) y un ID de proceso (PID) de 5947.
+
+user@host:~$ sleep 10000 &
+
+[1] 5947 Cuando una línea de comando con una tubería (|) se envía a segundo plano, se muestra el PID del último comando en la tubería. Todos los procesos de canalización son miembros de ese trabajo. En el siguiente ejemplo, el comando ls se canaliza a través del comando sort y la salida ordenada se envía por correo electrónico mediante el comando mail -s. Todo el proceso se ejecuta en segundo plano con el operador &, lo que permite que la terminal permanezca disponible.
+
+user@host:~$ ls | sort | mail -s "Sort output" &
+
+[1] 5998 Utilice el comando jobs para mostrar la lista de trabajos para la sesión del shell.
+
+user@host:~$ jobs
+
+[1]+ Ejecutar sleep 10000 y poner un trabajo en segundo plano en primer plano Utilice el comando fg para poner un trabajo en segundo plano en primer plano. Utilice el formato (%jobNumber) para especificar qué proceso poner en primer plano.
+
+user@host:~$ fg %1
+
+sleep 10000 En el ejemplo anterior, el comando de suspensión se ejecuta en primer plano en el terminal de control. El shell en sí está inactivo y esperando que salga este proceso hijo. Envío de un proceso en primer plano a segundo plano Para enviar un proceso en primer plano a segundo plano, presione la solicitud de suspensión generada por el teclado ( Ctrl+Z ) en la terminal. El trabajo pasa a un segundo plano y se suspende.
+
+user@host:~$ sleep 10000
+
+^Z [1]+ Detenido el sueño 10000 Iniciando un proceso suspendido Para comenzar a ejecutar el proceso suspendido, use el comando bg con el ID del trabajo:
+
+
+
+
+
+9.3. Gestión de procesos con control de trabajos
+
+user@host:~$ bg %1
+
+[1]+ sleep 10000 & El shell advierte a un usuario que intenta salir de una ventana de terminal (sesión) con trabajos suspendidos. Si el usuario vuelve a intentar salir inmediatamente, los trabajos suspendidos se detienen. Nota En los ejemplos anteriores, el signo más (+) indica que este trabajo es el predeterminado actual. Si utiliza un comando de control de trabajo sin el argumento %jobNumber, la acción se realiza en el trabajo predeterminado. El signo menos (-) indica que el trabajo anterior se convertirá en el trabajo predeterminado cuando finalice el actual. Referencias info bash (Manual de referencia de GNU Bash) Sección 7: Control de trabajos Páginas man de bash(1), funciones integradas(1), ps(1) y sleep(1)
+
+
+
+
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos 9.4. Ejercicio guiado Administrar procesos con control de trabajos Controle los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Resultados Utilice el control de trabajos para suspender y reiniciar procesos de usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-control
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estas dos terminales se denominan izquierda y derecha. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado control en el directorio /home/student/bin. Cambie los permisos del script para que sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree un archivo llamado control en el directorio /home/student/bin con el siguiente contenido: #!/bin/bash
+
+while true; do
+  echo -n "$@ " >> ~/control_outfile
+  sleep 1
+
+done El script de control agrega argumentos de línea de comandos al archivo ~/control_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso. 2.2. Haga que el archivo de control sea ejecutable.
+
+[student@servera ~]$ chmod +x /home/student/bin/control
+
+2.3. Ejecute el script de control. El script agrega continuamente la palabra "técnico" y un espacio al archivo ~/control_outfile en intervalos de un segundo. 3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Gestionar procesos con control de trabajos
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos 9.4. Ejercicio guiado Administrar procesos con control de trabajos Controle los procesos en primer plano y en segundo plano en el mismo terminal mediante el control de trabajos. Resultados Utilice el control de trabajos para suspender y reiniciar procesos de usuario. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-control
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estas dos terminales se denominan izquierda y derecha. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado control en el directorio /home/student/bin. Cambie los permisos del script para que sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree un archivo llamado control en el directorio /home/student/bin con el siguiente contenido: #!/bin/bash
+
+while true; do
+  echo -n "$@ " >> ~/control_outfile
+  sleep 1
+
+done El script de control agrega argumentos de línea de comandos al archivo ~/control_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso. 2.2. Haga que el archivo de control sea ejecutable.
+
+[student@servera ~]$ chmod +x /home/student/bin/control
+
+2.3. Ejecute el script de control. El script agrega continuamente la palabra "técnico" y un espacio al archivo ~/control_outfile en intervalos de un segundo. 3.
+
+
+
+
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos
+
+[student@servera ~]$ control technical
+
+En el shell del terminal derecho, verifique que el nuevo proceso esté escribiendo en el archivo /home/student/control_outfile. Mantenga el comando tail ejecutándose para verificar los estados de salida en los pasos siguientes.
+
+[student@servera ~]$ tail -f ~/control_outfile
+
+técnico técnico técnico técnico ...salida omitida... 4. Suspenda el proceso en ejecución y confirme que el proceso esté detenido. 5. En el terminal izquierdo, presione Ctrl+Z para suspender el proceso en ejecución. El shell devuelve el ID del trabajo entre corchetes. ^Z [1]+ Control técnico detenido [estudiante@servera ~]$ 5.1. En el shell del terminal derecho, confirme que la salida del proceso esté detenida. técnico técnico técnico técnico ...sin más salida... 5.2. Reinicie el trabajo en segundo plano y verifique que el proceso esté activo nuevamente. 6. En el terminal izquierdo, use el comando jobs para ver la lista de trabajos y recuperar el número de trabajo.
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido El signo más (+) indica el trabajo predeterminado. 6.1. Utilice el comando bg para reiniciar el trabajo de control en segundo plano.
+
+[student@servera ~]$ bg
+
+[1]+ control técnico & 6.2. Utilice el comando jobs para verificar que el trabajo de control se esté ejecutando nuevamente.
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico de ejecución & 6.3. En el shell del terminal derecho, confirme que el comando tail esté generando resultados. ...salida omitida... técnico técnico técnico técnico técnico técnico técnico técnico 6.4. En el shell del terminal izquierdo, inicie dos procesos de control más para agregarlos al archivo ~/output. Utilice el operador comercial (&) para iniciar los procesos en segundo plano. Reemplace el argumento técnico con documentos y luego con base de datos. Reemplazar los argumentos ayuda a diferenciar entre los tres procesos. 7.
+
+
+
+
+
+9.4. Ejercicio guiado Gestionar procesos con control de trabajos
+
+[student@servera ~]$ control documents &
+
+[2] 6579
+
+[student@servera ~]$ control database &
+
+[3] 6654 Verifique que los tres procesos se estén ejecutando. 8. En el shell del terminal izquierdo, use el comando jobs para ver los tres procesos en ejecución.
+
+[student@servera ~]$ jobs
+
+[1] Control técnico de ejecución y [2]- Documentos de control de ejecución y [3]+ Base de datos de control de ejecución y 8.1. En el shell del terminal derecho, verifique que los tres procesos se agreguen al archivo. ...salida omitida... base de datos de documentos técnicos base de datos de documentos técnicos base de datos de documentos técnicos base de datos de documentos técnicos ...salida omitida... 8.2. Suspender el proceso técnico de control, y confirmar que se encuentra suspendido. 9. En la carcasa del terminal izquierdo, coloque en primer plano el proceso técnico de control. Presione Ctrl+Z para suspender el proceso. Verificar que el proceso esté suspendido.
+
+[student@servera ~]$ fg %1
+
+control técnico ^Z [1]+ control técnico detenido
+
+[student@servera ~]$ jobs
+
+[1]+ Técnico de control detenido [2] Documentos de control en ejecución & [3]- Base de datos de control en ejecución & 9.1. En el shell del terminal derecho, verifique que el proceso técnico de control ya no envíe resultados. base de datos documentos base de datos documentos base de datos ...no hay más resultados... 9.2. Terminar el proceso de documentos de control y verificar que esté terminado. 10. En el terminal izquierdo, ejecute el proceso de documentos de control en primer plano. Presione Ctrl+C para finalizar el proceso. Verifique que el proceso haya finalizado.
+
+[student@servera ~]$ fg %2
+
+documentos de control ^C
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido [3]- Base de datos de control en ejecución & 10.1. En el shell del terminal derecho, verifique que el proceso de documentos de control ya no envíe resultados. 10.2.
+
+
+
+
+
+9.4. Ejercicio guiado Administrar procesos con control de trabajos Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish processes-control
+
+...salida omitida... base de datos base de datos base de datos base de datos base de datos base de datos base de datos base de datos ...no hay más resultados... En el shell del terminal izquierdo, vea los trabajos restantes. Los trabajos suspendidos tienen un estado de T. Los otros trabajos en segundo plano están inactivos y tienen un estado de S.
+
+[student@servera ~]$ ps jT
+
+PPID PID PGID ... STAT ... COMANDO 14783 14784 14784 ... Ss ... -bash 14784 14977 14977 ... T ... /bin/bash /home/student/bin/control técnico 14784 15189 15189 ... S ... /bin/bash /home/student/bin/control base de datos 14977 15408 14977 ... T ... suspensión 1 15189 15587 15189 ... S ... suspensión 1 14784 15588 15588 ... R+ ... ps jT La salida puede diferir de su entorno porque omite algunas columnas no esenciales para centrarse en información relevante del proceso. 11. Finalice el proceso de la base de datos de control y confirme que haya finalizado. 12. En el terminal izquierdo, vea los trabajos actuales.
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido [3]- Base de datos de control en ejecución & 12.1. Utilice el comando fg con el ID del trabajo para ejecutar el proceso de la base de datos de control en primer plano. Presione Ctrl+C para finalizar el proceso. Verifique que el proceso haya finalizado.
+
+[student@servera ~]$ fg %3
+
+base de datos de control ^C
+
+[student@servera ~]$ jobs
+
+[1]+ Control técnico detenido 12.2. En el shell del terminal derecho, use el comando Ctrl+C para detener el comando tail. Elimine el archivo ~/control_outfile. ...salida omitida... ^C
+
+[student@servera ~]$ rm ~/control_outfile
+
+13. Cierre el terminal adicional. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+14.
+
+
+
+
+
+9.5. Envío de Señales a Procesos 9.5. Envío de señales a procesos Objetivos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Control de procesos con señales Una señal es una interrupción de software que se entrega a un proceso. Las señales informan eventos a un programa en ejecución. Los eventos que generan una señal pueden ser un error, un evento externo (una solicitud de E/S o un temporizador expirado) o mediante el uso explícito de un comando de envío de señal o una secuencia de teclado. La siguiente tabla enumera las señales fundamentales que los administradores de sistemas utilizan para la gestión de procesos de rutina. Consulte las señales por su nombre corto (HUP) o propio (SIGHUP). Tabla 11. Señales fundamentales de gestión de procesos 1 HUP Hangup: Informa la terminación del proceso de control de una terminal. También solicita la reinicialización del proceso (recarga de configuración) sin terminación. 2 INT Interrupción del teclado: provoca la terminación del programa. Se puede bloquear o manipular. Enviado presionando la secuencia de teclas INTR (Interrupción) ( Ctrl+C ). 3 SALIR Salir del teclado: similar a SIGINT; agrega un volcado de proceso al finalizar. Enviado presionando la secuencia de teclas SALIR ( Ctrl+\ ). 9 KILL Matar, imbloqueable: Provoca la terminación abrupta del programa. No se puede bloquear, ignorar,
+
+or handled; consistently fatal.
+
+15 predeterminado TERM Terminar: Provoca la terminación del programa. A diferencia de SIGKILL, se puede bloquear, ignorar o manejar. Permite que el programa complete operaciones esenciales y se autolimpie antes de su finalización. 18 CONT Continuar: enviado a un proceso para reanudarlo si se detiene. No se puede bloquear. Incluso si se maneja, siempre reanuda el proceso. 19 STOP Parada, imbloqueable: Suspende el proceso. No se puede bloquear ni manipular. 20 Detención del teclado TSTP: a diferencia de SIGSTOP, se puede bloquear, ignorar o manejar. Enviado presionando la secuencia de teclas suspender ( Ctrl+Z ). Definición del nombre de la señal
+
+
+
+
+
+
+
+## 9.5. Envío de señales a procesos
+
+9.5. Envío de Señales a Procesos 9.5. Envío de señales a procesos Objetivos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Control de procesos con señales Una señal es una interrupción de software que se entrega a un proceso. Las señales informan eventos a un programa en ejecución. Los eventos que generan una señal pueden ser un error, un evento externo (una solicitud de E/S o un temporizador expirado) o mediante el uso explícito de un comando de envío de señal o una secuencia de teclado. La siguiente tabla enumera las señales fundamentales que los administradores de sistemas utilizan para la gestión de procesos de rutina. Consulte las señales por su nombre corto (HUP) o propio (SIGHUP). Tabla 11. Señales fundamentales de gestión de procesos 1 HUP Hangup: Informa la terminación del proceso de control de una terminal. También solicita la reinicialización del proceso (recarga de configuración) sin terminación. 2 INT Interrupción del teclado: provoca la terminación del programa. Se puede bloquear o manipular. Enviado presionando la secuencia de teclas INTR (Interrupción) ( Ctrl+C ). 3 SALIR Salir del teclado: similar a SIGINT; agrega un volcado de proceso al finalizar. Enviado presionando la secuencia de teclas SALIR ( Ctrl+\ ). 9 KILL Matar, imbloqueable: Provoca la terminación abrupta del programa. No se puede bloquear, ignorar,
+
+or handled; consistently fatal.
+
+15 predeterminado TERM Terminar: Provoca la terminación del programa. A diferencia de SIGKILL, se puede bloquear, ignorar o manejar. Permite que el programa complete operaciones esenciales y se autolimpie antes de su finalización. 18 CONT Continuar: enviado a un proceso para reanudarlo si se detiene. No se puede bloquear. Incluso si se maneja, siempre reanuda el proceso. 19 STOP Parada, imbloqueable: Suspende el proceso. No se puede bloquear ni manipular. 20 Detención del teclado TSTP: a diferencia de SIGSTOP, se puede bloquear, ignorar o manejar. Enviado presionando la secuencia de teclas suspender ( Ctrl+Z ). Definición del nombre de la señal
+
+
+
+
+
+9.5. Envío de señales a procesos Nota Los números de señales varían entre las plataformas de hardware de Linux, pero los nombres y significados de las señales son estándar. La práctica recomendada es utilizar nombres de señales en lugar de números al realizar señales. Los números que se analizan en esta sección son para sistemas de arquitectura x86_64. Cada señal tiene una acción predeterminada, que suele ser una de las siguientes acciones: Término: Terminar un programa (salir) inmediatamente. Núcleo: guarda la imagen de memoria de un programa (volcado de núcleo) y luego finaliza. Detener: Detiene un programa en ejecución (suspender) y espera para continuar (reanudar). Los programas reaccionan a las señales de eventos esperadas implementando rutinas de manejo para ignorar, reemplazar o extender la acción predeterminada de una señal. Importante Red Hat recomienda enviar primero la señal SIGTERM y luego probar SIGINT. Si ambas señales fallan, intente nuevamente con SIGKILL. Los administradores suelen utilizar SIGKILL primero porque esta señal fuerza la finalización del proceso sin importar el estado del proceso y no se puede ignorar. Sin embargo, con la señal SIGKILL, el proceso no puede ejecutar ninguna rutina de autolimpieza. Envío de señales mediante solicitud explícita Puede señalar el proceso en primer plano actual presionando una secuencia de control del teclado para suspender ( Ctrl+Z ), finalizar ( Ctrl+C ) o volcar el núcleo ( Ctrl+\ ) el proceso. Sin embargo, puede utilizar comandos de envío de señales para enviar señales a procesos en segundo plano en una sesión diferente. Puede especificar señales por nombre (por ejemplo, con las opciones -HUP o -SIGHUP) o por número (con la opción -1 relacionada). Los usuarios pueden finalizar sus procesos, pero se requiere privilegios de root para finalizar procesos que pertenecen a otros usuarios. El comando kill utiliza un número de ID de proceso (PID) para enviar una señal a un proceso. A pesar de su nombre, puede utilizar el comando kill para enviar cualquier señal, no sólo aquellas señales para finalizar programas. Puede utilizar la opción Kill Command -l para enumerar los nombres y números de todas las señales disponibles.
+
+user@host:~$ kill -l
+
+1) SIGHUP 2) SIGINT 3) SIGQUIT 4) SIGILL 5) SIGTRAP 6) SIGABRT 7) SIGBUS 8) SIGFPE 9) SIGKILL 10) SIGUSR1 11) SIGSEGV 12) SIGUSR2 13) SIGPIPE 14) SIGALRM 15) SIGTERM 16) SIGSTKFLT 17) SIGCHLD 18) SIGCONT 19) SIGSTOP 20) SIGTSTP ...salida omitida... Para encontrar el PID del proceso que desea terminar, puede usar el comando ps aux y filtrar por el nombre del proceso. En el siguiente ejemplo, busca todos los procesos que contienen tarea en su nombre y luego finaliza el proceso tarea1 utilizando la señal SIGTERM predeterminada. La señal SIGTERM permite que el proceso complete tareas y realice rutinas de limpieza.
+
+
+
+
+
+9.5. Envío de señales a procesos
+
+user@host:~$ ps aux | grep task
+user 6564 0.0 0.0 228796 3264 pts/0  S  17:22 0:00 /bin/bash ~/bin/task1
+user 6566 0.0 0.0 228796 3244 pts/0  S  17:22 0:00 /bin/bash ~/bin/task2
+user 6568 0.0 0.0 228796 3220 pts/0  S  17:22 0:00 /bin/bash ~/bin/task3
+
+...salida omitida...
+
+user@host:~$ kill 6564
+
+[1] Tarea 1 terminada Continuando con el ejemplo de procesos de tarea, luego finaliza los procesos de tarea 2 y tarea 3 utilizando la señal SIGKILL. Utilice el valor numérico de la señal para finalizar el proceso de tarea2 y utilice el nombre de la señal para finalizar el proceso de tarea3. La señal SIGKILL finaliza el proceso abruptamente.
+
+user@host:~$ kill -9 6566
+
+[2]- Tarea eliminada2
+
+user@host:~$ ps aux | grep task3
+user 6568 0.0 0.0 228796 3220 pts/0  S  17:22 0:00 /bin/bash ~/bin/task3
+
+...salida omitida...
+
+user@host:~$ kill -SIGKILL 6568
+
+[3]+ Tarea eliminada3 Control de procesos específicos Utilice el comando pkill para señalar uno o más procesos que coincidan con los criterios de selección. Los criterios de selección pueden ser un nombre de comando, un proceso que posee un usuario específico o todos los procesos de todo el sistema. Los procesos y sesiones pueden señalizarse de forma individual o colectiva. Debido a que el proceso inicial en una sesión de inicio de sesión (líder de sesión) está diseñado para manejar solicitudes de terminación de sesión e ignorar señales de teclado no deseadas, eliminar todos los procesos y shells de inicio de sesión para un solo usuario requiere la señal SIGKILL. Cuando un proceso está en el estado T (detenido/rastreado), como después de recibir una señal SIGSTOP, el proceso no puede responder a señales como SIGTERM, que es lo que envían los comandos pkill y killall de forma predeterminada. Como resultado, el proceso permanece en el estado T y se muestra en la salida de los comandos top y ps, incluso después de usar el comando pkill. Utilice el comando pgrep para identificar los números PID que desea eliminar. Este comando funciona de manera similar al comando pkill, incluyendo la mayoría de las mismas opciones, excepto que el comando pgrep enumera los procesos en lugar de eliminarlos. Utilice el comando pgrep con la opción -l para enumerar los nombres e ID de los procesos. Utilice cualquiera de los comandos con la opción -u para especificar el ID del usuario propietario de los procesos. El siguiente ejemplo enumera los procesos para el usuario bob y luego envía la señal SIGKILL a todos los procesos de ese usuario.
+
+root@host:~# pgrep -l -u bob
+
+6964 bash 6998 dormir 6999 dormir 7000 dormir
+
+root@host:~# pkill -SIGKILL -u bob
+root@host:~# pgrep -l -u bob
+
+Cuando los procesos de destino están en la misma sesión de inicio de sesión, es posible que no sea necesario eliminar todos los procesos de un usuario. En este escenario, puede identificar el terminal de usuario para la sesión y luego eliminar solo los procesos que hacen referencia al mismo ID de terminal. Puede determinar el terminal para la sesión utilizando el comando w -u nombre de usuario. Luego puede usar el comando pkill -t ttyN, donde N es el número del terminal de destino.
+
+
+
+
+
+9.5. Envío de señales a procesos Nota A menos que se especifique SIGKILL, el líder de la sesión (aquí, el shell de inicio de sesión de Bash) maneja y sobrevive exitosamente a la solicitud de terminación, pero finaliza todos los demás procesos de la sesión. En el siguiente ejemplo, enumera todos los procesos que pertenecen al usuario bob, determina el terminal para la sesión y luego envía la señal de terminación predeterminada (SIGTERM). Tenga en cuenta que todos los procesos que pertenecen al usuario bob finalizan, excepto el líder de la sesión, el proceso bash. Los comandos se ejecutan como usuario root para que pueda observar la diferencia entre enviar señales SIGTERM y SIGKILL.
+
+root@host:~# pgrep -l -u bob
+
+7391 bash 7426 dormir 7427 dormir 7428 dormir
+
+root@host:~# w -u bob
+
+USUARIO TTY DE LOGIN@ IDLE JCPU PCPU QUÉ
+
+bob      tty3                      18:37    5:04   0.03s  0.03s -bash
+root@host:~# pkill -t tty3
+root@host:~# pgrep -l -u bob
+
+7391 bash Al enviar la señal SIGKILL, también finaliza el líder de sesión, como se muestra en el siguiente ejemplo.
+
+root@host:~# pkill -SIGKILL -t tty3
+root@host:~# pgrep -l -u bob
+
+Puede aplicar la misma terminación selectiva del proceso con relaciones de proceso padre e hijo. Utilice el comando pstree para ver un árbol de procesos para el sistema o para un solo usuario. Utilice el PID del proceso principal para eliminar todos los procesos secundarios que creó. El shell de inicio de sesión de Bash principal sobrevive esta vez, porque la señal se dirige solo a sus procesos secundarios.
+
+root@host:~# pstree -p bob
+
+bash(8391)─┬─dormir(8425)
+
+           ├─sleep(8426)
+           └─sleep(8427)
+root@host:~# pkill -P 8391
+root@host:~# pgrep -l -u bob
+
+fiesta (8391)
+
+root@host:~# pkill -SIGKILL -P 8391
+root@host:~# pgrep -l -u bob
+
+bash(8391) Envío de una señal a múltiples procesos El comando killall puede señalar múltiples procesos, según su nombre de comando. En el siguiente ejemplo, primero enumera todos los procesos que contienen trabajo en su nombre y luego finaliza todos esos procesos.
+
+user@host:~$ ps aux | grep job
+user 9259 0.0 0.0 228796 3236 pts/0  S  20:05 0:00 /bin/bash ~/bin/control job1
+user 9261 0.0 0.0 228796 3232 pts/0  S  20:05 0:00 /bin/bash ~/bin/control job2
+user 9270 0.0 0.0 228796 3240 pts/0  S  20:06 0:00 /bin/bash ~/bin/control job3
+
+...salida omitida...
+
+user@host:~$ killall job
+
+[1] Trabajo de control terminado 1 [2] Trabajo de control terminado 2 [3]- Trabajo de control terminado 3
+
+
+
+
+
+9.5. Envío de señales a procesos Terminación de trabajos en segundo plano Para finalizar trabajos en segundo plano, utilice el comando kill y especifique el número de trabajo. Utilice el comando jobs para encontrar el número de trabajo del proceso a finalizar.
+
+user@host:~$ jobs
+
+[1] - Ejecutar suspensión 500 y [2]+ Ejecutar suspensión 1000 y finalizar un trabajo específico usando el comando matar. Anteponga el número de trabajo con un signo de porcentaje (%).
+
+user@host:~$ kill -SIGTERM %1
+user@host:~$ jobs
+
+[2]+ Ejecución de Sleep 1000 y cierre de sesión administrativa de los usuarios Es posible que necesite cerrar la sesión de otros usuarios por varias razones: El usuario cometió una violación de seguridad. El usuario abusó de los recursos. El usuario tiene un sistema que no responde. El usuario tiene acceso inadecuado a los materiales. En estos casos, deberá finalizar su sesión mediante el uso de señales administrativamente. Para cerrar la sesión de un usuario, primero identifique la sesión de inicio de sesión que desea finalizar. El comando w enumera los inicios de sesión de los usuarios y los procesos en ejecución actualmente. Tenga en cuenta las columnas TTY y FROM para determinar las sesiones de cierre.
+
+user@host:~$ w -f
+
+12:43:06 hasta 27 min, 5 usuarios, promedio de carga: 0.03, 0.17, 0.66 TTY DE USUARIO DESDE LOGIN@ IDLE JCPU PCPU QUÉ
+
+root  tty2                      12:26   14:58   0.04s  0.04s -bash
+bob   tty3                      12:28   14:42   0.02s  0.02s -bash
+user  pts/1 desktop.example.com 12:41    2.00s  0.03s  0.03s w
+user@host:~$
+
+Todas las sesiones de inicio de sesión de usuario están asociadas con un dispositivo terminal (TTY). Si el nombre del dispositivo es pts/N, entonces es un pseudoterminal asociado con una ventana de terminal gráfica o una sesión de inicio de sesión remota. Si el nombre del dispositivo es ttyN, entonces el usuario está en una consola del sistema, una consola alternativa u otro dispositivo terminal conectado directamente. Descubra cuánto tiempo ha estado un usuario en el sistema viendo el tiempo de inicio de sesión. Los recursos de CPU que consumen los trabajos actuales, incluidas las tareas en segundo plano y los procesos secundarios, se encuentran en la columna JCPU de cada sesión. El consumo actual de CPU del proceso en primer plano se encuentra en la columna PCPU. El comando w muestra quién ha iniciado sesión y qué está haciendo cada usuario. Por el contrario, el comando who proporciona sólo información básica sobre los usuarios que han iniciado sesión.
+
+user@host:~$ who
+root     tty2         2025-06-09 12:26 (tty2)
+bob      tty3         2025-06-09 12:28 (tty3)
+user     pts/1        2025-06-09 12:41 (desktop.example.com)
+
+Después de identificar la sesión que desea finalizar, use el comando pkill -t para finalizarla.
+
+
+
+
+
+9.5. Envío de señales a procesos Sólo el usuario root o un usuario con privilegios elevados (a través de Sudo) puede finalizar procesos que pertenecen a otros usuarios. Los usuarios habituales sólo pueden eliminar sus propios procesos. Si intenta ejecutar el comando pkill -t para finalizar la sesión de otro usuario sin los privilegios adecuados, el sistema devuelve un error de Operación no permitida.
+
+user@host:~$ sudo pkill -t tty3
+user@host:~$ who
+root     tty2         2025-06-09 12:26 (tty2)
+user     pts/1        2025-06-09 12:41 (desktop.example.com)
+
+La sesión tty3 para el usuario bob finaliza y el usuario ahora cierra la sesión. Referencias info libc signal (Manual de referencia de la biblioteca GNU C) Sección 24: Manejo de señales procesos info libc (Manual de referencia de la biblioteca GNU C) Sección 26: Procesos páginas man kill(1), killall(1), pgrep(1), pkill(1), pstree(1), signal(7) y w(1)
+
+
+
+
+
+9.6. Ejercicio guiado Envío de señales a procesos 9.6. Ejercicio Guiado Enviar Señales a Procesos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Resultados Iniciar y detener múltiples procesos de shell. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-kill
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, inicie tres procesos en segundo plano con el archivo de script de la instancia, pasando los argumentos de red, interfaz y conexión. El script de instancia agrega argumentos de línea de comandos al archivo ~/instance_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso.
+
+[student@servera ~]$ instance network &
+
+[1] 19851
+
+[student@servera ~]$ instance interface &
+
+[2] 19857
+
+[student@servera ~]$ instance connection &
+
+[3] 19864 2. En el shell del terminal derecho, verifique que los tres procesos estén agregando contenido al archivo /home/student/instance_outfile. Mantenga el comando tail ejecutándose para verificar los estados de salida en los pasos siguientes.
+
+[student@servera ~]$ tail -f ~/instance_outfile
+
+conexión de interfaz de red conexión de interfaz de red interfaz de red ...salida omitida... 3. En el shell del terminal izquierdo, enumere los trabajos existentes.
+
+[student@servera ~]$ jobs
+
+[1] Red de instancia en ejecución y [2] - Interfaz de instancia en ejecución y [3]+ Conexión de instancia en ejecución y 4. Utilice señales para suspender el proceso de red de instancia y verifique que el proceso esté detenido. 5.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Envío de señales a procesos
+
+9.6. Ejercicio guiado Envío de señales a procesos 9.6. Ejercicio Guiado Enviar Señales a Procesos Enviar señales a procesos para controlar su actividad o finalizar su ejecución. Resultados Iniciar y detener múltiples procesos de shell. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-kill
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta actividad, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+[estudiante@servera ~]$ 1. En el shell del terminal izquierdo, inicie tres procesos en segundo plano con el archivo de script de la instancia, pasando los argumentos de red, interfaz y conexión. El script de instancia agrega argumentos de línea de comandos al archivo ~/instance_outfile una vez por segundo. El script se ejecuta hasta que finaliza el proceso.
+
+[student@servera ~]$ instance network &
+
+[1] 19851
+
+[student@servera ~]$ instance interface &
+
+[2] 19857
+
+[student@servera ~]$ instance connection &
+
+[3] 19864 2. En el shell del terminal derecho, verifique que los tres procesos estén agregando contenido al archivo /home/student/instance_outfile. Mantenga el comando tail ejecutándose para verificar los estados de salida en los pasos siguientes.
+
+[student@servera ~]$ tail -f ~/instance_outfile
+
+conexión de interfaz de red conexión de interfaz de red interfaz de red ...salida omitida... 3. En el shell del terminal izquierdo, enumere los trabajos existentes.
+
+[student@servera ~]$ jobs
+
+[1] Red de instancia en ejecución y [2] - Interfaz de instancia en ejecución y [3]+ Conexión de instancia en ejecución y 4. Utilice señales para suspender el proceso de red de instancia y verifique que el proceso esté detenido. 5.
+
+
+
+
+
+9.6. Ejercicio guiado Enviar señales a procesos En el shell del terminal izquierdo, detenga el proceso de red de la instancia. Verifique que el estado del proceso sea Detenido.
+
+[student@servera ~]$ kill -SIGSTOP %1
+
+[1]+ Red de instancia detenida
+
+[student@servera ~]$ jobs
+
+[1]+ Red de instancia detenida [2] Interfaz de instancia en ejecución y [3]- Conexión de instancia en ejecución y Nota Este ejercicio guiado utiliza números de trabajo (%1, %2, etc.) para enviar señales, lo cual es apropiado en este contexto porque los procesos se inician en la misma sesión de shell y las funciones de control de trabajos de Bash están disponibles. Si lo desea, también puede identificar el ID del proceso principal (PPID) mediante el comando ps aj y, en su lugar, enviar señales directamente al shell principal o a los ID de proceso individuales (PID). Este enfoque es especialmente útil cuando se crean secuencias de comandos o se trabaja en varias sesiones. 5.1. En el shell del terminal derecho, vea el resultado del comando tail. Verifique que la palabra red ya no esté agregada al archivo ~/instance_outfile. ...salida omitida... interfaz conexión interfaz conexión interfaz conexión interfaz 5.2. Finalice el proceso de interfaz de instancia y verifique que este proceso haya finalizado. 6. En el shell del terminal izquierdo, finalice el proceso de interfaz de instancia. Verifique que el proceso haya finalizado.
+
+[student@servera ~]$ kill -SIGTERM %2
+
+[2] Interfaz de instancia terminada
+
+[student@servera ~]$ jobs
+
+[1]+ Red de instancia detenida [3] - Conexión de instancia en ejecución y 6.1. En el shell del terminal derecho, vea el resultado del comando tail. Verifique que la palabra interfaz ya no esté agregada al archivo ~/instance_outfile. ...salida omitida... conexión conexión conexión conexión conexión conexión conexión conexión 6.2. Reanude el proceso de red de la instancia y verifique que el proceso se esté ejecutando. 7. En el shell del terminal izquierdo, reanude el proceso de red de la instancia. Verifique que el proceso esté en estado En ejecución.
+
+[student@servera ~]$ kill -SIGCONT %1
+[student@servera ~]$ jobs
+
+[1]+ Red de instancia en ejecución y [3]- Conexión de instancia en ejecución y 7.1. En el shell del terminal derecho, vea el resultado del comando tail. Verifique que la palabra red esté agregada al archivo ~/instance_outfile. 7.2.
+
+
+
+
+
+9.6. Ejercicio guiado Enviar señales a los procesos Finalizar En la máquina de la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. ...salida omitida... conexión de red conexión de red conexión de red conexión de red conexión de red En el shell del terminal izquierdo, finalice todos los procesos de instancia restantes. Verifique que no queden trabajos.
+
+[student@servera ~]$ pkill -SIGTERM instance
+
+[1]+ Red de instancia terminada [3]- Conexión de instancia terminada
+
+[student@servera ~]$ jobs
+
+8. Enumere los procesos en ejecución actuales en todos los shells de terminales abiertos. Termine el proceso de cola que se está ejecutando en la terminal derecha y verifique que el proceso ya no se esté ejecutando. 9. En el shell del terminal izquierdo, enumere todos los procesos en ejecución actuales. Refine la búsqueda para ver solo las líneas de cola. Tenga en cuenta el PID del comando tail para utilizarlo en un paso posterior.
+
+[student@servera ~]$ ps -ef | grep tail
+student   4581 31358  0 10:02 pts/0    00:00:00 tail -f /home/student/instance_outfile
+student   4869  2252  0 10:33 pts/1    00:00:00 grep --color=auto tail
+
+El resultado muestra dos procesos: uno para ejecutar el comando tail (PID 4581) y otro para ejecutar el comando grep (PID 4869). El proceso con PID 4869 aparece en la lista porque contiene la cola de cadena, que coincide con el filtrado del comando ps -ef (grep tail). El comando grep sale inmediatamente después de que finaliza la canalización, lo que deja el proceso final como el único proceso que coincide con los criterios. 9.1. Aún en el terminal izquierdo, finalice el proceso de cola. Utilice el PID que obtuvo en el paso anterior. El PID puede variar en su entorno. Verifique que el proceso ya no se esté ejecutando.
+
+[student@servera ~]$ kill -SIGTERM 4581
+[student@servera ~]$ ps -ef | grep tail
+student   4874  2252  0 10:36 pts/1    00:00:00 grep --color=auto tail
+
+Alternativamente, puede ejecutar el comando killall tail. Como se confirmó en un paso anterior, solo se está ejecutando un proceso de cola, lo que significa que la finalización de todos los procesos de cola no afecta a otros procesos ni a los usuarios no deseados. 9.2. En el shell del terminal derecho, verifique que el comando tail ya no se esté ejecutando. ...salida omitida... conexión de red conexión de red conexión de red Terminado [estudiante@servera ~]$ 9.3. Cierre la terminal adicional. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+10.
+
+
+
+
+
+9.6. Ejercicio guiado Envío de señales a procesos
+
+student@workstation:~$ lab finish processes-kill
+
+
+
+
+
+9.7. Actividad del Proceso de Monitoreo 9.7. Objetivos de la actividad de proceso de monitoreo Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Carga promedio La carga promedio es una medida que proporciona el kernel de Linux para representar la carga percibida del sistema durante un período de tiempo. Se puede utilizar como un indicador aproximado de cuántas solicitudes de recursos del sistema están pendientes para determinar si la carga del sistema aumenta o disminuye. El kernel recopila el número de carga actual cada cinco segundos en función de la cantidad de procesos en estados ejecutables e ininterrumpibles. Este número se informa como un promedio móvil exponencial durante los últimos 1, 5 y 15 minutos. Calcular el promedio de carga El promedio de carga es una medida aproximada de cuántos procesos están esperando actualmente a que se complete una solicitud antes de hacer cualquier otra cosa. La solicitud podría ser de tiempo de CPU para ejecutar el proceso. Alternativamente, la solicitud podría ser para que se complete una operación de E/S de disco crítica y el proceso no se puede ejecutar en la CPU hasta que se complete la solicitud, aunque la CPU esté inactiva. De cualquier manera, la carga del sistema se ve afectada y el sistema parece ejecutarse más lentamente porque los procesos están esperando para ejecutarse. El número de carga es un promedio acumulado del número de procesos que están listos para ejecutarse en una CPU (en el estado de proceso R) o que están esperando que se complete el disco o la E/S (en el estado de proceso D). Algunos sistemas UNIX consideran sólo el uso de la CPU o la longitud de la cola de ejecución para indicar la carga del sistema. Linux también incluye el uso de disco o red, porque el uso elevado de estos recursos puede afectar significativamente el rendimiento del sistema como carga de la CPU. Para promedios de carga elevados con actividad mínima de la CPU, examine la actividad del disco y de la red. Interpretación de los valores promedio de carga El comando uptime es una forma de mostrar el promedio de carga actual. Este comando imprime la hora actual, cuánto tiempo ha estado funcionando la máquina, cuántas sesiones de usuario se están ejecutando y el promedio de carga actual.
+
+user@host:~$ uptime
+
+15:29:03 hasta 14 min, 2 usuarios, carga promedio: 2,92, 4,48, 5,20 Los tres valores para el promedio de carga representan la carga durante los últimos 1, 5 y 15 minutos. Estos valores indican si la carga del sistema parece estar aumentando o disminuyendo. Si la principal contribución al promedio de carga proviene de procesos que están esperando la CPU, entonces puede calcular el valor de carga aproximado por CPU para determinar si el sistema está experimentando una espera significativa. Utilice el comando lscpu para determinar la cantidad de CPU en un sistema. En el siguiente ejemplo, el sistema es un sistema de un solo socket de doble núcleo con dos hiperprocesos por núcleo. Linux trata esta configuración de CPU como un sistema de cuatro CPU para fines de programación.
+
+
+
+
+
+
+
+## 9.7. Actividad del proceso de seguimiento
+
+9.7. Actividad del Proceso de Monitoreo 9.7. Objetivos de la actividad de proceso de monitoreo Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Carga promedio La carga promedio es una medida que proporciona el kernel de Linux para representar la carga percibida del sistema durante un período de tiempo. Se puede utilizar como un indicador aproximado de cuántas solicitudes de recursos del sistema están pendientes para determinar si la carga del sistema aumenta o disminuye. El kernel recopila el número de carga actual cada cinco segundos en función de la cantidad de procesos en estados ejecutables e ininterrumpibles. Este número se informa como un promedio móvil exponencial durante los últimos 1, 5 y 15 minutos. Calcular el promedio de carga El promedio de carga es una medida aproximada de cuántos procesos están esperando actualmente a que se complete una solicitud antes de hacer cualquier otra cosa. La solicitud podría ser de tiempo de CPU para ejecutar el proceso. Alternativamente, la solicitud podría ser para que se complete una operación de E/S de disco crítica y el proceso no se puede ejecutar en la CPU hasta que se complete la solicitud, aunque la CPU esté inactiva. De cualquier manera, la carga del sistema se ve afectada y el sistema parece ejecutarse más lentamente porque los procesos están esperando para ejecutarse. El número de carga es un promedio acumulado del número de procesos que están listos para ejecutarse en una CPU (en el estado de proceso R) o que están esperando que se complete el disco o la E/S (en el estado de proceso D). Algunos sistemas UNIX consideran sólo el uso de la CPU o la longitud de la cola de ejecución para indicar la carga del sistema. Linux también incluye el uso de disco o red, porque el uso elevado de estos recursos puede afectar significativamente el rendimiento del sistema como carga de la CPU. Para promedios de carga elevados con actividad mínima de la CPU, examine la actividad del disco y de la red. Interpretación de los valores promedio de carga El comando uptime es una forma de mostrar el promedio de carga actual. Este comando imprime la hora actual, cuánto tiempo ha estado funcionando la máquina, cuántas sesiones de usuario se están ejecutando y el promedio de carga actual.
+
+user@host:~$ uptime
+
+15:29:03 hasta 14 min, 2 usuarios, carga promedio: 2,92, 4,48, 5,20 Los tres valores para el promedio de carga representan la carga durante los últimos 1, 5 y 15 minutos. Estos valores indican si la carga del sistema parece estar aumentando o disminuyendo. Si la principal contribución al promedio de carga proviene de procesos que están esperando la CPU, entonces puede calcular el valor de carga aproximado por CPU para determinar si el sistema está experimentando una espera significativa. Utilice el comando lscpu para determinar la cantidad de CPU en un sistema. En el siguiente ejemplo, el sistema es un sistema de un solo socket de doble núcleo con dos hiperprocesos por núcleo. Linux trata esta configuración de CPU como un sistema de cuatro CPU para fines de programación.
+
+
+
+
+
+9.7. Actividad del proceso de seguimiento
+
+user@host:~$ lscpu
+
+Arquitectura: x86_64 Modo(s) de operación de CPU: 32 bits, 64 bits Orden de bytes: CPU(s) Little Endian: 4 Lista de CPU(s) en línea: 0-3 Hilos por núcleo: 2 Núcleos por socket: 2 Socket(s): 1 Nodo(s) NUMA: 1 ... salida omitida... Imagine que la única contribución al número de carga proviene de procesos que necesitan tiempo de CPU. Por lo tanto, puede dividir los valores promedio de carga mostrados por la cantidad de CPU lógicas en el sistema. Un valor inferior a 1 indica un uso adecuado de los recursos y tiempos de espera mínimos. Un valor superior a 1 indica saturación de recursos y cierto retraso en el procesamiento.
+
+# From ``lscpu``, the system has four logical CPUs, so divide by 4:
+#                               load average: 2.92, 4.48, 5.20
+#           divide by number of logical CPUs:    4     4     4
+#                                             ----  ----  ----
+#                       per-CPU load average: 0.73  1.12  1.30
+
+#
+
+# This system's load average appears to be decreasing.
+# With a load average of 2.92 on four CPUs, all CPUs were in use ~73% of the time.
+# During the last 5 minutes, the system was overloaded by ~12%.
+# During the last 15 minutes, the system was overloaded by ~30%.
+
+Una cola de CPU inactiva tiene un número de carga de 0. Cada proceso que espera una CPU suma 1 al número de carga. Si un proceso se está ejecutando en una CPU, entonces el número de carga es 1 y el recurso (la CPU) está en uso, pero no hay solicitudes en espera. Si ese proceso se ejecuta durante un minuto completo, entonces su contribución al promedio de carga de un minuto es 1. Sin embargo, los procesos que están en un estado de suspensión ininterrumpida para E/S críticas debido a un disco ocupado o un recurso de red también se incluyen en el recuento y aumentan el promedio de carga. Aunque no indican el uso de la CPU, estos procesos se agregan al recuento de la cola porque esperan recursos y no pueden ejecutarse en una CPU hasta que obtengan los recursos. Esta métrica todavía se considera carga del sistema debido a limitaciones de recursos que hacen que los procesos no se ejecuten. Hasta la saturación de recursos, el promedio de carga permanece por debajo de 1, porque rara vez se encuentran tareas esperando en la cola. El promedio de carga aumenta solo cuando la saturación de recursos hace que las solicitudes permanezcan en cola y la rutina de cálculo de carga las cuenta. Cuando el uso de recursos se acerca al 100 %, cada solicitud adicional comienza a experimentar un tiempo de espera del servicio. Monitoreo de procesos en tiempo real El comando superior muestra una vista dinámica de los procesos del sistema y un encabezado de resumen seguido de una lista de procesos o subprocesos. A diferencia de la salida del comando ps estático, el comando top se actualiza continuamente en un intervalo configurable y proporciona reordenamiento, clasificación y resaltado de columnas. Puede realizar cambios persistentes en la configuración superior.
+
+user@host:~$ top
+
+...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16486 root 20 0 0 0 0 I 0.3 0.0 0:00.03 kworker/1:1-events 16811 estudiante 20 0 232736 5624 3448 R 0.3 0.3 0:00.02 arriba
+
+   1 root     20   0   48740  40544  10352 S   0.0   2.0   0:07.37 systemd
+   2 root     20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+   3 root     20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_release
+
+...salida omitida... Las columnas de salida superiores predeterminadas son las siguientes:
+
+
+
+
+
+9.7. Monitoreo de actividad del proceso PID: El ID del proceso. USUARIO: El nombre de usuario del propietario del proceso. VIRT: la memoria virtual es toda la memoria que utiliza el proceso, incluido el conjunto residente, las bibliotecas compartidas y cualquier página de memoria asignada o intercambiada (etiquetada como VSZ en el comando ps). RES: La memoria residente es la memoria física que utiliza el proceso, incluidos los objetos residentes compartidos (etiquetados como RSS en el comando ps). S: El estado del proceso puede ser uno de los siguientes estados: D: Inactividad ininterrumpida R: En ejecución o ejecutable S: Inactivo T: Detenido o rastreado Z: Zombie TIME: El tiempo de CPU es el tiempo total de procesamiento desde que se inició el proceso. El tiempo de CPU se puede alternar para incluir un tiempo acumulado de todos los procesos secundarios anteriores. COMANDO: El nombre del comando del proceso. Tabla 12. Pulsaciones de teclas fundamentales en la ayuda superior del Comando H para pulsaciones de teclas interactivas. L , T , M Alterna entre carga, subprocesos y líneas de encabezado de memoria. 1 Alternar entre CPU individuales o un resumen de todas las CPU en el encabezado. S Cambie la frecuencia de actualización (pantalla), en segundos decimales (como 0,5, 1, 5). B Alternar resaltado inverso para procesos en ejecución; el valor predeterminado es solo negrita. Shift+B Habilita el uso de negrita en la visualización, en el encabezado y para procesos en ejecución. Mayús+H Alternar hilos; mostrar resumen del proceso o hilos individuales. U , Shift+U Filtrar por cualquier nombre de usuario (efectivo, real). Shift+M Ordena la lista de procesos por uso de memoria, en orden descendente. Shift+P Ordenar la lista de procesos por uso del procesador, en orden descendente. K Mata un proceso. Cuando se le solicite, ingrese PID y luego señalice. R Renice un proceso. Cuando se le solicite, ingrese PID y luego nice_value. Propósito clave
+
+
+
+
+
+9.7. Monitoreo de actividad del proceso Mayús+W Escribe (guarda) la configuración de pantalla actual para usarla en el siguiente reinicio superior. P Renunciar. F Administre las columnas habilitando o deshabilitando campos. También puede configurar el campo de clasificación para arriba. Nota Las pulsaciones de teclas S, K y R no están disponibles cuando el comando superior se inicia en modo seguro. Referencias a las páginas man ps(1), top(1), uptime(1) y w(1) Propósito clave
+
+
+
+
+
+9.8. Actividad del proceso de seguimiento del ejercicio guiado 9.8. Ejercicio guiado Monitorear la actividad del proceso Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Resultados Gestionar procesos en tiempo real. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-monitor
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado monitor en el nuevo directorio para generar una carga de CPU artificial. Haga que el archivo de secuencia de comandos del monitor sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree el archivo de secuencia de comandos del monitor en el directorio /home/student/bin con el siguiente contenido. #!/bin/bash mientras sea verdadero
+
+  var=1
+  while (( var < 60000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+done El script del monitor se ejecuta hasta que finaliza el proceso. El script genera una carga artificial de CPU al realizar sesenta mil cálculos de suma. Después de generar la carga de la CPU, duerme durante un segundo, restablece la variable y repite. 2.2. Cambie el permiso del archivo del monitor para que sea ejecutable. 2.3.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Actividad del proceso del monitor de ejercicio guiado
+
+9.8. Actividad del proceso de seguimiento del ejercicio guiado 9.8. Ejercicio guiado Monitorear la actividad del proceso Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Resultados Gestionar procesos en tiempo real. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-monitor
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada terminal, inicie sesión en el servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. En el shell del terminal izquierdo, cree el directorio /home/student/bin. Cree un script de shell llamado monitor en el nuevo directorio para generar una carga de CPU artificial. Haga que el archivo de secuencia de comandos del monitor sea ejecutable. 2. Cree el directorio /home/student/bin.
+
+[student@servera ~]$ mkdir /home/student/bin
+
+2.1. Cree el archivo de secuencia de comandos del monitor en el directorio /home/student/bin con el siguiente contenido. #!/bin/bash mientras sea verdadero
+
+  var=1
+  while (( var < 60000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+done El script del monitor se ejecuta hasta que finaliza el proceso. El script genera una carga artificial de CPU al realizar sesenta mil cálculos de suma. Después de generar la carga de la CPU, duerme durante un segundo, restablece la variable y repite. 2.2. Cambie el permiso del archivo del monitor para que sea ejecutable. 2.3.
+
+
+
+
+
+9.8. Actividad del proceso del monitor de ejercicio guiado
+
+[student@servera ~]$ chmod a+x /home/student/bin/monitor
+
+En el shell del terminal derecho, ejecute el comando superior. Cambie el tamaño de la ventana para ver el contenido del comando. Mantenga la utilidad superior en ejecución para verificar el uso de la CPU y los promedios de carga en pasos posteriores.
+
+[student@servera ~]$ top
+top - 06:28:29 up  5:16,  3 users,  load average: 0.63, 0.47, 0.25
+
+Tareas: 137 en total, 1 en ejecución, 136 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 0,2 us, 0,0 sy, 0,0 ni, 99,8 id, 0,0 wa, 0,0 hi, 0,0 si, 0,0 st MiB Mem: 1961,2 en total, 1469,7 libres, 406,2 usadas, 241,5 buff/caché MiB Swap: 0,0 en total, 0,0 gratis, 0,0 usado.   1555.0 disponible Mem PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16811 estudiante 20 0 232736 5624 3448 R 0.3 0.3 0:00.02 arriba
+
+   1 root      20   0   48740  40544  10352 S   0.0   2.0   0:07.37 systemd
+   2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+
+...salida omitida... 3. En el shell del terminal izquierdo, verifique la cantidad de CPU lógicas en esta máquina virtual.
+
+[student@servera ~]$ lscpu
+
+Arquitectura: x86_64 Modo(s) de operación de CPU: 32 bits, 64 bits Tamaños de dirección: 46 bits físicos, 48 ​​bits virtuales Orden de bytes: CPU(s) Little Endian: 2 ...salida omitida... 4. En el shell del terminal izquierdo, ejecute una única instancia del archivo de secuencia de comandos del monitor en segundo plano. Tenga en cuenta el ID del proceso (PID) para este proceso. El PID de su sistema puede variar.
+
+[student@servera ~]$ monitor &
+
+[1] 16968 5. En el shell del terminal derecho, supervise el comando superior. 6. Utilice las pulsaciones simples de teclas T y M para alternar las líneas de encabezado de CPU y memoria. El encabezado del comando superior muestra una barra gráfica que muestra el uso de CPU y memoria. Supervise estas barras gráficas durante esta actividad.
+
+top - 06:28:56 up  5:16,  3 users,  load average: 0.38, 0.43, 0.24
+
+Tareas: 139 en total, 1 en ejecución, 138 en suspensión, 0 detenidas, 0 zombies %Cpu(s): 8.8/1.2 10[||||||                                             ] Memoria MiB: 23.4/1705.2 [||||||||||||||                                      ] Intercambio de MiB: 0,0/0,0 [ ] 6.1. Vea el porcentaje de CPU para el proceso, que se espera que oscile entre el 15% y el 25%. ...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16968 estudiante 20 0 228796 3136 2880 S 19.9 0.2 0:05.33 monitor ...salida omitida... 6.2. Monitorear el promedio de carga de la máquina del servidor. El primer valor de la lista de promedio de carga, la carga de un minuto, es actualmente menor que 1. El valor observado podría verse afectado por la contención de recursos de otra máquina virtual o del host virtual. 6.3.
+
+
+
+
+
+9.8. Actividad del proceso del monitor de ejercicio guiado
+
+top - 06:29:26 up  5:17,  3 users,  load average: 0.29, 0.40, 0.24
+
+En el shell del terminal izquierdo, ejecute una segunda instancia del archivo de secuencia de comandos del monitor en segundo plano. Tenga en cuenta el PID para este proceso. El PID de su sistema puede variar.
+
+[student@servera ~]$ monitor &
+
+[2] 17157 7. En el shell del terminal derecho, supervise la utilidad superior para el segundo proceso de monitorización. 8. Vea el porcentaje de CPU del proceso, que también se espera que oscile entre el 15% y el 25%.
+
+top - 06:30:05 up  5:18,  3 users,  load average: 0.27, 0.38, 0.24
+
+Tareas: 141 en total, 1 en ejecución, 140 en suspensión, 0 detenidas, 0 zombis %Cpu(s): 13,5/1,7 15[|||||||||                                          ] Memoria MiB: 23.7/1705.2 [|||||||||||||||                                     ] MiB Swap: 0.0/0.0 [ ] ...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 16968 estudiante 20 0 228796 3136 2880 S 20.0 0.2 0:21.50 monitor 17157 estudiante 20 0 228796 3168 2912 S 19.7 0.2 0:04.38 monitor ...salida omitida... 8.1. Nuevamente, vea el promedio de carga de un minuto, que sigue siendo inferior a 1. Espere al menos un minuto para que el cálculo se ajuste a la nueva carga de trabajo.
+
+top - 06:30:35 up  5:18,  3 users,  load average: 0.29, 0.38, 0.24
+
+8.2. En el shell del terminal izquierdo, ejecute una tercera instancia del archivo de secuencia de comandos del monitor en segundo plano. Tenga en cuenta el PID para este proceso. El PID de su sistema puede variar.
+
+[student@servera ~]$ monitor &
+
+[3] 17444 9. En el shell del terminal derecho, supervise la utilidad superior para el tercer proceso de monitorización. Vea el porcentaje de CPU para el proceso, que nuevamente se espera que oscile entre el 15% y el 25%. ...salida omitida... PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 17444 estudiante 20 0 228796 3112 2856 S 21.6 0.2 0:04.89 monitor 16968 estudiante 20 0 228796 3136 2880 S 20.6 0.2 0:42.47 monitor 17157 estudiante 20 0 228796 3168 2912 R 15.6 0.2 0:25.25 monitor ...salida omitida... 10. Para aumentar el promedio de carga por encima de 1, debe iniciar más procesos de monitorización. La configuración del aula tiene dos CPU, por lo que ejecutar sólo tres procesos no es suficiente para estresarlo. En el shell del terminal izquierdo, inicie tres procesos de monitorización más en segundo plano. 11.
+
+
+
+
+
+9.8. Actividad del proceso del monitor de ejercicio guiado
+
+[student@servera ~]$ monitor &
+
+[4] 17726
+
+[student@servera ~]$ monitor &
+
+[5] 17736
+
+[student@servera ~]$ monitor &
+
+[6] 17745 En el shell del terminal derecho, vea nuevamente el promedio de carga de un minuto, que ahora se espera que esté por encima de 1. Espere al menos un minuto para que el cálculo se ajuste a la nueva carga de trabajo. Nota El promedio de carga de un minuto puede variar según su sistema. Por ejemplo, su promedio de carga puede estar por encima o por debajo de 1. Esta variación depende de factores como la asignación de CPU, la sobrecarga de virtualización y el tiempo. Siempre que cada proceso de monitoreo muestre el uso de la CPU y el promedio de carga aumente cuando se inician más procesos, entonces su entorno de laboratorio funcionará correctamente.
+
+top - 06:33:11 up  5:21,  3 users,  load average: 1.22, 0.62, 0.35
+
+Tareas: 147 en total, 3 en ejecución, 144 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 44.7/5.2 50[||||||||||||||||||||||||||||||                      ] Memoria MiB: 23.4/1705.2 [||||||||||||||                                      ] MiB Swap: 0.0/0.0 [ ] ...salida omitida... 12. Cuando haya terminado de observar los valores promedio de carga, finalice cada uno de los procesos del monitor desde el comando superior. 13. En el terminal derecho, presione K para observar el mensaje debajo de los encabezados y encima de las columnas. ...salida omitida... PID para señalar/eliminar [pid predeterminado = 16968] 13.1. Se selecciona el proceso de monitor en la parte superior de la lista. Presione Enter para finalizar el proceso. ...salida omitida... Enviar señal pid 16968 [15/sigterm] 13.2. Presione Enter nuevamente para confirmar la señal SIGTERM 15. Verifique que el proceso seleccionado ya no esté presente en el comando superior. Si el PID existe, repita estos pasos para finalizar los procesos y sustituya la señal SIGKILL 9 cuando se le solicite. ...salida omitida... 17157 estudiante 20 0 228796 3176 2920 R 90.9 0.2 0:40.85 monitor 17444 estudiante 20 0 228796 3140 2884 R 63.6 0.2 0:35.17 monitor 17726 estudiante 20 0 228796 3248 2992 S 0.0 0.2 0:20.48 monitor 17736 estudiante 20 0 228796 3192 2936 S 0.0 0.2 0:21.74 monitor 17745 estudiante 20 0 228796 3136 2880 S 0.0 0.2 0:20.31 monitor ...salida omitida... 13.3. Repita el paso anterior para cada proceso de monitorización restante. Verifique que no quede ningún proceso de supervisión en el comando superior. 14. En el shell del terminal derecho, presione Q para salir del comando superior. Cierre el terminal derecho. 15. Regrese a la máquina de la estación de trabajo como usuario estudiante. 16.
+
+
+
+
+
+9.8. Ejercicio guiado Actividad del proceso del monitor Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish processes-monitor
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+9.9. Monitor de laboratorio y gestión de procesos de Linux 9.9. Laboratorio de supervisión y gestión de procesos de Linux Interprete y supervise las métricas del sistema e investigue las implicaciones de esas mediciones para mejorar el rendimiento de su sistema. Resultados Gestionar procesos con top como herramienta de gestión de procesos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-review
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada ventana de terminal, inicie sesión en la máquina del servidor como usuario estudiante. Cree el script task101.sh en el directorio /home/student/bin. El script task101.sh genera una carga artificial de la CPU al realizar operaciones aritméticas sin cesar. #!/bin/bash
+
+touch ~/bin/.$(basename $0)
+
+si bien es cierto
+
+  var=1
+  while (( var < 50000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+hecho 1. En la terminal derecha, supervise todos los procesos que se están ejecutando en la máquina del servidor. 2. En el shell del terminal izquierdo, verifique la cantidad de CPU lógicas en la máquina virtual. Ejecute el script task101.sh en segundo plano. 3. En el shell del terminal derecho, observe los procesos en ejecución. Encuentre el ID de proceso (PID) del proceso task101.sh y la cantidad de CPU que consume el proceso. Examinar el consumo de carga del sistema, subprocesos y memoria. Asegúrese de encontrar los recursos del sistema a los que afecta el proceso task101.sh. 4. Copie el script task101.sh en un nuevo archivo task102.sh y aumente la carga artificial de la CPU a 100000 en el nuevo script. Inicie el proceso task102.sh en segundo plano. 5. En el shell del terminal derecho, verifique que el proceso task102.sh se esté ejecutando y utilice la mayor cantidad de recursos de CPU. Examine el promedio de carga de la máquina del servidor. 6.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Supervisión de laboratorio y gestión de procesos de Linux
+
+9.9. Monitor de laboratorio y gestión de procesos de Linux 9.9. Laboratorio de supervisión y gestión de procesos de Linux Interprete y supervise las métricas del sistema e investigue las implicaciones de esas mediciones para mejorar el rendimiento de su sistema. Resultados Gestionar procesos con top como herramienta de gestión de procesos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-review
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada ventana de terminal, inicie sesión en la máquina del servidor como usuario estudiante. Cree el script task101.sh en el directorio /home/student/bin. El script task101.sh genera una carga artificial de la CPU al realizar operaciones aritméticas sin cesar. #!/bin/bash
+
+touch ~/bin/.$(basename $0)
+
+si bien es cierto
+
+  var=1
+  while (( var < 50000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+hecho 1. En la terminal derecha, supervise todos los procesos que se están ejecutando en la máquina del servidor. 2. En el shell del terminal izquierdo, verifique la cantidad de CPU lógicas en la máquina virtual. Ejecute el script task101.sh en segundo plano. 3. En el shell del terminal derecho, observe los procesos en ejecución. Encuentre el ID de proceso (PID) del proceso task101.sh y la cantidad de CPU que consume el proceso. Examinar el consumo de carga del sistema, subprocesos y memoria. Asegúrese de encontrar los recursos del sistema a los que afecta el proceso task101.sh. 4. Copie el script task101.sh en un nuevo archivo task102.sh y aumente la carga artificial de la CPU a 100000 en el nuevo script. Inicie el proceso task102.sh en segundo plano. 5. En el shell del terminal derecho, verifique que el proceso task102.sh se esté ejecutando y utilice la mayor cantidad de recursos de CPU. Examine el promedio de carga de la máquina del servidor. 6.
+
+
+
+
+
+9.9. Supervisión de laboratorio y gestión de procesos de Linux Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade processes-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish processes-review
+
+Copie el script task101.sh en un script nuevo denominado task103.sh. Aumente el recuento de sumas a 800000. Inicie task103.sh en segundo plano. Monitorear el promedio de carga de la máquina del servidor. El promedio de carga puede tardar unos minutos en aumentar. 7. En el shell del terminal izquierdo, cambie al usuario root y use redhat como contraseña. Suspenda el proceso task101.sh. Enumere los trabajos restantes. Verifique que el proceso task101.sh esté ahora en el estado T. 8. Reanude el proceso task101.sh. 9. Finalice los procesos task101.sh, task102.sh y task103.sh desde la línea de comando. Después de finalizar estos procesos, examine el uso de la CPU y el promedio de carga. 10. Detenga la utilidad superior y regrese a la máquina de la estación de trabajo. 11.
+
+
+
+
+
+9.9. Solución de supervisión y gestión de procesos de Linux en laboratorio Interprete y supervise las métricas del sistema e investigue las implicaciones de esas mediciones para mejorar el rendimiento de su sistema. Resultados Gestionar procesos con top como herramienta de gestión de procesos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start processes-review
+
+Instrucciones En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En esta sección, estos terminales se denominan izquierdo y derecho. En cada ventana de terminal, inicie sesión en la máquina del servidor como usuario estudiante. Cree el script task101.sh en el directorio /home/student/bin. El script task101.sh genera una carga artificial de la CPU al realizar operaciones aritméticas sin cesar. #!/bin/bash
+
+touch ~/bin/.$(basename $0)
+
+si bien es cierto
+
+  var=1
+  while (( var < 50000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+hecho 1. En la máquina de la estación de trabajo, abra dos ventanas de terminal una al lado de la otra. En cada terminal, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida... [estudiante@servidor ~]$ 1.1. En el shell del terminal izquierdo, cree el directorio /home/student/bin.
+
+[student@serverb ~]$ mkdir /home/student/bin
+
+1.2. En el shell del terminal izquierdo, cree el archivo task101.sh en el directorio ~/bin. El archivo debe contener el siguiente contenido. 1.3.
+
+
+
+
+
+9.9. Monitor de laboratorio y gestión de procesos de Linux #!/bin/bash
+
+touch ~/bin/.$(basename $0)
+
+si bien es cierto
+
+  var=1
+  while (( var < 50000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+done Haga ejecutable el script task101.sh.
+
+[student@serverb ~]$ chmod +x /home/student/bin/task101.sh
+
+1.4. En la terminal derecha, supervise todos los procesos que se están ejecutando en la máquina del servidor. 2. En la terminal derecha, ejecute la utilidad superior para monitorear todos los procesos. Ajuste la ventana para que sea lo más alta posible para ver más información. Mantenga la utilidad superior en ejecución para verificar el uso de la CPU y los promedios de carga en pasos posteriores.
+
+[student@serverb ~]$ top
+top - 20:35:57 up  1:17,  3 users,  load average: 0.00, 0.00, 0.00
+
+Tareas: 136 en total, 1 en ejecución, 135 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 0.0 us, 4.5 sy, 0.0 ni, 95.5 id, 0.0 wa, 0.0 hi, 0.0 si, 0.0 st MiB Mem: 1705.2 en total, 1288.8 gratis, 380.0 usadas, 183,4 intercambio de MiB de caché/buff: 0,0 en total, 0,0 gratis, 0,0 usado.   1325.2 disponible Mem PID USUARIO PR NI VIRT RES SHR S %CPU %MEM TIME+ COMANDO
+
+   1 root   20   0   48740  40532  10316 S   0.0   2.3   0:02.18 systemd
+   2 root   20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+   3 root   20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_+
+   4 root    0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/R-rcu_gp
+   5 root    0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/R-sync_wq
+   6 root    0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/R-slub_+
+   7 root    0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/R-netns
+
+...salida omitida... 2.1. En el shell del terminal izquierdo, verifique la cantidad de CPU lógicas en la máquina virtual. Ejecute el script task101.sh en segundo plano. 3. Verifique la cantidad de CPU lógicas.
+
+[student@serverb ~]$ grep "model name" /proc/cpuinfo | wc -l
+
+2 3.1. Ejecute el script task101.sh en segundo plano. El script task101.sh se encuentra en el subdirectorio ~/bin. Debido a esta ubicación, la variable de entorno PATH ubica el script sin definir su ruta completa.
+
+[student@serverb ~]$ task101.sh &
+
+[1] 2608 3.2. En el shell del terminal derecho, observe los procesos en ejecución. Encuentre el ID de proceso (PID) del proceso task101.sh y la cantidad de CPU que consume el proceso. 4.
+
+
+
+
+
+9.9. Laboratorio de supervisión y gestión de procesos de Linux. Examine el consumo de carga, subprocesos y memoria del sistema. Asegúrese de encontrar los recursos del sistema a los que afecta el proceso task101.sh. Examine el resultado de la utilidad superior. La utilidad superior ordena los procesos por consumo de CPU de forma predeterminada. El proceso task101.sh está en la parte superior de la lista. El PID del proceso es 2608. El PID de su sistema puede variar. Tenga en cuenta que el porcentaje de CPU que utiliza el proceso task101.sh oscila entre el 10% y el 16%.
+
+top - 20:44:19 up  1:25,  3 users,  load average: 0.14, 0.09, 0.02
+
+Tareas: 136 en total, 1 en ejecución, 135 durmiendo, 0 detenidas, 0 zombie %Cpu(s): 5.1 us, 0.5 sy, 0.0 ni, 94.0 id, 0.0 wa, 0.2 hi, 0.2 si, 0.0 st MiB Mem: 1705.2 en total, 1285.2 gratis, 383.5 usadas, 183,4 intercambio de MiB de caché/buff: 0,0 en total, 0,0 gratis, 0,0 usado.   1321.7 disponible Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+
+2608 estudiante 20 0 228796 3056 2800 S 11.0 0.2 0:35.00 task101.sh 2568 estudiante 20 0 232152 5164 2988 R 0.3 0.3 0:00.33 arriba
+
+    1 root      20   0   48740  40532  10316 S   0.0   2.3   0:02.23 systemd
+    2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+
+...salida omitida... 4.1. Ordene los procesos por uso de memoria presionando Shift+M. El proceso task101.sh no consume muchos recursos de memoria.
+
+top - 21:00:39 up  1:42,  3 users,  load average: 0.14, 0.13, 0.09
+
+Tareas: 137 en total, 1 en ejecución, 136 durmiendo, 0 detenidas, 0 zombie %Cpu(s): 7.5 us, 1.0 sy, 0.0 ni, 91.2 id, 0.2 wa, 0.2 hi, 0.0 si, 0.0 st MiB Mem: 1705.2 en total, 1305.1 gratis, 363.6 usadas, 183,5 intercambio de MiB de caché/buff: 0,0 en total, 0,0 gratis, 0,0 usado.   1341.6 disponible Mem
+
+  PID USER    PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  916 root    20   0  350960  42620  16788 S   0.0   2.4   0:01.62 firewalld
+    1 root    20   0   48740  40532  10316 S   0.0   2.3   0:02.28 systemd
+
+...salida omitida... 2608 estudiante 20 0 228796 3056 2800 S 16.7 0.2 2:55.59 task101.sh ...salida omitida... 4.2. Muestre más detalles de la memoria presionando M . La barra de uso de memoria no muestra un uso significativo en la máquina del servidor.
+
+top - 21:05:56 up  1:47,  3 users,  load average: 0.27, 0.17, 0.10
+
+Tareas: 138 en total, 4 en ejecución, 134 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 7.5 us, 1.0 sy, 0.0 ni, 91.2 id, 0.2 wa, 0.2 hi, 0.0 si, 0.0 st MiB Mem: 21.6/1705.2 [||||||||||||||                                          ] Intercambio de MiB: 0,0/0,0 [ ]
+
+  PID USER    PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  916 root    20   0  350960  42620  16788 S   0.0   2.4   0:01.71 firewalld
+    1 root    20   0   48740  40532  10316 S   0.0   2.3   0:02.30 systemd
+
+...salida omitida... 2608 estudiante 20 0 228796 3056 2800 S 16.3 0.2 3:41.10 task101.sh ...salida omitida... 4.3. Muestre la información del hilo presionando Shift+H. Los subprocesos en el sistema muestran un total de 157. Salga de la utilidad superior presionando Q. 4.4.
+
+
+
+
+
+9.9. Supervisión de laboratorio y gestión de procesos de Linux
+
+top - 21:23:28 up  2:05,  3 users,  load average: 0.09, 0.12, 0.09
+
+Hilos: 157 en total, 1 en ejecución, 156 en suspensión, 0 detenido, 0 zombie %Cpu(s): 7.7 us, 1.0 sy, 0.0 ni, 91.2 id, 0.0 wa, 0.2 hi, 0.0 si, 0.0 st MiB Mem: 22.4/1705.2 [||||||||||||||||                                        ] Intercambio de MiB: 0,0/0,0 [ ]
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  916 root      20   0  350960  42620  16788 S   0.0   2.4   0:01.89 firewalld
+  996 root      20   0  350960  42620  16788 S   0.0   2.4   0:00.00 gmain
+
+...salida omitida... 2608 estudiante 20 0 228796 3056 2800 S 11.0 0.2 4:25.37 task101.sh ...salida omitida... Q Ver todos los subprocesos que se están ejecutando para el proceso task101.sh. Para hacerlo, ejecute la utilidad superior con las opciones -H y -p. Reemplace el ID del proceso 2608 con el PID real de su sistema. El proceso task101.sh no ejecuta varios subprocesos. Salga de la utilidad superior presionando Q.
+
+[student@serverb ~]$ top -H -p 2608
+top - 21:28:42 up  2:10,  3 users,  load average: 0.19, 0.13, 0.10
+
+Temas: 1 en total, 1 en ejecución, 0 en suspensión, 0 detenido, 0 zombie %Cpu(s): 6.9 us, 1.1 sy, 0.0 ni, 91.8 id, 0.0 wa, 0.2 hi, 0.0 si, 0.0 st MiB Mem: 1705.2 en total, 1300.1 gratis, 368.4 usado, 184.0 Intercambio de MiB de mejora/caché: 0,0 en total, 0,0 gratis, 0,0 usado.   1336.9 disponible Mem
+
+   PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+   2608 student   20   0  228796   3132   2876 S  15.7   0.2   6:56.92 task101.sh
+
+Pregunta 4.5. Ejecute la utilidad superior con sus opciones predeterminadas.
+
+[student@serverb ~]$ top
+top - 21:32:43 up  2:14,  3 users,  load average: 0.17, 0.15, 0.10
+
+Tareas: 136 en total, 1 en ejecución, 135 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 7,5 us, 1,0 sy, 0,0 ni, 91,5 id, 0,0 wa, 0,0 hi, 0,0 si, 0,0 st MiB Mem: 1705,2 en total, 1295,6 libres, 372,8 usadas, 184.0 buff/cache MiB Swap: 0.0 en total, 0.0 gratis, 0.0 usado.   1332.4 disponible Mem
+
+  PID USER    PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+
+2608 estudiante 20 0 228796 3056 2800 S 16,3 0,2 7:31,29 tarea101.sh
+
+    1 root    20   0   48740  40532  10316 S   0.0   2.3   0:02.44 systemd
+    2 root    20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+
+...salida omitida... 4.6. Copie el script task101.sh en un nuevo archivo task102.sh y aumente la carga artificial de la CPU a 100000 en el nuevo script. Inicie el proceso task102.sh en segundo plano. 5. En el shell del terminal izquierdo, copie el archivo task101.sh a un nuevo archivo task102.sh.
+
+[student@serverb ~]$ cp bin/task101.sh bin/task102.sh
+
+5.1. Edite el script task102.sh y aumente los cálculos de suma de 50000 a 100000. El script task102.sh coincide en gran medida con el siguiente contenido: 5.2.
+
+
+
+
+
+9.9. Monitor de laboratorio y gestión de procesos de Linux #!/bin/bash
+
+touch ~/bin/.$(basename $0)
+
+si bien es cierto
+
+  var=1
+  while (( var < 100000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+done Inicie el proceso task102.sh en segundo plano.
+
+[student@serverb ~]$ task102.sh &
+
+[2] 6430 5.3. Verifique que ambos procesos se estén ejecutando en segundo plano.
+
+[student@serverb ~]$ jobs
+
+[1] - Ejecutando task101.sh y [2]+ Ejecutando task102.sh y 5.4. En el shell del terminal derecho, verifique que el proceso task102.sh se esté ejecutando y utilice la mayor cantidad de recursos de CPU. Examine el promedio de carga de la máquina del servidor. 6. En el shell del terminal derecho, verifique que el proceso se esté ejecutando. El uso de la CPU debería oscilar entre el 25% y el 35%. Nota Si no ve los procesos task101.sh y task102.sh en la parte superior de la lista de procesos, presione Shift+P para asegurarse de que la utilidad superior ordene la salida por uso de CPU.
+
+top - 21:42:10 up  2:23,  3 users,  load average: 0.33, 0.20, 0.11
+
+Tareas: 136 en total, 3 en ejecución, 133 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 19,3 us, 2,0 sy, 0,0 ni, 78,4 id, 0,0 wa, 0,2 hi, 0,2 si, 0,0 st MiB Mem: 1705,2 en total, 1284,4 libres, 383,9 usadas, 184,2 intercambio de MiB de caché/buff: 0,0 en total, 0,0 gratis, 0,0 usado.   1321.3 disponible Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+
+6430 estudiante 20 0 228796 3080 2824 R 30.7 0.2 0:19.73 task102.sh 2608 estudiante 20 0 228796 3056 2800 R 11.7 0.2 8:53.08 task101.sh ... salida omitida... 6.1. Examine el promedio de carga de la máquina del servidor. El promedio de carga de la máquina del servidor se mantiene por debajo de 1, lo que significa que la máquina no está sobrecargada.
+
+top - 21:44:53 up  2:26,  3 users,  load average: 0.51, 0.30, 0.16
+
+...salida omitida... 6.2. Copie el script task101.sh en un script nuevo denominado task103.sh. Aumente el recuento de sumas a 800000. Inicie task103.sh en segundo plano. Monitorear el promedio de carga de la máquina del servidor. El promedio de carga puede tardar unos minutos en aumentar. 7. En el shell del terminal izquierdo, copie el script task101.sh a un nuevo script task103.sh. 7.1.
+
+
+
+
+
+9.9. Supervisión de laboratorio y gestión de procesos de Linux
+
+[student@serverb ~]$ cp bin/task101.sh bin/task103.sh
+
+Edite el script task103.sh. Aumente el recuento de sumas a 800000. El script task103.sh coincide en gran medida con el siguiente contenido: #!/bin/bash
+
+touch ~/bin/.$(basename $0)
+
+si bien es cierto
+
+  var=1
+  while (( var < 800000 ))
+  do
+    var=$(( var + 1 ))
+  done
+  sleep 1
+
+hecho 7.2. Inicie el proceso task103.sh en segundo plano.
+
+[student@serverb ~]$ task103.sh &
+
+[3] 7581 7.3. Verifique que los tres trabajos se estén ejecutando en segundo plano.
+
+[student@serverb ~]$ jobs
+
+[1] Ejecutando task101.sh y [2] - Ejecutando task102.sh y [3]+ Ejecutando task103.sh y 7.4. En el shell del terminal derecho, verifique el uso de CPU del proceso task103.sh y el promedio de carga de la máquina. El uso de CPU para el proceso task03.sh oscila entre el 60% y el 85%. El promedio de carga puede tardar unos minutos en aumentar. Tenga en cuenta que la suma del consumo de CPU de los tres procesos es superior a 100. Con el proceso task103.sh en ejecución, la máquina del servidor utiliza el 100% de la CPU, pero no es suficiente para cumplir con los requisitos de recursos de todos los procesos. Debido a esta situación, el promedio de carga aumenta lentamente por encima de 1.
+
+top - 21:51:54 up  2:33,  3 users,  load average: 1.13, 0.61, 0.33
+
+...salida omitida...
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+
+7581 estudiante 20 0 228796 3148 2892 R 63,1 0,2 1:59,98 task103.sh 6430 estudiante 20 0 228796 3120 2864 R 27,2 0,2 0:41,86 task102.sh 2608 estudiante 20 0 228796 3260 3004 S 17.3 0.2 0:36.07 task101.sh ...salida omitida... 7.5. En el shell del terminal izquierdo, cambie al usuario root y use redhat como contraseña. Suspenda el proceso task101.sh. Enumere los trabajos restantes. Verifique que el proceso task101.sh esté ahora en el estado T. 8. Cambie al usuario root. Utilice redhat como contraseña.
+
+[student@serverb ~]$ su -
+
+Contraseña: redhat 8.1. Suspenda el proceso task101.sh. 8.2.
+
+
+
+
+
+9.9. Supervisión de laboratorio y gestión de procesos de Linux
+
+[root@serverb ~]# pkill -SIGSTOP task101.sh
+
+En el shell del terminal derecho, confirme que el proceso task101.sh ya no se esté ejecutando.
+
+top - 21:54:04 up  2:35,  3 users,  load average: 1.06, 0.76, 0.42
+
+Tareas: 141 en total, 2 en ejecución, 137 durmiendo, 1 parada, 1 zombie %Cpu(s): 40,3 us, 4,1 sy, 0,0 ni, 55,1 id, 0,0 wa, 0,3 hi, 0,2 si, 0,0 st MiB Mem: 1705,2 en total, 1274,5 gratis, 393,6 usadas, 184,4 intercambio de MiB de caché/buff: 0,0 en total, 0,0 gratis, 0,0 usado.   1311.6 disponible Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+
+7581 estudiante 20 0 228796 3132 2876 R 66.4 0.2 2:25.59 task103.sh 6430 estudiante 20 0 228796 3080 2824 S 22.3 0.2 3:15.12 task102.sh ...salida omitida... 8.3. En el terminal izquierdo, vea los trabajos restantes.
+
+[root@serverb ~]# ps jT
+
+PPID PID ... TPGID ESTAT UID HORA COMANDO 2395 2396 ... 8047 Ss 1000 0:00 -bash 2396 2608 ... 8047 T 1000 10:34 /bin/bash /home/student/bin/task101.sh 2396 6430 ... 8047 S 1000 3:25 /bin/bash /home/student/bin/task102.sh 2396 7581 ... 8047 R 1000 2:57 /bin/bash /home/student/bin/task103.sh ... salida omitida... Tenga en cuenta que task101.sh tiene un estado de T. Este estado significa que el proceso está actualmente suspendido. 8.4. Reanude el proceso task101.sh. 9. En el terminal izquierdo, reanude el proceso task101.sh.
+
+[root@serverb ~]# pkill -SIGCONT task101.sh
+
+9.1. En el shell del terminal derecho, verifique que el proceso se esté ejecutando nuevamente.
+
+top - 21:56:13 up  2:37,  3 users,  load average: 1.17, 0.88, 0.51
+
+Tareas: 141 en total, 2 en ejecución, 139 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 58,5 us, 5,8 sy, 0,0 ni, 35,2 id, 0,0 wa, 0,5 hi, 0,0 si, 0,0 st MiB Mem: 1705,2 en total, 1278,6 libres, 389,5 usadas, 184,4 intercambio de MiB de caché/buff: 0,0 en total, 0,0 gratis, 0,0 usado.   1315.7 disponible Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+
+7581 estudiante 20 0 228796 3132 2876 R 86.4 0.2 3:59.96 task103.sh 6430 estudiante 20 0 228796 3080 2824 S 24.6 0.2 3:47.45 task102.sh 2608 estudiante 20 0 228796 3056 2800 S 16.6 0.2 10:34.92 task101.sh ...salida omitida... 9.2. Finalice los procesos task101.sh, task102.sh y task103.sh desde la línea de comando. Después de finalizar estos procesos, examine el uso de la CPU y el promedio de carga. 10. En el shell del terminal izquierdo, finalice los procesos task101.sh, task102.sh y task103.sh.
+
+[root@serverb ~]# pkill task101.sh
+[root@serverb ~]# pkill task102.sh
+[root@serverb ~]# pkill task103.sh
+
+10.1. En el shell del terminal derecho, verifique que los procesos ya no aparezcan en la salida superior de la utilidad. El promedio de carga disminuye lentamente. 10.2.
+
+
+
+
+
+9.9. Supervisión de laboratorio y gestión de procesos de Linux Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade processes-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish processes-review
+top - 21:57:40 up  2:39,  3 users,  load average: 0.79, 0.89, 0.55
+
+Tareas: 136 en total, 1 en ejecución, 135 en suspensión, 0 detenidas, 0 zombie %Cpu(s): 0.2 us, 0.0 sy, 0.0 ni, 99.8 id, 0.0 wa, 0.0 hi, 0.0 si, 0.0 st MiB Mem: 1705.2 en total, 1283.0 gratis, 385.1 usadas, 184,4 intercambio de MiB de caché/buff: 0,0 en total, 0,0 gratis, 0,0 usado.   1320.1 disponible Mem
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+   6120 student   20   0  232164   5324   3148 R   0.3   0.3   0:01.40 top
+      1 root      20   0   48740  40532  10316 S   0.0   2.3   0:02.56 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+
+...salida omitida... Detenga la utilidad superior y regrese a la máquina de la estación de trabajo. 11. En el shell del terminal izquierdo, cierre la sesión del usuario root y cierre el terminal.
+
+[root@serverb ~]# exit
+
+cerrar sesión [1] Tarea101.sh terminada [2] Tarea102.sh terminada [3]- Task103.sh terminada 11.1. En el terminal derecho, presione Q para salir de la utilidad superior. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+11.2.
+
+
+
+
+
+9.10. Resumen 9.10. Resumen En esta lección, aprendió a administrar, monitorear y enviar señales a los procesos en el sistema. Un proceso es una instancia en ejecución de un programa ejecutable. En Linux, los procesos se asignan a un estado, que puede ser en ejecución, inactivo, detenido o zombie. Al utilizar las funciones de control de trabajos, puede administrar procesos en primer plano y en segundo plano en el mismo terminal. También puede controlar procesos con señales, que es una interrupción de software que informa eventos a un programa en ejecución. Finalmente, puede monitorear la actividad del proceso al comprender el promedio de carga del sistema, que es una estimación de qué tan ocupado está el sistema.
+
+
+
+
+
+
+
+## Resumen
+
+9.10. Resumen 9.10. Resumen En esta lección, aprendió a administrar, monitorear y enviar señales a los procesos en el sistema. Un proceso es una instancia en ejecución de un programa ejecutable. En Linux, los procesos se asignan a un estado, que puede ser en ejecución, inactivo, detenido o zombie. Al utilizar las funciones de control de trabajos, puede administrar procesos en primer plano y en segundo plano en el mismo terminal. También puede controlar procesos con señales, que es una interrupción de software que informa eventos a un programa en ejecución. Finalmente, puede monitorear la actividad del proceso al comprender el promedio de carga del sistema, que es una estimación de qué tan ocupado está el sistema.
+
+
+
+
+
+Capítulo 10. Control de servicios y demonios Objetivo Controlar y monitorear los servicios y demonios del sistema que inicia systemd. Secciones Identificación de procesos del sistema que se inician automáticamente (y ejercicio guiado) Control de servicios del sistema (y ejercicio guiado) Servicios de control de laboratorio y demonios
+
+
+
+
+

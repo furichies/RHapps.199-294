@@ -1,0 +1,100 @@
+# Ejercicio Guiado: Instalación de Ansible
+# Tipo: guided_exercise
+# Capítulo: Capítulo 1. Presentación de Ansible
+
+capítulo 1 |  Presentación de Ansible
+Ejercicio Guiado
+Instalación de Ansible
+Instalar el navegador de contenido de automatización en un nodo de control que ejecuta
+Red Hat Enterprise Linux.
+Resultados
+• Instale el navegador de contenido de automatización en un nodo de control.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start intro-install
+Instrucciones
+ 1.
+En la máquina workstation, instale el paquete RPM ansible-navigator que
+proporciona un navegador de contenido de automatización para que pueda usar esa
+máquina como su nodo de control.
+[student@workstation ~]$ sudo dnf install ansible-navigator
+[sudo] password for student: student
+Last metadata expiration check: 0:12:47 ago on Fri 29 Jul 2022 11:10:54 AM EDT.
+Dependencies resolved.
+...output omitted...
+Is this ok [y/d/N]: y
+...output omitted...
+nota
+Este entorno de laboratorio ya está configurado con el repositorio de paquetes
+RPM remoto necesario para instalar ansible-navigator. En una configuración
+de producción, necesitaría usar subscription-manager para registrar su
+sistema con Red Hat Subscription Management y habilitar el repositorio ansible-
+automation-platform-2.2-for-rhel-9-x86_64-rpms primero.
+ 2.
+Verifique que el navegador de contenido de automatización esté instalado en el sistema.
+Ejecute el comando ansible-navigator con la opción --version.
+[student@workstation ~]$ ansible-navigator --version
+ansible-navigator 2.1.0
+RH294-RHEL9.0-es-3-20240620
+17
+
+
+capítulo 1 |  Presentación de Ansible
+ 3.
+Inicie sesión en el registro de contenedores. Use el comando podman login para iniciar
+sesión en el registro del centro de automatización en utility.lab.example.com. Use
+el nombre de usuario admin y la contraseña redhat.
+[student@workstation ~]$ podman login utility.lab.example.com
+Username: admin
+Password: redhat
+Login Succeeded!
+ 4.
+Descargue la imagen del contenedor del entorno de ejecución. Ejecute el comando
+ansible-navigator images para que el navegador de contenido de automatización
+descargue la imagen del entorno de ejecución y muestre una lista de las imágenes
+disponibles.
+[student@workstation ~]$ ansible-navigator images
+...output omitted...
+Running the command: podman pull utility.lab.example.com/ee-supported-rhel8:latest
+...output omitted...
+Después de descargar la imagen ee-supported-rhel8:latest, ansible-navigator
+muestra la lista de imágenes en modo interactivo:
+  Image                 Tag     Execution environment    Created      Size
+0│ee-supported-rhel8    latest  True                     5 weeks ago  1.32 GB
+^b/PgUp page up ^f/PgDn page down ↑↓ scroll esc back [0-9] goto :help help
+Presione Esc para salir de la lista de imágenes.
+Finalizar
+En la máquina workstation, ejecute el script lab finish intro-install para limpiar este
+ejercicio.
+[student@workstation ~]$ lab finish intro-install
+18
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 1 |  Presentación de Ansible
+Resumen
+• La automatización lo ayuda a mitigar los errores humanos y garantizar que su infraestructura de
+TI se encuentre en un estado correcto y coherente.
+• Ansible es una plataforma de automatización de código abierto que puede adaptarse a muchos
+flujos de trabajo y entornos.
+• Red Hat Ansible Automation Platform es una versión totalmente compatible de Ansible
+que también incluye una serie de componentes y herramientas adicionales para ayudarlo a
+desarrollar, implementar y gestionar su código de automatización.
+• Ansible puede usarse para gestionar muchos tipos de sistemas diferentes, incluidos los
+servidores que ejecutan Linux, Microsoft Windows y dispositivos de red.
+• Los playbooks de Ansible son archivos de texto legibles por humanos que describen el estado
+deseado de una infraestructura de TI.
+• Ansible se conecta con hosts gestionados con protocolos de red estándar, como SSH, y
+ejecuta códigos o comandos en los hosts gestionados para garantizar que tengan el estado
+especificado.
+• Ansible se basa en una arquitectura sin agentes en la que el software Ansible solo se instala en
+un nodo de control y en entornos de ejecución de automatización.
+• El navegador de contenido de automatización (ansible-navigator) es una herramienta
+clave que lo ayuda a desarrollar y ejecutar su código de automatización de Ansible.
+RH294-RHEL9.0-es-3-20240620
+19
+
+

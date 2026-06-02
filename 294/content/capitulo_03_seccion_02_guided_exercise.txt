@@ -1,0 +1,279 @@
+# Ejercicio Guiado: Gestión de variables
+# Tipo: guided_exercise
+# Capítulo: Capítulo 3. Administración de variables y datos
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de variables
+Definir y usar variables en un playbook.
+Resultados
+• Definir variables en un playbook.
+• Crear tareas que usen variables definidas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-variables
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-variables.
+[student@workstation ~]$ cd ~/data-variables
+[student@workstation data-variables]$
+ 2.
+Durante los siguientes pasos, usted creará un playbook que consta de un solo play que
+instale el servidor web Apache y abra los puertos para que se pueda acceder al servicio. El
+play también consulta al servidor web para garantizar que se esté ejecutando.
+Cree un playbook denominado playbook.yml. Cree un play denominado "Implementar
+e iniciar el servicio Apache HTTPD", apunte al grupo de hosts webserver como hosts
+gestionados y defina las siguientes variables en su sección vars:
+Variables
+Variable
+Descripción
+web_pkg
+Paquete de servidor web para instalar
+firewall_pkg
+Paquete de firewall para instalar
+web_service
+Servicio web para administrar
+firewall_service
+Servicio de firewall que se administrará
+rule
+El nombre del servicio para abrir
+RH294-RHEL9.0-es-3-20240620
+93
+
+
+capítulo 3 |  Administración de variables y datos
+---
+- name: Deploy and start Apache HTTPD service
+  hosts: webserver
+  vars:
+    web_pkg: httpd
+    firewall_pkg: firewalld
+    web_service: httpd
+    firewall_service: firewalld
+    rule: http
+ 3.
+Cree el bloque tasks y cree la primera tarea con el módulo ansible.builtin.dnf para
+garantizar que estén instaladas las versiones más recientes de los paquetes requeridos.
+  tasks:
+    - name: Required packages are installed and up to date
+      ansible.builtin.dnf:
+        name:
+          - "{{ web_pkg }}"
+          - "{{ firewall_pkg }}"
+        state: latest
+nota
+Puedes usar ansible-navigator doc ansible.builtin.dnf -m
+stdout para revisar la sintaxis del módulo ansible.builtin.dnf. (Si tiene
+instalado el paquete ansible-core, también puede usar ansible-doc
+ansible.builtin.dnf).
+La documentación muestra que la directiva name del módulo puede tomar una lista
+de paquetes con los que debe trabajar el módulo, de modo que no necesita tareas
+separadas para garantizar que cada paquete esté actualizado.
+ 4.
+Cree dos tareas para asegurarse de que los servicios httpd y firewalld estén iniciados y
+habilitados.
+    - name: The {{ firewall_service }} service is started and enabled
+      ansible.builtin.service:
+        name: "{{ firewall_service }}"
+        enabled: true
+        state: started
+    - name: The {{ web_service }} service is started and enabled
+94
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        enabled: true
+        state: started
+nota
+El módulo ansible.builtin.service funciona de manera diferente que
+el módulo ansible.builtin.dnf, según se documenta en ansible-doc
+ansible.builtin.service. Su directiva name toma el nombre de exactamente
+un servicio con el cual trabajar.
+Puede escribir una sola tarea que garantice que ambos servicios se inicien y se
+habiliten, usando la palabra clave loop que se verá más adelante en este curso.
+ 5.
+Agregue una tarea que garantice que exista contenido específico en el archivo /var/www/
+html/index.html.
+    - name: Web content is in place
+      ansible.builtin.copy:
+        content: "Example web content"
+        dest: /var/www/html/index.html
+ 6.
+Agregue una tarea que use el módulo ansible.posix.firewalld para garantizar que
+los puertos de firewall estén abiertos para el servicio firewalld mencionado en la variable
+rule.
+    - name: The firewall port for {{ rule }} is open
+      ansible.posix.firewalld:
+        service: "{{ rule }}"
+        permanent: true
+        immediate: true
+        state: enabled
+ 7.
+Cree un nuevo play que consulte el servicio web para garantizar que todo se haya
+configurado correctamente. Debe ejecutarse en workstation. Debido a esto, Ansible no
+debe cambiar la identidad; por lo tanto, establezca el módulo become en false.
+Puede usar el módulo ansible.builtin.uri para inspeccionar una URL. Para esta
+tarea, verifique que se haya devuelto un código de estado de 200 para confirmar que el
+servidor web en servera.lab.example.com se esté ejecutando y esté configurado
+adecuadamente.
+- name: Verify the Apache service
+  hosts: workstation
+  become: false
+  tasks:
+    - name: Ensure the webserver is reachable
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        status_code: 200
+RH294-RHEL9.0-es-3-20240620
+95
+
+
+capítulo 3 |  Administración de variables y datos
+ 8.
+Cuando se completa, el playbook contiene el siguiente contenido: Revise el playbook y
+confirme que ambos plays sean correctos.
+---
+- name: Deploy and start Apache HTTPD service
+  hosts: webserver
+  vars:
+    web_pkg: httpd
+    firewall_pkg: firewalld
+    web_service: httpd
+    firewall_service: firewalld
+    rule: http
+  tasks:
+    - name: Required packages are installed and up to date
+      ansible.builtin.dnf:
+        name:
+          - "{{ web_pkg  }}"
+          - "{{ firewall_pkg }}"
+        state: latest
+    - name: The {{ firewall_service }} service is started and enabled
+      ansible.builtin.service:
+        name: "{{ firewall_service }}"
+        enabled: true
+        state: started
+    - name: The {{ web_service }} service is started and enabled
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        enabled: true
+        state: started
+    - name: Web content is in place
+      ansible.builtin.copy:
+        content: "Example web content"
+        dest: /var/www/html/index.html
+    - name: The firewall port for {{ rule }} is open
+      ansible.posix.firewalld:
+        service: "{{ rule }}"
+        permanent: true
+        immediate: true
+        state: enabled
+- name: Verify the Apache service
+  hosts: workstation
+  become: false
+  tasks:
+    - name: Ensure the webserver is reachable
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        status_code: 200
+96
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+ 9.
+Antes de ejecutar el playbook, use el comando ansible-navigator run --syntax-
+check para verificar su sintaxis. Si informa errores, corríjalos antes de pasar al siguiente
+paso. Debe ver una salida similar a la siguiente:
+[student@workstation data-variables]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+playbook: /home/student/data-variables/playbook.yml
+ 10. Use el comando ansible-navigator run para ejecutar el playbook. Observe la salida
+a medida que Ansible instala los paquetes, inicia y habilita los servicios, y garantiza que el
+servidor web esté disponible.
+[student@workstation data-variables]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Deploy and start Apache HTTPD service] ***********************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Required packages are installed and up to date] **************************
+changed: [servera.lab.example.com]
+TASK [The firewalld service is started and enabled] ****************************
+ok: [servera.lab.example.com]
+TASK [The httpd service is started and enabled] ********************************
+changed: [servera.lab.example.com]
+TASK [Web content is in place] *************************************************
+changed: [servera.lab.example.com]
+TASK [The firewall port for http is open] **************************************
+changed: [servera.lab.example.com]
+PLAY [Verify the Apache service] ***********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [workstation]
+TASK [Ensure the webserver is reachable] ***************************************
+ok: [workstation]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+97
+
+
+capítulo 3 |  Administración de variables y datos
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-variables
+98
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Gestión de secretos
+Objetivos
+• Cifrar las variables confidenciales usando Ansible Vault y ejecutar playbooks que hagan
+referencia a archivos de variables cifradas por Vault.
+Presentación de Ansible Vault
+Es posible que Ansible necesite acceso a datos confidenciales, como contraseñas o claves API,
+para configurar hosts gestionados. En general, esta información se almacena como texto sin
+formato en variables de inventario u otros archivos de Ansible. Sin embargo, en ese caso, los
+usuarios con acceso a los archivos de Ansible o a un sistema de control de versiones que almacena
+los archivos de Ansible tendrían acceso a estos datos confidenciales. Esto representa un riesgo de
+seguridad notorio.
+Se puede usar Ansible Vault, que está incluido con Ansible, para cifrar y descifrar cualquier archivo
+de datos estructurados usado por Ansible. Para usar Ansible Vault, use una herramienta de la línea
+de comandos denominada ansible-vault para crear, editar, cifrar, descifrar y ver archivos.
+Ansible Vault puede cifrar cualquier archivo de datos usado por Ansible. Esto podría incluir
+variables de inventario, archivos de variables incluidos en un playbook, archivos de variables
+pasados como argumento al ejecutar el playbook o variables definidas en roles de Ansible.
+Importante
+Ansible Vault no implementa sus propias funciones criptográficas, sino que
+usa un kit de herramientas Python externo. Los archivos están protegidos con
+cifrado simétrico mediante el uso de AES256 con una contraseña como clave
+secreta. Tenga en cuenta que la forma en la que se realiza esto no ha sido auditada
+formalmente por un tercero.
+Creación de un archivo cifrado
+Para crear un nuevo archivo cifrado, use el comando ansible-vault create filename.
+El comando le solicitará la nueva contraseña de Vault y abrirá un archivo con el editor
+predeterminado, vi. Puede exportar la variable de entorno EDITOR para especificar un editor
+predeterminado diferente. Por ejemplo, para establecer el editor predeterminado en nano,
+ejecute el comando export EDITOR=nano.
+[student@demo ~]$ ansible-vault create secret.yml
+New Vault password: redhat
+Confirm New Vault password: redhat
+En lugar de ingresar la contraseña de Vault mediante el ingreso estándar, se puede usar un
+archivo de contraseña de Vault para almacenar la contraseña. Este archivo se deberá proteger
+cuidadosamente mediante permisos de archivo y por otros medios.
+[student@demo ~]$ ansible-vault create --vault-password-file=vault-pass secret.yml
+RH294-RHEL9.0-es-3-20240620
+99
+
+

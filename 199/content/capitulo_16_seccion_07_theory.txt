@@ -1,0 +1,116 @@
+# 13.7. Configuración de un diario del sistema persistente
+# Tipo: theory
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.7. Configuración de un diario del sistema persistente 13.7. Configuración de un diario del sistema persistente Objetivos Configurar un diario del sistema para almacenar de manera persistente los eventos de registro después de un reinicio y rotar los eventos de registro automáticamente. Almacenamiento del diario del sistema De forma predeterminada, Red Hat Enterprise Linux almacena los archivos del diario del sistema en el directorio /run/log/journal y el sistema borra el diario del sistema después de reiniciar. Puede configurar el servicio systemd-journald para mantener los archivos del diario de forma persistente, de modo que pueda revisar los eventos del diario al reiniciar el sistema. Configurar un diario persistente del sistema Configure el servicio systemd-journald de la siguiente manera para conservar los diarios del sistema de manera persistente durante un reinicio: Importante Este servicio funciona porque la configuración predeterminada del parámetro Almacenamiento en la configuración del diario está establecida en Almacenamiento=auto. Este parámetro significa que si el directorio /var/log/journal existe, entonces el almacenamiento persistente se habilita automáticamente, pero si el almacenamiento no se habilita, entonces se usa el almacenamiento volátil en el directorio /run/log/journal. Los archivos de configuración del diario se analizan con más detalle más adelante en esta sección. Revisar las entradas del diario en relación con el tiempo de inicio Aunque los diarios del sistema persisten después de un reinicio, la salida del comando journalctl incluye entradas del inicio actual del sistema así como de los inicios anteriores del sistema. Para limitar la salida a un inicio del sistema específico, use Crear el directorio /var/log/journal.
+
+root@host:~# mkdir /var/log/journal
+
+1. Ejecute el comando journalctl --flush para vaciar el diario actual en el almacenamiento. Si el servicio systemd-journald vacía con éxito el diario actual, entonces el servicio crea subdirectorios en el directorio /var/log/journal.
+
+root@host:~# journalctl --flush
+
+2. El subdirectorio del directorio /var/log/journal tiene caracteres hexadecimales en su nombre largo y contiene archivos con la extensión .journal.
+
+root@host:~# ls /var/log/journal
+
+4ec03abd2f7b40118b1b357f479b3112 3. Los archivos binarios .journal almacenan entradas de diario estructuradas e indexadas.
+
+root@host:~# ls /var/log/journal/4ec03abd2f7b40118b1b357f479b3112
+
+sistema.diario usuario-1000.diario 4.
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente
+
+journalctl command -b option.
+
+El siguiente comando journalctl recupera las entradas del primer inicio del sistema únicamente:
+
+root@host:~# journalctl -b 1
+
+...salida omitida... El siguiente comando journalctl recupera las entradas del segundo inicio del sistema únicamente. El argumento es
+
+meaningful only if the system was rebooted at least twice:
+root@host:~# journalctl -b 2
+
+...salida omitida... Puede enumerar los eventos de arranque del sistema que reconoce el comando journalctl, utilizando la opción --list-boots.
+
+root@host:~# journalctl --list-boots
+  -6 27de... Wed 2025-06-04 20:04:32 EDT—Wed 2025-06-04 21:09:36 EDT
+  -5 6a18... Tue 2025-06-26 08:32:22 EDT—Thu 2025-06-26 16:02:33 EDT
+  -4 e2d7... Thu 2025-07-04 16:02:46 EDT—Fri 2025-07-04 20:59:29 EDT
+  -3 45c3... Sat 2025-07-05 11:19:47 EDT—Sat 2025-07-05 11:53:32 EDT
+  -2 dfae... Sat 2025-07-05 13:11:13 EDT—Sat 2025-07-05 13:27:26 EDT
+  -1 e754... Sat 2025-07-05 13:58:08 EDT—Sat 2025-07-05 14:10:53 EDT
+   0 ee2c... Mon 2025-07-07 09:56:45 EDT—Mon 2025-07-07 12:57:21 EDT
+
+El siguiente comando journalctl recupera las entradas del inicio actual del sistema únicamente:
+
+root@host:~# journalctl -b
+
+...salida omitida... Nota Al depurar una falla del sistema con un diario persistente, debe limitar la consulta del diario al reinicio antes de que ocurriera la falla. Puede usar la opción -b del comando journalctl con un número negativo para indicar cuántos arranques anteriores del sistema incluir en la salida. Por ejemplo, la opción del comando journalctl -b -1 limita la salida solo al inicio anterior. Rotación de diarios del sistema La ventaja de los diarios persistentes del sistema es que los datos históricos están disponibles inmediatamente en el arranque. Sin embargo, incluso con un diario persistente, el sistema no conserva todos los datos para siempre. El diario tiene un mecanismo de rotación de registros incorporado que se activa mensualmente. Además, el sistema no permite que las revistas ocupen más del 10% del sistema de archivos en el que se encuentran, ni dejen menos del 15% del sistema de archivos libre. Puede modificar estos valores tanto para el tiempo de ejecución como para los diarios persistentes en el archivo de configuración /etc/systemd/journald.conf. El proceso systemd-journald registra los límites actuales del tamaño del diario cuando se inicia. El siguiente resultado del comando muestra las entradas del diario que reflejan los límites de tamaño actuales:
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente
+
+[user@host ~]$ journalctl | grep -E 'Runtime Journal|System Journal'
+
+10 de junio 22:22:57 localhost systemd-journald[263]: Runtime Journal (/run/log/journal/93c43a50cada46e39819e0da68f790a2) es 4,2 M, máximo 34,1 M, 29,8 M libres. 10 de junio 22:23:01 host systemd-journald[740]: Runtime Journal (/run/log/journal/da54d37671ac4429bcdfacfe7bebb5a1) es 4,2 M, máximo 34,1 M, 29,8 M libres. 10 de junio 22:30:50 host systemd-journald[740]: System Journal (/var/log/journal/da54d37671ac4429bcdfacfe7bebb5a1) es 8M, máximo 997,3M, 989,3M libres. ...salida omitida... Nota En el comando grep anterior, el símbolo de la barra vertical (|) en la expresión actúa como un operador o. Es decir, el comando grep coincide con cualquier línea con la cadena Runtime Journal o la cadena System Journal de la salida del comando journalctl. Este comando recupera los límites de tamaño actuales en el almacén de diario volátil (tiempo de ejecución) y en el almacén de diario persistente (sistema). Localización de archivos de configuración del diario Los administradores del sistema normalmente configuran los ajustes del diario editando el archivo de configuración /etc/systemd/journald.conf o agregando archivos de configuración con un sufijo .conf al directorio /etc/systemd/journald.conf.d. Sin embargo, es posible que un sistema RHEL no tenga esos archivos o ese directorio. En ese caso, se verifican las configuraciones en las ubicaciones de menor prioridad que están documentadas en la página del comando man journal.conf(5), y si ninguno de esos archivos o directorios existe, entonces se utilizan las configuraciones predeterminadas compiladas. Importante A partir de RHEL 10, el archivo /etc/systemd/journald.conf no está presente en el momento de la instalación. El servicio systemd-journald lee su configuración predeterminada del archivo de configuración /usr/lib/systemd/journald.conf. Para cambiar el comportamiento del diario, no edite el archivo de configuración /usr/lib/systemd/journald.conf directamente. En su lugar, copie el archivo /usr/lib/systemd/journald.conf al directorio /etc/systemd y luego descomente y cambie la configuración apropiada en el archivo /etc/systemd/journald.conf resultante. Los ajustes de configuración en el archivo /etc/systemd/journald.conf tienen prioridad sobre los ajustes predeterminados en el archivo /usr/lib/systemd/journald.conf. Configurar la rotación automática de diarios Para configurar la rotación automática de diarios para diarios persistentes o de solo tiempo de ejecución, establezca los siguientes parámetros en el archivo /etc/systemd/journald.conf. Prefije la configuración con Sistema para diarios persistentes en el directorio /var/log/journal. Prefije la configuración con Runtime para diarios volátiles en el directorio /run/log/journal. SystemMaxUse y RuntimeMaxUse La cantidad máxima de espacio del sistema de archivos que el diario puede utilizar. Este valor es el 10 % del espacio total del sistema de archivos de forma predeterminada y tiene un límite de 4 GB.
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente SystemMaxFileSize y RuntimeMaxFileSize El tamaño máximo de archivo de un diario antes de que rote. Este valor es un octavo del valor SystemMaxUse/RuntimeMaxUse de forma predeterminada, tiene un límite de 128 M y normalmente permite mantener siete archivos de diario rotados como historial. Si el modo compacto de diario está habilitado (el valor predeterminado), este valor tiene un límite de 4 GB. SystemKeepFree y RuntimeKeepFree El espacio libre mínimo en el sistema de archivos que debe permanecer antes de que se eliminen los diarios archivados. Al menos el 15% del espacio total del sistema de archivos siempre se mantiene libre de forma predeterminada. Este valor tiene un límite de 4 GB. Importante Sólo los archivos con los sufijos .journal o .journal~ se consideran archivos de diario. Después de editar el archivo de configuración /etc/systemd/journald.conf, reinicie el servicio systemd-journald para aplicar los cambios de configuración.
+
+root@host:~# systemctl restart systemd-journald
+
+Referencias páginas de comando man journald.conf(5) y systemd-journald.service(8) Para obtener más información, consulte el capítulo Solución de problemas mediante el uso de archivos de registro de la guía Red Hat Enterprise Linux 10 Risk Reduction and Recovery Operations en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/operaciones_de_reducción_de_riesgo_y_recuperación/index#solución-de-problemas-mediante-el-uso-de-archivos-de-registro
+
+
+
+
+
+13.8. Ejercicio guiado Configurar un diario del sistema persistente 13.8. Ejercicio guiado Configurar un diario del sistema persistente Configure un diario del sistema para que los eventos del registro persistan después de un reinicio. Resultados Configure un diario del sistema para conservar los eventos de registro después de un reinicio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-preserve
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Confirme que el directorio /var/log/journal no existe. Debido a que el directorio /var/log/journal no existe, el servicio systemd-journald no conserva los eventos de registro después de reiniciar.
+
+[root@servera ~]# ls /var/log/journal
+ls: cannot access '/var/log/journal': No such file or directory
+
+2. Configure el servicio systemd-journald para conservar los diarios después de reiniciar. 3. Cree el directorio /var/log/journal.
+
+[root@servera ~]# mkdir /var/log/journal
+
+3.1. Vacíe el diario actual al almacenamiento.
+
+[root@servera ~]# journalctl --flush
+
+3.2. Verifique que el servicio systemd-journald conserve sus diarios para que persistan después de un reinicio. 4. Reinicie la máquina del servidor. La conexión SSH finaliza tan pronto como reinicia el servidor en una máquina. 4.1.
+
+
+
+
+

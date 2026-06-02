@@ -1,0 +1,92 @@
+# Ejercicio Guiado: Ejercicio guiado para localizar archivos en un sistema de archivos
+# Tipo: guided_exercise
+# Capítulo: Capítulo 8. Acceso a medios extraíbles
+
+8.6. Ejercicio guiado Localizar archivos en un sistema de archivos 8.6. Ejercicio guiado Localizar archivos en un sistema de archivos Buscar archivos en un sistema de archivos que esté actualmente montado. Resultados Busque archivos con los comandos buscar y localizar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-locate
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Utilice el comando de localización para buscar los siguientes archivos en la máquina del servidor. 2. Actualice la base de datos ubicada manualmente en la máquina del servidor. Utilice el comando sudo actualizadob para actualizar la base de datos. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo updatedb
+
+[sudo] contraseña para estudiante: estudiante [estudiante@servera ~]$ 2.1. Localice el archivo de configuración logrotate.conf.
+
+[student@servera ~]$ locate logrotate.conf
+
+/etc/logrotate.conf /usr/share/man/man5/logrotate.conf.5.gz 2.2. Localice el archivo de configuración networkmanager.conf, ignorando la distinción entre mayúsculas y minúsculas.
+
+[student@servera ~]$ locate -i networkmanager.conf
+
+/etc/NetworkManager/NetworkManager.conf /etc/dbus-1/system.d/org.freedesktop.NetworkManager.conf /usr/share/man/man5/NetworkManager.conf.5.gz 2.3. Utilice el comando buscar para buscar los siguientes archivos en tiempo real en la máquina del servidor. 3. Utilice el privilegio de root para buscar todos los archivos en el directorio /var/lib que posee el usuario chrony. Si es necesario, utilice estudiante como contraseña de Sudo. 3.1.
+
+
+
+
+
+8.6. Ejercicio guiado Ubicar archivos en un sistema de archivos Finalizar En la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[student@servera ~]$ sudo find /var/lib -user chrony
+
+/var/lib/chrony /var/lib/chrony/drift Utilice el privilegio de root para buscar todos los archivos en el directorio /var que pertenecen al usuario root y al grupo de correo. Utilice estudiante como contraseña de Sudo.
+
+[student@servera ~]$ sudo find /var -user root -group mail
+
+/var/spool/correo 3.2. Busque todos los archivos en el directorio /usr/bin con un tamaño de archivo superior a 50 KB.
+
+[student@servera ~]$ find /usr/bin -size +50k
+
+/usr/bin/iconv /usr/bin/locale /usr/bin/localedef /usr/bin/cmp ... salida omitida... 3.3. Busque todos los archivos en el directorio /home/student que hayan cambiado en los últimos 120 minutos. Importante La salida de su comando puede diferir, según los archivos que se hayan modificado en los últimos 120 minutos en su entorno de laboratorio.
+
+[student@servera ~]$ find /home/student -mmin -120
+
+/home/student/.bash_logout /home/student/.bash_profile /home/student/.bashrc ... salida omitida... 3.4. Busque todos los archivos del dispositivo de bloque en el directorio /dev.
+
+[student@servera ~]$ find /dev -type b
+
+/dev/sdb /dev/sda /dev/sdc /dev/sdb1 /dev/sdd /dev/sda1 /dev/sda2 /dev/sda3 /dev/sr0 3.5. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+4.
+
+
+
+
+
+8.6. Ejercicio guiado para localizar archivos en un sistema de archivos
+
+student@workstation:~$ lab finish fs-locate
+
+
+
+
+
+8.7. Acceso al laboratorio Medios extraíbles 8.7. Lab Access a medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Resultados Montar un sistema de archivos. Genere un informe de uso del disco. Busque archivos en el sistema de archivos local. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade fs-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-review
+
+Como usuario raíz en la máquina del servidor, identifique el UUID para el dispositivo /dev/sdb1 y móntelo usando su UUID en el directorio /mnt/system-report. 1. Genere un informe de uso del disco para el directorio /usr/share. Guarde el resultado en el archivo /mnt/system-report/disk-usese.txt. 2. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf y almacene los resultados en el archivo /mnt/system-report/search1.txt. 3. Busque todos los archivos en el directorio /usr/share que tengan más de 5 MB pero menos de 10 MB. Guarde los resultados en el archivo /mnt/system-report/search2.txt. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+

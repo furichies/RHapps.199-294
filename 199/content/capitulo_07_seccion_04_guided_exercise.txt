@@ -1,0 +1,154 @@
+# Ejercicio Guiado: Ejercicio guiado Obtenga acceso de superusuario
+# Tipo: guided_exercise
+# Capítulo: Capítulo 4. Gestión de usuarios y grupos locales
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario 4.4. Ejercicio guiado Obtenga acceso de superusuario Cambie a la cuenta de superusuario para administrar un sistema Linux y otorgue acceso de superusuario a otros usuarios mediante Sudo. Resultados Utilice Sudo para cambiar al usuario raíz y acceder al shell interactivo como usuario raíz sin conocer la contraseña del superusuario. Verifique el comportamiento del comando su cambiando de usuario directamente y abriendo un shell de inicio de sesión. Utilice privilegios de Sudo como usuario normal para administrar un archivo restringido. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para este ejercicio y garantizar que todos los recursos necesarios estén disponibles.
+
+student@workstation:~$ lab start users-superuser
+
+Instrucciones Como usuario estudiante en la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Explore el entorno de shell del usuario estudiante. Ver la información actual del usuario y grupo y mostrar el directorio de trabajo actual. Vea también las variables de entorno que especifican el directorio de inicio del usuario y las ubicaciones de los archivos ejecutables del usuario. 2. Ver la información actual del usuario y del grupo.
+
+[student@servera ~]$ id
+uid=1000(student) gid=1000(student) groups=1000(student),10(wheel) 
+context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+
+2.1. Muestra el directorio de trabajo actual.
+
+[student@servera ~]$ pwd
+
+/casa/estudiante 2.2. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[student@servera ~]$ echo $HOME
+
+/casa/estudiante
+
+[student@servera ~]$ echo $PATH
+/home/student/.local/bin:/home/student/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+2.3. Cambie al usuario root en un shell sin inicio de sesión y explore el nuevo entorno del shell. 3. Conviértase en usuario root utilizando el comando sudo su. Utilice estudiante como contraseña. 3.1.
+
+
+
+
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario
+
+[student@servera ~]$ sudo su
+
+[sudo] contraseña para estudiante: estudiante [root@servera estudiante]# Ver la información actual del usuario y del grupo.
+
+[root@servera student]# id
+uid=0(root) gid=0(root) groups=0(root) context=unconfined_u:unconfined_r:unconfined_t:s0-
+s0:c0.c1023
+
+Ahora está ejecutando comandos como usuario root. 3.2. Muestra el directorio de trabajo actual.
+
+[root@servera student]# pwd
+
+/home/student Su directorio de trabajo actual permanece igual después de convertirse en usuario root usando el comando sudo su. 3.3. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[root@servera student]# echo $HOME
+
+/raíz
+
+[root@servera student]# echo $PATH
+/root/.local/bin:/root/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
+
+Cuando utiliza el comando su para convertirse en usuario root, no conserva la ruta actual del usuario estudiante. Como puede ver en el siguiente paso, la ruta tampoco es la ruta del usuario raíz. ¿Qué pasó? La diferencia es que no ejecuta su directamente. En su lugar, ejecuta el comando su como usuario root mediante Sudo porque no tiene la contraseña del superusuario. El comando sudo anula la variable PATH del entorno por razones de seguridad. Cualquier comando que se ejecute después de la anulación inicial aún puede actualizar la variable PATH, como puede ver en los siguientes pasos. 3.4. Salga del shell del usuario root.
+
+[root@servera student]# exit
+
+salida [estudiante@servera ~]$ 3.5. Cambie al usuario root en un shell de inicio de sesión y explore el nuevo entorno del shell. El comando sudo puede solicitarle la contraseña del estudiante, según el período de tiempo de espera de Sudo. El período de tiempo de espera predeterminado es de cinco minutos. Si se autenticó en Sudo en los últimos cinco minutos, el comando sudo no le solicitará la contraseña. Si han transcurrido más de cinco minutos desde que se autenticó, deberá ingresar estudiante como contraseña para la autenticación. 4. Utilice el comando sudo su - para convertirse en usuario root.
+
+[student@servera ~]$ sudo su -
+
+[root@servera ~]# Observe la diferencia en el indicador de shell en comparación con el de sudo su en el paso anterior. 4.1.
+
+
+
+
+
+4.4. Ejercicio guiado Obtenga acceso de superusuario Vea la información actual del usuario y del grupo.
+
+[root@servera ~]# id
+uid=0(root) gid=0(root) groups=0(root) context=unconfined_u:unconfined_r:unconfined_t:s0-
+s0:c0.c1023
+
+4.2. Muestra el directorio de trabajo actual.
+
+[root@servera ~]# pwd
+
+/raíz 4.3. Imprima los valores de las variables HOME y PATH para determinar el directorio de inicio y la ruta de los ejecutables del usuario, respectivamente.
+
+[root@servera ~]# echo $HOME
+
+/raíz
+
+[root@servera ~]# echo $PATH
+/root/.local/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+
+Como en el paso anterior, después de que el comando sudo restablece la variable PATH de la configuración en el entorno de shell del usuario estudiante, el comando su - ejecuta los scripts de inicio de sesión del shell para el usuario raíz y establece la variable PATH en otro valor más. El comando su sin la opción guión (-) no tiene el mismo comportamiento. 4.4. Salga del shell del usuario raíz para regresar al shell del usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión [estudiante@servera ~]$ 4.5. Revise la definición de Sudo del usuario operador1 en el directorio /etc/sudoers.d/.
+
+[student@servera ~]$ sudo cat /etc/sudoers.d/operator1
+operator1 ALL=(ALL) ALL
+
+El usuario operador1 puede ejecutar cualquier comando como cualquier usuario utilizando el comando sudo. 5. Conviértase en el usuario operador1 y vea el contenido del archivo /var/log/messages. Como estas operaciones requieren privilegios administrativos, utilice Sudo para ejecutar comandos como superusuario. No cambie al usuario root utilizando los comandos sudo su o sudo su -. 6. Cambie al usuario operador1. Utilice redhat como contraseña del usuario operador1.
+
+[student@servera ~]$ su - operator1
+
+Contraseña: redhat [operador1@servera ~]$ 6.1. Enumere el archivo /var/log/messages. Revise la propiedad y los permisos del usuario.
+
+[operator1@servera ~]$ ls -l /var/log/messages
+
+-rw-------. 1 root root 1399281 14 de mayo 13:00 /var/log/messages El usuario root es propietario de este archivo y solo el usuario root tiene permisos de lectura/escritura. 6.2. Sin utilizar Sudo, intente ver las últimas cinco líneas del archivo /var/log/messages. El comando debería fallar porque solo el usuario root puede ver o escribir en el archivo /var/log/messages. 6.3.
+
+
+
+
+
+4.4. Ejercicio guiado Obtener acceso de superusuario Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish users-superuser
+[operator1@servera ~]$ tail -5 /var/log/messages
+tail: cannot open '/var/log/messages' for reading: Permission denied
+
+Utilice Sudo para ver las últimas cinco líneas del archivo /var/log/messages. El resultado puede variar en su entorno.
+
+[operator1@servera ~]$ sudo tail -5 /var/log/messages
+
+[sudo] contraseña para operador1: redhat 14 de mayo 13:03:11 servera systemd[1]: Iniciando cockpit-wsinstance-https@e3b0...b855.socket - Socket para Cockpit Web Service https instancia e3b0...b855... 14 de mayo 13:03:11 servera systemd[1]: Escuchando en cockpit-wsinstance-https@e3b0...b855.socket - Socket para la instancia https del Cockpit Web Service e3b0...b855. 14 de mayo 13:03:11 servera systemd[1]: Se inició cockpit-wsinstance-https@e3b0...b855.service - Cockpit Web Service https instancia e3b0...b855. 14 de mayo 13:03:11 servera systemd[1]: cockpit-wsinstance-https-factory@30-1077-61789.service: Desactivado correctamente. 14 de mayo 13:03:36 servera systemd[1]: systemd-hostnamed.service: Desactivado correctamente. 6.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[operator1@servera ~]$ exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+4.5. Gestión de cuentas de usuarios locales 4.5. Gestión de cuentas de usuarios locales Objetivos Crear, modificar y eliminar cuentas de usuarios locales. Administrar usuarios locales desde la línea de comandos Puede utilizar herramientas de línea de comandos para administrar cuentas de usuarios locales. Esta sección revisa algunas herramientas importantes para crear y eliminar cuentas de usuario y para configurar contraseñas para los usuarios. Creación de usuarios El comando useradd nombre de usuario crea una cuenta de usuario llamada nombre de usuario. Este comando completa lo siguiente
+
+tasks to set up and configure the new account:
+
+Ejecute el comando useradd como superusuario. El comando useradd lee la configuración para la creación de usuarios del archivo /etc/login.defs. El comando useradd escribe una entrada en los archivos /etc/group, /etc/passwd y /etc/shadow con la información asignada al nombre de usuario (ID de usuario e ID de grupo). El comando useradd crea el directorio de inicio del usuario nombre de usuario en la ruta /home/nombredeusuario. El comando useradd copia los archivos de perfil de usuario en el directorio /etc/skel al directorio de inicio del usuario del nombre de usuario (bajo /home/nombredeusuario). Además, el comando useradd realiza las siguientes acciones: Hace referencia al archivo de configuración /etc/default/useradd para determinar los valores predeterminados para nuevas cuentas de usuario. Agrega una entrada al archivo /etc/gshadow cuando se crea un nuevo usuario. Crea un buzón para el nuevo usuario en el archivo /var/spool/mail/username. Actualiza los archivos /etc/subuid y /etc/subgid para asignar rangos de ID subordinados para el nuevo usuario. En este punto, no se establece una contraseña válida para la cuenta y el usuario no puede iniciar sesión hasta que se establezca una contraseña.
+
+
+
+
+

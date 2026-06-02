@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 20. Acceso al almacenamiento conectado a la red
+
+20.6. Resumen 20.6. Resumen En esta lección, aprendió sobre Network File System y cómo montar y desmontar sistemas de archivos de forma manual y persistente. Un servidor NFS exporta directorios para montaje remoto. Un cliente NFS monta directorios exportados en un directorio de punto de montaje local. El servicio de montaje automático (autofs) monta y desmonta sistemas de archivos y exportaciones NFS según demanda. El servicio autofs brinda soporte a los usuarios que no tienen permiso para montar recursos compartidos NFS. El montador automático desmonta los sistemas de archivos cuando ya no están en uso para protegerlos de daños inesperados. El servicio autofs admite el mapeo de puntos de montaje directo e indirecto. Un montaje directo es una ubicación conocida con un punto de montaje permanente. Un montaje indirecto es una ubicación de montaje que no se conoce hasta que se produce la demanda de montaje.
+
+
+
+
+
+Capítulo 21. Tareas de revisión integral de objetivos de RHCSA Rapid Track. Secciones Revisión completa Solucionar problemas de arranque y mantener servidores (laboratorio de laboratorio) Configurar y administrar sistemas de archivos y almacenamiento (laboratorio de laboratorio) Configurar y administrar la seguridad del servidor (laboratorio de laboratorio) Solucionar problemas de arranque y mantener servidores Configurar y administrar sistemas de archivos y almacenamiento Configurar y administrar la seguridad del servidor
+
+
+
+
+

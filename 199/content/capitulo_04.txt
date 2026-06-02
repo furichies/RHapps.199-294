@@ -1,0 +1,214 @@
+# Capítulo 1. Registro de sistemas para soporte de Red Hat
+
+## 1.1. Registro de sistemas para soporte de Red Hat
+
+1.1. Registro de sistemas para soporte de Red Hat 1.1. Registro de sistemas para soporte de Red Hat Objetivos Registre un sistema utilizando su cuenta de Red Hat. Los beneficios de una suscripción a Red Hat Red Hat brinda acceso a repositorios de software a través de Red Hat Content Delivery Network (CDN) en un modelo basado en suscripción. Los repositorios de software proporcionan paquetes actualizados periódicamente, incluidos parches de seguridad, correcciones de errores y mejoras. Los clientes con suscripciones activas pueden acceder a los repositorios de contenido de Red Hat para instalar nuevos paquetes de software y mantenerse actualizados con las últimas actualizaciones. Además de las actualizaciones de software, una suscripción activa proporciona a los clientes recursos técnicos como Customer Portal Labs, soluciones de base de conocimientos, documentación, Red Hat Insights y experiencia en soporte. En 2024, Red Hat hizo la transición a un modelo de suscripción llamado Simple Content Access (SCA). Este modelo de suscripción basado en acceso exige la existencia de una suscripción válida por organización, eliminando la necesidad de adjuntar suscripciones a nivel de sistema. El nuevo modelo reduce la complejidad en la gestión de suscripciones y las herramientas. Como parte de esta migración, los servicios de suscripción de cara al cliente se trasladaron del Portal del cliente de Red Hat (https://access.redhat.com) a Red Hat Hybrid Cloud Console (https://console.redhat.com). Hybrid Cloud Console proporciona una experiencia unificada para la gestión de sistemas y una integración más estrecha con Red Hat Insights. Registro de un sistema RHEL Puede utilizar diferentes opciones para registrar un sistema en el servicio de suscripción de Red Hat. Por ejemplo, puede utilizar la consola web gráfica de RHEL o herramientas de línea de comandos, como la configuración de host remoto (rhc) o el administrador de suscripciones (subscription-manager). Puede utilizar estas herramientas para realizar las siguientes acciones con sus sistemas: Registrar un sistema para asociarlo con una cuenta de Red Hat que tenga una suscripción activa. Durante el registro, el sistema recibe certificados de identidad únicos para la autenticación en el servicio de suscripciones de Red Hat. Habilite repositorios adicionales para proporcionar acceso a paquetes de software según sea necesario. Los repositorios predeterminados se habilitan automáticamente para los productos instalados, lo que proporciona acceso inmediato al contenido. Revise y realice un seguimiento de los derechos disponibles o consumidos en la página Inventario de suscripciones de Hybrid Cloud Console. Opcionalmente, regístrese en Red Hat Insights para obtener análisis predictivos y resolución proactiva de problemas. Registro de un sistema con la herramienta rhc La herramienta de línea de comandos rhc está disponible para registrar sistemas RHEL 8.8 y posteriores. De forma predeterminada, la herramienta rhc habilita
+
+three features: content, analytics and remote-management. These features allow your system to access content
+
+repositorios y habilita los servicios de análisis y remediación de Red Hat Insights con un solo comando. Para utilizar la herramienta rhc, debe autenticarse mediante una cuenta de Red Hat que tenga una suscripción válida. Además, debe tener acceso de root en el sistema para poder registrarlo.
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat
+
+root@host:~# rhc connect
+
+Conectando host.example.com a Red Hat. Esto puede tardar unos segundos. Preferencias de características: [ ✓] contenido, [ ✓] análisis, [ ✓] administración remota Nombre de usuario: nombre de usuario de red-hat Contraseña: contraseña de red-hat [ ✓ ] Conectado a Red Hat Subscription Management
+
+  [✓] Content ... Red Hat repository file generated
+  [✓] Analytics ... Connected to Red Hat Insights
+  [✓] Remote Management ... Activated the yggdrasil service
+
+¡Conectado exitosamente a Red Hat! Administre sus sistemas conectados: https://red.ht/connector El comando rhc habilita las tres funciones principales de forma predeterminada. Si desea habilitar solo el acceso a repositorios de contenido sin registrarse en Red Hat Insights, puede deshabilitar las funciones de análisis y administración remota durante el registro. Puede desactivar estas funciones utilizando el comando rhc connect con la opción --disable-feature.
+
+root@host:~# rhc connect --disable-feature=analytics,remote-management
+
+...salida omitida... Preferencias de características: [✓]contenido, [ ]análisis, [ ]administración remota Nombre de usuario: red-hat-username Contraseña: red-hat-password [✓] Conectado a Red Hat Subscription Management
+
+  [✓] Content ... Red Hat repository file generated
+  [ ] Analytics ... Connecting to Red Hat Insights disabled
+  [ ] Management .... Starting yggdrasil service disabled (required feature "analytics" is disabled)
+
+...salida omitida... Cuando vaya a la consola de la nube híbrida para verificar este sistema en particular, espere que el panel muestre la advertencia Su cliente de insights no informa. La información de inventario para este sistema es limitada debido a la falta de recopilación de datos. Uso de una clave de activación con la herramienta rhc Para registrar un sistema de forma segura de una manera más automatizada, use el comando rhc connect junto con una clave de activación y el identificador de su organización (identificador numérico). Este método es más seguro que proporcionar nombres de usuario y contraseñas personales. Una clave de activación es un token de autenticación previamente compartido que puede crear y administrar en Hybrid Cloud Console. En el panel, haga clic en Insights for RHEL y luego seleccione Inventario › Configuración del sistema › Claves de activación. Cuando crea una clave de activación, tiene la opción de asociar la clave con la última versión de RHEL o bloquear la clave a una versión anterior específica. Opcionalmente, también puede definir el propósito del sistema, que es un mecanismo de etiquetado para ayudar a identificar los hosts en el inventario más adelante. También puede definir repositorios adicionales para la clave de activación, lo que puede simplificar aún más la configuración de un sistema durante el registro. El siguiente ejemplo muestra cómo utilizar una clave de activación con el comando rhc.
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat
+
+root@host:~# rhc connect --activation-key=<activation_key_name> \
+
+--organization=<organization_ID> ...salida omitida... ¡Conectado exitosamente a Red Hat! Administre sus sistemas conectados: https://red.ht/connector Cancelar el registro de un sistema con la herramienta rhc Para cancelar el registro de su sistema, use el comando rhc desconexión:
+
+root@host:~# rhc disconnect
+
+Desconectando host.example.com de Red Hat. Esto puede tardar unos segundos. [ ✓ ] Desactivado el servicio yggdrasil [ ✓ ] Desconectado de Red Hat Insights [ ✓ ] Desconectado de Red Hat Subscription Management Administre sus sistemas conectados: https://red.ht/connector Registro de un sistema con la herramienta de administrador de suscripciones El comando rhc es la herramienta preferida para registrar sistemas, pero el comando rhc no está disponible para RHEL 8.7 o versiones anteriores. Como alternativa, puede utilizar el comando del administrador de suscripción para registrar sus sistemas. La herramienta de administrador de suscripciones también es útil en los casos en los que desea habilitar el acceso al repositorio sin conectarse a Red Hat Insights. En RHEL 10, se eliminaron varios módulos de administrador de suscripciones que estaban relacionados con adjuntar suscripciones por sistema. Sin embargo, la herramienta de administración de suscripciones no ha sido reemplazada ni obsoleta en RHEL 10 y continúa funcionando de manera similar a sus versiones anteriores. Debido a la transición al acceso simple a contenido, registrar un sistema mediante la herramienta de administrador de suscripciones es
+
+accomplished in a single step:
+root@host:~# subscription-manager register
+
+Registrarse en: subscribe.rhsm.redhat.com:443/subscription Nombre de usuario: red-hat-username Contraseña: red-hat-password El sistema se ha registrado con ID: 686c73e1-3780... El nombre del sistema registrado es: host.example.com Si ha creado una clave de activación en Hybrid Cloud Console, puede usarla para registrar su sistema sin
+
+using your username and password:
+root@host:~# subscription-manager register \
+
+--activationkey <nombre_clave_activación> --org <ID_organización> El sistema se ha registrado con ID: 361d5774-76e0... El nombre del sistema registrado es: host.example.com Para verificar el estado de registro de su sistema, puede utilizar el comando status del administrador de suscripción:
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat
+
+root@host:~# subscription-manager status
+
++-------------------------------------+
+
+   System Status Details
+
++-------------------------------------+ Estado general: Registrado Para verificar el uso de la suscripción, debe visitar la Consola de nube híbrida porque la herramienta de administrador de suscripciones ya no informa el uso de derechos por sistema. El comando de administrador de suscripción no puede conectar su sistema a Red Hat Insights. Después del registro, puede
+
+use the insights-client command to enable Red Hat Insights:
+root@host:~# insights-client --register
+
+Host registrado correctamente host.example.com Se ha habilitado la programación automática para Insights. Comenzando a recopilar datos de Insights para host.example.com Escribiendo datos de RHSM en /etc/rhsm/facts/insights-client.facts... Cargando datos de Insights. Informe cargado correctamente desde host.example.com a la cuenta 606... Vea la consola de Red Hat Insights en https://console.redhat.com/insights/ Configuración de los atributos del propósito del sistema El propósito del sistema es un mecanismo de etiquetado opcional que ayuda a filtrar su inventario. Puede configurar los siguientes atributos
+
+and values by using the subscription-manager command:
+
+Rol Servidor Red Hat Enterprise Linux Estación de trabajo Red Hat Enterprise Linux Nodo de cómputo Red Hat Enterprise Linux Acuerdo de nivel de servicio Estándar Premium Autosoporte Uso Producción Desarrollo/Prueba Recuperación ante desastres Utilice el comando sysPurpose del administrador de suscripción para establecer atributos relevantes del propósito del sistema:
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat
+
+root@host:~# subscription-manager syspurpose role \
+
+--establezca el rol 'Estación de trabajo Red Hat Enterprise Linux' establecido en "Estación de trabajo Red Hat Enterprise Linux".
+
+root@host:~# subscription-manager syspurpose service-level \
+
+--establecer el acuerdo de nivel de servicio 'Premium' establecido en "Premium".
+
+root@host:~# subscription-manager syspurpose usage \
+
+--establecer el uso de 'Desarrollo/Prueba' en "Desarrollo/Prueba". El subcomando sysPurpose también admite la opción --list para ayudar a enumerar los valores disponibles para cada atributo. Para
+
+example, the following command checks the list of available values for the usage attribute:
+root@host:~# subscription-manager syspurpose usage --list
+
++-------------------------------------+
+
+               Available usage
+
++-------------------------------------+ - Desarrollo/Prueba Cancelar el registro de un sistema con la herramienta de administrador de suscripciones Con la herramienta del administrador de suscripciones, eliminar un registro es un proceso de un solo paso:
+
+root@host:~# subscription-manager unregister
+
+Cancelación del registro en: suscripción.rhsm.redhat.com:443/subscription Se ha cancelado el registro del sistema. Registro de un sistema con la consola web RHEL Si prefiere una interfaz gráfica de usuario a las herramientas de línea de comandos, entonces la consola web RHEL es una buena alternativa. Para registrar un sistema con la consola web, debe iniciar sesión como usuario privilegiado. Haga clic en Suscripciones para ver el estado de su suscripción actual y la lista de productos instalados.
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat Figura 2. Descripción general de la consola web Para iniciar el proceso de registro, haga clic en Registrarse en la sección Descripción general. Figura 3. Registro de la consola web En el cuadro de diálogo Registrar sistema, proporcione el nombre de usuario y la contraseña de su cuenta de Red Hat y luego haga clic en Registrar para registrar el sistema. Alternativamente, en lugar de proporcionar un nombre de usuario y contraseña, puede proporcionar una clave de activación junto con un identificador de organización. De forma predeterminada, el registro en Red Hat Insights está preseleccionado.
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat Registro de un sistema durante la instalación Si está implementando RHEL 10 en una máquina virtual o sin sistema operativo, el instalador de Anaconda puede registrar su sistema de destino antes de que comience la instalación del paquete. En la interfaz interactiva de Anaconda, haga clic en Conectarse a Red Hat para acceder al cuadro de diálogo de registro. Figura 4. Resumen del instalador de Anaconda Puede autenticarse utilizando un nombre de usuario y contraseña, o utilizando una clave de activación. Opcionalmente, también puede configurar el propósito del sistema y registrarse en Red Hat Insights.
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat Figura 5. Registro del instalador de Anaconda Si desea registrar su sistema como parte de una instalación Kickstart automatizada, puede utilizar el comando rhsm Kickstart. Tenga en cuenta que el comando rhsm Kickstart requiere una clave de activación y un identificador de organización. Inspección de certificados de identidad Un sistema registrado almacena varios certificados en el directorio /etc/pki. Los certificados /etc/pki/product-default identifican los productos de Red Hat que están instalados en el sistema. El par de claves y certificado /etc/pki/consumer identifica el sistema. El certificado /etc/pki/entitlement y el par de claves autentica el sistema en los repositorios. Puede utilizar el comando rct cat-cert para inspeccionar los certificados con más detalle:
+
+
+
+
+
+1.1. Registro de sistemas para soporte de Red Hat
+
+root@host:~# rct cat-cert /etc/pki/product-default/479.pem
+
++-------------------------------------+ Certificado de producto +-------------------------------------+ Certificado: Ruta: /etc/pki/product-default/479.pem Versión: 1.0 Serie: 271555466504741450059712551000979178078433728276 Fecha de inicio: 2024-08-15 06:16:49+00:00 Fecha de finalización: 2044-08-15 06:16:49+00:00 ...salida omitida... Producto: ID: 479 Nombre: Red Hat Enterprise Linux para x86_64 Versión: 10.0 Arco: x86_64 Etiquetas: rhel-10,rhel-10-x86_64 Tipo de marca: Nombre de marca: Referencias Páginas de comando man rhc(8), subscribe-manager(8) y rct(8) Para obtener más información sobre el registro, consulte Introducción al registro del sistema RHEL en
+
+https://docs.redhat.com/en/documentation/subscription_central/1-latest/html-
+
+single/getting_started_with_rhel_system_registration/index Para obtener más información sobre las claves de activación, consulte Introducción a las claves de activación en la consola de la nube híbrida en https://docs.redhat.com/en/documentation/subscription_central/1-latest/html- single/getting_started_with_activation_keys_on_the_hybrid_cloud_console/index Para obtener más información sobre cómo ver sus suscripciones, consulte Ver y administrar su inventario de suscripción en la consola de nube híbrida en https://docs.redhat.com/en/documentation/subscription_central/1-latest/html-single/viewing_and_managing_your_subscription_inventory_on_the_hybrid_cloud_console/index
+
+
+
+
+
+1.2. Sistemas de registro de pruebas para soporte de Red Hat 1.2. Prueba Registro de sistemas para soporte de Red Hat Elija las respuestas correctas a las siguientes preguntas: ¿Cuál es el propósito principal de registrar un sistema con una cuenta Red Hat? 1. Recibir cursos de capacitación gratuitos de Red Hat. a. Para habilitar copias de seguridad del sistema en servidores Red Hat. b. Para acceder a actualizaciones de software, análisis predictivos y servicios de soporte de Red Hat. do. Para participar en los programas de prueba beta de Red Hat. d. Administra varios sistemas RHEL y desea agilizar el proceso de registro al no utilizar credenciales personales cada vez. Tiene acceso a Red Hat Hybrid Cloud Console. ¿Cómo se pueden registrar de forma segura estos sistemas? 2. Utilice el comando insights-client con una clave de activación. a. Utilice el comando rhc connect con un par de claves válido. b. Utilice el comando rhc connect con una clave de activación. do. Utilice el comando rhn_register con un certificado x509. d. ¿Cómo simplifica Simple Content Access el proceso de registro? 3. Elimina la sobrecarga de adjuntar suscripciones por sistema. a. Elimina el requisito de una cuenta Red Hat. b. Introduce claves de activación como un nuevo concepto. do. Elimina la necesidad de actualizaciones del sistema. d. Usted registró un sistema RHEL utilizando la herramienta de administrador de suscripciones. Ahora desea habilitar Red Hat Insights para este sistema. ¿Qué siguiente paso deberías dar? 4. Utilice el comando insights-client para registrarse en Red Hat Insights. a. Utilice el comando de estado del administrador de suscripciones para habilitar Red Hat Insights. b. Utilice el comando rhc connect para habilitar Red Hat Insights. do. Utilice el comando de registro del administrador de suscripciones nuevamente con opciones adicionales. d. Su tarea es cancelar el registro de un sistema RHEL de los servicios de suscripción de Red Hat. ¿Qué comando deberías usar? 5. darse de baja del cliente de insights a. RHC cancelar el registro b. desconexión rhc c. registro de administrador de suscripciones d. ¿Qué acuerdo de nivel de servicio se puede establecer mediante el comando del administrador de suscripción? 6. Prima a. Empresa B. Básico c. Avanzado d.
+
+
+
+
+
+
+
+## Cuestionario: Sistemas de registro de cuestionarios para soporte de Red Hat
+
+1.2. Sistemas de registro de pruebas para soporte de Red Hat 1.2. Prueba Registro de sistemas para soporte de Red Hat Elija las respuestas correctas a las siguientes preguntas: ¿Cuál es el propósito principal de registrar un sistema con una cuenta Red Hat? 1. Recibir cursos de capacitación gratuitos de Red Hat. a. Para habilitar copias de seguridad del sistema en servidores Red Hat. b. Para acceder a actualizaciones de software, análisis predictivos y servicios de soporte de Red Hat. do. Para participar en los programas de prueba beta de Red Hat. d. Administra varios sistemas RHEL y desea agilizar el proceso de registro al no utilizar credenciales personales cada vez. Tiene acceso a Red Hat Hybrid Cloud Console. ¿Cómo se pueden registrar de forma segura estos sistemas? 2. Utilice el comando insights-client con una clave de activación. a. Utilice el comando rhc connect con un par de claves válido. b. Utilice el comando rhc connect con una clave de activación. do. Utilice el comando rhn_register con un certificado x509. d. ¿Cómo simplifica Simple Content Access el proceso de registro? 3. Elimina la sobrecarga de adjuntar suscripciones por sistema. a. Elimina el requisito de una cuenta Red Hat. b. Introduce claves de activación como un nuevo concepto. do. Elimina la necesidad de actualizaciones del sistema. d. Usted registró un sistema RHEL utilizando la herramienta de administrador de suscripciones. Ahora desea habilitar Red Hat Insights para este sistema. ¿Qué siguiente paso deberías dar? 4. Utilice el comando insights-client para registrarse en Red Hat Insights. a. Utilice el comando de estado del administrador de suscripciones para habilitar Red Hat Insights. b. Utilice el comando rhc connect para habilitar Red Hat Insights. do. Utilice el comando de registro del administrador de suscripciones nuevamente con opciones adicionales. d. Su tarea es cancelar el registro de un sistema RHEL de los servicios de suscripción de Red Hat. ¿Qué comando deberías usar? 5. darse de baja del cliente de insights a. RHC cancelar el registro b. desconexión rhc c. registro de administrador de suscripciones d. ¿Qué acuerdo de nivel de servicio se puede establecer mediante el comando del administrador de suscripción? 6. Prima a. Empresa B. Básico c. Avanzado d.
+
+
+
+
+
+1.2. Prueba Registro de sistemas para soporte de Red Hat Usted es responsable de inspeccionar los certificados de identidad en un sistema Red Hat registrado. Debe verificar los certificados que identifican los productos Red Hat instalados. ¿Qué directorio contiene los certificados de los productos Red Hat instalados? 7. /etc/pki/entitlement a. /etc/pki/suscripción b. /etc/pki/product-default c. /etc/pki/consumidor d.
+
+
+
+
+
+1.2. Prueba Registro de sistemas para la solución de soporte Red Hat ¿Cuál es el propósito principal de registrar un sistema con una cuenta Red Hat? 1. Recibir cursos de capacitación gratuitos de Red Hat. a. Para habilitar copias de seguridad del sistema en servidores Red Hat. b. Para acceder a actualizaciones de software, análisis predictivos y servicios de soporte de Red Hat. do. Para participar en los programas de prueba beta de Red Hat. d. Administra varios sistemas RHEL y desea agilizar el proceso de registro al no utilizar credenciales personales cada vez. Tiene acceso a Red Hat Hybrid Cloud Console. ¿Cómo se pueden registrar de forma segura estos sistemas? 2. Utilice el comando insights-client con una clave de activación. a. Utilice el comando rhc connect con un par de claves válido. b. Utilice el comando rhc connect con una clave de activación. do. Utilice el comando rhn_register con un certificado x509. d. ¿Cómo simplifica Simple Content Access el proceso de registro? 3. Elimina la sobrecarga de adjuntar suscripciones por sistema. a. Elimina el requisito de una cuenta Red Hat. b. Introduce claves de activación como un nuevo concepto. do. Elimina la necesidad de actualizaciones del sistema. d. Usted registró un sistema RHEL utilizando la herramienta de administrador de suscripciones. Ahora desea habilitar Red Hat Insights para este sistema. ¿Qué siguiente paso deberías dar? 4. Utilice el comando insights-client para registrarse en Red Hat Insights. a. Utilice el comando de estado del administrador de suscripciones para habilitar Red Hat Insights. b. Utilice el comando rhc connect para habilitar Red Hat Insights. do. Utilice el comando de registro del administrador de suscripciones nuevamente con opciones adicionales. d. Su tarea es cancelar el registro de un sistema RHEL de los servicios de suscripción de Red Hat. ¿Qué comando deberías usar? 5. darse de baja del cliente de insights a. RHC cancelar el registro b. desconexión rhc c. registro de administrador de suscripciones d. ¿Qué acuerdo de nivel de servicio se puede establecer mediante el comando del administrador de suscripción? 6. Prima a. Empresa B. Básico c. Avanzado d.
+
+
+
+
+
+1.2. Prueba Registro de sistemas para soporte de Red Hat Usted es responsable de inspeccionar los certificados de identidad en un sistema Red Hat registrado. Debe verificar los certificados que identifican los productos Red Hat instalados. ¿Qué directorio contiene los certificados de los productos Red Hat instalados? 7. /etc/pki/entitlement a. /etc/pki/suscripción b. /etc/pki/product-default c. /etc/pki/consumidor d.
+
+
+
+
+
+1.3. Resumen 1.3. Resumen En esta lección, aprendió sobre el modelo de suscripción de Red Hat, que brinda acceso a contenido en Red Hat Content Delivery Network (CDN), como actualizaciones de software, parches de seguridad y recursos técnicos. El modelo Simple Content Access agiliza la gestión de suscripciones a nivel organizacional y centraliza los servicios en Hybrid Cloud Console. Puede utilizar las herramientas de línea de comandos de configuración de host remoto (rhc) o del administrador de suscripciones (subscription-manager) para registrar sus sistemas. Las herramientas de línea de comandos rhc y de administrador de suscripciones registran sistemas para
+
+content access; the rhc tool can additionally activate Red Hat Insights.
+
+Alternativamente, puede utilizar la consola web de RHEL para registrar su sistema. Los sistemas registrados reciben certificados de identificación y autenticación.
+
+
+
+
+
+
+
+## Resumen
+
+1.3. Resumen 1.3. Resumen En esta lección, aprendió sobre el modelo de suscripción de Red Hat, que brinda acceso a contenido en Red Hat Content Delivery Network (CDN), como actualizaciones de software, parches de seguridad y recursos técnicos. El modelo Simple Content Access agiliza la gestión de suscripciones a nivel organizacional y centraliza los servicios en Hybrid Cloud Console. Puede utilizar las herramientas de línea de comandos de configuración de host remoto (rhc) o del administrador de suscripciones (subscription-manager) para registrar sus sistemas. Las herramientas de línea de comandos rhc y de administrador de suscripciones registran sistemas para
+
+content access; the rhc tool can additionally activate Red Hat Insights.
+
+Alternativamente, puede utilizar la consola web de RHEL para registrar su sistema. Los sistemas registrados reciben certificados de identificación y autenticación.
+
+
+
+
+
+Capítulo 2. Administrar archivos desde la línea de comandos Objetivo Copiar, mover, crear, eliminar y organizar archivos desde la línea de comandos. Secciones Administrar archivos con herramientas de línea de comandos (y ejercicio guiado) Crear vínculos entre archivos (y ejercicio guiado) Hacer coincidir nombres de archivos con expansiones de Shell (y cuestionario) Práctica de laboratorio Administrar archivos desde la línea de comandos
+
+
+
+
+

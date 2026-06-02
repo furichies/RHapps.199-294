@@ -1,0 +1,797 @@
+# Capítulo 8. Acceso a medios extraíbles
+
+## 8.1. Identificación de sistemas de archivos y dispositivos de bloque
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloques 8.1. Identificación de sistemas de archivos y dispositivos de bloques Objetivos Hacer coincidir un dispositivo de almacenamiento en bloques con el sistema de archivos que utiliza un directorio en particular y determinar la cantidad de espacio libre en ese sistema de archivos. Sistemas de archivos y dispositivos de almacenamiento Red Hat Enterprise Linux (RHEL) utiliza el sistema de archivos de extensiones (XFS) como sistema de archivos local predeterminado. RHEL admite el sistema de archivos Extended File System (ext4) para administrar archivos locales. A partir de RHEL 10, el sistema de archivos Extensible File Allocation Table (exFAT) es compatible con el uso de medios extraíbles. Montaje de sistemas de archivos Acceda al contenido de un sistema de archivos montándolo en un directorio vacío. Este directorio se llama punto de montaje. Cuando el directorio esté montado, use el comando ls para enumerar su contenido. Muchos sistemas de archivos se montan automáticamente cuando se inicia el sistema. Un punto de montaje difiere ligeramente de una letra de unidad de Microsoft Windows, donde cada sistema de archivos es una entidad separada. Los puntos de montaje permiten que varios dispositivos de sistema de archivos estén disponibles en una única estructura de árbol. Este punto de montaje es similar a NTFS.
+
+mounted folders in Microsoft Windows.
+
+Uso de dispositivos de bloque Un dispositivo de bloque es un archivo que proporciona acceso de bajo nivel a dispositivos de almacenamiento. Un dispositivo de bloque que representa una unidad de disco duro o un dispositivo de estado sólido (SSD) generalmente se divide en varios dispositivos de bloque más pequeños, y una partición debe formatearse con un sistema de archivos antes de que se pueda montar su sistema de archivos. El directorio /dev almacena archivos de dispositivos de bloque, que RHEL crea automáticamente para todos los dispositivos. En los sistemas RHEL, el
+
+first detected Serial ATA (SATA), Serial Attached SCSI (SAS), SCSI, or USB hard drive is called the /dev/sda device;
+the second is the /dev/sdb device; and so on. These names represent the entire hard drive.
+
+Tabla 9. Nomenclatura de dispositivos de bloque Almacenamiento conectado SATA/SAS/USB (controlador SCSI) /dev/sda, /dev/sdb, /dev/sdc,…​ Almacenamiento paravirtualizado (VM) virtio-blk /dev/vda, /dev/vdb, /dev/vdc,…​ Almacenamiento paravirtualizado (VM) virtio-scsi /dev/sda, /dev/sdb, /dev/sdc, …​ Almacenamiento conectado NVMe (SSD) /dev/nvme0, /dev/nvme1, …​ Almacenamiento SD/MMC/eMMC (tarjetas SD) /dev/mmcblk0, /dev/mmcblk1, …​ Tipo de dispositivo Patrón de nomenclatura del dispositivo
+
+
+
+
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloque Particiones de disco Por lo general, un dispositivo de almacenamiento se divide en varias particiones. Con las particiones, puede compartimentar un disco: las distintas particiones pueden formatearse con diferentes sistemas de archivos o usarse para otros fines. Por ejemplo, una partición puede contener directorios de inicio de usuarios, mientras que otra partición puede contener registros y datos del sistema. Incluso cuando la partición del directorio de inicio está cargada con datos, es posible que la partición del sistema aún tenga espacio disponible. Las particiones son dispositivos de bloqueo por derecho propio. Por ejemplo, en el primer almacenamiento conectado a SATA, la primera partición es el disco /dev/sda1. La segunda partición del mismo almacenamiento es el disco /dev/sda2. La tercera partición en el tercer dispositivo de almacenamiento conectado a SATA es el disco /dev/sdc3, y así sucesivamente. Los dispositivos de almacenamiento paravirtualizados tienen un sistema de nombres similar. Por ejemplo, la primera partición del primer dispositivo de almacenamiento es el disco /dev/vda1. La segunda partición del segundo dispositivo de almacenamiento es el disco /dev/vdb2, y así sucesivamente. Un dispositivo SSD conectado a NVMe nombra sus particiones de manera diferente a un dispositivo conectado a SATA. Para los dispositivos de almacenamiento NVMe, la parte nvmeX del nombre se refiere al dispositivo; la parte nY se refiere al espacio de nombres; y la parte pZ se refiere a la partición. Por ejemplo, la primera partición para el primer espacio de nombres en el primer disco es la partición /dev/nvme0n1p1. La tercera partición para el primer espacio de nombres en el segundo disco es la partición /dev/nvme1n1p3, y así sucesivamente. Las tarjetas MultiMediaCard (MMC) o Secure Digital (SD) a veces pueden tener un sistema de nombres similar al de los dispositivos SATA (/dev/sdN). En algunos casos, las tarjetas SD o MMC pueden tener nombres como /dev/mmcblk0p1, donde la parte mmcblkX del nombre se refiere al dispositivo de almacenamiento y la parte pY del nombre se refiere al número de partición de ese dispositivo. Una lista ampliada del archivo de dispositivo /dev/sda1 en la máquina host revela el tipo de archivo b, que significa bloque
+
+device:
+user@host:~$ ls -l /dev/sda1
+brw-rw----. 1 root disk 8, 1 Jun 12 05:06 /dev/sda1
+
+Volúmenes lógicos Otra forma de organizar discos y particiones es con la gestión de volúmenes lógicos (LVM). LVM agrega dispositivos de bloque en un grupo de volúmenes. El espacio en disco del grupo de volúmenes se separa en volúmenes lógicos, que son el equivalente funcional de una partición en un disco físico. El sistema LVM asigna nombres a grupos de volúmenes y volúmenes lógicos en el momento de su creación. LVM crea un directorio en el directorio /dev que coincide con el nombre del grupo y crea un enlace simbólico dentro de ese nuevo directorio con el mismo nombre que el volumen lógico. Ese archivo de volumen lógico estará entonces disponible para ser montado. Por ejemplo, cuando están presentes un grupo de volúmenes myvg y el volumen lógico mylv, la ruta completa al volumen lógico es el archivo /dev/myvg/mylv. Nota El nombre del dispositivo de volumen lógico mencionado anteriormente establece un vínculo simbólico al archivo del dispositivo que accede a él, que puede variar entre arranques. Otra forma del nombre del dispositivo de volumen lógico, que se vincula desde archivos en el directorio /dev/mapper, se utiliza a menudo para vínculos simbólicos al archivo del dispositivo. Examinar sistemas de archivos Utilice el comando df para mostrar una descripción general de los dispositivos de sistemas de archivos locales y remotos, que incluye el espacio total en disco, el espacio en disco utilizado, el espacio libre en disco y el porcentaje de todo el espacio en disco.
+
+
+
+
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloque El siguiente ejemplo muestra los sistemas de archivos y los puntos de montaje en la máquina host:
+
+user@host:~$ df
+
+Sistema de archivos 1K bloques Usado Disponible Uso% Montado en /dev/sda3 10213356 2458040 7755316 25% /devtmpfs 4096 0 4096 0% /dev tmpfs 873064 0 873064 0% /dev/shm tmpfs 349228 10784 338444 4% /ejecutar tmpfs 1024 0 1024 0% /ejecutar/credentials/systemd-journald... /dev/sda2 204580 8580 196000 5% /boot/efi tmpfs 1024 0 1024 0% /run/credentials/getty@tty1... tmpfs 1024 0 1024 0% /run/credentials/serial-getty@... tmpfs 174612 4 174608 1% /run/user/1000 La partición muestra que hay dos sistemas de archivos físicos montados en los directorios raíz (/) y /boot/efi que existen comúnmente en las máquinas virtuales. Los dispositivos tmpfs y devtmpfs son sistemas de archivos en la memoria del sistema. Todos los archivos escritos en los sistemas de archivos tmpfs o devtmpfs desaparecen después de reiniciar el sistema. Las opciones -h o -H del comando df son opciones legibles por humanos para mejorar la legibilidad de los tamaños de salida. La opción -h informa en KiB (210), MiB (220) o GiB (230), mientras que la opción -H informa en unidades SI: KB (103), MB (106) o GB (109). Los fabricantes de discos duros suelen utilizar unidades SI cuando anuncian sus productos. Vea los sistemas de archivos en la máquina host con todas las unidades convertidas a un formato legible por humanos:
+
+user@host:~$ df -h
+
+Tamaño del sistema de archivos utilizado % de uso disponible Montado en /dev/sda3 20G 6,6G 14G 33% /devtmpfs 4,0M 0 4,0M 0% /dev tmpfs 2,8G 84K 2,8G 1% /dev/shm tmpfs 1,2G 18M 1,1G 2% /run tmpfs 1,0M 0 1,0M 0% /run/credentials/systemd-journald.service /dev/sda2 200M 8,4M 192M 5% /boot/efi /dev/sr0 536K 536K 0 100% /run/media/meta-data tmpfs 567M 128K 567M 1% /run/user/1000 Utilice el comando du para obtener un desglose detallado del uso del disco dentro de un árbol de directorios específico. De forma predeterminada, el comando muestra de forma recursiva el tamaño de todos los archivos y subdirectorios en el directorio de trabajo actual, utilizando unidades de 1024 bytes. Para que el resultado sea más fácil de leer, puede agregar las opciones -h o -H para mostrar los tamaños en un formato legible por humanos, que es similar al comando df. El siguiente ejemplo muestra cómo mostrar un informe de uso del disco en formato legible por humanos para /usr/share
+
+directory:
+root@host:~# du -h /usr/share
+
+...salida omitida... 4.0K /usr/share/mdadm 8.0K /usr/share/cmake/bash-completion 8.0K /usr/share/cmake 4.0K /usr/share/at 366M /usr/share Para mostrar solo un resumen del uso total del disco para un archivo o directorio, agregue la opción -s al comando du. También puede proporcionar varios directorios como argumentos para el comando.
+
+
+
+
+
+8.1. Identificación de sistemas de archivos y dispositivos de bloque
+
+[root@host ~]# du -sh /etc /boot /var
+
+23M /etc 170M /boot 133M /var Referencias a las páginas man de df(1) y du(1) Para obtener más información, consulte la guía Administración de sistemas de archivos en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+único/managing_file_systems/index
+
+
+
+
+
+8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloques 8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloque Elija las respuestas correctas a las siguientes preguntas: ¿Cuál es el nombre de archivo del dispositivo de un disco duro SATA completo en el directorio /dev? 1. /dev/vda a. /dev/sda1 b. /dev/vg_install/lv_home c. /dev/sda d. ¿Qué comando muestra los sistemas de archivos con los puntos de montaje? 2. du-H a. dfb. duc. lsfs d. ¿Qué comando muestra el informe de uso del disco en formato legible por humanos para el directorio /home? 3.
+
+ls /home
+
+a. dfb. du -h /casa c. du /home d. ¿Cuál es el nombre de archivo de dispositivo correcto para la tercera partición del segundo disco virtio-blk conectado a una máquina virtual? 4. /dev/vdb3 a. /dev/sdb3 b. /dev/sda3 c. /dev/vda3 d. ¿Qué comando proporciona una descripción general de los puntos de montaje del sistema de archivos y el espacio libre disponible en unidades SI? 5. df a. df-hb. gl -Hc. du-h d.
+
+
+
+
+
+
+
+## Cuestionario: Prueba de identificación de sistemas de archivos y dispositivos de bloque
+
+8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloques 8.2. Prueba de identificación de sistemas de archivos y dispositivos de bloque Elija las respuestas correctas a las siguientes preguntas: ¿Cuál es el nombre de archivo del dispositivo de un disco duro SATA completo en el directorio /dev? 1. /dev/vda a. /dev/sda1 b. /dev/vg_install/lv_home c. /dev/sda d. ¿Qué comando muestra los sistemas de archivos con los puntos de montaje? 2. du-H a. dfb. duc. lsfs d. ¿Qué comando muestra el informe de uso del disco en formato legible por humanos para el directorio /home? 3.
+
+ls /home
+
+a. dfb. du -h /casa c. du /home d. ¿Cuál es el nombre de archivo de dispositivo correcto para la tercera partición del segundo disco virtio-blk conectado a una máquina virtual? 4. /dev/vdb3 a. /dev/sdb3 b. /dev/sda3 c. /dev/vda3 d. ¿Qué comando proporciona una descripción general de los puntos de montaje del sistema de archivos y el espacio libre disponible en unidades SI? 5. df a. df-hb. gl -Hc. du-h d.
+
+
+
+
+
+8.2. Prueba de identificación de sistemas de archivos y solución de dispositivos de bloque ¿Cuál es el nombre de archivo del dispositivo de un disco duro SATA completo en el directorio /dev? 1. /dev/vda a. /dev/sda1 b. /dev/vg_install/lv_home c. /dev/sda d. ¿Qué comando muestra los sistemas de archivos con los puntos de montaje? 2. du-H a. dfb. duc. lsfs d. ¿Qué comando muestra el informe de uso del disco en formato legible por humanos para el directorio /home? 3.
+
+ls /home
+
+a. dfb. du -h /casa c. du /home d. ¿Cuál es el nombre de archivo de dispositivo correcto para la tercera partición del segundo disco virtio-blk conectado a una máquina virtual? 4. /dev/vdb3 a. /dev/sdb3 b. /dev/sda3 c. /dev/vda3 d. ¿Qué comando proporciona una descripción general de los puntos de montaje del sistema de archivos y el espacio libre disponible en unidades SI? 5. df a. df-hb. gl -Hc. du-h d.
+
+
+
+
+
+8.3. Montaje y desmontaje de sistemas de archivos 8.3. Montaje y desmontaje de sistemas de archivos Objetivos Acceder al contenido de un sistema de archivos en medios extraíbles montándolo en la jerarquía del sistema de archivos y desmontándolo cuando haya terminado. Montaje manual de sistemas de archivos Para acceder al sistema de archivos en un dispositivo de almacenamiento extraíble, debe montar el dispositivo de almacenamiento. Con el comando mount, el usuario root puede montar un sistema de archivos manualmente. El primer argumento del comando de montaje especifica el sistema de archivos a montar. El segundo argumento especifica el directorio como punto de montaje en la jerarquía del sistema de archivos. Puede montar el sistema de archivos de una de las siguientes maneras con el comando mount: Con el nombre del archivo del dispositivo en el directorio /dev. Con el UUID, un identificador universalmente único del dispositivo. Luego, identifique el dispositivo que desea montar, asegúrese de que exista el punto de montaje y monte el dispositivo en el punto de montaje. Nota Si monta un sistema de archivos con el comando mount y luego reinicia su sistema, el sistema de archivos no se vuelve a montar automáticamente. El curso Red Hat System Administration II (RH134) explica cómo gestionar de forma persistente
+
+mount file systems with the /etc/fstab file.
+
+Identificación de un dispositivo de bloque Un dispositivo de almacenamiento conectable en caliente, ya sea una unidad de disco duro (HDD) o un dispositivo de estado sólido (SSD) en un servidor, o alternativamente un dispositivo de almacenamiento USB, se puede conectar a un puerto diferente en un sistema cada vez. Utilice el comando lsblk para enumerar los detalles de un dispositivo de bloque específico o de todos los dispositivos disponibles.
+
+root@host:~# lsblk
+
+NOMBRE MAJ:MIN RM TAMAÑO RO TIPO PUNTOS DE MONTAJE
+
+sda      8:0    0   10G  0 disk
+
+├─sda1 8:1 0 1M 0 parte ├─sda2 8:2 0 200M 0 parte /boot/efi └─sda3 8:3 0 9.8G 0 parte /
+
+sdb      8:16   0    5G  0 disk
+sdc      8:32   0    5G  0 disk
+sdd      8:48   0    5G  0 disk
+sr0     11:0    1  514K  0 rom
+
+El tamaño de la partición ayuda a identificar el dispositivo cuando se desconoce el nombre de la partición. Por ejemplo, considerando el resultado anterior, si el tamaño de la partición identificada es 9,8 GB, monte la partición /dev/sda3. Montaje de un sistema de archivos con el nombre de partición El siguiente ejemplo monta la partición /dev/sda3 en el punto de montaje /mnt/data.
+
+
+
+
+
+
+
+## 8.3. Montaje y desmontaje de sistemas de archivos
+
+8.3. Montaje y desmontaje de sistemas de archivos 8.3. Montaje y desmontaje de sistemas de archivos Objetivos Acceder al contenido de un sistema de archivos en medios extraíbles montándolo en la jerarquía del sistema de archivos y desmontándolo cuando haya terminado. Montaje manual de sistemas de archivos Para acceder al sistema de archivos en un dispositivo de almacenamiento extraíble, debe montar el dispositivo de almacenamiento. Con el comando mount, el usuario root puede montar un sistema de archivos manualmente. El primer argumento del comando de montaje especifica el sistema de archivos a montar. El segundo argumento especifica el directorio como punto de montaje en la jerarquía del sistema de archivos. Puede montar el sistema de archivos de una de las siguientes maneras con el comando mount: Con el nombre del archivo del dispositivo en el directorio /dev. Con el UUID, un identificador universalmente único del dispositivo. Luego, identifique el dispositivo que desea montar, asegúrese de que exista el punto de montaje y monte el dispositivo en el punto de montaje. Nota Si monta un sistema de archivos con el comando mount y luego reinicia su sistema, el sistema de archivos no se vuelve a montar automáticamente. El curso Red Hat System Administration II (RH134) explica cómo gestionar de forma persistente
+
+mount file systems with the /etc/fstab file.
+
+Identificación de un dispositivo de bloque Un dispositivo de almacenamiento conectable en caliente, ya sea una unidad de disco duro (HDD) o un dispositivo de estado sólido (SSD) en un servidor, o alternativamente un dispositivo de almacenamiento USB, se puede conectar a un puerto diferente en un sistema cada vez. Utilice el comando lsblk para enumerar los detalles de un dispositivo de bloque específico o de todos los dispositivos disponibles.
+
+root@host:~# lsblk
+
+NOMBRE MAJ:MIN RM TAMAÑO RO TIPO PUNTOS DE MONTAJE
+
+sda      8:0    0   10G  0 disk
+
+├─sda1 8:1 0 1M 0 parte ├─sda2 8:2 0 200M 0 parte /boot/efi └─sda3 8:3 0 9.8G 0 parte /
+
+sdb      8:16   0    5G  0 disk
+sdc      8:32   0    5G  0 disk
+sdd      8:48   0    5G  0 disk
+sr0     11:0    1  514K  0 rom
+
+El tamaño de la partición ayuda a identificar el dispositivo cuando se desconoce el nombre de la partición. Por ejemplo, considerando el resultado anterior, si el tamaño de la partición identificada es 9,8 GB, monte la partición /dev/sda3. Montaje de un sistema de archivos con el nombre de partición El siguiente ejemplo monta la partición /dev/sda3 en el punto de montaje /mnt/data.
+
+
+
+
+
+8.3. Montaje y desmontaje de sistemas de archivos
+
+root@host:~# mount /dev/sda3 /mnt/data
+
+El directorio del punto de montaje debe existir antes de montar el sistema de archivos. El directorio /mnt existe para su uso como directorio temporal.
+
+mount point.
+
+Importante Si un directorio que se utilizará como punto de montaje no está vacío, los archivos existentes estarán ocultos y no se podrá acceder a ellos cuando se monte un sistema de archivos allí. Se puede acceder nuevamente a los archivos originales después de desmontar el sistema de archivos montado. El orden de detección de dispositivos y el nombre de los dispositivos de almacenamiento pueden cambiar cuando se agregan o eliminan dispositivos en un sistema. Una buena práctica es utilizar un identificador de dispositivo que no cambie para montar sistemas de archivos de forma coherente. Montaje de un sistema de archivos con UUID de partición Un identificador estable asociado con un sistema de archivos es su identificador único universal (UUID). Este UUID se almacena en el superbloque del sistema de archivos y permanece igual hasta que se vuelve a crear el sistema de archivos. El comando lsblk -fp enumera la ruta completa del dispositivo, los UUID y los puntos de montaje, y el tipo de sistema de archivos de la partición. El punto de montaje está en blanco cuando el sistema de archivos no está montado.
+
+root@host:~# lsblk -fp
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sda ├─/dev/sda1 ├─/dev/sda2 vfat FAT16 7B77-95E7 191.4M 4% /boot/efi └─/dev/sda3 xfs root 15507695-...-...95983f 7.4G 24% / /dev/sdb /dev/sdc /dev/sdd /dev/sr0 iso9660 Joliet Extension config-2 2025-06-12-05-06-37-00 Monte el sistema de archivos mediante el UUID del sistema de archivos.
+
+root@host:~# mount UUID="15507695-22bb-4c65-94e6-a438e095983f" /mnt/data
+
+Montaje automático de dispositivos de almacenamiento extraíbles Con el entorno de escritorio gráfico, el sistema monta automáticamente medios de almacenamiento extraíbles cuando se detecta la presencia de medios. El dispositivo de almacenamiento extraíble se monta en la ubicación /run/media/USERNAME/LABEL. USERNAME es el nombre del usuario que ha iniciado sesión en el entorno gráfico. LABEL es un identificador, que normalmente es la etiqueta del medio de almacenamiento. Para desconectar de forma segura un dispositivo extraíble, primero desmonte manualmente todos los sistemas de archivos del dispositivo. Desmontaje de sistemas de archivos Los procedimientos de apagado y reinicio del sistema se utilizan para desmontar todos los sistemas de archivos automáticamente. Todos los datos del sistema de archivos se descargan en el dispositivo de almacenamiento para garantizar la integridad de los datos del sistema de archivos.
+
+
+
+
+
+8.3. Montaje y desmontaje de sistemas de archivos Advertencia Los datos del sistema de archivos utilizan la memoria caché durante el funcionamiento normal. Debe desmontar los sistemas de archivos de una unidad extraíble antes de desconectar la unidad. El procedimiento de desmontaje vacía los datos en el disco antes de liberar la unidad. El comando umount utiliza el punto de montaje como argumento para desmontar un sistema de archivos.
+
+root@host:~# umount /mnt/data
+
+No es posible desmontarlo cuando el sistema de archivos montado está en uso. Para que el comando umount tenga éxito, todos los procesos deben dejar de acceder a los datos bajo el punto de montaje. En el siguiente ejemplo, el comando umount falla porque el shell usa el directorio /mnt/data como directorio de trabajo actual y, por lo tanto, genera un mensaje de error.
+
+root@host:~# cd /mnt/data
+root@host:~# umount /mnt/data
+umount: /mnt/data: target is busy.
+
+El comando lsof enumera todos los archivos abiertos y los procesos que acceden al sistema de archivos. La lista ayuda a identificar qué procesos impiden que el sistema de archivos se desmonte correctamente.
+
+root@host:~# lsof /mnt/data
+
+COMANDO PID USUARIO TIPO FD TAMAÑO DEL DISPOSITIVO/OFF NOMBRE DEL NODO bash 1593 root cwd DIR 253,17 6 128 /mnt/data lsof 2532 root cwd DIR 253,17 19 128 /mnt/data lsof 2533 root cwd DIR 253,17 19 128 /mnt/data Identifica y espera a que se completen los procesos, o envía la señal SIGTERM o SIGKILL para finalizarlos. En este caso, puede cambiar a un directorio de trabajo actual que esté fuera del punto de montaje.
+
+root@host:~# cd
+root@host:~# umount /mnt/data
+
+Referencias
+
+lsblk(8), mount(8), umount(8), and lsof(8) man pages
+
+
+
+
+
+8.4. Ejercicio guiado Montar y desmontar un sistema de archivos 8.4. Ejercicio guiado Montar y desmontar un sistema de archivos Montar y desmontar un sistema de archivos que se encuentra en un medio extraíble. Resultados Identificar y montar un nuevo sistema de archivos en un punto de montaje específico y luego desmontar el sistema de archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-mount
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Se agrega una nueva partición con un sistema de archivos al disco /dev/sdb en la máquina del servidor. Monte la partición recién disponible utilizando el UUID en el punto de montaje /mnt/part1. 2. Cree el directorio /mnt/part1.
+
+[root@servera ~]# mkdir /mnt/part1
+
+2.1. Consulta el UUID del dispositivo /dev/sdb1.
+
+[root@servera ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE ... UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 2dfe4a17-d529-480a-a53e-9c28ff49545e El UUID del dispositivo puede ser diferente en su entorno. El resultado anterior omite algunas columnas no esenciales, por lo que su resultado puede diferir. 2.2. Monte el sistema de archivos utilizando el UUID en el directorio /mnt/part1. Utilice el UUID /dev/sdb1 del resultado del comando anterior.
+
+[root@servera ~]# mount \
+
+UUID="2dfe4a17-d529-480a-a53e-9c28ff49545e" /mnt/part1 2.3. Verifique que el dispositivo /dev/sdb1 esté montado en el directorio /mnt/part1. 2.4.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Montar y desmontar un sistema de archivos
+
+8.4. Ejercicio guiado Montar y desmontar un sistema de archivos 8.4. Ejercicio guiado Montar y desmontar un sistema de archivos Montar y desmontar un sistema de archivos que se encuentra en un medio extraíble. Resultados Identificar y montar un nuevo sistema de archivos en un punto de montaje específico y luego desmontar el sistema de archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-mount
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Se agrega una nueva partición con un sistema de archivos al disco /dev/sdb en la máquina del servidor. Monte la partición recién disponible utilizando el UUID en el punto de montaje /mnt/part1. 2. Cree el directorio /mnt/part1.
+
+[root@servera ~]# mkdir /mnt/part1
+
+2.1. Consulta el UUID del dispositivo /dev/sdb1.
+
+[root@servera ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE ... UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 2dfe4a17-d529-480a-a53e-9c28ff49545e El UUID del dispositivo puede ser diferente en su entorno. El resultado anterior omite algunas columnas no esenciales, por lo que su resultado puede diferir. 2.2. Monte el sistema de archivos utilizando el UUID en el directorio /mnt/part1. Utilice el UUID /dev/sdb1 del resultado del comando anterior.
+
+[root@servera ~]# mount \
+
+UUID="2dfe4a17-d529-480a-a53e-9c28ff49545e" /mnt/part1 2.3. Verifique que el dispositivo /dev/sdb1 esté montado en el directorio /mnt/part1. 2.4.
+
+
+
+
+
+8.4. Ejercicio guiado Montar y desmontar un sistema de archivos Finalizar En la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-mount
+[root@servera ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE ... UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 2dfe4a17-d529-480a-a53e-9c28ff49545e 4.8G 3% /mnt/part1 El resultado anterior omite algunas columnas no esenciales, por lo que su resultado puede diferir. Cambie al directorio /mnt/part1 y cree el subdirectorio testdir. Cree el archivo /mnt/part1/testdir/newmount para verificar que puede escribir en el punto de montaje. 3. Cambie al directorio /mnt/part1.
+
+[root@servera ~]# cd /mnt/part1
+
+3.1. Cree el directorio /mnt/part1/testdir.
+
+[root@servera part1]# mkdir testdir
+
+3.2. Cree el archivo /mnt/part1/testdir/newmount.
+
+[root@servera part1]# touch testdir/newmount
+
+3.3. Desmonte el sistema de archivos que está montado en el directorio /mnt/part1. 4. Intente desmontar el directorio /mnt/part1 con el shell todavía en el directorio /mnt/part1. El comando umount no logra desmontar el dispositivo.
+
+[root@servera part1]# umount /mnt/part1
+umount: /mnt/part1: target is busy.
+
+4.1. Cambie el directorio actual del shell al directorio /root.
+
+[root@servera part1]# cd
+
+[root@servera ~]# 4.2. Desmonte el directorio /mnt/part1.
+
+[root@servera ~]# umount /mnt/part1
+
+4.3. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+8.5. Localización de archivos en un sistema de archivos 8.5. Localización de archivos en un sistema de archivos Objetivos Buscar archivos en un sistema de archivos que esté actualmente montado. Búsqueda de archivos Un administrador del sistema debe poder buscar en los sistemas de archivos archivos que coincidan con criterios específicos. Esta sección analiza
+
+two commands to search for files in the file-system hierarchy:
+
+El comando de localización busca en un índice pregenerado nombres de archivos o rutas de archivos y devuelve los resultados al instante. El comando de búsqueda busca archivos en tiempo real analizando la jerarquía del sistema de archivos. Localización de archivos por nombre El comando de localización busca archivos según el nombre o la ruta al archivo. El comando de localización es rápido porque busca la información de la base de datos mlocate. Sin embargo, esta base de datos no se actualiza en tiempo real y requiere actualizaciones frecuentes para obtener resultados precisos. Esta característica también significa que el comando de localización no busca archivos que se crearon después de la última actualización de la base de datos. La base de datos de localización se actualiza automáticamente todos los días. Sin embargo, el usuario root podría utilizar el comando actualizadob para forzar una actualización inmediata.
+
+root@host:~# updatedb
+
+El comando de localización restringe los resultados para usuarios sin privilegios. Para ver el nombre del archivo resultante, el usuario debe tener permiso de búsqueda en el directorio donde reside el archivo. Por ejemplo, ubique los archivos que el usuario desarrollador puede leer y
+
+that match the passwd keyword in the name or path:
+developer@host:~$ locate passwd
+
+/etc/passwd /etc/passwd- /etc/pam.d/passwd ...salida omitida... El siguiente ejemplo muestra el nombre del archivo o la ruta para una coincidencia parcial con la consulta de búsqueda:
+
+root@host:~# locate image
+
+/etc/selinux/targeted/contexts/virtual_image_context /usr/bin/grub2-mkimage /usr/lib/sysimage ... salida omitida... La opción -i del comando de localización realiza una búsqueda que no distingue entre mayúsculas y minúsculas. Esta opción devuelve todas las combinaciones posibles de
+
+matching uppercase and lowercase letters:
+
+
+
+
+
+
+
+## 8.5. Localizar archivos en un sistema de archivos
+
+8.5. Localización de archivos en un sistema de archivos 8.5. Localización de archivos en un sistema de archivos Objetivos Buscar archivos en un sistema de archivos que esté actualmente montado. Búsqueda de archivos Un administrador del sistema debe poder buscar en los sistemas de archivos archivos que coincidan con criterios específicos. Esta sección analiza
+
+two commands to search for files in the file-system hierarchy:
+
+El comando de localización busca en un índice pregenerado nombres de archivos o rutas de archivos y devuelve los resultados al instante. El comando de búsqueda busca archivos en tiempo real analizando la jerarquía del sistema de archivos. Localización de archivos por nombre El comando de localización busca archivos según el nombre o la ruta al archivo. El comando de localización es rápido porque busca la información de la base de datos mlocate. Sin embargo, esta base de datos no se actualiza en tiempo real y requiere actualizaciones frecuentes para obtener resultados precisos. Esta característica también significa que el comando de localización no busca archivos que se crearon después de la última actualización de la base de datos. La base de datos de localización se actualiza automáticamente todos los días. Sin embargo, el usuario root podría utilizar el comando actualizadob para forzar una actualización inmediata.
+
+root@host:~# updatedb
+
+El comando de localización restringe los resultados para usuarios sin privilegios. Para ver el nombre del archivo resultante, el usuario debe tener permiso de búsqueda en el directorio donde reside el archivo. Por ejemplo, ubique los archivos que el usuario desarrollador puede leer y
+
+that match the passwd keyword in the name or path:
+developer@host:~$ locate passwd
+
+/etc/passwd /etc/passwd- /etc/pam.d/passwd ...salida omitida... El siguiente ejemplo muestra el nombre del archivo o la ruta para una coincidencia parcial con la consulta de búsqueda:
+
+root@host:~# locate image
+
+/etc/selinux/targeted/contexts/virtual_image_context /usr/bin/grub2-mkimage /usr/lib/sysimage ... salida omitida... La opción -i del comando de localización realiza una búsqueda que no distingue entre mayúsculas y minúsculas. Esta opción devuelve todas las combinaciones posibles de
+
+matching uppercase and lowercase letters:
+
+
+
+
+
+8.5. Localizar archivos en un sistema de archivos
+
+developer@host:~$ locate -i messages
+
+...salida omitida... /usr/share/locale/zza/LC_MESSAGES /usr/share/makedumpfile/eppic_scripts/ap_messages_3_10_to_4_8.c /usr/share/vim/vim82/ftplugin/msmessages.vim ...salida omitida... La opción -n del comando de localización limita el número de resultados de búsqueda devueltos. El siguiente ejemplo limita la búsqueda
+
+results from the locate command to the first five matches:
+developer@host:~$ locate -n 5 passwd
+
+/etc/passwd /etc/passwd- /etc/pam.d/passwd ...salida omitida... Búsqueda de archivos en tiempo real El comando buscar localiza archivos buscándolos en tiempo real en la jerarquía del sistema de archivos. Este comando es más lento pero más preciso que el comando de localización. El comando de búsqueda también busca archivos basándose en criterios distintos del nombre del archivo, como los permisos del archivo, el tipo de archivo, el tamaño o la hora de modificación. El comando de búsqueda busca archivos en el sistema de archivos con la cuenta de usuario que ejecutó la búsqueda. El usuario que ejecuta el comando de búsqueda debe tener permiso de lectura y ejecución en un directorio para examinar su contenido. El primer argumento del comando de búsqueda es el directorio a buscar. Si el comando de búsqueda omite el argumento del directorio, inicia la búsqueda en el directorio actual y busca coincidencias en cualquier subdirectorio. Para buscar archivos por nombre de archivo, use la opción buscar comando -name NOMBRE DE ARCHIVO para devolver la ruta de los archivos que coinciden exactamente con NOMBRE DE ARCHIVO. Por ejemplo, para buscar los archivos sshd_config en el directorio raíz (/), ejecute lo siguiente
+
+command:
+root@host:~# find / -name sshd_config
+
+/etc/ssh/sshd_config Nota Para el comando de búsqueda, las opciones de palabras completas usan un solo guión (-), a diferencia de un guión doble (--) para la mayoría de los otros comandos de Linux. Búsqueda de archivos con comodines Hay comodines disponibles para buscar un nombre de archivo y devolver todos los resultados de una coincidencia parcial. Cuando utilice un comodín para buscar, debe utilizar comillas simples alrededor de la cadena a buscar, para evitar que el terminal malinterprete el comodín. El siguiente ejemplo comienza en el directorio raíz (/) y busca nombres de archivos que terminan con la extensión .txt:
+
+
+
+
+
+8.5. Localizar archivos en un sistema de archivos
+
+root@host:~# find / -name '*.txt'
+
+...salida omitida... /usr/share/libgpg-error/errorref.txt /usr/share/licenses/audit-libs/lgpl-2.1.txt /usr/share/licenses/pam/gpl-2.0.txt ...salida omitida... El siguiente comando busca nombres de archivos en el directorio /etc/ que contienen la cadena de paso:
+
+root@host:~# find /etc -name '*pass*'
+
+/etc/passwd- /etc/passwd /etc/security/opasswd ...salida omitida... Para realizar una búsqueda que no distinga entre mayúsculas y minúsculas para un nombre de archivo, utilice la opción -iname del comando de búsqueda, seguida del nombre del archivo a buscar. Para buscar archivos con texto que no distinga entre mayúsculas y minúsculas y que coincida con la cadena de mensajes en sus nombres en la raíz (/)
+
+directory, run the following command:
+root@host:~# find / -iname '*messages*'
+
+/sys/power/pm_debug_messages /usr/lib/locale/C.utf8/LC_MESSAGES /usr/lib/locale/C.utf8/LC_MESSAGES/SYS_LC_MESSAGES ... salida omitida... Búsqueda de archivos según propiedad o permiso El comando de búsqueda también puede buscar archivos según su propiedad o permisos. Las opciones del comando de búsqueda -user y -group buscan por nombre de usuario y grupo, o por ID de usuario y ID de grupo. El siguiente ejemplo busca archivos en el directorio /home/developer que pertenece al usuario desarrollador:
+
+developer@host:~$ find -user developer
+
+. ./.bash_logout ./.bash_profile ...salida omitida... El siguiente ejemplo busca archivos en el directorio /home/developer que pertenece al grupo de desarrolladores:
+
+developer@host:~$ find -group developer
+
+. ./.bash_logout ./.bash_profile ...salida omitida... Este ejemplo busca archivos en el directorio /home/developer que posee el ID de usuario 1000:
+
+developer@host:~$ find -uid 1000
+
+. ./.bash_logout ./.bash_profile ...salida omitida... Este ejemplo busca archivos en el directorio /home/developer que posee el ID del grupo 1000:
+
+
+
+
+
+8.5. Localizar archivos en un sistema de archivos
+
+developer@host:~$ find -gid 1000
+
+. ./.bash_logout ./.bash_profile ...salida omitida... Las opciones del comando de búsqueda -user y -group buscan archivos donde el propietario del archivo y el propietario del grupo son diferentes. El siguiente ejemplo enumera archivos que pertenecen al usuario raíz y al grupo de correo:
+
+root@host:~# find / -user root -group mail
+
+/var/spool/mail ...salida omitida... La opción -perm del comando de búsqueda busca archivos con un conjunto de permisos particular. Los valores octales definen los permisos con 4, 2 y 1 para lectura, escritura y ejecución. Los permisos están precedidos por una barra diagonal (/) o un guión (-) para controlar los resultados de la búsqueda. Una barra diagonal (/) antes del permiso octal coincide con archivos donde se establece al menos un permiso para usuario, grupo u otros para ese conjunto de permisos. Una búsqueda de permisos /222 no coincide con un archivo con permisos r--r--r--, pero sí coincide con un archivo con permisos rw-r--r--. Un guión (-) antes del permiso significa que las tres partes de los permisos deben coincidir. En el ejemplo anterior, los archivos con permisos rw-rw-rw- coinciden. También puede utilizar la opción buscar comando -perm con el método simbólico para permisos. Por ejemplo, los siguientes comandos coinciden con cualquier archivo en el directorio /home para el cual el usuario propietario tiene permisos de lectura, escritura y ejecución, y los miembros del grupo propietario tienen permisos de lectura y escritura, y otros tienen permisos de lectura.
+
+only access. Both commands are equivalent; the first one uses the octal method for permissions, whereas the second
+
+se utiliza el método simbólico.
+
+root@host:~# find /home -perm 764
+
+...salida omitida...
+
+root@host:~# find /home -perm u=rwx,g=rw,o=r
+
+...salida omitida... La opción buscar comando -ls es conveniente cuando se buscan archivos por permisos, porque proporciona información para los archivos que incluye sus permisos.
+
+root@host:~# find /home -perm 764 -ls
+
+26207447 0 -rwxrw-r-- 1 usuario usuario 0 16 de junio 04:29 /home/user/file1 Para buscar archivos para los cuales el usuario tiene al menos permisos de escritura y ejecución, y el grupo tiene al menos permisos de escritura
+
+permission, and others have at least read permission, run the following command:
+root@host:~# find /home -perm -324
+
+...salida omitida...
+
+root@host:~# find /home -perm -u=wx,g=w,o=r
+
+...salida omitida... Para buscar archivos para los cuales el usuario tiene permisos de lectura, o el grupo tiene al menos permisos de lectura, u otros tienen al menos
+
+least write permission, run the following command:
+
+
+
+
+
+8.5. Localizar archivos en un sistema de archivos
+
+root@host:~# find /home -perm /442
+
+...salida omitida...
+
+root@host:~# find /home -perm /u=r,g=r,o=w
+
+...salida omitida... Cuando se usa con los signos / o -, el valor 0 funciona como comodín, porque significa cualquier permiso. Para buscar cualquier archivo en el directorio /home/developer para el cual otros tengan al menos acceso de lectura en el host
+
+machine, run the following command:
+developer@host:~$ find -perm -004
+
+...salida omitida...
+
+developer@host:~$ find -perm -o=r
+
+...salida omitida... Para buscar todos los archivos en el directorio /home/developer donde otros tienen permiso de escritura, ejecute lo siguiente
+
+command:
+developer@host:~$ find -perm -002
+
+...salida omitida...
+
+developer@host:~$ find -perm -o=w
+
+...salida omitida... Búsqueda de archivos según el tamaño La opción -size del comando de búsqueda va seguida de un valor numérico y la unidad busca archivos que coincidan con un tamaño especificado. Utilice la siguiente lista para las unidades con la opción -size del comando de búsqueda: Para kilobytes, utilice la unidad k con k siempre en minúsculas. Para megabytes, utilice la unidad M con M siempre en mayúscula. Para gigabytes, utilice la unidad G con G siempre en mayúscula. Puede utilizar los signos más (+) y menos (-) para incluir archivos que sean más grandes y más pequeños que el tamaño indicado, respectivamente. El siguiente ejemplo muestra una búsqueda de archivos con un tamaño exacto de 10 megabytes:
+
+developer@host:~$ find -size 10M
+
+...salida omitida... El siguiente ejemplo busca archivos con un tamaño de más de 10 gigabytes:
+
+developer@host:~$ find -size +10G
+
+...salida omitida... Este ejemplo busca archivos con un tamaño inferior a 10 kilobytes:
+
+developer@host:~$ find -size -10k
+
+...salida omitida... Importante La opción -size del comando de búsqueda redondea todo a unidades individuales. Por ejemplo, el comando find -size 1M muestra archivos de menos de 1 MB, porque redondea todos los archivos a 1 MB.
+
+
+
+
+
+8.5. Localización de archivos en un sistema de archivos Búsqueda de archivos según el tiempo de modificación La opción -mmin del comando de búsqueda, seguida del tiempo en minutos, busca todos los archivos con contenido que cambió hace n minutos. La marca de tiempo del archivo se redondea hacia abajo y admite valores fraccionarios con el rango +n y -n. El siguiente ejemplo busca todos los archivos cuyo contenido cambió hace 120 minutos:
+
+root@host:~# find / -mmin 120
+
+...salida omitida... El modificador + delante de los minutos busca todos los archivos en el directorio raíz (/) que cambiaron hace más de n minutos. Este
+
+example searches for all files with content that changed more than 200 minutes ago:
+root@host:~# find / -mmin +200
+
+...salida omitida... El modificador - busca todos los archivos en el directorio / que cambiaron hace menos de n minutos. El siguiente ejemplo enumera
+
+files that changed less than 150 minutes ago:
+root@host:~# find / -mmin -150
+
+...salida omitida... Búsqueda de archivos según el tipo de archivo La opción -type del comando de búsqueda limita el alcance de la búsqueda a un tipo de archivo determinado. Utilice las siguientes banderas para limitar la búsqueda
+
+scope:
+
+Para archivos normales, utilice la bandera f. Para directorios, utilice la bandera d. Para enlaces suaves, utilice la bandera l. Para dispositivos de bloque, use la bandera b. El siguiente ejemplo busca todos los directorios en el directorio /etc:
+
+root@host:~# find /etc -type d
+
+/etc /etc/tmpfiles.d /etc/systemd /etc/systemd/system /etc/systemd/system/getty.target.wants ...salida omitida... Este ejemplo busca todos los enlaces blandos en el directorio /:
+
+root@host:~# find / -type l
+
+...salida omitida... Este ejemplo busca todos los dispositivos de bloque en el directorio /dev:
+
+root@host:~# find /dev -type b
+
+/dev/vda1 /dev/vda La opción de enlaces del comando de búsqueda seguida de un número busca todos los archivos con un recuento de enlaces físicos específico. El número precedido por un modificador + busca archivos con un recuento mayor que el recuento de enlaces físicos indicado. Si el número precede a un -
+
+
+
+
+
+8.5. Al ubicar archivos en un modificador del sistema de archivos, la búsqueda se limita a archivos con un recuento de enlaces físicos inferior al número indicado. Busque todos los archivos normales con más de un enlace físico:
+
+root@host:~# find / -type f -links +1
+
+...resultado omitido... Referencias a las páginas man de localizar(1), actualizarb(8) y buscar(1)
+
+
+
+
+
+8.6. Ejercicio guiado Localizar archivos en un sistema de archivos 8.6. Ejercicio guiado Localizar archivos en un sistema de archivos Buscar archivos en un sistema de archivos que esté actualmente montado. Resultados Busque archivos con los comandos buscar y localizar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-locate
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Utilice el comando de localización para buscar los siguientes archivos en la máquina del servidor. 2. Actualice la base de datos ubicada manualmente en la máquina del servidor. Utilice el comando sudo actualizadob para actualizar la base de datos. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo updatedb
+
+[sudo] contraseña para estudiante: estudiante [estudiante@servera ~]$ 2.1. Localice el archivo de configuración logrotate.conf.
+
+[student@servera ~]$ locate logrotate.conf
+
+/etc/logrotate.conf /usr/share/man/man5/logrotate.conf.5.gz 2.2. Localice el archivo de configuración networkmanager.conf, ignorando la distinción entre mayúsculas y minúsculas.
+
+[student@servera ~]$ locate -i networkmanager.conf
+
+/etc/NetworkManager/NetworkManager.conf /etc/dbus-1/system.d/org.freedesktop.NetworkManager.conf /usr/share/man/man5/NetworkManager.conf.5.gz 2.3. Utilice el comando buscar para buscar los siguientes archivos en tiempo real en la máquina del servidor. 3. Utilice el privilegio de root para buscar todos los archivos en el directorio /var/lib que posee el usuario chrony. Si es necesario, utilice estudiante como contraseña de Sudo. 3.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado para localizar archivos en un sistema de archivos
+
+8.6. Ejercicio guiado Localizar archivos en un sistema de archivos 8.6. Ejercicio guiado Localizar archivos en un sistema de archivos Buscar archivos en un sistema de archivos que esté actualmente montado. Resultados Busque archivos con los comandos buscar y localizar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-locate
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 1. Utilice el comando de localización para buscar los siguientes archivos en la máquina del servidor. 2. Actualice la base de datos ubicada manualmente en la máquina del servidor. Utilice el comando sudo actualizadob para actualizar la base de datos. Utilice estudiante como contraseña.
+
+[student@servera ~]$ sudo updatedb
+
+[sudo] contraseña para estudiante: estudiante [estudiante@servera ~]$ 2.1. Localice el archivo de configuración logrotate.conf.
+
+[student@servera ~]$ locate logrotate.conf
+
+/etc/logrotate.conf /usr/share/man/man5/logrotate.conf.5.gz 2.2. Localice el archivo de configuración networkmanager.conf, ignorando la distinción entre mayúsculas y minúsculas.
+
+[student@servera ~]$ locate -i networkmanager.conf
+
+/etc/NetworkManager/NetworkManager.conf /etc/dbus-1/system.d/org.freedesktop.NetworkManager.conf /usr/share/man/man5/NetworkManager.conf.5.gz 2.3. Utilice el comando buscar para buscar los siguientes archivos en tiempo real en la máquina del servidor. 3. Utilice el privilegio de root para buscar todos los archivos en el directorio /var/lib que posee el usuario chrony. Si es necesario, utilice estudiante como contraseña de Sudo. 3.1.
+
+
+
+
+
+8.6. Ejercicio guiado Ubicar archivos en un sistema de archivos Finalizar En la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[student@servera ~]$ sudo find /var/lib -user chrony
+
+/var/lib/chrony /var/lib/chrony/drift Utilice el privilegio de root para buscar todos los archivos en el directorio /var que pertenecen al usuario root y al grupo de correo. Utilice estudiante como contraseña de Sudo.
+
+[student@servera ~]$ sudo find /var -user root -group mail
+
+/var/spool/correo 3.2. Busque todos los archivos en el directorio /usr/bin con un tamaño de archivo superior a 50 KB.
+
+[student@servera ~]$ find /usr/bin -size +50k
+
+/usr/bin/iconv /usr/bin/locale /usr/bin/localedef /usr/bin/cmp ... salida omitida... 3.3. Busque todos los archivos en el directorio /home/student que hayan cambiado en los últimos 120 minutos. Importante La salida de su comando puede diferir, según los archivos que se hayan modificado en los últimos 120 minutos en su entorno de laboratorio.
+
+[student@servera ~]$ find /home/student -mmin -120
+
+/home/student/.bash_logout /home/student/.bash_profile /home/student/.bashrc ... salida omitida... 3.4. Busque todos los archivos del dispositivo de bloque en el directorio /dev.
+
+[student@servera ~]$ find /dev -type b
+
+/dev/sdb /dev/sda /dev/sdc /dev/sdb1 /dev/sdd /dev/sda1 /dev/sda2 /dev/sda3 /dev/sr0 3.5. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+4.
+
+
+
+
+
+8.6. Ejercicio guiado para localizar archivos en un sistema de archivos
+
+student@workstation:~$ lab finish fs-locate
+
+
+
+
+
+8.7. Acceso al laboratorio Medios extraíbles 8.7. Lab Access a medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Resultados Montar un sistema de archivos. Genere un informe de uso del disco. Busque archivos en el sistema de archivos local. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade fs-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-review
+
+Como usuario raíz en la máquina del servidor, identifique el UUID para el dispositivo /dev/sdb1 y móntelo usando su UUID en el directorio /mnt/system-report. 1. Genere un informe de uso del disco para el directorio /usr/share. Guarde el resultado en el archivo /mnt/system-report/disk-usese.txt. 2. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf y almacene los resultados en el archivo /mnt/system-report/search1.txt. 3. Busque todos los archivos en el directorio /usr/share que tengan más de 5 MB pero menos de 10 MB. Guarde los resultados en el archivo /mnt/system-report/search2.txt. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Acceso al laboratorio Medios extraíbles
+
+8.7. Acceso al laboratorio Medios extraíbles 8.7. Lab Access a medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Resultados Montar un sistema de archivos. Genere un informe de uso del disco. Busque archivos en el sistema de archivos local. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade fs-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-review
+
+Como usuario raíz en la máquina del servidor, identifique el UUID para el dispositivo /dev/sdb1 y móntelo usando su UUID en el directorio /mnt/system-report. 1. Genere un informe de uso del disco para el directorio /usr/share. Guarde el resultado en el archivo /mnt/system-report/disk-usese.txt. 2. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf y almacene los resultados en el archivo /mnt/system-report/search1.txt. 3. Busque todos los archivos en el directorio /usr/share que tengan más de 5 MB pero menos de 10 MB. Guarde los resultados en el archivo /mnt/system-report/search2.txt. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+8.7. Lab Access Solución de medios extraíbles Acceda a sistemas de archivos en dispositivos de medios extraíbles montándolos en un directorio en la jerarquía del sistema de archivos. Resultados Montar un sistema de archivos. Genere un informe de uso del disco. Busque archivos en el sistema de archivos local. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start fs-review
+
+Instrucciones Como usuario raíz en la máquina del servidor, identifique el UUID para el dispositivo /dev/sdb1 y móntelo usando su UUID en el directorio /mnt/system-report. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Consulta el UUID del dispositivo /dev/sdb1.
+
+[root@serverb ~]# lsblk -fp /dev/sdb
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb └─/dev/sdb1 xfs 48bd5...3337a El UUID puede variar en su entorno. 1.2. Verifique si existe el directorio /mnt/system-report.
+
+[root@serverb ~]# ls /mnt/system-report
+ls: cannot access '/mnt/system-report': No such file or directory
+
+El directorio no existe, por lo que debes crearlo. 1.3. Cree el directorio /mnt/system-report.
+
+[root@serverb ~]# mkdir /mnt/system-report
+
+1.4. Monte el dispositivo /dev/sdb1 en el directorio /mnt/system-report utilizando el UUID. 1.5.
+
+
+
+
+
+8.7. Acceso al laboratorio Evaluación de medios extraíbles Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade fs-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish fs-review
+
+Reemplace el UUID del marcador de posición en el siguiente comando con el UUID de su entorno.
+
+[root@serverb ~]# mount UUID="48bd5...3337a" /mnt/system-report
+
+Verifique que el dispositivo /dev/sdb1 esté montado en el directorio /mnt/system-report.
+
+[root@serverb ~]# lsblk -fp /dev/sdb1
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE /dev/sdb1 xfs 48bd5...3337a 4.8G 3% /mnt/system-report 1.6. Genere un informe de uso del disco para el directorio /usr/share. Guarde el resultado en el archivo /mnt/system-report/disk-usese.txt.
+
+[root@serverb ~]# du /usr/share > /mnt/system-report/disk-usage.txt
+
+2. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf y almacene los resultados en el archivo /mnt/system-report/search1.txt. 3. Actualice la base de datos de localización.
+
+[root@serverb ~]# updatedb
+
+3.1. Utilice el comando de localización para buscar todos los archivos que coincidan con la palabra clave rsyslog.conf. Guarde los resultados en el archivo /mnt/system-report/search1.txt.
+
+[root@serverb ~]# locate rsyslog.conf > /mnt/system-report/search1.txt
+
+3.2. Busque todos los archivos en el directorio /usr/share que tengan más de 5 MB pero menos de 10 MB. Guarde los resultados en el archivo /mnt/system-report/search2.txt.
+
+[root@serverb ~]# find /usr/share -size +5M -size -10M > \
+
+/mnt/system-report/search2.txt 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+8.8. Resumen 8.8. Resumen En esta lección, aprendió a administrar dispositivos de almacenamiento en bloque, acceder al contenido de un sistema de archivos en medios extraíbles y buscar archivos en el sistema de archivos. Los dispositivos de almacenamiento están representados por el tipo de archivo del dispositivo de bloque. Puede utilizar el comando df para identificar el espacio total en disco, el espacio en disco utilizado y el espacio libre en disco en todos los sistemas de archivos normales montados. También puede enumerar los detalles de los dispositivos de bloqueo, como el tamaño y el UUID. Como usuario privilegiado, puede montar y desmontar manualmente un sistema de archivos. Para desmontar con éxito un sistema de archivos, asegúrese de que todos los procesos que acceden al punto de montaje estén detenidos. Los dispositivos de almacenamiento extraíbles se montan en el directorio /run/media cuando se utiliza el entorno gráfico. Puede buscar archivos en el sistema de archivos mediante índices o búsquedas en tiempo real. El comando de localización utiliza índices para buscar archivos. Estos índices utilizan una base de datos que requiere actualizaciones frecuentes. El comando de búsqueda realiza búsquedas en tiempo real en los sistemas de archivos locales. Con el comando buscar, puede buscar según varios atributos de archivo, como tamaño, ubicación, propiedad y permisos.
+
+
+
+
+
+
+
+## Resumen
+
+8.8. Resumen 8.8. Resumen En esta lección, aprendió a administrar dispositivos de almacenamiento en bloque, acceder al contenido de un sistema de archivos en medios extraíbles y buscar archivos en el sistema de archivos. Los dispositivos de almacenamiento están representados por el tipo de archivo del dispositivo de bloque. Puede utilizar el comando df para identificar el espacio total en disco, el espacio en disco utilizado y el espacio libre en disco en todos los sistemas de archivos normales montados. También puede enumerar los detalles de los dispositivos de bloqueo, como el tamaño y el UUID. Como usuario privilegiado, puede montar y desmontar manualmente un sistema de archivos. Para desmontar con éxito un sistema de archivos, asegúrese de que todos los procesos que acceden al punto de montaje estén detenidos. Los dispositivos de almacenamiento extraíbles se montan en el directorio /run/media cuando se utiliza el entorno gráfico. Puede buscar archivos en el sistema de archivos mediante índices o búsquedas en tiempo real. El comando de localización utiliza índices para buscar archivos. Estos índices utilizan una base de datos que requiere actualizaciones frecuentes. El comando de búsqueda realiza búsquedas en tiempo real en los sistemas de archivos locales. Con el comando buscar, puede buscar según varios atributos de archivo, como tamaño, ubicación, propiedad y permisos.
+
+
+
+
+
+Capítulo 9. Supervisión y gestión de procesos Linux Objetivo Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Secciones Procesos y ciclo de vida del proceso (y cuestionario) Gestión de procesos con control de trabajos (y ejercicio guiado) Envío de señales a procesos (y ejercicio guiado) Monitoreo de la actividad del proceso (y ejercicio guiado) Laboratorio Monitoreo y administración de procesos de Linux
+
+
+
+
+

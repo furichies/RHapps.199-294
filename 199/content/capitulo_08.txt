@@ -1,0 +1,877 @@
+# Capítulo 5. Controlar el acceso a los archivos
+
+## 5.1. Interpretación de permisos de archivos de Linux
+
+5.1. Interpretación de permisos de archivos de Linux 5.1. Interpretación de los permisos de archivos de Linux Objetivos Enumerar los permisos del sistema de archivos en archivos y directorios, e interpretar cómo esos permisos controlan el acceso de los usuarios y de los grupos. Permisos del sistema de archivos de Linux Los permisos de archivos controlan el acceso a los archivos. Los permisos de archivos de Linux son flexibles y pueden manejar la mayoría de los casos de uso. Un archivo es propiedad de un usuario, que suele ser el creador del archivo. El archivo también pertenece a un único grupo, que suele ser el grupo principal del usuario que creó el archivo. El grupo propietario también se puede cambiar. Los archivos tienen tres categorías de usuarios a las que se aplican los permisos: el usuario propietario (permisos de usuario), el grupo propietario (permisos de grupo) y todos los demás usuarios del sistema que no son el usuario ni un miembro del grupo propietario (otros permisos). Puede establecer diferentes permisos para cada categoría de usuario, pero los permisos más específicos tienen prioridad. Los permisos de usuario anulan los permisos de grupo, que anulan otros permisos. Se aplican tres tipos de permisos a cada categoría de usuario: lectura, escritura y ejecución. La siguiente tabla explica cómo estos permisos afectan el acceso a archivos y directorios. Tabla 4. Efectos de los permisos en archivos y directorios r (lectura) Se puede leer el contenido del archivo. Se puede enumerar el contenido del directorio (los nombres de los archivos). w (escribir) El contenido del archivo se puede cambiar. Cualquier archivo en el directorio se puede crear o eliminar. x (ejecutar) Los archivos se pueden ejecutar como comandos. El directorio puede convertirse en el directorio de trabajo actual. Puede ejecutar el comando cd para cambiarlo, pero también requiere permiso de lectura para enumerar los archivos allí. Normalmente, los usuarios tienen permisos de lectura y ejecución en directorios de solo lectura para poder enumerar el directorio y tener acceso de solo lectura a todo su contenido. Si un usuario solo tiene acceso de lectura en un directorio, puede enumerar los nombres de los archivos que contiene. Sin embargo, el usuario no puede acceder a otra información, como permisos o marcas de tiempo. Si un usuario solo tiene acceso de ejecución en un directorio, entonces no puede enumerar los nombres de los archivos en el directorio. Si conocen el nombre de un archivo para el que tienen permiso de lectura, pueden acceder al contenido de ese archivo desde fuera del directorio especificando explícitamente el nombre del archivo relativo. Cualquier persona que posea o tenga permisos de escritura y ejecución en un directorio puede eliminar archivos del mismo, independientemente de la propiedad o los permisos del archivo en sí. Puede anular este comportamiento utilizando el permiso de bit adhesivo. Permiso Efecto en archivos Efecto en directorios
+
+
+
+
+
+5.1. Interpretación de los permisos de archivos de Linux Nota Los permisos de archivos de Linux funcionan de manera diferente a los permisos del sistema de archivos NTFS de Microsoft. En Linux, los permisos se aplican sólo al archivo o directorio en el que están configurados. Los subdirectorios dentro de un directorio no heredan automáticamente los permisos del directorio principal. Sin embargo, los permisos del directorio pueden bloquear el acceso al contenido del directorio, si se configuran de manera restrictiva. El permiso de lectura en un directorio de Linux es similar al contenido de la carpeta Listar en Windows. El permiso de escritura
+
+on a Linux directory is similar to Modify  in Windows; it implies the ability to delete files and subdirectories. In
+
+Linux, con permisos de escritura y el permiso de bit adhesivo establecido en un directorio, solo el usuario o propietario del grupo puede eliminar archivos, lo cual es similar al comportamiento de escritura de Windows. El usuario root de Linux tiene el equivalente al permiso Control total de Windows en todos los archivos. Sin embargo, la política de SELinux puede utilizar contextos de seguridad de procesos y archivos para restringir el acceso incluso al usuario raíz. SELinux se analiza en el curso Red Hat System Administration II (RH134). La membresía en un grupo permite la colaboración entre usuarios. Por ejemplo, imagine que su sistema tiene dos usuarios: Alice y Bob. El usuario alice es miembro de los grupos alice y web, y el usuario bob es miembro de los grupos bob, wheel y web. Cuando Alice y Bob trabajan juntos, los archivos deben estar asociados con el grupo web y los permisos del grupo deben permitir que ambos usuarios accedan a los archivos. Visualización de permisos y propiedad de archivos y directorios La opción -l del comando ls muestra información detallada sobre los permisos y la propiedad:
+
+user@host:~$ ls -l test
+
+-rw-rw-r--. 1 estudiante estudiante 0 8 de marzo 17:36 prueba Utilice la opción -d del comando ls para mostrar información detallada sobre un directorio en sí, y no sobre su contenido.
+
+user@host:~$ ls -ld /home
+drwxr-xr-x. 5 root root 4096 Feb 31 22:00 /home
+
+El primer carácter de la lista larga es el tipo de archivo: - es un archivo normal. d es un directorio. l es un enlace simbólico. c es un archivo de dispositivo de caracteres. b es un archivo de dispositivo de bloque. p es un archivo de canalización con nombre. s es un archivo de socket local. Los siguientes nueve caracteres representan los permisos del archivo. Estos personajes se interpretan como tres conjuntos de tres.
+
+characters:
+
+El primer conjunto son los permisos que se aplican al propietario del archivo. El segundo conjunto es para el propietario del grupo del archivo. El último conjunto se aplica a todos los demás usuarios (mundiales). Si un conjunto es una cadena rwx, entonces ese conjunto tiene los tres permisos: lectura, escritura y ejecución. Si una letra se reemplaza por un guión (-), entonces ese conjunto no tiene ese permiso.
+
+
+
+
+
+5.1. Interpretación de los permisos de archivos de Linux Después de la segunda columna (el recuento de enlaces), el primer nombre especifica el usuario propietario y el segundo nombre es el propietario del grupo del archivo. En el primer ejemplo, los permisos para el usuario estudiante son el primer conjunto de tres caracteres: rw-. El usuario estudiante tiene permisos de lectura y escritura en el archivo de prueba, pero no permiso de ejecución. El segundo conjunto de tres personajes son los
+
+permissions for the student group: rw-. The student group has read and write permissions on the test file, but not
+
+permiso de ejecución. El tercer conjunto de tres caracteres son los permisos para todos los demás usuarios: r: otros usuarios solo tienen permiso de lectura en el archivo de prueba. Se aplica el conjunto de permisos más específico. Entonces, si el usuario estudiante tiene permisos diferentes a los del grupo de estudiantes, y el usuario estudiante también es miembro de ese grupo, entonces solo se aplican los permisos del propietario del usuario. Por lo tanto, puede establecer un conjunto de permisos más restrictivo para un usuario que el que proporciona su membresía en el grupo, cuando podría no ser práctico eliminar al usuario del grupo. Escenarios de permisos Los siguientes ejemplos ilustran cómo interactúan los permisos de archivos. Para estos ejemplos, su sistema tiene cuatro usuarios con la
+
+following group memberships:
+
+operador1 operador1, consultor1 base de datos1 base de datos1, consultor1 base de datos2 base de datos2, operador2 contratista1 contratista1, operador2 Estos usuarios trabajan con archivos en el directorio dir. Una lista larga de los archivos en ese directorio es la siguiente:
+
+database@host:dir $ ls -la
+
+total 24
+
+drwxrwxr-x.  2 database1 consultant1   4096 Mar  4 10:23 .
+drwxr-xr-x. 10 root      root          4096 Mar  1 17:34 ..
+
+-rw-rw-r--.  1 operador1 operador1 1024 4 de marzo 11:02 app1.log -rw-r--rw-.  1 operador1 consultor1 3144 4 de marzo 11:02 app2.log -rw-rw-r--.  1 base de datos1 consultor1 10234 4 de marzo 10:14 db1.conf -rw-r-----.  1 base de datos1 consultor1 2048 4 de marzo 10:18 db2.conf La opción -a del comando ls muestra los permisos de los archivos ocultos, incluidos los archivos especiales para representar el directorio y su padre. En este ejemplo, el . El directorio especial refleja los permisos del directorio en sí, y el directorio especial .. refleja los permisos de su directorio principal. Para el archivo db1.conf, el usuario propietario del archivo (base de datos1) tiene permisos de lectura y escritura, pero no permiso de ejecución. El grupo propietario del archivo (consultor1) tiene permisos de lectura y escritura pero no de ejecución. Todos los demás usuarios tienen permiso de lectura pero no de escritura ni de ejecución. La siguiente tabla explora algunos efectos de este conjunto de permisos para estos usuarios: Membresías de grupos de usuarios
+
+
+
+
+
+5.1. Interpretación de los permisos de archivos de Linux El usuario operador1 puede cambiar el contenido del archivo db1.conf. El usuario operador1 es miembro del grupo consultor1 y ese grupo tiene permisos de lectura y escritura en el archivo db1.conf. El usuario de la base de datos1 puede ver y modificar el contenido del archivo db2.conf. El usuario de la base de datos1 posee el archivo db2.conf y tiene acceso de lectura y escritura. El usuario operador1 puede ver pero no modificar el contenido del archivo db2.conf. El usuario operador1 es miembro del grupo consultor1 y ese grupo sólo tiene acceso de lectura al archivo db2.conf. Los usuarios de la base de datos2 y el contratista1 no tienen ningún acceso al contenido del archivo db2.conf. Los demás permisos se aplican a los usuarios de la base de datos2 y del contratista1, y esos permisos no incluyen el permiso de lectura o escritura. El usuario operator1 es el único usuario que puede cambiar el contenido del archivo app1.log. El usuario operador1 y los miembros del grupo operador1 tienen permiso de escritura en el archivo, mientras que otros usuarios no. El único miembro del grupo operador1 es el usuario operador1. El usuario de la base de datos2 puede cambiar el contenido del archivo app2.log. El usuario de la base de datos2 no es el propietario del archivo app2.log y no está en el grupo consultor1, por lo que se aplican los demás permisos. Los otros permisos otorgan permiso de escritura en el archivo. El usuario de la base de datos1 puede ver el contenido del archivo app2.log, pero no puede modificarlo. El usuario de la base de datos1 es miembro del grupo consultor1 y ese grupo solo tiene permisos de lectura en el archivo app2.log. Aunque los demás permisos incluyen permiso de escritura, los permisos de grupo tienen prioridad. El usuario de la base de datos1 puede eliminar los archivos app1.log y app2.log. El usuario de la base de datos1 tiene permisos de escritura en el directorio dir, que el archivo . Se muestra un directorio especial y, por lo tanto, puede eliminar cualquier archivo en ese directorio. Esta operación es posible incluso si el usuario de la base de datos1 no tiene permiso de escritura directamente en los archivos. Referencias info coreutils (GNU Coreutils) Sección 13: Cambiar los atributos del archivo página man ls(1) Efecto Motivo
+
+
+
+
+
+5.2. Prueba de interpretación de permisos de archivos de Linux 5.2. Prueba de interpretación de permisos de archivos de Linux Revise la siguiente información y úsela para responder las preguntas del cuestionario. El sistema tiene cuatro usuarios que están asignados a los siguientes grupos: El usuario consultor1 es miembro de los grupos consultor1 y base de datos1. El usuario operador1 es miembro de los grupos operador1 y base de datos1. El usuario contratista1 es miembro de los grupos contratista1 y contratista3. El usuario operador2 es miembro de los grupos operador2 y contratista3. El . El directorio especial contiene cuatro archivos con los siguientes permisos: drwxrwxr-x.   operador1 base de datos1. -rw-rw-r--.   consultor1 consultor1 app1.log -rw-r--rw-.   consultor1 base de datos1 aplicación2.log -rw-rw-r--.   operador1 base de datos1 db1.conf -rw-r-----.   operador1 base de datos1 db2.conf Elija las respuestas correctas a las siguientes preguntas: ¿Qué archivo normal posee el usuario operador1 y todos los usuarios pueden leer? 1. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo puede modificar el usuario contratista1? 2. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo no puede leer el usuario operador2? 3. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo posee el grupo consultor1? 4. app1.log a. aplicación2.log b. db1.conf c. db2.conf d.
+
+
+
+
+
+
+
+## Cuestionario: Prueba de interpretación de permisos de archivos de Linux
+
+5.2. Prueba de interpretación de permisos de archivos de Linux 5.2. Prueba de interpretación de permisos de archivos de Linux Revise la siguiente información y úsela para responder las preguntas del cuestionario. El sistema tiene cuatro usuarios que están asignados a los siguientes grupos: El usuario consultor1 es miembro de los grupos consultor1 y base de datos1. El usuario operador1 es miembro de los grupos operador1 y base de datos1. El usuario contratista1 es miembro de los grupos contratista1 y contratista3. El usuario operador2 es miembro de los grupos operador2 y contratista3. El . El directorio especial contiene cuatro archivos con los siguientes permisos: drwxrwxr-x.   operador1 base de datos1. -rw-rw-r--.   consultor1 consultor1 app1.log -rw-r--rw-.   consultor1 base de datos1 aplicación2.log -rw-rw-r--.   operador1 base de datos1 db1.conf -rw-r-----.   operador1 base de datos1 db2.conf Elija las respuestas correctas a las siguientes preguntas: ¿Qué archivo normal posee el usuario operador1 y todos los usuarios pueden leer? 1. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo puede modificar el usuario contratista1? 2. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo no puede leer el usuario operador2? 3. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo posee el grupo consultor1? 4. app1.log a. aplicación2.log b. db1.conf c. db2.conf d.
+
+
+
+
+
+5.2. Prueba de interpretación de los permisos de archivos de Linux ¿Qué archivos puede eliminar el usuario operador1? 5. Sólo db1.conf a. Sólo db2.conf b. Todos los archivos en el directorio c. Ninguno de los archivos d. ¿Qué archivos puede eliminar el usuario operador2? 6. Sólo app1.log a. Sólo app2.log b. Tanto app1.log como app2.log c. Ninguno de los archivos d.
+
+
+
+
+
+5.2. Prueba de interpretación de la solución de permisos de archivos de Linux ¿Qué archivo normal posee el usuario operador1 y todos los usuarios pueden leer? 1. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo puede modificar el usuario contratista1? 2. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo no puede leer el usuario operador2? 3. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivo posee el grupo consultor1? 4. app1.log a. aplicación2.log b. db1.conf c. db2.conf d. ¿Qué archivos puede eliminar el usuario operador1? 5. Sólo db1.conf a. Sólo db2.conf b. Todos los archivos en el directorio c. Ninguno de los archivos d. ¿Qué archivos puede eliminar el usuario operador2? 6. Sólo app1.log a. Sólo app2.log b. Tanto app1.log como app2.log c. Ninguno de los archivos d.
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos 5.3. Administrar permisos de archivos desde la línea de comandos Objetivos Cambiar los permisos y la propiedad de los archivos con herramientas de línea de comandos. Cambiar permisos de archivos y directorios En Linux, puede configurar permisos en archivos y directorios para definir acceso específico para diferentes conjuntos de usuarios. La principal utilidad para configurar estos permisos es el comando chmod. El comando chmod significa "cambiar modo",
+
+where mode refers to a file's permissions. The following list shows some key characteristics of the chmod command:
+
+Cambia los permisos de archivos y directorios desde la línea de comando. Se necesita una instrucción de permiso seguida de una lista de archivos o directorios para cambiar. Puede configurar la instrucción de permiso de forma simbólica o en notación octal (numérica). Cambiar permisos con el método simbólico El método simbólico para cambiar permisos de archivos utiliza letras para representar las categorías y permisos de usuario, y símbolos para modificar la configuración de permisos. Utilice el comando chmod para modificar los permisos de archivos y directorios. La sintaxis general es la siguiente:
+
+user@host:~$ chmod Who/What/Which file|directory
+
+Quién es la clase de usuario, como se muestra en la siguiente tabla. Si no proporciona una clase de usuario, entonces el comando chmod usa el grupo all como predeterminado. u usuario El propietario del archivo. g group Miembro del grupo del archivo. u otros Usuarios que no sean el propietario del fichero ni miembros del grupo del mismo. a todos Los tres grupos anteriores. Cuál es el operador que modifica los permisos, como en la siguiente tabla. + add Agrega los permisos al archivo. Quién Clase de usuario Descripción Qué Operación Descripción
+
+
+
+
+
+
+
+## 5.3. Administrar permisos de archivos desde la línea de comandos
+
+5.3. Administrar permisos de archivos desde la línea de comandos 5.3. Administrar permisos de archivos desde la línea de comandos Objetivos Cambiar los permisos y la propiedad de los archivos con herramientas de línea de comandos. Cambiar permisos de archivos y directorios En Linux, puede configurar permisos en archivos y directorios para definir acceso específico para diferentes conjuntos de usuarios. La principal utilidad para configurar estos permisos es el comando chmod. El comando chmod significa "cambiar modo",
+
+where mode refers to a file's permissions. The following list shows some key characteristics of the chmod command:
+
+Cambia los permisos de archivos y directorios desde la línea de comando. Se necesita una instrucción de permiso seguida de una lista de archivos o directorios para cambiar. Puede configurar la instrucción de permiso de forma simbólica o en notación octal (numérica). Cambiar permisos con el método simbólico El método simbólico para cambiar permisos de archivos utiliza letras para representar las categorías y permisos de usuario, y símbolos para modificar la configuración de permisos. Utilice el comando chmod para modificar los permisos de archivos y directorios. La sintaxis general es la siguiente:
+
+user@host:~$ chmod Who/What/Which file|directory
+
+Quién es la clase de usuario, como se muestra en la siguiente tabla. Si no proporciona una clase de usuario, entonces el comando chmod usa el grupo all como predeterminado. u usuario El propietario del archivo. g group Miembro del grupo del archivo. u otros Usuarios que no sean el propietario del fichero ni miembros del grupo del mismo. a todos Los tres grupos anteriores. Cuál es el operador que modifica los permisos, como en la siguiente tabla. + add Agrega los permisos al archivo. Quién Clase de usuario Descripción Qué Operación Descripción
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos: eliminar Elimina los permisos del archivo. = establecer exactamente Establece exactamente los permisos proporcionados para el archivo. Cuál es el modo y especifica qué permisos establecer para los archivos o directorios, como se muestra en la siguiente tabla. r read Acceso de lectura al archivo. Listado de acceso al directorio. w write Permisos de escritura para el archivo o directorio. x ejecutar Ejecutar permisos sobre el archivo. Permite ingresar al directorio y acceder a archivos y subdirectorios dentro del directorio. X ejecución especial Ejecutar permisos para un directorio, o ejecutar permisos para un archivo si al menos uno de los bits de ejecución está configurado. El método simbólico utiliza letras para representar los grupos de permisos: u para usuario, g para grupo, o para otros y a para todos. Con el método simbólico, no es necesario establecer un grupo de permisos completamente nuevo. En su lugar, puede cambiar uno o más de los permisos existentes. Utilice los caracteres más (+) o menos (-) para agregar o eliminar permisos,
+
+respectively, or use the equal sign (=) to replace the entire set for a group of permissions.
+
+Una sola letra representa los permisos en sí: r para lectura, w para escritura y x para ejecución. Puede usar una X mayúscula como indicador de permiso para agregar permisos de ejecución solo si el archivo es un directorio o si la ejecución ya está configurada para usuario, grupo u otro. El siguiente ejemplo muestra el uso del método simbólico para eliminar el permiso de lectura y escritura para grupos y otros en
+
+the document.pdf file:
+user@host:~$ chmod go-rw document.pdf
+
+Este ejemplo muestra cómo agregar permiso de ejecución para todos en el archivo myscript.sh:
+
+user@host:~$ chmod a+x myscript.sh
+
+Puede utilizar la opción -R del comando chmod para establecer permisos de forma recursiva en los archivos de un árbol de directorios completo. Por ejemplo, el siguiente comando agrega de forma recursiva permisos de lectura, escritura y ejecución para los miembros del grupo propietario del directorio micarpeta y los archivos y directorios que contiene. Qué operación Descripción Qué modo Descripción
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos
+
+user@host:~$ chmod -R g+rwx /home/user/myfolder
+
+También puede utilizar la opción -R del comando chmod con la opción -X para establecer permisos simbólicamente. Con la opción X del comando chmod, puede configurar el permiso de ejecución (búsqueda) en directorios para que se pueda acceder a su contenido, sin cambiar los permisos en la mayoría de los archivos. Sin embargo, tenga cuidado con la opción X, porque si se establece algún permiso de ejecución en un archivo, la opción X también establece el permiso de ejecución especificado en ese archivo. Por ejemplo, el siguiente comando establece recursivamente el acceso de lectura y escritura del grupo al directorio demodir y su contenido, agregando la ejecución grupal solo donde la ejecución ya está configurada para usuario, grupo u otros.
+
+root@host:# chmod -R g+rwX demodir
+
+Cambiar permisos con el método octal Puede utilizar el comando chmod para cambiar los permisos de archivos con el método octal en lugar del método simbólico. En
+
+the following example, the number sign (#) represents three digits:
+user@host:~$ chmod ### file|directory
+
+Con el método octal, puede representar los permisos como un número octal de 3 dígitos (o 4 dígitos, al configurar permisos avanzados). Un solo dígito octal puede representar cualquier valor del 0 al 7. En la representación octal de permisos de 3 dígitos, cada dígito representa un nivel de acceso, de izquierda a derecha: usuario, grupo,
+
+and other. To determine each digit:
+
+Comience con 0. Para agregar permisos de lectura para este nivel de acceso, agregue 4. Para agregar permisos de escritura, agregue 2. Para agregar permisos de ejecución, agregue 1. El siguiente diagrama ilustra cómo los sistemas interpretan el valor del permiso octal 644. Figura 8. Representación visual del método octal Los administradores experimentados suelen utilizar el método octal para implementar permisos en archivos únicos o coincidentes y proporcionar control total de permisos. El siguiente ejemplo muestra el uso del método octal para establecer permisos de lectura y escritura para el usuario y permiso de lectura para
+
+group and other, on the sample.txt file:
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos
+
+user@host:~$ chmod 644 sample.txt
+
+Este ejemplo muestra la configuración de permisos de lectura, escritura y ejecución para usuarios, permisos de lectura y ejecución para grupos y
+
+no permission for other on the sampledir directory:
+user@host:~$ chmod 750 sampledir
+
+Cambio de propiedad de usuario o grupo de archivos y directorios El usuario es propietario del archivo que crea. De forma predeterminada, el propietario del grupo de un archivo nuevo es el grupo principal del usuario que crea el archivo. En Red Hat Enterprise Linux, el grupo principal de un usuario suele ser un grupo privado en el que solo ese usuario es miembro. Para otorgar acceso a un archivo según la membresía del grupo, es posible que deba cambiar el grupo propietario del archivo. Sólo el usuario root puede cambiar el usuario propietario de un archivo. Sin embargo, el propietario del archivo y el usuario raíz pueden establecer la propiedad del grupo. El usuario raíz puede otorgar propiedad del archivo a cualquier grupo, pero los usuarios normales solo pueden cambiar la propiedad del grupo del archivo si son miembros del grupo de destino. Los siguientes ejemplos muestran cómo cambiar la propiedad de archivos y directorios mediante el comando chown (cambiar propietario). Por ejemplo, para otorgar la propiedad del archivo app.conf al usuario estudiante, use el siguiente comando:
+
+root@host:~# chown student app.conf
+
+La opción -R del comando chown cambia recursivamente la propiedad de un árbol de directorios completo. El siguiente comando
+
+grants ownership of the Pictures directory and all files and subdirectories within it to the student user:
+root@host:~# chown -R student Pictures
+
+También puede utilizar el comando chown para cambiar la propiedad del grupo de un archivo precediendo el nombre del grupo con dos puntos (:). Por ejemplo, el siguiente comando cambia la propiedad del grupo del directorio Imágenes a administradores:
+
+root@host:~# chown :admins Pictures
+
+Puede utilizar el comando chown para cambiar tanto el propietario como el grupo al mismo tiempo utilizando la sintaxis propietario:grupo. Por ejemplo, para cambiar la propiedad del directorio Imágenes al usuario visitante y a los invitados.
+
+group, use the following command:
+root@host:~# chown visitor:guests Pictures
+
+En lugar de utilizar el comando chown, algunos usuarios cambian la propiedad del grupo mediante el comando chgrp. Este comando funciona de manera similar al comando chown, excepto que puede usarlo solo para cambiar la propiedad del grupo y el
+
+colon (:) before the group name is not required.
+
+
+
+
+
+5.3. Administrar permisos de archivos desde la línea de comandos Importante Es posible que encuentre una sintaxis de comando chown alternativa que separe propietario y grupo con un punto
+
+instead of a colon:
+root@host:~# chown owner.group filename
+
+Red Hat recomienda no utilizar esta sintaxis y utilizar siempre dos puntos. Debido a que un punto es un carácter válido en un nombre de usuario, el comando chown podría malinterpretar su intención. El comando podría interpretar el usuario y el grupo como un nombre de archivo. En su lugar, utilice sólo dos puntos cuando configure el usuario y el grupo al mismo tiempo. Referencias a las páginas man ls(1), chmod(1), chown(1) y chgrp(1)
+
+
+
+
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos 5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos Cambie los permisos y la propiedad de los archivos con herramientas de línea de comandos. Resultados Crear un directorio al que puedan acceder todos los miembros de un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-cli
+
+Instrucciones El comando de inicio de laboratorio prepara el entorno creando un grupo denominado consultores y creando dos usuarios, consultor1 y consultor2, que son miembros de este grupo. Cree el directorio /home/consultants en la máquina del servidor y cambie el grupo propietario al grupo de consultores. 1. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice redhat como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el directorio /home/consultants.
+
+[root@servera ~]# mkdir /home/consultants
+
+1.2. Cambie la propiedad del grupo del directorio /home/consultants al grupo de consultores.
+
+[root@servera ~]# chown :consultants /home/consultants
+
+1.3. Modifique los permisos del grupo de consultores para permitir que los miembros de su grupo creen archivos y eliminen archivos del directorio /home/consultants. También configure el directorio para prohibir que otros accedan a los archivos. 2. Verifique que los permisos del grupo de consultores permitan a los miembros de su grupo crear y eliminar archivos en el directorio /home/consultants. Tenga en cuenta que el grupo de consultores actualmente no tiene permiso de escritura. 2.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar permisos de archivos desde la línea de comandos
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos 5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos Cambie los permisos y la propiedad de los archivos con herramientas de línea de comandos. Resultados Crear un directorio al que puedan acceder todos los miembros de un grupo. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-cli
+
+Instrucciones El comando de inicio de laboratorio prepara el entorno creando un grupo denominado consultores y creando dos usuarios, consultor1 y consultor2, que son miembros de este grupo. Cree el directorio /home/consultants en la máquina del servidor y cambie el grupo propietario al grupo de consultores. 1. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice redhat como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1.1. Cree el directorio /home/consultants.
+
+[root@servera ~]# mkdir /home/consultants
+
+1.2. Cambie la propiedad del grupo del directorio /home/consultants al grupo de consultores.
+
+[root@servera ~]# chown :consultants /home/consultants
+
+1.3. Modifique los permisos del grupo de consultores para permitir que los miembros de su grupo creen archivos y eliminen archivos del directorio /home/consultants. También configure el directorio para prohibir que otros accedan a los archivos. 2. Verifique que los permisos del grupo de consultores permitan a los miembros de su grupo crear y eliminar archivos en el directorio /home/consultants. Tenga en cuenta que el grupo de consultores actualmente no tiene permiso de escritura. 2.1.
+
+
+
+
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos
+
+[root@servera ~]# ls -ld /home/consultants
+drwxr-xr-x. 2 root consultants 6 May 28 21:16 /home/consultants
+
+Agregue permiso de escritura para el grupo de consultores. Utilice el método simbólico para configurar los permisos adecuados.
+
+[root@servera ~]# chmod g+w /home/consultants
+[root@servera ~]# ls -ld /home/consultants
+drwxrwxr-x. 2 root consultants 6 May 28 21:16 /home/consultants
+
+El nuevo conjunto de permisos para el grupo de consultores (rwx) incluye lectura, escritura y ejecución. 2.2. Prohibir que otros accedan a archivos en el directorio /home/consultants. Utilice el método octal para configurar los permisos adecuados.
+
+[root@servera ~]# chmod 770 /home/consultants
+[root@servera ~]# ls -ld /home/consultants
+drwxrwx---. 2 root consultants 6 May 28 21:16 /home/consultants
+
+El nuevo conjunto de permisos para otros (---) les restringe todo acceso al directorio. 2.3. Salga del shell raíz y cambie al usuario consultor1. Utilice redhat como contraseña.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ su - consultant1
+
+Contraseña: redhat [consultor1@servera ~]$ 3. Vaya al directorio /home/consultants y cree un archivo llamado consultor1.txt. Dado que el usuario consultor1 forma parte del grupo de consultores, este usuario tiene permiso de escritura para el directorio. 4. Cambie al directorio /home/consultants.
+
+[consultant1@servera ~]$ cd /home/consultants
+
+4.1. Cree un archivo vacío llamado consultor1.txt.
+
+[consultant1@servera consultants]$ touch consultant1.txt
+
+4.2. Enumere el contenido del directorio /home/consultants.
+
+[consultant1@servera consultants]$ ls
+
+consultor1.txt 4.3. Salga del shell y cambie al usuario consultor2. Utilice redhat como contraseña.
+
+[consultant1@servera consultants]$ exit
+
+cerrar sesión
+
+[student@servera ~]$ su - consultant2
+
+Contraseña: redhat [consultor2@servera ~]$ 5. Vaya al directorio /home/consultants. Asegúrese de que el usuario consultor2 pueda agregar archivos al directorio /home/consultants/. Dado que el usuario consultor2 forma parte del grupo de consultores, este usuario tiene permiso de escritura para el directorio. 6.
+
+
+
+
+
+5.4. Ejercicio guiado Administrar permisos de archivos desde la línea de comandos Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario del estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish perms-cli
+
+Cambie al directorio /home/consultants. Cree un archivo vacío llamado consultor2.txt.
+
+[consultant2@servera ~]$ cd /home/consultants/
+[consultant2@servera consultants]$ touch consultant2.txt
+
+6.1. Enumere el contenido del directorio /home/consultants.
+
+[consultant2@servera consultants]$ ls
+
+consultor1.txt consultor2.txt 6.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[consultant2@servera consultants]$ exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales 5.5. Administrar permisos predeterminados y permisos especiales Objetivos Controlar los permisos predeterminados de los archivos creados por el usuario y explicar los permisos especiales de los archivos. Permisos especiales Los permisos especiales son un cuarto tipo de permiso, además de los de usuario, grupo y otros. Como su nombre lo indica, los permisos especiales brindan funciones adicionales relacionadas con el acceso más allá de lo que permiten los tipos de permisos básicos. Los permisos especiales setuid, setgid y sticky brindan control adicional sobre el comportamiento de archivos y directorios. Esta sección describe el impacto de los permisos especiales, que se resumen en la siguiente tabla. Tabla 5. Efectos de los permisos especiales en archivos y directorios u+s (suid) El archivo se ejecuta como el usuario propietario del archivo, no como el usuario que ejecutó el archivo. Ningún efecto. g+s (sgid) El archivo se ejecuta como el grupo propietario del archivo. Los archivos que se crean en el directorio tienen un propietario de grupo que coincide con el propietario del grupo del directorio. o+t (pegajoso) Sin efecto. Los usuarios con acceso de escritura al directorio no pueden eliminar ni cambiar el nombre de archivos que no sean de su propiedad. El permiso setuid en un archivo ejecutable significa que los comandos se ejecutan como el usuario propietario de ese archivo, en lugar de como el
+
+user that ran the command. One example is the passwd command:
+user@host:~$ ls -l /usr/bin/passwd
+
+-rwsr-xr-x. 1 root root 91584 4 de noviembre de 2024 /usr/bin/passwd En una lista larga, puede identificar los permisos setuid mediante un carácter s minúsculo en el lugar donde normalmente esperaría el carácter x (permisos de ejecución del propietario). Si el propietario no tiene permisos de ejecución, este carácter se reemplaza por un carácter S mayúscula. El permiso especial setgid en un directorio significa que los archivos creados en el directorio heredan la propiedad del grupo del directorio, en lugar de heredar la propiedad del grupo del usuario creador. Esta característica se usa comúnmente en directorios colaborativos para cambiar automáticamente un archivo del grupo privado predeterminado al grupo compartido, o en casos donde un grupo específico siempre debe poseer archivos en un directorio. Un ejemplo de este comportamiento es el archivo /run/log/journal
+
+directory:
+user@host:~$ ls -ld /run/log/journal
+drwxr-sr-x+ 4 root systemd-journal 80 May 29 16:55 /run/log/journal
+
+Si setgid está configurado en un archivo ejecutable, los comandos se ejecutan como el grupo propietario de ese archivo, en lugar de como el grupo principal del usuario que ejecutó el comando. Este comportamiento es similar a cómo funciona setuid. Permiso Efecto en archivos Efecto en directorios
+
+
+
+
+
+
+
+## 5.5. Gestión de permisos predeterminados y permisos especiales
+
+5.5. Gestión de permisos predeterminados y permisos especiales 5.5. Administrar permisos predeterminados y permisos especiales Objetivos Controlar los permisos predeterminados de los archivos creados por el usuario y explicar los permisos especiales de los archivos. Permisos especiales Los permisos especiales son un cuarto tipo de permiso, además de los de usuario, grupo y otros. Como su nombre lo indica, los permisos especiales brindan funciones adicionales relacionadas con el acceso más allá de lo que permiten los tipos de permisos básicos. Los permisos especiales setuid, setgid y sticky brindan control adicional sobre el comportamiento de archivos y directorios. Esta sección describe el impacto de los permisos especiales, que se resumen en la siguiente tabla. Tabla 5. Efectos de los permisos especiales en archivos y directorios u+s (suid) El archivo se ejecuta como el usuario propietario del archivo, no como el usuario que ejecutó el archivo. Ningún efecto. g+s (sgid) El archivo se ejecuta como el grupo propietario del archivo. Los archivos que se crean en el directorio tienen un propietario de grupo que coincide con el propietario del grupo del directorio. o+t (pegajoso) Sin efecto. Los usuarios con acceso de escritura al directorio no pueden eliminar ni cambiar el nombre de archivos que no sean de su propiedad. El permiso setuid en un archivo ejecutable significa que los comandos se ejecutan como el usuario propietario de ese archivo, en lugar de como el
+
+user that ran the command. One example is the passwd command:
+user@host:~$ ls -l /usr/bin/passwd
+
+-rwsr-xr-x. 1 root root 91584 4 de noviembre de 2024 /usr/bin/passwd En una lista larga, puede identificar los permisos setuid mediante un carácter s minúsculo en el lugar donde normalmente esperaría el carácter x (permisos de ejecución del propietario). Si el propietario no tiene permisos de ejecución, este carácter se reemplaza por un carácter S mayúscula. El permiso especial setgid en un directorio significa que los archivos creados en el directorio heredan la propiedad del grupo del directorio, en lugar de heredar la propiedad del grupo del usuario creador. Esta característica se usa comúnmente en directorios colaborativos para cambiar automáticamente un archivo del grupo privado predeterminado al grupo compartido, o en casos donde un grupo específico siempre debe poseer archivos en un directorio. Un ejemplo de este comportamiento es el archivo /run/log/journal
+
+directory:
+user@host:~$ ls -ld /run/log/journal
+drwxr-sr-x+ 4 root systemd-journal 80 May 29 16:55 /run/log/journal
+
+Si setgid está configurado en un archivo ejecutable, los comandos se ejecutan como el grupo propietario de ese archivo, en lugar de como el grupo principal del usuario que ejecutó el comando. Este comportamiento es similar a cómo funciona setuid. Permiso Efecto en archivos Efecto en directorios
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales Un ejemplo es el comando localizar, que es un reemplazo moderno de localizar. El permiso setgid está activado
+
+the /usr/bin/plocate binary, as shown in the following example:
+user@host:~$ ls -ld /usr/bin/plocate
+
+-rwxr-sr-x. 1 root locate 318224 14 de febrero 00:00 /usr/bin/plocate En una lista larga, puede identificar los permisos setgid mediante un carácter s minúsculo en el lugar donde normalmente esperaría el carácter x (permisos de ejecución de grupo). Si el grupo no tiene permisos de ejecución, este carácter se reemplaza por un carácter S mayúscula. Finalmente, el bit adhesivo de un directorio establece una restricción especial en la eliminación de archivos. Sólo el propietario del archivo (y el
+
+root user) can delete files in the directory. An example is the /tmp directory:
+user@host:~$ ls -ld /tmp
+drwxrwxrwt. 11 root root 4096 May 29 19:57 /tmp
+
+En una lista larga, puede identificar los permisos fijos mediante un carácter t minúscula en el lugar donde normalmente esperaría el carácter x (otros permisos de ejecución). Si otro no tiene permisos de ejecución, este carácter se reemplaza por un carácter T mayúscula. Configuración de permisos especiales Puede configurar permisos especiales utilizando notación simbólica o como un cuarto dígito en modo octal. Tabla 6. Configuración de permisos especiales setuid 4 u+s setgid 2 g+s sticky 1 o+t Ejemplos de permisos especiales Agregue el bit setgid en el directorio de ejemplo utilizando el método simbólico:
+
+user@host:~$ chmod g+s example
+
+Elimine el bit adhesivo del directorio de ejemplo utilizando el método simbólico:
+
+user@host:~$ chmod o-t example
+
+Establezca el bit setgid y agregue permisos de lectura, escritura y ejecución para usuarios y grupos, sin acceso para otros, en el
+
+example directory by using the octal method:
+user@host:~$ chmod 2770 example
+
+Elimine el bit setgid y agregue permisos de lectura, escritura y ejecución para usuarios y grupos, sin acceso para otros, en el directorio de ejemplo utilizando el método octal. Tenga en cuenta que debe agregar un 0 adicional al comienzo del Permiso Notación octal Notación simbólica
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales
+
+permissions value when removing special permissions by using the octal method:
+user@host:~$ chmod 00770 example
+
+Permisos predeterminados Además de configurar permisos especiales, también puede administrar los permisos predeterminados de nuevos archivos y directorios mediante la configuración de umask. La configuración de umask altera la configuración de permisos para archivos o directorios recién creados. A los archivos nuevos se les asignan permisos iniciales en función de dos factores: si está creando un archivo normal o un directorio. La umask actual (máscara de creación de archivos de usuario). Tabla 7. Permisos iniciales antes del archivo umask 0666 rw-rw-rw- Directorio 0777 rwxrwxrwx Siempre debe agregar explícitamente permiso de ejecución a un archivo normal. Este paso hace que sea más difícil para un atacante comprometer un sistema, crear un archivo malicioso y ejecutarlo. Efectos de umask en archivos y directorios La umask es un filtro de permisos que se aplica a los permisos predeterminados cuando se crea un archivo o directorio. Cada bit establecido en la umask elimina un permiso correspondiente de los permisos finales de nuevos archivos o directorios. Tabla 8. Ejemplos de umask 0022 rw-r--r-- rwxr-xr-x 0027 rw-r----- rwxr-x--- 0002 rw-rw-r-- rwxrwxr-x En RHEL 9 y versiones posteriores, la umask predeterminada para todos los usuarios normales es 0022. El comando umask sin argumentos
+
+displays the current value of the shell's umask:
+user@host:~$ umask
+
+0022 Puede configurar temporalmente una nueva umask para el shell actual ejecutando el comando umask con un solo argumento octal: Tipo Método octal inicial Método simbólico inicial umask Efecto en archivos Efecto en directorios
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales
+
+user@host:~$ umask 0027
+
+Puede omitir los ceros iniciales en la umask. Por ejemplo, umask 077 es lo mismo que umask 0077. Los valores de umask predeterminados del sistema para los usuarios de shell Bash se definen en el archivo /etc/login.defs y en el archivo /etc/bashrc. Los usuarios pueden anular los valores predeterminados del sistema en los archivos .bash_profile o .bashrc en sus directorios de inicio. Importante En Red Hat Enterprise Linux 8 y versiones anteriores, la máscara de usuario predeterminada es 0002 para los usuarios normales que tienen un UID de 200 o más y cuyo nombre de grupo principal coincide con su nombre de usuario. La máscara de usuario predeterminada para otros usuarios, incluido el usuario root, es 0022. Red Hat Enterprise Linux 9 y versiones posteriores aplican consistentemente una máscara de usuario predeterminada de 0022 para todos los usuarios, tanto en el shell de inicio de sesión como en el de no inicio de sesión. RHEL 9 y versiones posteriores ya no hacen excepciones a la configuración de umask predeterminada según el ID de usuario o los nombres de grupos coincidentes, lo que mejora la coherencia y simplifica las expectativas de seguridad. Ejemplos de configuración de umask En el siguiente ejemplo, el sistema otorga acceso de lectura y escritura al propietario del archivo, y acceso de solo lectura al grupo y a otros, lo que refleja una configuración típica de umask 0022 que restringe el acceso de escritura a quienes no son propietarios.
+
+user@host:~$ umask
+
+0022
+
+user@host:~$ touch default.txt
+user@host:~$ ls -l default.txt
+
+-rw-r--r--. 1 usuario usuario 0 29 de mayo 22:11 default.txt Figura 9. Ejemplo de cálculo de umask en un archivo En el siguiente ejemplo, el sistema otorga acceso completo al propietario del directorio y acceso de lectura y ejecución al grupo y otros, lo que refleja una configuración típica de umask 0022 que restringe el acceso de escritura para los no propietarios.
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales
+
+user@host:~$ umask
+
+0022
+
+user@host:~$ mkdir default
+user@host:~$ ls -ld default
+drwxr-xr-x. 2 user user 6 May 29 22:14 default
+
+Figura 10. Ejemplo de cálculo de umask en un directorio En el siguiente ejemplo, el valor de umask se establece en 0, lo que cambia los permisos de archivo para otros de lectura a lectura y escritura. Los permisos de directorio para otros cambian de lectura y ejecución a lectura, escritura y ejecución.
+
+user@host:~$ umask 0
+user@host:~$ touch zero.txt
+user@host:~$ ls -l zero.txt
+
+-rw-rw-rw-. 1 usuario usuario 0 29 mayo 22:17 zero.txt
+
+user@host:~$ mkdir zero
+user@host:~$ ls -ld zero
+drwxrwxrwx. 2 user user 6 May 29 22:17 zero
+
+Una umask de 027 garantiza que los archivos nuevos tengan permisos de lectura y escritura para el usuario y permisos de lectura para el grupo. Los nuevos directorios tienen permisos de lectura y ejecución para grupos y ningún permiso para otros.
+
+user@host:~$ umask 027
+user@host:~$ touch two-seven.txt
+user@host:~$ ls -l two-seven.txt
+
+-rw-r-----. 1 usuario usuario 0 29 mayo 22:19 two-seven.txt
+
+user@host:~$ mkdir two-seven
+user@host:~$ ls -ld two-seven
+drwxr-x---. 2 user user 6 May 29 22:20 two-seven
+
+Referencias a las páginas man de bash(1), ls(1), chmod(1) y umask(1)
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales 5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales Controle los permisos predeterminados de los archivos creados por el usuario y explique los permisos especiales sobre los archivos. Resultados Crear un directorio compartido donde el grupo de operadores posee automáticamente nuevos archivos. Configure el directorio para que solo el propietario del archivo (y el usuario raíz) puedan eliminar archivos. Cambie temporalmente la configuración de umask. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-default
+
+Instrucciones En este ejercicio guiado, la configuración de umask se estableció en 0007, que es diferente del valor predeterminado 0022. Este cambio de configuración le permite inspeccionar los permisos establecidos para nuevos archivos y directorios. Inicie sesión en el sistema servera como usuario operador1.
+
+student@workstation:~$ ssh operator1@servera
+
+...salida omitida... [operador1@servera ~]$ 1. Cree el directorio /tmp/operators y cambie su grupo propietario a operadores. Verifique la propiedad del nuevo grupo. 2. Cree el directorio /tmp/operators.
+
+[operator1@servera ~]$ mkdir /tmp/operators
+
+2.1. Cambie la propiedad del grupo del directorio /tmp/operators al grupo de operadores.
+
+[operator1@servera ~]$ chown :operators /tmp/operators/
+
+2.2. Verifique que la propiedad del grupo de /tmp/operators/ se aplique correctamente.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrwx---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+2.3. Verifique el valor de máscara de usuario predeterminado del usuario operator1 y enumere los permisos del directorio /tmp/operators. 3. Enumere el valor de máscara de usuario predeterminado del usuario operador1. 3.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Administrar permisos predeterminados y permisos especiales
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales 5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales Controle los permisos predeterminados de los archivos creados por el usuario y explique los permisos especiales sobre los archivos. Resultados Crear un directorio compartido donde el grupo de operadores posee automáticamente nuevos archivos. Configure el directorio para que solo el propietario del archivo (y el usuario raíz) puedan eliminar archivos. Cambie temporalmente la configuración de umask. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-default
+
+Instrucciones En este ejercicio guiado, la configuración de umask se estableció en 0007, que es diferente del valor predeterminado 0022. Este cambio de configuración le permite inspeccionar los permisos establecidos para nuevos archivos y directorios. Inicie sesión en el sistema servera como usuario operador1.
+
+student@workstation:~$ ssh operator1@servera
+
+...salida omitida... [operador1@servera ~]$ 1. Cree el directorio /tmp/operators y cambie su grupo propietario a operadores. Verifique la propiedad del nuevo grupo. 2. Cree el directorio /tmp/operators.
+
+[operator1@servera ~]$ mkdir /tmp/operators
+
+2.1. Cambie la propiedad del grupo del directorio /tmp/operators al grupo de operadores.
+
+[operator1@servera ~]$ chown :operators /tmp/operators/
+
+2.2. Verifique que la propiedad del grupo de /tmp/operators/ se aplique correctamente.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrwx---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+2.3. Verifique el valor de máscara de usuario predeterminado del usuario operator1 y enumere los permisos del directorio /tmp/operators. 3. Enumere el valor de máscara de usuario predeterminado del usuario operador1. 3.1.
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales
+
+[operator1@servera ~]$ umask
+
+0007 Esta configuración de umask otorga permisos a todos los usuarios y grupos, y evita que otros tengan permisos sobre nuevos archivos o directorios. Verifique que los permisos del directorio /tmp/operators sean consistentes con el valor umask 0007.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrwx---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+El conjunto de permisos rwxrwx--- coincide con la regla umask. 3.2. Asegúrese de que los archivos creados en el directorio /tmp/operators sean propiedad del grupo de operadores. Luego, verifique la propiedad. 4. Utilice notación simbólica para configurar el permiso especial setgid en el directorio /tmp/operators para que el grupo de operadores sea el propietario del grupo de archivos nuevos.
+
+[operator1@servera ~]$ chmod g+s /tmp/operators/
+
+4.1. Verifique que haya configurado correctamente el permiso setgid en el directorio /tmp/operators.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrws---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+4.2. Asegúrese de que los usuarios con acceso de escritura al directorio /tmp/operators puedan eliminar solo los archivos de su propiedad. Luego, verifique el cambio. 5. Utilice el método octal para configurar el bit adhesivo en el directorio /tmp/operators y conservar los permisos existentes. El modo de permiso actual es 2770 (drwxrws---).
+
+[operator1@servera ~]$ chmod 3770 /tmp/operators/
+
+5.1. Verifique que haya aplicado correctamente el bit adhesivo al directorio /tmp/operators.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrws--T. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+5.2. Cree un archivo llamado ops_file1.txt en el directorio /tmp/operators/. Enumere la propiedad y los permisos del archivo ops_file1.txt. 6. Cree un archivo llamado ops_file1.txt en el directorio /tmp/operators/.
+
+[operator1@servera ~]$ touch /tmp/operators/ops_file1.txt
+
+6.1. Cambie al directorio /tmp/operators/. Enumere la propiedad y los permisos del archivo ops_file1.txt.
+
+[operator1@servera ~]$ cd /tmp/operators/
+[operator1@servera operators]$ ls -l ops_file1.txt
+
+-rw-rw----. 1 operador1 operadores 0 4 de junio 03:28 ops_file1.txt 6.2. Cambie temporalmente la umask a 0022 para el usuario operador1. Cree un segundo archivo llamado ops_file2.txt en el directorio /tmp/operators/. Luego, indique la propiedad y los permisos de ops_file1.txt y 7.
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. archivos ops_file2.txt. Cambie la umask a 0022 para el usuario operador1.
+
+[operator1@servera operators]$ umask 0022
+
+Esta configuración de umask permite al usuario leer y escribir archivos nuevos, pero el grupo y otros solo pueden leer esos archivos. 7.1. Cree un archivo llamado ops_file2.txt en el directorio /tmp/operators/.
+
+[operator1@servera operators]$ touch ops_file2.txt
+
+7.2. Enumere la propiedad y los permisos de los archivos ops_file1.txt y ops_file2.txt.
+
+[operator1@servera operators]$ ls -l ops_file{1,2}.txt
+
+-rw-rw----. 1 operador1 operadores 0 4 de junio 03:28 ops_file1.txt -rw-r--r--. 1 operador1 operadores 0 4 de junio 03:34 ops_file2.txt Los permisos en el archivo ops_file2.txt coinciden con los permisos de la configuración de umask 0022. El archivo ops_file1.txt mantiene los permisos anteriores porque el archivo se creó antes del cambio de umask. 7.3. Inicie sesión como usuario operador2 e intente eliminar un archivo creado por el usuario operador1. No debería poder eliminar el archivo ops_file1.txt como usuario operator2 porque el directorio /tmp/operators/ está configurado con el permiso de bit adhesivo. 8. Cambie al usuario operador2. Utilice redhat como contraseña.
+
+[operator1@servera operators]$ su - operator2
+
+Contraseña: redhat ...salida omitida... [operator2@servera ~]$ 8.1. Intente eliminar el archivo /tmp/operators/ops_file1.txt, que fue creado por el usuario operator1.
+
+[operator2@servera ~]$ rm /tmp/operators/ops_file1.txt
+rm: cannot remove '/tmp/operators/ops_file1.txt': Operation not permitted
+
+Como era de esperar, la operación de eliminación falla porque el permiso del bit adhesivo impide que los usuarios eliminen archivos propiedad de otros usuarios. 8.2. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[operator2@servera ~]$ exit
+
+cerrar sesión
+
+[operator1@servera operators]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+9.
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales
+
+student@workstation:~$ lab finish perms-default
+
+
+
+
+
+5.7. Control de acceso al laboratorio de archivos 5.7. Lab Control de acceso a archivos Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Resultados Crear un directorio donde los usuarios puedan trabajar colaborativamente en archivos. Cree la estructura de archivos y directorios requerida, asignando derechos de acceso según lo solicitado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-review
+
+Instrucciones El comando de inicio de laboratorio crea los usuarios dev1 y dev2, que son miembros del grupo techdocs. El comando también crea el usuario dbadmin1, que no pertenece a este grupo. En esta actividad, creará el directorio colaborativo techdocs y lo configurará de la siguiente manera: En el directorio techdocs, los usuarios agregan archivos y subdirectorios para uso exclusivo del grupo techdocs. Otros usuarios del sistema no pueden tener acceso al directorio. Todo el contenido nuevo creado en el directorio debe heredar la propiedad del grupo techdocs. El directorio techdocs debe configurarse para que solo el propietario de un archivo pueda eliminarlo. Asegúrese de que la máscara de creación de archivos de usuario esté configurada de forma persistente para los usuarios dev1 y dev2 para permitir la colaboración grupal y prohibir que todos los demás usuarios accedan a sus datos. Para validar su configuración del directorio techdocs, cree los siguientes subdirectorios y archivos como dev1 y
+
+dev2 users to ensure that their level of access complies with requirements:
+
+dev1 dev1 techdocs dev1.txt dev1.log dev1.cfg Archivos del grupo del propietario del directorio
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Acceso de control de laboratorio a archivos
+
+5.7. Control de acceso al laboratorio de archivos 5.7. Lab Control de acceso a archivos Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Resultados Crear un directorio donde los usuarios puedan trabajar colaborativamente en archivos. Cree la estructura de archivos y directorios requerida, asignando derechos de acceso según lo solicitado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-review
+
+Instrucciones El comando de inicio de laboratorio crea los usuarios dev1 y dev2, que son miembros del grupo techdocs. El comando también crea el usuario dbadmin1, que no pertenece a este grupo. En esta actividad, creará el directorio colaborativo techdocs y lo configurará de la siguiente manera: En el directorio techdocs, los usuarios agregan archivos y subdirectorios para uso exclusivo del grupo techdocs. Otros usuarios del sistema no pueden tener acceso al directorio. Todo el contenido nuevo creado en el directorio debe heredar la propiedad del grupo techdocs. El directorio techdocs debe configurarse para que solo el propietario de un archivo pueda eliminarlo. Asegúrese de que la máscara de creación de archivos de usuario esté configurada de forma persistente para los usuarios dev1 y dev2 para permitir la colaboración grupal y prohibir que todos los demás usuarios accedan a sus datos. Para validar su configuración del directorio techdocs, cree los siguientes subdirectorios y archivos como dev1 y
+
+dev2 users to ensure that their level of access complies with requirements:
+
+dev1 dev1 techdocs dev1.txt dev1.log dev1.cfg Archivos del grupo del propietario del directorio
+
+
+
+
+
+5.7. Control de laboratorio Acceso a archivos dev2 dev2 techdocs dev2.txt dev2.log dev2.cfg Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando lab para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade perms-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish perms-review
+
+Archivos del grupo del propietario del directorio Inicie sesión en la máquina del servidor como usuario estudiante y luego cambie al usuario raíz. 1. Cree el directorio colaborativo techdocs en el directorio /home. Establezca la propiedad del grupo del directorio en el grupo techdocs, otorgue permisos completos al usuario y al grupo propietario y no permita todo acceso a otras personas en el sistema. Configure el directorio para que todo el contenido nuevo sea propiedad del grupo techdocs y solo los propietarios de archivos puedan eliminarlos. 2. Configure de manera persistente la máscara de creación de archivos de usuario en el shell para los usuarios dev1 y dev2 para que los miembros del grupo puedan colaborar, pero otros usuarios no puedan acceder a sus datos. 3. Verifique que los usuarios del grupo techdocs puedan crear y colaborar en contenido en el directorio /home/techdocs. Como usuario dev2, modifique el archivo /home/techdocs/dev1/dev1.log con el siguiente contenido: Se inició el registro. 4. Verifique que los miembros del grupo techdoc puedan eliminar solo sus propios archivos. Como usuario dev2, intente eliminar el directorio /home/techdocs/dev1, lo cual debería fallar. 5. Verifique que solo los usuarios del grupo techdocs puedan acceder al directorio colaborativo /home/techdocs. Como usuario dbadmin1, intente acceder al directorio /home/techdocs, lo cual debería fallar. 6. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 7.
+
+
+
+
+
+5.7. Solución de control de acceso a archivos de laboratorio Establezca permisos estándar en archivos e interprete los efectos de seguridad de diferentes configuraciones de permisos. Resultados Crear un directorio donde los usuarios puedan trabajar colaborativamente en archivos. Cree la estructura de archivos y directorios requerida, asignando derechos de acceso según lo solicitado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-review
+
+Instrucciones El comando de inicio de laboratorio crea los usuarios dev1 y dev2, que son miembros del grupo techdocs. El comando también crea el usuario dbadmin1, que no pertenece a este grupo. En esta actividad, creará el directorio colaborativo techdocs y lo configurará de la siguiente manera: En el directorio techdocs, los usuarios agregan archivos y subdirectorios para uso exclusivo del grupo techdocs. Otros usuarios del sistema no pueden tener acceso al directorio. Todo el contenido nuevo creado en el directorio debe heredar la propiedad del grupo techdocs. El directorio techdocs debe configurarse para que solo el propietario de un archivo pueda eliminarlo. Asegúrese de que la máscara de creación de archivos de usuario esté configurada de forma persistente para los usuarios dev1 y dev2 para permitir la colaboración grupal y prohibir que todos los demás usuarios accedan a sus datos. Para validar su configuración del directorio techdocs, cree los siguientes subdirectorios y archivos como dev1 y
+
+dev2 users to ensure that their level of access complies with requirements:
+
+dev1 dev1 techdocs dev1.txt dev1.log dev1.cfg Archivos del grupo del propietario del directorio
+
+
+
+
+
+5.7. Control de laboratorio Acceso a archivos dev2 dev2 techdocs dev2.txt dev2.log dev2.cfg Archivos del grupo del propietario del directorio Inicie sesión en la máquina del servidorb como usuario estudiante y luego cambie al usuario raíz. 1. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Cree el directorio colaborativo techdocs en el directorio /home. Establezca la propiedad del grupo del directorio en el grupo techdocs, otorgue permisos completos al usuario y al grupo propietario y no permita todo acceso a otras personas en el sistema. Configure el directorio para que todo el contenido nuevo sea propiedad del grupo techdocs y solo los propietarios de archivos puedan eliminarlos. 2. Cree un directorio /home/techdocs.
+
+[root@serverb ~]# mkdir /home/techdocs
+
+2.1. Cambie la propiedad del grupo para el directorio /home/techdocs al grupo techdocs.
+
+[root@serverb ~]# chown :techdocs /home/techdocs
+
+2.2. Establezca permisos de lectura, escritura y ejecución para usuarios y grupos, y ningún permiso para otros en el directorio /home/techdocs.
+
+[root@serverb ~]# chmod 770 /home/techdocs
+
+2.3. Establezca el permiso SGID especial en el directorio para garantizar que todo el contenido nuevo herede la propiedad del grupo techdocs.
+
+[root@serverb ~]# chmod g+s /home/techdocs
+
+2.4. Asigne el bit adhesivo al directorio /home/techdocs.
+
+[root@serverb ~]# chmod o+t /home/techdocs
+
+2.5. Enumere los permisos del directorio. 2.6.
+
+
+
+
+
+5.7. Acceso de control de laboratorio a archivos
+
+[root@serverb ~]# ls -ld /home/techdocs
+drwxrws--T. 2 root techdocs 6 Oct  6 20:40 /home/techdocs
+
+Configure de manera persistente la máscara de creación de archivos de usuario en el shell para los usuarios dev1 y dev2 para que los miembros del grupo puedan colaborar, pero otros usuarios no puedan acceder a sus datos. 3. Cambie al usuario dev1 y establezca el atributo umask del shell en 007.
+
+[root@serverb ~]# su - dev1
+[dev1@serverb ~]$ umask 007
+
+3.1. Configure el valor de umask de forma persistente actualizando el archivo de inicio ~/.bashrc para Bash.
+
+[dev1@serverb ~]$ echo "umask 007" >> ~/.bashrc
+
+3.2. Para probar la configuración del directorio, cree el subdirectorio dev1 especificado en el directorio del equipo /home/techdocs y cree los archivos dev1.txt, dev1.log y dev1.cfg.
+
+[dev1@serverb ~]$ cd /home/techdocs/
+[dev1@serverb techdocs]$ mkdir dev1
+[dev1@serverb techdocs]$ touch dev1/dev1{.txt,.log,.cfg}
+
+3.3. Enumere el contenido del directorio dev1.
+
+[dev1@serverb techdocs]$ ls -l dev1*
+
+total 0 -rw-rw----. 1 dev1 techdocs 0 6 de octubre 20:43 dev1.cfg -rw-rw----. 1 dev1 techdocs 0 6 de octubre 20:43 dev1.log -rw-rw----. 1 dev1 techdocs 0 6 de octubre 20:43 dev1.txt 3.4. Salga del shell de usuario dev1. Cambie al usuario dev2.
+
+[dev1@serverb techdocs]$ exit
+
+cerrar sesión
+
+[root@serverb ~]# su - dev2
+
+[dev2@serverb ~]$ 3,5. Establezca el atributo umask del shell del usuario en 007 y configúrelo de forma persistente.
+
+[dev2@serverb ~]$ umask 007
+[dev2@serverb ~]$ echo "umask 007" >> ~/.bashrc
+
+3.6. Cree el subdirectorio dev2 especificado en el directorio del equipo /home/techdocs junto con los archivos necesarios.
+
+[dev2@serverb ~]$ cd /home/techdocs/
+[dev2@serverb techdocs]$ mkdir dev2
+[dev2@serverb techdocs]$ touch dev2/dev2{.txt,.log,.cfg}
+
+3.7. Enumere el contenido del directorio dev2. 3.8.
+
+
+
+
+
+5.7. Control de laboratorio Acceso a archivos Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+[dev2@serverb techdocs]$ ls -l dev2*
+
+total 0 -rw-rw----. 1 dev2 techdocs 0 6 de octubre 21:08 dev2.cfg -rw-rw----. 1 dev2 techdocs 0 6 de octubre 21:08 dev2.log -rw-rw----. 1 dev2 techdocs 0 6 de octubre 21:08 dev2.txt Verifique que los usuarios del grupo techdocs puedan crear y colaborar en contenido en el directorio /home/techdocs. Como usuario dev2, modifique el archivo /home/techdocs/dev1/dev1.log con el siguiente contenido: Se inició el registro. 4. Actualice el archivo /home/techdocs/dev1/dev1.log como se describe y luego muestre el contenido del archivo.
+
+[dev2@serverb techdocs]$ echo "Logging started" >> dev1/dev1.log
+[dev2@serverb techdocs]$ cat dev1/dev1.log
+
+Se inició el registro 4.1. Verifique que los miembros del grupo techdoc puedan eliminar solo sus propios archivos. Como usuario dev2, intente eliminar el directorio /home/techdocs/dev1, lo cual debería fallar. 5. Como usuario dev2, intente eliminar el directorio /home/techdocs/dev1. Este intento falla porque el bit adhesivo está configurado en el directorio techdocs.
+
+[dev2@serverb techdocs]$ rm -rf dev1
+rm: cannot remove 'dev1': Operation not permitted
+
+5.1. Verifique que solo los usuarios del grupo techdocs puedan acceder al directorio colaborativo /home/techdocs. Como usuario dbadmin1, intente acceder al directorio /home/techdocs, lo cual debería fallar. 6. Salga del shell de usuario dev2. Cambie al usuario dbadmin1. Cambie al directorio /home/techdocs.
+
+[dev2@serverb techdocs]$ exit
+
+cerrar sesión
+
+[root@serverb ~]# su - dbadmin1
+[dbadmin1@serverb ~]$ cd /home/techdocs/
+
+-bash: cd: /home/techdocs/: Permiso denegado [dbadmin1@serverb ~]$ 6.1. Salga del shell de usuario dbadmin1.
+
+[dbadmin1@serverb ~]$ exit
+
+cerrar sesión [root@serverb ~]# 6.2. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+5.7. Acceso de control de laboratorio a archivos
+
+student@workstation:~$ lab grade perms-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish perms-review
+
+
+
+
+
+5.8. Resumen 5.8. Resumen En esta lección, aprendió cómo Red Hat Enterprise Linux administra la propiedad y los permisos de los archivos. Todos los archivos pertenecen a un propietario y a un grupo. La configuración de permisos determina quién puede acceder a los archivos (usuario, grupo y otros),
+
+and what kind of access they have (read, write, and execute). The most specific permissions take precedence: user
+
+Los permisos tienen prioridad sobre los permisos de grupo, y los permisos de grupo anulan a los demás. Puede ver la propiedad y los permisos de los archivos utilizando el formato de lista larga del comando ls. Puede cambiar los permisos de los archivos utilizando notación simbólica u octal. Además, puede cambiar recursivamente los permisos entre directorios utilizando el comando chmod -R. Los permisos especiales suid, sgid y sticky proporcionan funciones adicionales relacionadas con el acceso a los archivos. También aprendió a ver y definir valores de umask. Los valores de umask predeterminados para Bash se definen en el archivo /etc/login.defs y pueden verse afectados por la configuración de los archivos /etc/profile y /etc/bashrc, los archivos en /etc/profile.d o los archivos de inicialización del shell de su cuenta. Red Hat Enterprise Linux 9 y versiones posteriores aplican sistemáticamente una máscara de usuario predeterminada de 0022 para todos los usuarios, tanto en el shell de inicio de sesión como en el de no inicio de sesión.
+
+
+
+
+
+
+
+## Resumen
+
+5.8. Resumen 5.8. Resumen En esta lección, aprendió cómo Red Hat Enterprise Linux administra la propiedad y los permisos de los archivos. Todos los archivos pertenecen a un propietario y a un grupo. La configuración de permisos determina quién puede acceder a los archivos (usuario, grupo y otros),
+
+and what kind of access they have (read, write, and execute). The most specific permissions take precedence: user
+
+Los permisos tienen prioridad sobre los permisos de grupo, y los permisos de grupo anulan a los demás. Puede ver la propiedad y los permisos de los archivos utilizando el formato de lista larga del comando ls. Puede cambiar los permisos de los archivos utilizando notación simbólica u octal. Además, puede cambiar recursivamente los permisos entre directorios utilizando el comando chmod -R. Los permisos especiales suid, sgid y sticky proporcionan funciones adicionales relacionadas con el acceso a los archivos. También aprendió a ver y definir valores de umask. Los valores de umask predeterminados para Bash se definen en el archivo /etc/login.defs y pueden verse afectados por la configuración de los archivos /etc/profile y /etc/bashrc, los archivos en /etc/profile.d o los archivos de inicialización del shell de su cuenta. Red Hat Enterprise Linux 9 y versiones posteriores aplican sistemáticamente una máscara de usuario predeterminada de 0022 para todos los usuarios, tanto en el shell de inicio de sesión como en el de no inicio de sesión.
+
+
+
+
+
+Capítulo 6. Instalación y actualización de software con RPM Objetivo Descargar, instalar, actualizar y administrar paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Secciones Investigación de paquetes de software RPM (y ejercicio guiado) Instalación y actualización de paquetes con DNF (y ejercicio guiado) Habilitación de repositorios de software DNF (y ejercicio guiado) Laboratorio de instalación y actualización de software con RPM
+
+
+
+
+

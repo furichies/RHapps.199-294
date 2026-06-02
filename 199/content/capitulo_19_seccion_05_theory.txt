@@ -1,0 +1,77 @@
+# 16.5. Reemplazo de volúmenes físicos y administración de LVM
+# Tipo: theory
+# Capítulo: Capítulo 16. Gestión del almacenamiento con Logical Volume Manager
+
+16.5. Reemplazo de volúmenes físicos y administración de LVM 16.5. Reemplazo de volúmenes físicos y administración de objetivos de LVM Reemplazar volúmenes físicos pequeños o defectuosos en un grupo de volúmenes y retirar volúmenes lógicos, grupos de volúmenes o volúmenes físicos inactivos cuando ya no sean necesarios. Reemplazo de un volumen físico en un grupo de volúmenes Es posible que se enfrente a una situación en la que deba reemplazar un PV en un VG debido a una falla de hardware, espacio insuficiente u otros motivos. LVM proporciona herramientas de línea de comandos para realizar esta operación de forma segura, incluso con LV activos y montados. Ampliar el almacenamiento del grupo de volúmenes Es posible que necesite agregar más espacio en disco para ampliar un VG. Puede agregar volúmenes físicos a un VG para ampliar su tamaño disponible. Prepare el dispositivo físico y cree el volumen físico si no existe.
+
+root@host:~# pvcreate /dev/sdb3
+  Physical volume "/dev/sdb3" successfully created.
+
+El comando vgextend agrega el nuevo PV al VG. Este comando extiende el VG vg01 por el tamaño de PV /dev/sdb3.
+
+root@host:~# vgextend vg01 /dev/sdb3
+  Volume group "vg01" successfully extended
+
+Reducir el almacenamiento del grupo de volumen Reducir el almacenamiento de un VG implica eliminar los PV no utilizados del VG. El comando pvmove mueve datos de extensiones en un PV a extensiones en otro PV con suficientes extensiones libres en el mismo VG. Puede continuar usando el LV del mismo VG al reducir el almacenamiento. Utilice el comando pvmove -Una opción para realizar una copia de seguridad automática de los metadatos del VG después de un cambio. Esta opción utiliza el comando vgcfgbackup para realizar una copia de seguridad de los metadatos automáticamente.
+
+root@host:~# pvmove -A y /dev/sdb1
+  /dev/sdb1: Moved: 2.74%
+  ...output omitted...
+  /dev/sdb1: Moved: 100.00%
+
+Advertencia Antes de usar el comando pvmove, haga una copia de seguridad de los datos almacenados en todos los LV del VG. Una pérdida de energía inesperada durante la operación podría dejar el VG en un estado inconsistente, lo que podría causar una pérdida de datos en los LV. Utilice el comando vgreduce para eliminar un PV de un VG.
+
+
+
+
+
+16.5. Reemplazo de volúmenes físicos y administración de LVM
+
+root@host:~# vgreduce vg01 /dev/sdb1
+  Removed "/dev/sdb1" from volume group "vg01"
+
+Eliminar almacenamiento LVM Utilice los comandos lvremove, vgremove o pvremove para eliminar un componente LVM que ya no es necesario. Advertencia Los comandos lvremove, vgremove y pvremove son operaciones destructivas e irrecuperables. Utilice estos comandos sólo cuando esté seguro de que el componente LVM ya no es necesario o no está en uso. Prepare el sistema de archivos. Mueva a otro sistema de archivos todos los datos que deban conservarse. Utilice el comando umount para desmontar el sistema de archivos y luego elimine cualquier entrada /etc/fstab asociada con este sistema de archivos.
+
+root@host:~# umount /mnt/data
+
+Eliminar el volumen lógico Utilice el comando lvremove para eliminar un volumen lógico que ya no sea necesario. Desmonte el sistema de archivos LV antes de ejecutar este comando. El comando solicita confirmación antes de retirar el LV.
+
+root@host:~# lvremove /dev/vg01/lv01
+
+¿Realmente desea eliminar el volumen lógico activo vg01/lv01? [t/n]: sí
+
+  Logical volume "lv01" successfully removed.
+
+Las extensiones físicas del LV se liberan y están disponibles para asignarse a LV nuevos o existentes en el grupo de volúmenes. Eliminar el grupo de volúmenes Utilice el comando vgremove para eliminar un grupo de volúmenes que ya no sea necesario.
+
+root@host:~# vgremove vg01
+  Volume group "vg01" successfully removed
+
+Los volúmenes físicos del VG están liberados y disponibles para asignarse a VG nuevos o existentes en el sistema. Eliminar los volúmenes físicos Utilice el comando pvremove para eliminar los volúmenes físicos que ya no son necesarios. Utilice una lista de dispositivos fotovoltaicos delimitada por espacios si necesita eliminar más de un dispositivo a la vez. Este comando elimina los metadatos PV de la partición (o disco).
+
+root@host:~# pvremove /dev/sdb2 /dev/sdb3
+  Labels on physical volume "/dev/sdb2" successfully wiped.
+  Labels on physical volume "/dev/sdb3" successfully wiped.
+
+La partición ahora está disponible para reasignación o reformateo.
+
+
+
+
+
+16.5. Reemplazo de volúmenes físicos y administración de referencias de LVM Páginas de comando man vgextend(8), pvmove(8), vgcfgbackup(8), vgreduce(8), lvremove(8), vgremove(8) y pvremove(8)
+
+
+
+
+
+16.6. Prueba sobre sustitución de volúmenes físicos y gestión de LVM 16.6. Cuestionario Reemplazo de volúmenes físicos y administración de LVM Elija las respuestas correctas a las siguientes preguntas: ¿Qué comando agrega un PV a un VG existente para aumentar su capacidad? 1. vgexpand /dev/vg01 /dev/sdb3 a. vgextend /dev/sdb3 /dev/vg01 b. vgextend /dev/vg01 /dev/sdb3 c. vggrow /dev/sdb3 /dev/vg01 d. ¿Qué hace el comando pvmove? 2. Elimina todos los metadatos de un PV. a. Elimina un PV de un VG. b. Elimina un PV del sistema. do. Mueve datos de extensiones en un PV a extensiones en otro PV. d. ¿Qué comando elimina un PV de un VG para reducir su capacidad? 3. vgreduce /dev/vg01 /dev/sdb3 a. vgremove /dev/vg01 /dev/sdb3 b. vgreduce /dev/sdb3 c. vgrecall /dev/vg01 /dev/sdb3 d. Verdadero o falso: los comandos lvremove, vgremove y pvremove son operaciones reversibles. 4. Verdadero a. Depende del tipo de componente LVM. b. Falso c. ¿Cuál es el orden correcto para eliminar toda la estructura de componentes de LVM? 5.
+
+umount > lvremove > vgremove > pvremove
+
+a. lvremove > desmontar > pvremove > vgremove b. vgremove > pvremove > lvremove > desmontar c. pvremove > vgremove > lvremove > desmontar d.
+
+
+
+
+

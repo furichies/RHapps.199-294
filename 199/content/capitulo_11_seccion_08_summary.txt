@@ -1,0 +1,16 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 8. Acceso a medios extraíbles
+
+8.8. Resumen 8.8. Resumen En esta lección, aprendió a administrar dispositivos de almacenamiento en bloque, acceder al contenido de un sistema de archivos en medios extraíbles y buscar archivos en el sistema de archivos. Los dispositivos de almacenamiento están representados por el tipo de archivo del dispositivo de bloque. Puede utilizar el comando df para identificar el espacio total en disco, el espacio en disco utilizado y el espacio libre en disco en todos los sistemas de archivos normales montados. También puede enumerar los detalles de los dispositivos de bloqueo, como el tamaño y el UUID. Como usuario privilegiado, puede montar y desmontar manualmente un sistema de archivos. Para desmontar con éxito un sistema de archivos, asegúrese de que todos los procesos que acceden al punto de montaje estén detenidos. Los dispositivos de almacenamiento extraíbles se montan en el directorio /run/media cuando se utiliza el entorno gráfico. Puede buscar archivos en el sistema de archivos mediante índices o búsquedas en tiempo real. El comando de localización utiliza índices para buscar archivos. Estos índices utilizan una base de datos que requiere actualizaciones frecuentes. El comando de búsqueda realiza búsquedas en tiempo real en los sistemas de archivos locales. Con el comando buscar, puede buscar según varios atributos de archivo, como tamaño, ubicación, propiedad y permisos.
+
+
+
+
+
+Capítulo 9. Supervisión y gestión de procesos Linux Objetivo Investigar, controlar y finalizar procesos que se ejecutan en un sistema Red Hat Enterprise Linux. Secciones Procesos y ciclo de vida del proceso (y cuestionario) Gestión de procesos con control de trabajos (y ejercicio guiado) Envío de señales a procesos (y ejercicio guiado) Monitoreo de la actividad del proceso (y ejercicio guiado) Laboratorio Monitoreo y administración de procesos de Linux
+
+
+
+
+

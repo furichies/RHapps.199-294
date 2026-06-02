@@ -1,0 +1,125 @@
+# Ejercicio Guiado: Ejercicio guiado Mantener el tiempo sincronizado
+# Tipo: guided_exercise
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado 13.10. Ejercicio guiado Mantener la hora sincronizada Configure el sistema para sincronizar la zona horaria mediante NTP. Resultados Cambiar la zona horaria en un servidor. Configure el servidor para sincronizar su hora con una fuente de hora NTP. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-maintain
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante 1. Para este ejercicio, imagine que la máquina del servidor se reubica en Haití y que necesita actualizar la zona horaria. 2. Seleccione la zona horaria adecuada para Haití. 2.1.
+
+
+
+
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado
+
+[root@servera ~]# tzselect
+
+Identifique una ubicación para que las reglas de zona horaria se puedan configurar correctamente. Seleccione un continente, océano, "coord" o "TZ". 1) África 2) América 3) Antártida 4) Asia 5) Océano Atlántico 6) Australia 7) Europa 8) Océano Índico 9) Océano Pacífico 10) coord: quiero usar coordenadas geográficas. 11) TZ: quiero especificar la zona horaria utilizando el formato Posix TZ. #? 2 Seleccione un país cuyos relojes coincidan con los suyos. 1) Anguila 19) República Dominicana 37) Perú 2) Antigua y Barbuda 20) Ecuador 38) Puerto Rico 3) Argentina 21) El Salvador 39) San Bartolomé 4) Aruba 22) Guayana Francesa 40) San Cristóbal y Nieves 5) Bahamas 23) Groenlandia 41) Santa Lucía 6) Barbados 24) Granada 42) Sint Maarten (holandés) 7) Belice 25) Guadalupe 43) San Martín (francés) 8) Bolivia 26) Guatemala 44) San Pedro y Miquelón 9) Brasil 27) Guyana 45) San Vicente 10) Canadá 28) Haití 46) Surinam 11) Caribe NL 29) Honduras 47) Trinidad y Tobago 12) Islas Caimán 30) Jamaica 48) Islas Turcas y Caicos 13) Chile 31) Martinica 49) Estados Unidos 14) Colombia 32) México 50) Uruguay 15) Costa Rica 33) Montserrat 51) Venezuela 16) Cuba 34) Nicaragua 52) Islas Vírgenes (Reino Unido) 17) Curazao 35) Panamá 53) Islas Vírgenes (EE.UU.) 18) Dominica 36) Paraguay #? 28 Se ha proporcionado la siguiente información: Haití Por lo tanto, se utilizará TZ='América/Puerto Príncipe'. La hora seleccionada es ahora: viernes 6 de junio a las 13:49:36 EDT de 2025. La hora universal es ahora: viernes 6 de junio a las 17:49:36 UTC de 2025. ¿Está bien la información anterior? 1) Sí 2) No #? 1 Puede hacer que este cambio sea permanente agregando la línea TZ='America/Port-au-Prince'; exportar TZ
+
+to the file '.profile' in your home directory; then log out and log in again.
+
+Aquí está nuevamente el valor TZ, esta vez en salida estándar para que pueda
+
+can use the /usr/bin/tzselect command in shell scripts:
+
+América/Puerto Príncipe Actualiza la zona horaria de América/Puerto Príncipe.
+
+[root@servera ~]# timedatectl set-timezone America/Port-au-Prince
+
+2.2. Verifique que haya configurado correctamente la zona horaria en América/Puerto Príncipe. 2.3.
+
+
+
+
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado
+
+[root@servera ~]# timedatectl
+               Local time: Fri 2025-06-06 13:50:22 EDT
+           Universal time: Fri 2025-06-06 17:50:22 UTC
+                 RTC time: Fri 2025-06-06 17:50:22
+                Time zone: America/Port-au-Prince (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Configure el servicio chronyd para sincronizar la hora del sistema con el servidor Classroom.example.com como fuente de hora NTP. 3. Edite el archivo de configuración /etc/chrony.conf para especificar el servidor Classroom.example.com como NTP.
+
+time source. Include the iburst option to speed up initial time synchronization:
+
+...salida omitida... servidor aula.ejemplo.com iburst ...salida omitida... 3.1. Utilice el comando timedatectl para habilitar la sincronización horaria.
+
+[root@servera ~]# timedatectl set-ntp true
+
+3.2. Verifique que la configuración NTP se sincronice con la fuente de hora de aula.ejemplo.com en el entorno del aula. 4. Verifique que la sincronización horaria esté habilitada. Nota Si el resultado muestra que el reloj no está sincronizado, espere unos segundos y vuelva a ejecutar el
+
+timedatectl command. It takes a few seconds to successfully synchronize the time settings with
+
+la fuente del tiempo.
+
+[root@servera ~]# timedatectl
+               Local time: Fri 2025-06-06 13:51:13 EDT
+           Universal time: Fri 2025-06-06 17:51:13 UTC
+                 RTC time: Fri 2025-06-06 17:51:13
+                Time zone: America/Port-au-Prince (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+4.1. Verifique que la máquina del servidor sincronice actualmente su configuración de hora con la fuente de hora de Classroom.example.com. El resultado muestra un carácter de asterisco (*) en el campo de estado de origen (MS) para la fuente de hora NTP Classroom.example.com. El asterisco indica que la hora del sistema local se sincroniza correctamente con la fuente de hora NTP. 4.2.
+
+
+
+
+
+13.10. Ejercicio guiado Mantener la hora sincronizada Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-maintain
+[root@servera ~]# chronyc sources -v
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '+*' = current best, '' = combined, '-' = not combined,
+
+| / 'x' = puede haber un error, '~' = demasiado variable, '?' = inutilizable. ||                                                 .- xxxx [ yyyy ] +/- zzzz ||      Registro de accesibilidad (octal) -.           |  xxxx = compensación ajustada, ||      Log2 (intervalo de sondeo) --.      |          |  yyyy = compensación medida, ||                                \ |          |  zzzz = error estimado. ||                                 |    |           \ Nombre de MS/Dirección IP Estrato Encuesta Alcance LastRx Última muestra =========================================================================================== ^* aula.ejemplo.com 3 9 377 469 +107us[ +130us] +/- 13ms Regresa a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+13.11. Análisis de laboratorio y almacenamiento de registros 13.11. Análisis de laboratorio y almacenamiento de registros Configure el sistema para actualizar la zona horaria. Configure el diario del sistema para almacenar de forma persistente los registros de eventos después de un reinicio. Configure el servicio syslog para redirigir todos los eventos de registro de una prioridad específica a un archivo. Resultados Actualizar la zona horaria en un servidor existente. Configure los diarios del sistema para que persistan en el almacenamiento y roten con más frecuencia. Configure un nuevo archivo de registro para almacenar todos los mensajes de fallas de autenticación. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Suponga que la máquina del servidor está reubicada en Jamaica y que debe actualizar a la zona horaria de América/Jamaica. Eleve los privilegios del usuario estudiante para ejecutar el comando timedatectl para actualizar la zona horaria. Utilice estudiante como contraseña. Verifique que haya configurado correctamente la zona horaria adecuada. 1. Vea los eventos de registro grabados en los 30 minutos anteriores. 2. Como usuario raíz, configure diarios persistentes con rotación automática. Verifique que el diario sea persistente después de reiniciar. 3. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Configure el servicio rsyslog para escribir mensajes en el archivo /var/log/auth-errors. Utilice la función authpriv con la prioridad de alerta en el archivo de configuración. Introduzca el mensaje de registro de prueba de registro authpriv.alert en el registro del sistema utilizando la función authpriv con la prioridad de alerta. Utilice estudiante como contraseña. 4. Regrese al sistema de la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+

@@ -1,0 +1,2426 @@
+# Capítulo 3. Administración de variables y datos
+
+capítulo 3
+Administración de variables y
+datos
+Meta
+Escribir playbooks que usen variables para
+simplificar la administración del playbook y datos
+para hacer referencia a información sobre los hosts
+gestionados.
+Objetivos
+•
+Crear variables que afecten a hosts particulares
+o grupos de hosts, el play o el entorno global,
+y hacer referencia a ellas, y describir cómo
+funciona la prioridad de variables.
+•
+Cifrar las variables confidenciales usando
+Ansible Vault y ejecutar playbooks que hagan
+referencia a archivos de variables cifradas por
+Vault.
+•
+Hacer referencia a los datos sobre hosts
+gestionados que usan datos de Ansible y
+configurar datos personalizados en hosts
+gestionados.
+Secciones
+•
+Gestión de variables (y ejercicio guiado)
+•
+Gestión de secretos (y ejercicio guiado)
+•
+Gestión de datos (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Administración de variables y datos
+RH294-RHEL9.0-es-3-20240620
+83
+
+
+capítulo 3 |  Administración de variables y datos
+Gestión de variables
+Objetivos
+• Crear variables que afecten a hosts particulares o grupos de hosts, el play o el entorno global, y
+hacer referencia a ellas, y describir cómo funciona la prioridad de variables.
+Introducción a variables de Ansible
+Ansible soporta variables que se pueden usar para almacenar valores que, luego, se pueden
+volver a usar en todos los archivos de un proyecto Ansible. Esto puede simplificar la creación y el
+mantenimiento de un proyecto, así como reducir la cantidad de errores.
+Las variables brindan una forma conveniente de gestionar los valores dinámicos para un entorno
+dado en su proyecto Ansible. Los ejemplos de valores que pueden contener las variables incluyen:
+• Usuarios para crear
+• Paquetes para instalar
+• Servicios para reiniciar
+• Archivos para eliminar
+• Colección de archivos para recuperar de Internet
+Denominación de variables
+Los nombres de las variables deben iniciarse con una letra y solo pueden contener letras, números
+y guiones bajos.
+En la siguiente tabla, se muestra la diferencia entre nombres de variable no válidos y válidos.
+Ejemplos de nombres de variables Ansible no válidos y válidos
+Nombres de variables no válidos
+Nombres de variables válidos
+web server
+web_server
+remote.file
+remote_file
+1st file
+file_1
+file1
+remoteserver$1
+remote_server_1
+remote_server1
+Definición de variables
+Las variables se pueden definir en una variedad de lugares en un proyecto Ansible. Si una
+variable se establece con el mismo nombre en dos lugares, y esas configuraciones tienen valores
+diferentes, la precedencia determina qué valor se usa.
+84
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Puede establecer una variable que afecte a un grupo de hosts o solo a hosts individuales. Algunas
+variables son datos que Ansible puede establecer en función de la configuración de un sistema. Se
+pueden establecer otras variables dentro del playbook y afectar a un play en ese playbook o solo
+a una tarea en ese play. También puede establecer variables adicionales en la línea de comandos
+ansible-navigator run con la opción --extra-vars o -e y especificar esas variables, que
+anulan todos los demás valores para ese nombre de variable.
+La siguiente lista simplificada muestra formas de definir una variable, ordenada de menor a mayor
+precedencia:
+• Variables de grupo definidas en el inventario
+• Agrupar variables definidas en archivos en un subdirectorio group_vars en el mismo directorio
+que el inventario o el playbook
+• Variables de host definidas en el inventario
+• Variables de host definidas en archivos en un subdirectorio host_vars en el mismo directorio
+que el inventario o el playbook
+• Datos del host, descubiertos en tiempo de ejecución
+• Variables de play en el playbook (vars y vars_files).
+• Variables de tareas
+• Variables adicionales definidas en la línea de comandos
+Por ejemplo, una variable que está configurada para afectar al grupo de host all se reemplaza
+por una variable que tiene el mismo nombre y que está configurada para afectar a un solo host.
+Una práctica recomendada es elegir nombres de variables únicos a nivel mundial para que
+no tenga que considerar las reglas de precedencia. Sin embargo, a veces tal vez desee usar
+la precedencia para hacer que diferentes hosts o grupos de hosts obtengan configuraciones
+diferentes a las predeterminadas.
+Si el mismo nombre de variable se define en más de un nivel, el nivel con la mayor precedencia
+gana. Un alcance limitado, como una variable de host o una variable de tarea, tiene precedencia
+sobre un alcance más amplio, como una variable de grupo o una variable de play. Las variables
+definidas por el playbook reemplazan las variables definidas por el inventario. Las variables
+adicionales definidas en la línea de comandos con la opción --extra-vars o -e, tienen la mayor
+precedencia.
+Puede encontrar un análisis detallado y más preciso sobre la precedencia de variables en la
+documentación de Ansible en "Variable precedence: Where should I put a variable?" [https://
+docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variable-precedence-
+where-should-i-put-a-variable].
+Variables en playbooks
+Las variables desempeñan un rol importante en los playbooks de Ansible porque facilitan la
+administración de datos variables en un playbook.
+Definición de variables en playbooks
+Cuando se escriben plays, se pueden definir las propias variables y luego invocar esos
+valores en una tarea. Por ejemplo, una variable llamada web_package se puede definir
+con un valor de httpd. Por lo tanto, una tarea puede llamar a la variable usando el módulo
+ansible.builtin.dnf para instalar el paquete httpd.
+RH294-RHEL9.0-es-3-20240620
+85
+
+
+capítulo 3 |  Administración de variables y datos
+Usted puede definir variables de playbook de múltiples maneras. Uno de los métodos más
+comunes es colocar una variable en un bloque vars al comienzo de un play:
+- hosts: all
+  vars:
+    user: joe
+    home: /home/joe
+También es posible definir variables de playbooks en archivos externos. En este caso, en lugar de
+usar el bloque vars en el playbook, se puede usar la directiva vars_files, seguida de una lista
+de nombres para archivos de variables externas, relativos a la ubicación del playbook:
+- hosts: all
+  vars_files:
+    - vars/users.yml
+A continuación, las variables del playbook se definen en esos archivos en formato YAML:
+user: joe
+home: /home/joe
+Uso de variables en playbooks
+Una vez declaradas las variables, puede usar las variables en tareas. Se hace referencia a las
+variables colocando el nombre de la variable entre llaves dobles ({{ }}). Ansible sustituye la
+variable con su valor cuando se ejecuta la tarea.
+vars:
+  user: joe
+tasks:
+  # This line will read: Creates the user joe
+  - name: Creates the user {{ user }}
+    user:
+      # This line will create the user named Joe
+      name: "{{ user }}"
+86
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Importante
+Cuando se usa una variable como el primer elemento para iniciar un valor, las
+comillas son obligatorias. De esta manera, se evita que Ansible interprete que la
+referencia de la variable inicia un diccionario YAML. Si faltan las comillas, aparece el
+siguiente mensaje:
+ansible.builtin.dnf:
+     name: {{ service }}
+            ^ here
+We could be wrong, but this one looks like it might be an issue with
+missing quotes.  Always quote template expression brackets when they
+start a value. For instance:
+    with_items:
+      - {{ foo }}
+Should be written as:
+    with_items:
+      - "{{ foo }}"
+Variables de hosts y variables de grupos
+Las variables de inventario que se aplican directamente a los hosts se dividen en dos categorías
+amplias: variables de host, que se aplican a un host específico; y variables de grupo, que se aplican
+a todos los hosts en un grupo de hosts o en un grupo de grupos de hosts. Las variables de hosts
+preceden a las variables de grupos, pero las variables definidas por un playbook preceden a
+ambas.
+Una forma de definir las variables de hosts y las variables de grupos es hacerlo directamente en el
+archivo de inventario.
+nota
+Este es un enfoque anterior para definir las variables de hosts y grupos, pero es
+posible que lo vea en uso porque pone toda la información del inventario y la
+configuración de variables para hosts y grupos de hosts en un solo archivo.
+• Definición de la variable de host ansible_user para demo.example.com:
+[servers]
+demo.example.com  ansible_user=joe
+• Definición de la variable de grupo user para el grupo de hosts servers.
+RH294-RHEL9.0-es-3-20240620
+87
+
+
+capítulo 3 |  Administración de variables y datos
+[servers]
+demo1.example.com
+demo2.example.com
+[servers:vars]
+user=joe
+• Definición de la variable de grupo user para el grupo servers, que consta de dos grupos de
+hosts, cada uno con dos servidores.
+[servers1]
+demo1.example.com
+demo2.example.com
+[servers2]
+demo3.example.com
+demo4.example.com
+[servers:children]
+servers1
+servers2
+[servers:vars]
+user=joe
+Algunas desventajas de este enfoque son que dificulta más el trabajo con el archivo de inventario,
+mezcla la información acerca de hosts y variables en el mismo archivo, y usa una sintaxis obsoleta.
+Uso de directorios para completar variables de host y de grupo
+Puede definir variables para host y grupos de hosts al crear dos directorios, group_vars
+y host_vars, en el mismo directorio de trabajo como archivo de inventario o playbook.
+Estos directorios contienen archivos que definen variables de grupo y variables de host,
+respectivamente.
+Importante
+La práctica recomendada es definir las variables de inventario usando los directorios
+host_vars y group_vars, y no definirlas directamente en los archivos de
+inventario.
+Para definir variables de grupo para el grupo servers, debería crear un archivo YAML
+denominado group_vars/servers y, luego, el contenido de ese archivo establecería variables
+para valores usando la misma sintaxis que en un playbook:
+user: joe
+De la misma forma, para definir variables de hosts para un host específico, cree un archivo con un
+nombre que coincida con el host que se encuentra en el directorio host_vars para que contenga
+las variables de hosts.
+88
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Los siguientes ejemplos ilustran este enfoque más detalladamente. Considere una situación en la
+que deba gestionar dos centros de datos y los hosts del centro de datos se definen en el archivo
+de inventario ~/project/inventory:
+[datacenter1]
+demo1.example.com
+demo2.example.com
+[datacenter2]
+demo3.example.com
+demo4.example.com
+[datacenters:children]
+datacenter1
+datacenter2
+• Si se debe definir un valor general para todos los servidores en los dos centros de datos, se
+puede establecer una variable de grupo para el grupo de hosts datacenters:
+[admin@station project]$ cat ~/project/group_vars/datacenters
+package: httpd
+• Si debe definir valores diferentes para cada centro de datos, establezca una variable de grupo
+para cada grupo de hosts del centro de datos:
+[admin@station project]$ cat ~/project/group_vars/datacenter1
+package: httpd
+[admin@station project]$ cat ~/project/group_vars/datacenter2
+package: apache
+• Si debe definir valores diferentes para cada host gestionado en cada centro de datos, defina las
+variables en archivos de variables de host diferentes:
+[admin@station project]$ cat ~/project/host_vars/demo1.example.com
+package: httpd
+[admin@station project]$ cat ~/project/host_vars/demo2.example.com
+package: apache
+[admin@station project]$ cat ~/project/host_vars/demo3.example.com
+package: mariadb-server
+[admin@station project]$ cat ~/project/host_vars/demo4.example.com
+package: mysql-server
+La estructura de directorios para el proyecto de ejemplo, project, si contuviera todos los
+archivos de ejemplo anteriores, aparecería de la siguiente manera:
+project
+├── ansible.cfg
+├── group_vars
+│   ├── datacenters
+│   ├── datacenters1
+│   └── datacenters2
+├── host_vars
+RH294-RHEL9.0-es-3-20240620
+89
+
+
+capítulo 3 |  Administración de variables y datos
+│   ├── demo1.example.com
+│   ├── demo2.example.com
+│   ├── demo3.example.com
+│   └── demo4.example.com
+├── inventory
+└── playbook.yml
+nota
+Ansible busca los subdirectorios host_vars y group_vars relacionados tanto con
+el archivo de inventario como con el archivo de playbook.
+Si su inventario y su playbook están en el mismo directorio, esto es simple y
+Ansible busca esos subdirectorios en ese directorio. Si su inventario y su playbook
+están en directorios separados, Ansible buscará los subdirectorios host_vars
+y group_vars en ambos lugares. Los subdirectorios del playbook tienen mayor
+precedencia.
+Reemplazo de las variables de la línea de comandos
+Las variables de inventario son reemplazadas por variables establecidas en un playbook, pero
+ambos tipos de variables se pueden reemplazar mediante argumentos enviados al comando
+ansible-navigator run en la línea de comando. Las variables establecidas en la línea de
+comando se denominan variables adicionales.
+Las variables adicionales pueden ser útiles cuando debe reemplazar el valor definido para una
+variable para una ejecución única de un playbook. Por ejemplo:
+[user@demo ~]$ ansible-navigator run main.yml -e "package=apache"
+Uso de diccionarios como variables
+En lugar de asignar datos de configuración que se relacionen con el mismo elemento con múltiples
+variables, los administradores pueden usar diccionarios. Un diccionario es una estructura de datos
+que contiene pares de clave-valor, donde los valores también pueden ser diccionarios.
+Por ejemplo, considere el siguiente fragmento:
+user1_first_name: Bob
+user1_last_name: Jones
+user1_home_dir: /users/bjones
+user2_first_name: Anne
+user2_last_name: Cook
+user2_home_dir: /users/acook
+Este se puede reescribir como un diccionario denominado users:
+users:
+  bjones:
+    first_name: Bob
+    last_name: Jones
+    home_dir: /users/bjones
+90
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+  acook:
+    first_name: Anne
+    last_name: Cook
+    home_dir: /users/acook
+Luego puede usar las siguientes variables para acceder a los datos del usuario:
+# Returns 'Bob'
+users.bjones.first_name
+# Returns '/users/acook'
+users.acook.home_dir
+Debido a que la variable se define como un diccionario Python, hay disponible una sintaxis
+alternativa.
+# Returns 'Bob'
+users['bjones']['first_name']
+# Returns '/users/acook'
+users['acook']['home_dir']
+Importante
+La notación de punto puede causar problemas si los nombres clave son los mismos
+que los nombres de los métodos o atributos de Python, como discard, copy, add
+y así sucesivamente. Usar la notación de paréntesis puede ayudar a evitar conflictos
+y errores.
+Ambas sintaxis son válidas, pero para simplificar la solución de problemas, Red Hat
+recomienda usar una sintaxis de manera consistente en todos los archivos en
+cualquier proyecto de Ansible.
+Captura de salida de comando con variables
+registradas
+Puede usar la instrucción register para capturar la salida de un comando u otra información
+sobre la ejecución de un módulo. La salida se guarda en una variable que puede usarse
+posteriormente en el playbook con motivos de depuración u otros motivos, como aplicar una
+configuración particular basada en la salida de un comando.
+El siguiente play demuestra cómo capturar el resultado de un comando con motivos de
+depuración:
+---
+- name: Installs a package and prints the result
+  hosts: all
+  tasks:
+    - name: Install the package
+      ansible.builtin.dnf:
+        name: httpd
+        state: installed
+RH294-RHEL9.0-es-3-20240620
+91
+
+
+capítulo 3 |  Administración de variables y datos
+      register: install_result
+    - debug:
+        var: install_result
+Cuando se ejecuta el play, el módulo debug vuelca el valor de la variable registrada
+install_result en el terminal.
+[user@demo ~]$ ansible-navigator run playbook.yml -m stdout
+PLAY [Installs a package and prints the result] ****************************
+TASK [setup] ***************************************************************
+ok: [demo.example.com]
+TASK [Install the package] *************************************************
+ok: [demo.example.com]
+TASK [debug] ***************************************************************
+ok: [demo.example.com] => {
+    "install_result": {
+        "changed": false,
+        "msg": "",
+        "rc": 0,
+        "results": [
+            "httpd-2.4.51-7.el9_0.x86_64 providing httpd is already installed"
+        ]
+    }
+}
+PLAY RECAP *****************************************************************
+demo.example.com    : ok=3    changed=0    unreachable=0    failed=0    skipped=0 
+   rescued=0    ignored=0
+Referencias
+How to build your inventory — Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+Using Variables — Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html
+Variable precedence: Where should I put a variable?
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_variables.html#variable-precedence-where-should-i-put-a-variable
+YAML Syntax — Ansible Documentation
+https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+92
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de variables
+Definir y usar variables en un playbook.
+Resultados
+• Definir variables en un playbook.
+• Crear tareas que usen variables definidas.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-variables
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-variables.
+[student@workstation ~]$ cd ~/data-variables
+[student@workstation data-variables]$
+ 2.
+Durante los siguientes pasos, usted creará un playbook que consta de un solo play que
+instale el servidor web Apache y abra los puertos para que se pueda acceder al servicio. El
+play también consulta al servidor web para garantizar que se esté ejecutando.
+Cree un playbook denominado playbook.yml. Cree un play denominado "Implementar
+e iniciar el servicio Apache HTTPD", apunte al grupo de hosts webserver como hosts
+gestionados y defina las siguientes variables en su sección vars:
+Variables
+Variable
+Descripción
+web_pkg
+Paquete de servidor web para instalar
+firewall_pkg
+Paquete de firewall para instalar
+web_service
+Servicio web para administrar
+firewall_service
+Servicio de firewall que se administrará
+rule
+El nombre del servicio para abrir
+RH294-RHEL9.0-es-3-20240620
+93
+
+
+capítulo 3 |  Administración de variables y datos
+---
+- name: Deploy and start Apache HTTPD service
+  hosts: webserver
+  vars:
+    web_pkg: httpd
+    firewall_pkg: firewalld
+    web_service: httpd
+    firewall_service: firewalld
+    rule: http
+ 3.
+Cree el bloque tasks y cree la primera tarea con el módulo ansible.builtin.dnf para
+garantizar que estén instaladas las versiones más recientes de los paquetes requeridos.
+  tasks:
+    - name: Required packages are installed and up to date
+      ansible.builtin.dnf:
+        name:
+          - "{{ web_pkg }}"
+          - "{{ firewall_pkg }}"
+        state: latest
+nota
+Puedes usar ansible-navigator doc ansible.builtin.dnf -m
+stdout para revisar la sintaxis del módulo ansible.builtin.dnf. (Si tiene
+instalado el paquete ansible-core, también puede usar ansible-doc
+ansible.builtin.dnf).
+La documentación muestra que la directiva name del módulo puede tomar una lista
+de paquetes con los que debe trabajar el módulo, de modo que no necesita tareas
+separadas para garantizar que cada paquete esté actualizado.
+ 4.
+Cree dos tareas para asegurarse de que los servicios httpd y firewalld estén iniciados y
+habilitados.
+    - name: The {{ firewall_service }} service is started and enabled
+      ansible.builtin.service:
+        name: "{{ firewall_service }}"
+        enabled: true
+        state: started
+    - name: The {{ web_service }} service is started and enabled
+94
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        enabled: true
+        state: started
+nota
+El módulo ansible.builtin.service funciona de manera diferente que
+el módulo ansible.builtin.dnf, según se documenta en ansible-doc
+ansible.builtin.service. Su directiva name toma el nombre de exactamente
+un servicio con el cual trabajar.
+Puede escribir una sola tarea que garantice que ambos servicios se inicien y se
+habiliten, usando la palabra clave loop que se verá más adelante en este curso.
+ 5.
+Agregue una tarea que garantice que exista contenido específico en el archivo /var/www/
+html/index.html.
+    - name: Web content is in place
+      ansible.builtin.copy:
+        content: "Example web content"
+        dest: /var/www/html/index.html
+ 6.
+Agregue una tarea que use el módulo ansible.posix.firewalld para garantizar que
+los puertos de firewall estén abiertos para el servicio firewalld mencionado en la variable
+rule.
+    - name: The firewall port for {{ rule }} is open
+      ansible.posix.firewalld:
+        service: "{{ rule }}"
+        permanent: true
+        immediate: true
+        state: enabled
+ 7.
+Cree un nuevo play que consulte el servicio web para garantizar que todo se haya
+configurado correctamente. Debe ejecutarse en workstation. Debido a esto, Ansible no
+debe cambiar la identidad; por lo tanto, establezca el módulo become en false.
+Puede usar el módulo ansible.builtin.uri para inspeccionar una URL. Para esta
+tarea, verifique que se haya devuelto un código de estado de 200 para confirmar que el
+servidor web en servera.lab.example.com se esté ejecutando y esté configurado
+adecuadamente.
+- name: Verify the Apache service
+  hosts: workstation
+  become: false
+  tasks:
+    - name: Ensure the webserver is reachable
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        status_code: 200
+RH294-RHEL9.0-es-3-20240620
+95
+
+
+capítulo 3 |  Administración de variables y datos
+ 8.
+Cuando se completa, el playbook contiene el siguiente contenido: Revise el playbook y
+confirme que ambos plays sean correctos.
+---
+- name: Deploy and start Apache HTTPD service
+  hosts: webserver
+  vars:
+    web_pkg: httpd
+    firewall_pkg: firewalld
+    web_service: httpd
+    firewall_service: firewalld
+    rule: http
+  tasks:
+    - name: Required packages are installed and up to date
+      ansible.builtin.dnf:
+        name:
+          - "{{ web_pkg  }}"
+          - "{{ firewall_pkg }}"
+        state: latest
+    - name: The {{ firewall_service }} service is started and enabled
+      ansible.builtin.service:
+        name: "{{ firewall_service }}"
+        enabled: true
+        state: started
+    - name: The {{ web_service }} service is started and enabled
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        enabled: true
+        state: started
+    - name: Web content is in place
+      ansible.builtin.copy:
+        content: "Example web content"
+        dest: /var/www/html/index.html
+    - name: The firewall port for {{ rule }} is open
+      ansible.posix.firewalld:
+        service: "{{ rule }}"
+        permanent: true
+        immediate: true
+        state: enabled
+- name: Verify the Apache service
+  hosts: workstation
+  become: false
+  tasks:
+    - name: Ensure the webserver is reachable
+      ansible.builtin.uri:
+        url: http://servera.lab.example.com
+        status_code: 200
+96
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+ 9.
+Antes de ejecutar el playbook, use el comando ansible-navigator run --syntax-
+check para verificar su sintaxis. Si informa errores, corríjalos antes de pasar al siguiente
+paso. Debe ver una salida similar a la siguiente:
+[student@workstation data-variables]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+playbook: /home/student/data-variables/playbook.yml
+ 10. Use el comando ansible-navigator run para ejecutar el playbook. Observe la salida
+a medida que Ansible instala los paquetes, inicia y habilita los servicios, y garantiza que el
+servidor web esté disponible.
+[student@workstation data-variables]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Deploy and start Apache HTTPD service] ***********************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Required packages are installed and up to date] **************************
+changed: [servera.lab.example.com]
+TASK [The firewalld service is started and enabled] ****************************
+ok: [servera.lab.example.com]
+TASK [The httpd service is started and enabled] ********************************
+changed: [servera.lab.example.com]
+TASK [Web content is in place] *************************************************
+changed: [servera.lab.example.com]
+TASK [The firewall port for http is open] **************************************
+changed: [servera.lab.example.com]
+PLAY [Verify the Apache service] ***********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [workstation]
+TASK [Ensure the webserver is reachable] ***************************************
+ok: [workstation]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+workstation                : ok=2    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+RH294-RHEL9.0-es-3-20240620
+97
+
+
+capítulo 3 |  Administración de variables y datos
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-variables
+98
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Gestión de secretos
+Objetivos
+• Cifrar las variables confidenciales usando Ansible Vault y ejecutar playbooks que hagan
+referencia a archivos de variables cifradas por Vault.
+Presentación de Ansible Vault
+Es posible que Ansible necesite acceso a datos confidenciales, como contraseñas o claves API,
+para configurar hosts gestionados. En general, esta información se almacena como texto sin
+formato en variables de inventario u otros archivos de Ansible. Sin embargo, en ese caso, los
+usuarios con acceso a los archivos de Ansible o a un sistema de control de versiones que almacena
+los archivos de Ansible tendrían acceso a estos datos confidenciales. Esto representa un riesgo de
+seguridad notorio.
+Se puede usar Ansible Vault, que está incluido con Ansible, para cifrar y descifrar cualquier archivo
+de datos estructurados usado por Ansible. Para usar Ansible Vault, use una herramienta de la línea
+de comandos denominada ansible-vault para crear, editar, cifrar, descifrar y ver archivos.
+Ansible Vault puede cifrar cualquier archivo de datos usado por Ansible. Esto podría incluir
+variables de inventario, archivos de variables incluidos en un playbook, archivos de variables
+pasados como argumento al ejecutar el playbook o variables definidas en roles de Ansible.
+Importante
+Ansible Vault no implementa sus propias funciones criptográficas, sino que
+usa un kit de herramientas Python externo. Los archivos están protegidos con
+cifrado simétrico mediante el uso de AES256 con una contraseña como clave
+secreta. Tenga en cuenta que la forma en la que se realiza esto no ha sido auditada
+formalmente por un tercero.
+Creación de un archivo cifrado
+Para crear un nuevo archivo cifrado, use el comando ansible-vault create filename.
+El comando le solicitará la nueva contraseña de Vault y abrirá un archivo con el editor
+predeterminado, vi. Puede exportar la variable de entorno EDITOR para especificar un editor
+predeterminado diferente. Por ejemplo, para establecer el editor predeterminado en nano,
+ejecute el comando export EDITOR=nano.
+[student@demo ~]$ ansible-vault create secret.yml
+New Vault password: redhat
+Confirm New Vault password: redhat
+En lugar de ingresar la contraseña de Vault mediante el ingreso estándar, se puede usar un
+archivo de contraseña de Vault para almacenar la contraseña. Este archivo se deberá proteger
+cuidadosamente mediante permisos de archivo y por otros medios.
+[student@demo ~]$ ansible-vault create --vault-password-file=vault-pass secret.yml
+RH294-RHEL9.0-es-3-20240620
+99
+
+
+capítulo 3 |  Administración de variables y datos
+El código usado para proteger archivos es AES256 en las versiones recientes de Ansible, pero los
+archivos cifrados con versiones anteriores aún podrían usar AES de 128 bits.
+Vista de un archivo cifrado
+Puede usar el comando ansible-vault view filename para ver un archivo cifrado con
+Ansible Vault, sin abrirlo para editarlo.
+[student@demo ~]$ ansible-vault view secret1.yml
+Vault password: secret
+my_secret: "yJJvPqhsiusmmPPZdnjndkdnYNDjdj782meUZcw"
+Edición de un archivo cifrado existente
+Para editar un archivo cifrado existente, Ansible Vault proporciona el comando ansible-vault
+edit filename. Este comando descifra el archivo a un archivo temporal y le permite editar el
+archivo. Cuando se guarda, copia el contenido y elimina el archivo temporal.
+[student@demo ~]$ ansible-vault edit secret.yml
+Vault password: redhat
+nota
+El subcomando edit siempre reescribe el archivo, de modo que solo debería
+usarse al hacer cambios. Esto puede tener implicancias cuando el archivo se guarda
+en control de versiones. El subcomando view debe usarse siempre para ver el
+contenido del archivo sin hacer cambios.
+Cifrado de un archivo existente
+Para cifrar un archivo que ya existe, use el comando ansible-vault encrypt filename. Este
+comando puede tomar los nombres de varios archivos que se cifrarán como argumentos.
+[student@demo ~]$ ansible-vault encrypt secret1.yml secret2.yml
+New Vault password: redhat
+Confirm New Vault password: redhat
+Encryption successful
+Use la opción --output=OUTPUT_FILE para guardar el archivo cifrado con un nombre nuevo.
+Solo puede usar un archivo de entrada con la opción --output.
+Descifrado de un archivo existente
+Un archivo ya cifrado existente se puede descifrar de forma permanente con el comando
+ansible-vault decrypt filename. La opción --output se puede usar cuando se descifra
+un solo archivo para guardar el archivo descifrado con un nombre diferente.
+[student@demo ~]$ ansible-vault decrypt secret1.yml --output=secret1-decrypted.yml
+Vault password: redhat
+Decryption successful
+100
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Cambio de contraseña de un archivo cifrado
+Puede usar el comando ansible-vault rekey filename para cambiar la contraseña de
+un archivo cifrado. Este comando puede regenerar la clave de varios archivos de datos al mismo
+tiempo. Solicitará la contraseña original y, luego, la nueva contraseña.
+[student@demo ~]$ ansible-vault rekey secret.yml
+Vault password: redhat
+New Vault password: RedHat
+Confirm New Vault password: RedHat
+Rekey successful
+Al usar un archivo de contraseña de Vault, use la opción --new-vault-password-file:
+[student@demo ~]$ ansible-vault rekey \
+> --new-vault-password-file=NEW_VAULT_PASSWORD_FILE secret.yml
+Playbooks y Ansible Vault
+Para ejecutar un playbook que acceda a archivos cifrados con Ansible Vault, se debe proporcionar
+la contraseña de cifrado al comando ansible-navigator. Si no proporciona la contraseña, el
+playbook devuelve un error:
+[student@demo ~]$ ansible-navigator run -m stdout test-secret.yml
+ERROR! Attempting to decrypt but no vault secrets found
+Puede proporcionar la contraseña de Vault mediante una de las siguientes opciones:
+• Indicar de forma interactiva
+• Especificar el archivo de contraseña Vault
+• Usar la variable de entorno ANSIBLE_VAULT_PASSWORD_FILE
+Para proporcionar la contraseña de Vault de forma interactiva, use --playbook-artifact-
+enable false (o --pae false) y --vault-id @prompt como se ilustra en el siguiente
+ejemplo:
+[student@demo ~]$ ansible-navigator run -m stdout --pae false site.yml \
+> --vault-id @prompt
+Vault password (default): redhat
+Importante
+Debe deshabilitar los artefactos del playbook para ingresar la contraseña de Vault
+de forma interactiva. El comando ansible-navigator se cuelga si necesita
+solicitarle una contraseña interactiva de Vault y los artefactos del playbook no
+están deshabilitados. Los artefactos de playbook están habilitados de forma
+predeterminada.
+Puede usar el comando ansible-navigator --pae false para deshabilitar los artefactos del
+playbook.
+RH294-RHEL9.0-es-3-20240620
+101
+
+
+capítulo 3 |  Administración de variables y datos
+También puede deshabilitar los artefactos del playbook modificando su archivo de proyecto
+ansible-navigator.yml o el archivo .ansible-navigator.yml en su directorio de inicio.
+Establezca el ajuste playbook-artifact en ese archivo en enable: false.
+El siguiente archivo ansible-navigator.yml mínimo que deshabilita los artefactos del
+playbook:
+ansible-navigator:
+  playbook-artifact:
+    enable: false
+En lugar de proporcionar la contraseña de cifrado de Vault de forma interactiva, puede especificar
+un archivo que almacene la contraseña de cifrado en texto sin formato mediante la opción --
+vault-password-file.
+La contraseña debe ser una cadena almacenada como una sola línea en el archivo. Dado que el
+archivo contiene la contraseña confidencial en texto sin formato, es importante que se proteja
+mediante permisos de archivo y otras medidas de seguridad.
+[student@demo ~]$ ansible-navigator run -m stdout site.yml \
+> --vault-password-file=vault-pw-file
+También puede usar la variable de entorno ANSIBLE_VAULT_PASSWORD_FILE para especificar la
+ubicación predeterminada del archivo de contraseña.
+Importante
+Puede usar múltiples contraseñas de Ansible Vault con ansible-navigator.
+Para usar múltiples contraseñas, pase múltiples opciones --vault-id o --vault-
+password-file para el comando ansible-navigator.
+[student@demo ~]$ ansible-navigator run -m stdout --pae false site.yml \
+> --vault-id one@prompt --vault-id two@prompt
+Vault password (one):
+Vault password (two):
+...output omitted...
+Los ID de Vault one y two anteriores a @prompt pueden ser cualquier cosa e
+incluso puede omitirlas por completo. Sin embargo, si usa la opción --vault-
+id id cuando cifra un archivo con el comando ansible-vault, la contraseña
+para el ID coincidente es la primera contraseña que se prueba cuando se ejecuta el
+comando ansible-navigator. Si no coincide, ansible-navigator prueba las
+otras contraseñas que proporcionó. El ID de Vault @prompt sin ID es en realidad la
+abreviatura para default@prompt, lo que significa solicitar la contraseña para el ID
+de Vault default.
+Prácticas recomendadas para la administración de archivos de
+variables
+Para simplificar la administración, tiene sentido configurar su proyecto de Ansible, de modo
+que las variables confidenciales y todas las demás variables se guarden en archivos separados.
+102
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Los archivos que contienen las variables confidenciales se pueden proteger con el comando
+ansible-vault.
+Recuerde que la manera preferida para administrar las variables del grupo y las variables del host
+es crear directorios en el nivel del playbook. El directorio group_vars, generalmente, contiene
+archivos de variables con nombres que coinciden con los grupos de hosts a los que se aplican. El
+directorio host_vars, generalmente, contiene archivos de variables con nombres que coinciden
+con los nombres de host de los hosts gestionados a los que se aplican.
+Puede usar subdirectorios dentro de los directorios group_vars o host_vars para cada grupo
+de hosts o host gestionado. Aquellos directorios pueden contener varios archivos de variables, que
+son usados por el grupo de hosts o el host gestionado.
+En el siguiente directorio de proyecto de ejemplo para el playbook playbook.yml, los miembros
+del grupo de hosts webservers usan variables en el archivo group_vars/webservers/vars.
+El host demo.example.com usa las variables en los archivos host_vars/demo.example.com/
+vars y host_vars/demo.example.com/vault:
+.
+├── ansible.cfg
+├── group_vars
+│   └── webservers
+│       └── vars
+├── host_vars
+│   └── demo.example.com
+│       ├── vars
+│       └── vault
+├── inventory
+└── playbook.yml
+Si crea subdirectorios para cada grupo de hosts o host gestionado, la mayoría de las variables para
+demo.example.com se pueden colocar en el archivo vars, pero las variables confidenciales se
+pueden mantener en secreto colocándolas en el archivo vault. Puede usar ansible-vault
+para cifrar el archivo vault y dejar el archivo vars como texto sin formato.
+En host_vars/demo.example.com, puede asignarle a los archivos cualquier nombre
+de archivo válido que elija. Los nombres de archivo usados en el directorio host_vars/
+demo.example.com son solo ejemplos; no tienen ningún significado especial. Ese directorio
+podría contener más archivos, algunos cifrados por Ansible Vault y otros no.
+Las variables de playbooks (en oposición a las variables de inventario) también se pueden
+proteger con Ansible Vault. Puede colocar las variables confidenciales del playbook en un archivo
+separado que está cifrado con Ansible Vault y, a continuación, incluir ese archivo de variables
+cifradas en un playbook mediante una directiva vars_files. Esto puede ser útil, ya que las
+variables del playbook tienen precedencia sobre las variables de inventario.
+Si está usando varias contraseñas de Vault con su playbook, asegúrese de que a cada archivo
+cifrado se le asigne un ID de Vault y que ingrese la contraseña correspondiente con ese ID de
+Vault cuando ejecute el playbook. Esto garantiza que la contraseña correcta se seleccione primero
+al descifrar el archivo cifrado con Vault, que es más rápido que forzar a Ansible a probar cada
+contraseña de Vault que proporcionó hasta que encuentre la correcta.
+RH294-RHEL9.0-es-3-20240620
+103
+
+
+capítulo 3 |  Administración de variables y datos
+Referencias
+Cifrar contenido con Ansible Vault: documentación de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/vault.html
+Mantener las variables en Vault visibles de forma segura: documentación
+de Ansible
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_best_practices.html#keep-vaulted-variables-safely-visible
+104
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de secretos
+Cifrar las variables confidenciales con Ansible Vault para protegerlas y, luego, ejecutará un
+playbook que usa esas variables.
+Resultados
+• Ejecutar un playbook usando variables definidas en un archivo cifrado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-secret
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-secret.
+[student@workstation ~]$ cd ~/data-secret
+[student@workstation data-secret]$
+ 2.
+Edite el contenido del archivo cifrado secret.yml . El archivo puede ser descifrado
+usando redhat como contraseña. Elimine los comentarios de las entradas con variables
+username y pwhash.
+2.1.
+Edite el archivo /home/student/data-secret/secret.yml cifrado. Ingrese
+redhat como contraseña de Vault cuando se la solicite. El archivo cifrado se abre en
+el editor predeterminado, vim.
+[student@workstation data-secret]$ ansible-vault edit secret.yml
+Vault password: redhat
+2.2.
+Elimine el comentario de las dos entradas variables (username y pwhash)
+eliminando el signo de almohadilla (#) al comienzo de cada línea y, a continuación,
+guarde y cierre el archivo.
+ 3.
+Cree un playbook denominado /home/student/data-secret/create_users.yml.
+El playbook debe contener un play (Create user accounts for all our servers
+en el siguiente ejemplo), que usa las variables definidas en el archivo cifrado /home/
+student/data-secret/secret.yml.
+Configure el play para usar el grupo de hosts devservers. Ejecute este play con el
+usuario devops en el host gestionado remoto. Configure el play para crear el usuario
+RH294-RHEL9.0-es-3-20240620
+105
+
+
+capítulo 3 |  Administración de variables y datos
+ansibleuser1 definido por la variable username. Configure la contraseña del usuario
+usando el hash de contraseña almacenado en la variable pwhash.
+---
+- name: Create user accounts for all our servers
+  hosts: devservers
+  become: true
+  remote_user: devops
+  vars_files:
+    - secret.yml
+  tasks:
+    - name: Creating user from secret.yml
+      ansible.builtin.user:
+        name: "{{ username }}"
+        password: "{{ pwhash }}"
+ 4.
+Ejecute el comando ansible-navigator run -m stdout --syntax-check para
+verificar la sintaxis de su playbook create_users.yml.
+Use la opción --vault-id @prompt para que Ansible le solicite de forma interactiva la
+contraseña de Vault que descifra el archivo secret.yml. Use la opción --pae false o
+--playbook-artifact-enable false para deshabilitar la creación de artefactos de
+playbook.
+Resuelva los errores de sintaxis en su playbook antes de continuar.
+[student@workstation data-secret]$ ansible-navigator run -m stdout \
+> --pae false create_users.yml --syntax-check --vault-id @prompt
+Vault password (default): redhat
+playbook: /home/student/data-secret/create_users.yml
+ 5.
+Cree un archivo de contraseña llamado vault-pass que contenga la contraseña para
+que ansible-navigator la use en lugar de solicitarle una contraseña cuando ejecute
+el playbook create_users.yml. El archivo debe contener el texto sin formato redhat
+como la contraseña de Vault. Cambie los permisos del archivo a 0600.
+[student@workstation data-secret]$ echo 'redhat' > vault-pass
+[student@workstation data-secret]$ chmod 0600 vault-pass
+ 6.
+Ejecute el playbook de Ansible para crear el usuario ansibleuser1 en un sistema remoto,
+usando la contraseña de Vault en el archivo vault-pass para descifrar la contraseña
+hash para ese usuario. Esa contraseña se almacena como una variable en el archivo cifrado
+secret.yml Ansible Vault.
+[student@workstation data-secret]$ ansible-navigator run \
+> -m stdout create_users.yml --vault-password-file=vault-pass
+PLAY [Create user accounts for all our servers] ********************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+106
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+TASK [Creating users from secret.yml] ******************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 7.
+Verifique que el playbook se haya ejecutado correctamente. El usuario ansibleuser1
+debe existir y tener la contraseña correcta en la máquina servera.lab.example.com.
+Pruebe esto usando ssh para iniciar sesión en la máquina servera.lab.example.com
+como el usuario ansibleuser1 con redhat como contraseña.
+Para asegurarse de que SSH solo intente autenticarse con una contraseña y no con una
+clave SSH, use la opción -o PreferredAuthentications=password cuando inicie
+sesión.
+Cierre sesión en servera cuando haya iniciado sesión correctamente.
+[student@workstation data-secret]$ ssh -o PreferredAuthentications=password \
+> ansibleuser1@servera.lab.example.com
+ansibleuser1@servera.lab.example.com's password: redhat
+...output omitted...
+[ansibleuser1@servera ~]$ exit
+logout
+Connection to servera.lab.example.com closed.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-secret
+RH294-RHEL9.0-es-3-20240620
+107
+
+
+capítulo 3 |  Administración de variables y datos
+Gestión de datos
+Objetivos
+• Hacer referencia a los datos sobre hosts gestionados que usan datos de Ansible y configurar
+datos personalizados en hosts gestionados.
+Descripción de Datos de Ansible
+Los datos de Ansible son variables detectadas automáticamente por Ansible en un host
+gestionado. Los datos contienen información específica del host que puede usarse como variables
+regulares en plays, condicionales, bucles o cualquier otra declaración que dependa de un valor
+recopilado de un host gestionado.
+Algunos datos recopilados para un host gestionado pueden incluir los siguientes:
+• El nombre del host
+• La versión del kernel
+• Nombres de interfaz de red
+• Direcciones IP de la interfaz de red
+• Versiones del sistema operativo
+• La cantidad de CPU
+• Memoria disponible o libre
+• Tamaño y espacio libre de los dispositivos de almacenamiento
+Incluso puede crear datos personalizados, que se almacenan en el host gestionado y son
+exclusivos de ese sistema.
+Los datos son una forma conveniente de recuperar el estado de un host gestionado y de
+determinar qué acción tomar en función de ese estado. Por ejemplo:
+• Su play puede reiniciar un servidor mediante el uso de una tarea condicional basada en el valor
+de un dato que se recopiló, como el estado de un servicio en particular.
+• El play puede personalizar un archivo de configuración MySQL según la memoria disponible
+informada por un dato.
+• La dirección IPv4 usada en un archivo de configuración podría configurarse sobre la base del
+valor de un dato.
+En general, cada play ejecuta el módulo ansible.builtin.setup de forma automática para
+recopilar datos antes de la primera tarea.
+Esto se informa como la tarea Gathering Facts en Ansible 2.3 y versiones posteriores o
+simplemente como setup en versiones anteriores de Ansible. De forma predeterminada, no es
+necesario tener una tarea para ejecutar ansible.builtin.setup en su play. En general, se
+ejecuta automáticamente para usted.
+Una forma de ver qué datos se recopilan para sus hosts gestionados es ejecutar un playbook
+corto que recopile datos y use el módulo ansible.builtin.debug para imprimir el valor de la
+variable ansible_facts.
+108
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+- name: Fact dump
+  hosts: all
+  tasks:
+    - name: Print all facts
+      ansible.builtin.debug:
+        var: ansible_facts
+Cuando ejecuta el playbook, los datos se muestran en la salida del trabajo:
+[user@demo ~]$ ansible-navigator run -m stdout facts.yml
+PLAY [Fact dump] ***************************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [demo1.example.com]
+TASK [Print all facts] *********************************************************
+ok: [demo1.example.com] => {
+    "ansible_facts": {
+        "all_ipv4_addresses": [
+            "10.30.0.178",
+            "172.25.250.10"
+        ],
+        "all_ipv6_addresses": [
+            "fe80::8389:96fd:e53e:979",
+            "fe80::cb51:6814:6342:7bbc"
+        ],
+        "ansible_local": {}
+            }
+        },
+        "apparmor": {
+            "status": "disabled"
+        },
+        "architecture": "x86_64",
+        "bios_date": "04/01/2014",
+        "bios_vendor": "SeaBIOS",
+        "bios_version": "1.13.0-2.module+el8.2.1+7284+aa32a2c4",
+        "board_asset_tag": "NA",
+        "board_name": "NA",
+        "board_serial": "NA",
+        "board_vendor": "NA",
+        "board_version": "NA",
+        "chassis_asset_tag": "NA",
+        "chassis_serial": "NA",
+        "chassis_vendor": "Red Hat",
+        "chassis_version": "RHEL 7.6.0 PC (i440FX + PIIX, 1996)",
+        "cmdline": {
+            "BOOT_IMAGE": "(hd0,gpt3)/vmlinuz-5.14.0-70.13.1.el9_0.x86_64",
+            "console": "ttyS0,115200n8",
+            "crashkernel": "1G-4G:192M,4G-64G:256M,64G-:512M",
+            "net.ifnames": "0",
+            "no_timer_check": true,
+RH294-RHEL9.0-es-3-20240620
+109
+
+
+capítulo 3 |  Administración de variables y datos
+            "root": "UUID=fb535add-9799-4a27-b8bc-e8259f39a767"
+        },
+...output omitted...
+El playbook muestra el contenido de la variable ansible_facts en formato JSON como un
+diccionario de variables. Puede explorar la salida para ver los datos recopilados y para buscar
+datos que pueda querer usar en sus plays.
+En la siguiente tabla se muestran algunos de los datos que podrían recopilarse de un nodo
+administrado, los cuales pueden ser útiles en un playbook:
+Ejemplos de datos de Ansible
+Dato
+Variable
+Nombre de host corto
+ansible_facts['hostname']
+Nombre de dominio
+completamente calificado
+ansible_facts['fqdn']
+Dirección IPv4 principal
+(basada en enrutamiento)
+ansible_facts['default_ipv4']['address']
+Lista de los nombres de todas
+las interfaces de red
+ansible_facts['interfaces']
+Tamaño de la partición de
+disco /dev/vda1
+ansible_facts['devices']['vda']['partitions']
+['vda1']['size']
+Lista de servidores DNS
+ansible_facts['dns']['nameservers']
+Versión del kernel
+actualmente en ejecución
+ansible_facts['kernel']
+nota
+Recuerde que cuando el valor de una variable es un diccionario, hay dos sintaxis que
+pueden usarse para recuperar el valor. Para tomar dos ejemplos de la tabla anterior:
+• ansible_facts['default_ipv4']['address'] también se puede escribir
+ansible_facts.default_ipv4.address
+• ansible_facts['dns']['nameservers'] también se puede escribir
+ansible_facts.dns.nameservers
+Cuando un dato se usa en un playbook, Ansible sustituye de manera dinámica el nombre de la
+variable para el dato con el valor correspondiente:
+110
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+---
+- hosts: all
+  tasks:
+  - name: Prints various Ansible facts
+    ansible.builtin.debug:
+      msg: >
+        The default IPv4 address of {{ ansible_facts.fqdn }}
+        is {{ ansible_facts.default_ipv4.address }}
+En la siguiente salida, se muestra cómo Ansible consiguió consultar el nodo gestionado y usar de
+manera dinámica la información del sistema para actualizar la variable. También puede usar datos
+para crear grupos de hosts dinámicos que combinen criterios en particular.
+[user@demo ~]$ ansible-navigator run -m stdout playbook.yml
+PLAY [all] ***********************************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [demo1.example.com]
+TASK [Prints various Ansible facts] ****************************************
+ok: [demo1.example.com] => {
+    "msg": "The default IPv4 address of demo1.example.com is 172.25.250.10\n"
+}
+PLAY RECAP *****************************************************************
+demo1.example.com    : ok=2    changed=0    unreachable=0    failed=0    skipped=0
+    rescued=0    ignored=0
+Datos de Ansible inyectados como variables
+Antes de Ansible 2.5, los datos siempre se insertaban como variables individuales prefijadas con
+la cadena ansible_ en lugar de ser parte de la variable ansible_facts. Por ejemplo, el dato
+ansible_facts['distribution'] fue denominado ansible_distribution.
+Muchos playbooks aún usan datos inyectados como variables en lugar de la nueva sintaxis, que
+usa el espacio de nombre ansible_facts.*.
+Una de las razones por las que la comunidad de Ansible desalienta la introducción de datos como
+variables es porque se corre el riesgo de colisiones inesperadas entre datos y variables. Un dato
+tiene una prioridad muy alta que anula el playbook y las variables de host y grupo de inventario,
+por lo que esto puede provocar efectos secundarios inesperados.
+La siguiente tabla muestra algunos ejemplos de datos con los nombres ansible_* y
+ansible_facts.*.
+Comparación de los nombres de datos de Ansible seleccionados
+ansible_facts.* name
+ansible_* name
+ansible_facts['hostname']
+ansible_hostname
+ansible_facts['fqdn']
+ansible_fqdn
+RH294-RHEL9.0-es-3-20240620
+111
+
+
+capítulo 3 |  Administración de variables y datos
+ansible_facts.* name
+ansible_* name
+ansible_facts['default_ipv4']
+['address']
+ansible_default_ipv4['address']
+ansible_facts['interfaces']
+ansible_interfaces
+ansible_facts['devices']['vda']
+['partitions']['vda1']['size']
+ansible_devices['vda']
+['partitions']['vda1']['size']
+ansible_facts['dns']
+['nameservers']
+ansible_dns['nameservers']
+ansible_facts['kernel']
+ansible_kernel
+Importante
+Actualmente, Ansible reconoce tanto el nuevo sistema de denominación de
+datos (usando ansible_facts) como el antiguo sistema de nombres de "datos
+inyectados como variables separadas", anterior a la versión 2.5.
+Puede deshabilitar el sistema de nombres ansible_ configurando el parámetro
+inject_facts_as_vars en la sección [defaults] del archivo de configuración
+Ansible en false. La configuración predeterminada actualmente es true.
+Si se establece en false, solo puede hacer referencia a datos de Ansible usando
+el nuevo sistema de nombres ansible_facts.*. En ese caso, los intentos de
+hacer referencia a los datos a través del espacio de nombres ansible_* generan
+un error.
+Desactivación de la recopilación de datos
+Algunas veces, no deseará recopilar datos para su play. Esto puede deberse a varias razones:
+• Es posible que no esté usando los datos y desee acelerar el play o reducir la carga provocada
+por el play en los hosts gestionados.
+• Es posible que los hosts gestionados no puedan ejecutar el módulo ansible.builtin.setup
+por algún motivo o deba instalar algún software de requisito previo antes de recopilar datos.
+Para deshabilitar la recopilación de datos para un play, establezca la palabra clave gather_facts
+en false:
+---
+- name: This play does not automatically gather any facts
+  hosts: large_datacenter
+  gather_facts: false
+Aun si se establece gather_facts: false para un play, puede recopilar datos de forma
+manual en cualquier momento mediante la ejecución de una tarea que use el módulo
+ansible.builtin.setup:
+112
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+  tasks:
+    - name: Manually gather facts
+      ansible.builtin.setup:
+Recopilación de un subconjunto de datos
+Todos los datos se recopilan de forma predeterminada. Puede configurar el módulo
+ansible.builtin.setup para recopilar solo un subconjunto de datos, en lugar de todos
+los datos. Por ejemplo, para recopilar solo datos de hardware, establezca gather_subset en
+hardware:
+- name: Collect only hardware facts
+  ansible.builtin.setup:
+    gather_subset:
+      - hardware
+Si desea recopilar todos los datos, excepto un subconjunto determinado, agregue un signo de
+exclamación (!) delante del nombre del subconjunto. Agregue comillas alrededor de la cadena
+porque en YAML el signo de exclamación no puede usarse al comienzo de una cadena sin comillas.
+- name: Collect all facts except for hardware facts
+  ansible.builtin.setup:
+    gather_subset:
+      - "!hardware"
+Visite https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+setup_module.html#parameter-gather_subset para ver los posibles valores del parámetro
+gather_subset.
+Creación de datos personalizados
+Puede usar datos personalizados para definir ciertos valores para hosts gestionados. Los plays
+pueden usar datos personalizados para completar archivos de configuración o ejecutar tareas de
+forma condicional.
+Los datos personalizados se almacenen localmente en cada host gestionado. Estos datos están
+integrados en la lista de datos estándares recopilados por el módulo ansible.builtin.setup
+cuando se ejecuta en el host gestionado.
+Puede definir datos personalizados estáticamente en un archivo INI o JSON, o puede generarlos
+dinámicamente cuando ejecuta un play. Los datos personalizados dinámicos se recopilan a través
+de scripts ejecutables, que generan una salida JSON.
+De forma predeterminada, el módulo ansible.builtin.setup carga datos personalizados
+de archivos y scripts en el directorio etc/ansible/facts.d de cada host gestionado. El
+nombre de cada archivo o script debe finalizar en .fact para poder usarse. Los scripts de datos
+personalizados dinámicos deben mostrar datos con formato JSON y deben ser ejecutables.
+El siguiente ejemplo de un archivo de datos personalizados estáticos está escrito en formato INI.
+Un archivo de datos personalizados con formato INI contiene un nivel superior definido por una
+sección, seguido por los pares de clave-valor de los datos que se definirán:
+RH294-RHEL9.0-es-3-20240620
+113
+
+
+capítulo 3 |  Administración de variables y datos
+[packages]
+web_package = httpd
+db_package = mariadb-server
+[users]
+user1 = joe
+user2 = jane
+Puede proporcionar los mismos datos en formato JSON. Los siguientes datos JSON son
+equivalentes a los datos especificados por el formato INI en el ejemplo anterior. Los datos JSON
+podrían almacenarse en un archivo de texto estático o imprimirse en una salida estándar mediante
+un script ejecutable:
+{
+  "packages": {
+    "web_package": "httpd",
+    "db_package": "mariadb-server"
+  },
+  "users": {
+    "user1": "joe",
+    "user2": "jane"
+  }
+}
+nota
+Los archivos de datos personalizados no pueden tener formato YAML como un
+playbook. El formato JSON es el equivalente más cercano.
+El módulo ansible.builtin.setup almacena los datos personalizados en la variable
+ansible_facts['ansible_local']. Los datos se organizan sobre la base del nombre del
+archivo que los definió. Por ejemplo, supongamos que el archivo /etc/ansible/facts.d/
+custom.fact en el host gestionado produce los datos personalizados anteriores. En ese caso, el
+valor de ansible_facts['ansible_local']['custom']['users']['user1'] es joe.
+Puede inspeccionar la estructura de sus datos personalizados mediante la recopilación de
+datos y el uso del módulo ansible.builtin.debug para mostrar el contenido de la variable
+ansible_local con un play similar al siguiente ejemplo:
+- name: Custom fact testing
+  hosts: demo1.example.com
+  gather_facts: true
+  tasks:
+    - name: Display all facts in ansible_local
+      ansible.builtin.debug:
+        var: ansible_local
+Cuando ejecuta el play, es posible que vea una salida similar al siguiente ejemplo:
+114
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+...output omitted...
+TASK [Display all facts in ansible_local] *********************************
+ok: [demo1.example.com] => {
+    "ansible_local": {
+        "custom": {
+            "packages": {
+                "db_package": "mariadb-server",
+                "web_package": "httpd"
+            },
+            "users": {
+                "user1": "joe",
+                "user2": "jane"
+            }
+        }
+    }
+}
+...output omitted...
+Puede usar datos personalizados de la misma manera que los datos predeterminados en los
+playbooks:
+[user@demo ~]$ cat playbook.yml
+---
+- hosts: all
+  tasks:
+  - name: Prints various Ansible facts
+    ansible.builtin.debug:
+      msg: >
+           The package to install on {{ ansible_facts['fqdn'] }}
+           is {{ ansible_facts['ansible_local']['custom']['packages']
+['web_package'] }}
+[user@demo ~]$ ansible-navigator run -m stdout playbook.yml
+PLAY [all] ***********************************************************************
+TASK [Gathering Facts] *****************************************************
+ok: [demo1.example.com]
+TASK [Prints various Ansible facts] ****************************************
+ok: [demo1.example.com] => {
+    "msg": "The package to install on demo1.example.com is httpd"
+}
+PLAY RECAP *****************************************************************
+demo1.example.com    : ok=2    changed=0    unreachable=0    failed=0    skipped=0
+    rescued=0    ignored=0
+Creación de variables a partir de otras variables
+A veces, se recomienda crear una nueva variable que use el valor de una variable diferente. Una
+razón para crear una nueva variable es minimizar la escritura.
+RH294-RHEL9.0-es-3-20240620
+115
+
+
+capítulo 3 |  Administración de variables y datos
+El ejemplo anterior creó datos personalizados en hosts gestionados. En ese ejemplo, puede usar
+la variable ansible_facts['ansible_local']['custom'] para hacer referencia a esos
+datos personalizados. Esa variable tiene las claves packages y users. Si su play contiene varias
+referencias a esos datos personalizados, puede beneficiarse de la creación de una nueva variable.
+Puede usar el módulo ansible.builtin.set_fact para crear una nueva variable
+asociada al host actual. Por ejemplo, puede definir la variable custom_host y usar la variable
+ansible_facts['ansible_local']['custom'] como su valor.
+- name: Set custom_host
+  ansible.builtin.set_fact:
+    custom_host: "{{ ansible_facts['ansible_local']['custom'] }}"
+Al definir esta nueva variable, su play puede usar las variables más cortas
+custom_host['packages'] y custom_host['users'] en lugar de las variables
+más largas ansible_facts['ansible_local']['custom']['packages'] y
+ansible_facts['ansible_local']['custom']['users'].
+También puede usar el módulo ansible.builtin.set_fact para minimizar la escritura de
+datos regulares del sistema o variables registradas. Por ejemplo:
+- name: Set vda_parts
+  ansible.builtin.set_fact:
+    vda_parts: "{{ ansible_facts['devices']['vda']['partitions'] }}"
+Después de agregar esta tarea, su play puede usar la variable vda_parts['vda1']['size']
+en lugar de la variable ansible_facts['devices']['vda']['partitions']['vda1']
+['size'] más larga.
+Uso de variables mágicas
+Ansible establece algunas variables especiales automáticamente.
+Estas variables mágicas pueden ser útiles para obtener información específica de un host
+gestionado particular.
+Los nombres de las variables mágicas están reservados, por lo que no debe definir variables con
+estos nombres.
+Cuatro de las variables mágicas más útiles son:
+hostvars
+Contiene las variables para hosts gestionados y puede usarse para obtener los valores para
+las variables de otro host gestionado. No incluye los datos del host gestionado si no se
+recopilaron aún para ese host.
+group_names
+Enumera todos los grupos en los que se encuentra el host gestionado actual.
+groups
+Enumera todos los grupos y hosts en el inventario.
+inventory_hostname
+Contiene el nombre de host para el host gestionado actual, según se configuró en el
+inventario. Este podría ser diferente del nombre de host informado por los datos por diversos
+motivos.
+116
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Una manera de obtener información sobre sus valores es usar el módulo
+ansible.builtin.debug para mostrar el contenido de estas variables.
+Por ejemplo, la siguiente tarea hace que cada host que ejecuta el play imprima una lista de todas
+las interfaces de red en el host demo2.example.com. Esta tarea funciona siempre que los datos
+se hayan recopilado para demo2 anteriormente en el play o por un play anterior en el playbook.
+Usa la variable mágica hostvars para acceder al dato ansible_facts['interfaces'] para
+ese host.
+    - name: Print list of network interfaces for demo2
+      ansible.builtin.debug:
+        var: hostvars['demo2.example.com']['ansible_facts']['interfaces']
+Puede usar el mismo enfoque con variables regulares, no solo con datos. Tenga en cuenta que la
+tarea anterior la ejecutan todos los hosts del play, por lo que sería más eficiente usar un módulo
+diferente para aplicar la información recopilada de un host a la configuración de cada uno de esos
+otros hosts gestionados.
+Recuerde que puede usar el módulo ansible.builtin.setup en una tarea para actualizar
+los datos recopilados en cualquier momento. Sin embargo, la recopilación de datos hace que su
+playbook tarde más en ejecutarse.
+También se encuentran disponibles otras variables mágicas. Para obtener más información,
+consulte https://docs.ansible.com/ansible/latest/reference_appendices/
+special_variables.html.
+Referencias
+Ansible facts - Ansible Documentation
+https://docs.ansible.com/ansible/latest/user_guide/
+playbooks_vars_facts.html#ansible-facts
+ansible.builtin.setup module - Gathers facts about remote hosts - Ansible
+Documentation
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/
+setup_module.html
+Special Variables - Ansible Documentation
+https://docs.ansible.com/ansible/latest/reference_appendices/
+special_variables.html
+RH294-RHEL9.0-es-3-20240620
+117
+
+
+capítulo 3 |  Administración de variables y datos
+Ejercicio Guiado
+Gestión de datos
+Recopilar datos Ansible de un host gestionado y usarlos en los plays.
+Resultados
+Usted deberá ser capaz de realizar lo siguiente:
+• Reunir datos de un host.
+• Crear tareas que usen los datos recogidos.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start data-facts
+Instrucciones
+ 1.
+Cambie al directorio /home/student/data-facts.
+[student@workstation ~]$ cd ~/data-facts
+[student@workstation data-facts]$
+ 2.
+Use el módulo ansible.builtin.debug para ver datos. Cree un playbook denominado
+display_facts.yml que contenga un play que muestre datos para el host webserver.
+---
+- name: Display ansible_facts
+  hosts: webserver
+  tasks:
+    - name: Display facts
+      ansible.builtin.debug:
+        var: ansible_facts
+Use el comando ansible-navigator para ejecutar el playbook display_facts.yml.
+Revise la salida y observe los valores de algunas variables que muestra.
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout display_facts.yml
+...output omitted...
+        "system": "Linux",
+        "system_capabilities": [],
+118
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+        "system_capabilities_enforced": "False",
+        "system_vendor": "Red Hat",
+        "uptime_seconds": 6775,
+        "user_dir": "/root",
+        "user_gecos": "root",
+        "user_gid": 0,
+        "user_id": "root",
+        "user_shell": "/bin/bash",
+        "user_uid": 0,
+        "userspace_architecture": "x86_64",
+        "userspace_bits": "64",
+        "virtualization_role": "guest",
+        "virtualization_tech_guest": [
+            "openstack"
+        ],
+        "virtualization_tech_host": [
+            "kvm"
+        ],
+        "virtualization_type": "openstack"
+    }
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0  ...
+ 3.
+Use el módulo Ansible ansible.builtin.debug para ver datos específicos. Cree y
+ejecute un playbook denominado display_specific_facts.yml que contenga un play
+que muestre datos específicos para el host webserver.
+3.1.
+Cree un play en el playbook display_specific_facts.yml que contenga un play
+que muestre datos específicos para el host webserver.
+---
+- name: Display specific ansible_facts
+  hosts: webserver
+  tasks:
+    - name: Display specific facts
+      ansible.builtin.debug:
+        msg: >-
+          Host '{{ ansible_facts["fqdn"] }}' with Python
+          version '{{ ansible_facts["python_version"] }}'
+          has '{{ ansible_facts["processor_count"] }}'
+          processors and '{{ ansible_facts["memtotal_mb"] }}'
+          MiB of total system memory.
+3.2.
+Use el comando ansible-navigator para ejecutar el playbook
+display_specific_facts.yml y revise la salida.
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout display_specific_facts.yml
+PLAY [Display specific ansible_facts] ******************************************
+TASK [Gathering Facts] *********************************************************
+RH294-RHEL9.0-es-3-20240620
+119
+
+
+capítulo 3 |  Administración de variables y datos
+ok: [servera.lab.example.com]
+TASK [Display specific facts] **************************************************
+ok: [servera.lab.example.com] => {
+    "msg": "Host 'servera.lab.example.com' with Python version '3.9.10' has '1'
+ processors and '960' MiB of total system memory."
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=2    changed=0    unreachable=0    failed=0  ...
+ 4.
+Agregue una tarea al play en el playbook display_specific_facts.yml que
+muestra el valor actual de la variable ansible_local. Ejecute el playbook. La salida
+resultante muestra que la variable está vacía o indefinida, porque no se establecen datos
+personalizados para sus hosts gestionados en este momento.
+4.1.
+Agregue una tarea al playbook display_specific_facts.yml que muestra el
+valor actual de la variable ansible_local. El playbook completo debería verse
+como el siguiente ejemplo:
+---
+- name: Display specific ansible_facts
+  hosts: webserver
+  tasks:
+    - name: Display specific facts
+      ansible.builtin.debug:
+        msg: >-
+          Host '{{ ansible_facts["fqdn"] }}' with Python
+          version '{{ ansible_facts["python_version"] }}'
+          has '{{ ansible_facts["processor_count"] }}'
+          processors and '{{ ansible_facts["memtotal_mb"] }}'
+          MiB of total system memory.
+    - name: Display ansible_local variable
+      ansible.builtin.debug:
+        msg: >-
+          The ansible_local variable is set to
+          '{{ ansible_facts["ansible_local"] }}'
+4.2.
+Ejecute el playbook display_specific_facts.yml nuevamente.
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout display_specific_facts.yml
+...output omitted...
+TASK [Display ansible_local variable] ******************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The ansible_local variable is set to '{}'"
+}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=0    unreachable=0    failed=0  ...
+120
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+ 5.
+Cree el directorio /etc/ansible/facts.d en servera y, luego, cree el archivo
+custom.fact en ese directorio. El archivo de datos define el paquete que se debe instalar
+y el servicio que se inicia en servera.
+5.1.
+Cree el directorio /etc/ansible/facts.d en servera.
+[student@workstation data-facts]$ ssh servera
+[student@servera ~]$ sudo mkdir -p /etc/ansible/facts.d
+[sudo] password for student: student
+5.2.
+Cree el archivo custom.fact en el directorio /etc/ansible/facts.d en
+servera. Necesita privilegios elevados para crear un archivo en ese directorio.
+El contenido del archivo debe verse de la siguiente forma:
+[general]
+package = httpd
+service = httpd
+state = started
+enabled = true
+5.3.
+Regrese a la máquina workstation.
+[student@servera ~]$ exit
+logout
+Connection to servera closed.
+[student@workstation data-facts]$
+ 6.
+Cree un playbook denominado playbook.yml en el directorio /home/student/data-
+facts que contenga un solo play. Ese play se ejecuta en los hosts gestionados en el grupo
+de hosts webserver. Usa datos personalizados para instalar un paquete y garantizar que
+un servicio de red se encuentre en un estado particular en cada host del grupo.
+6.1.
+Cree un play en el playbook playbook.yml con el siguiente nombre y la directiva
+hosts:
+---
+- name: Install Apache and start the service
+  hosts: webserver
+6.2.
+Crea la primera tarea para ese play. Para minimizar la escritura en el play, use el
+módulo ansible.builtin.set_fact para definir una nueva variable denominada
+custom que use el dato personalizado ansible_facts['ansible_local']
+['custom']['general'].
+  tasks:
+    - name: Set custom variable
+      ansible.builtin.set_fact:
+        custom: "{{ ansible_facts['ansible_local']['custom']['general'] }}"
+6.3.
+Cree otra tarea que garantice que esté instalada la última versión del paquete al que
+hace referencia la variable custom['package'] para el host gestionado.
+RH294-RHEL9.0-es-3-20240620
+121
+
+
+capítulo 3 |  Administración de variables y datos
+nota
+Dado que definió la variable custom, puede usar la variable más corta
+custom['package'] en su play en lugar de las variables más largas
+ansible_facts['ansible_local']['custom']['general']
+['package'].
+    - name: Install the required package
+      ansible.builtin.dnf:
+        name: "{{ custom['package'] }}"
+        state: latest
+6.4.
+Cree otra tarea que use la variable custom['service'] para controlar el servicio
+especificado.
+Esa tarea también debe usar la variable custom['state'] para determinar si iniciar
+o detener el servicio, y la variable custom['enabled'] para controlar si se inicia o
+no cuando arranca el sistema.
+    - name: Start the service
+      ansible.builtin.service:
+        name: "{{ custom['service'] }}"
+        state: "{{ custom['state'] }}"
+        enabled: "{{ custom['enabled'] }}"
+6.5.
+El playbook completo debería incluir el siguiente contenido. Revise el contenido del
+playbook y garantice que todas las tareas estén definidas.
+---
+- name: Install Apache and start the service
+  hosts: webserver
+  tasks:
+    - name: Set custom variable
+      ansible.builtin.set_fact:
+        custom: "{{ ansible_facts['ansible_local']['custom']['general'] }}"
+    - name: Install the required package
+      ansible.builtin.dnf:
+        name: "{{ custom['package'] }}"
+        state: latest
+    - name: Start the service
+      ansible.builtin.service:
+        name: "{{ custom['service'] }}"
+        state: "{{ custom['state'] }}"
+        enabled: "{{ custom['enabled'] }}"
+ 7.
+Verifique la sintaxis del playbook playbook.yml mediante el comando ansible-
+navigator run --syntax-check. Corrija los errores informados antes de pasar al
+siguiente paso. Debe ver una salida similar al siguiente ejemplo:
+122
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout playbook.yml --syntax-check
+playbook: /home/student/data-facts/playbook.yml
+ 8.
+Cree y ejecute un playbook denominado check_httpd.yml para verificar que el servicio
+httpd no se esté ejecutando actualmente en servera.
+8.1.
+Cree y ejecute un playbook denominado check_httpd.yml con el siguiente
+contenido:
+---
+- name: Check httpd status
+  hosts: webserver
+  tasks:
+    - name: Check httpd status
+      ansible.builtin.command: systemctl status httpd
+      register: result
+    - name: Display httpd status
+      ansible.builtin.debug:
+        var: result
+8.2.
+Ejecute el playbook check_httpd.yml y verifique que el servicio httpd no se esté
+ejecutando actualmente en la máquina servera.
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout check_httpd.yml
+...output omitted...
+TASK [Check httpd status] ******************************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": true, "cmd":
+ ["systemctl", "status", "httpd"], "delta": "0:00:00.011462", "end": "2024-04-23
+ 18:11:58.279525", "msg": "non-zero return code", "rc": 4, "start": "2024-04-23
+ 18:11:58.268063", "stderr": "Unit httpd.service could not be found.",
+ "stderr_lines": ["Unit httpd.service could not be found."], "stdout": "",
+ "stdout_lines": []}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=1    changed=0    unreachable=0    failed=1  ...
+Please review the log for errors.
+ 9.
+Ejecute el playbook playbook.yml con el comando ansible-navigator run. Observe
+la salida a medida que Ansible instala el paquete y, luego, habilite el servicio.
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Install Apache and start the service] ************************************
+TASK [Gathering Facts] *********************************************************
+RH294-RHEL9.0-es-3-20240620
+123
+
+
+capítulo 3 |  Administración de variables y datos
+ok: [servera.lab.example.com]
+TASK [Set custom variable] *****************************************************
+ok: [servera.lab.example.com]
+TASK [Install the required package] ********************************************
+changed: [servera.lab.example.com]
+TASK [Start the service] *******************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=4    changed=2    unreachable=0    failed=0  ...
+ 10. Ejecute el playbook check_httpd.yml nuevamente para determinar si el servicio httpd
+se está ejecutando ahora en la máquina servera.
+[student@workstation data-facts]$ ansible-navigator run \
+> -m stdout check_httpd.yml
+...output omitted...
+        "stdout_lines": [
+            "● httpd.service - The Apache HTTP Server",
+            "     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled;
+ vendor preset: disabled)",
+            "     Active: active (running) since Tue 2024-04-23 18:18:18 EDT; 18s
+ ago",
+...output omitted...
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-facts
+124
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Trabajo de laboratorio
+Administración de variables y datos
+Escribir y ejecutar un playbook de Ansible que use variables, secretos y datos.
+Resultados
+• Debe ser capaz de definir variables y usar datos en un playbook, así como usar variables
+definidas en un archivo cifrado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+El host gestionado serverb.lab.example.com está definido en este inventario como
+miembro del grupo de hosts webserver. Un desarrollador le ha pedido que escriba un
+playbook de Ansible para automatizar la configuración de un entorno de servidor web
+en serverb.lab.example.com, que controla el acceso de los usuarios a su sitio web
+mediante autenticación básica.
+El subdirectorio files contiene los siguientes archivos:
+• Un archivo de configuración httpd.conf para el servicio web Apache para autenticación
+básica
+• Un archivo .htaccess que se usa para controlar el acceso al directorio raíz de
+documentos del servidor web.
+• Un archivo htpasswd que contiene credenciales para los usuarios permitidos
+[student@workstation ~]$ lab start data-review
+Instrucciones
+1.
+En el directorio de trabajo, cree el playbook playbook.yml. En el playbook, comience a
+crear un play para instalar y configurar los hosts del servidor web con un servidor HTTP
+de Apache que tenga habilitada la autenticación básica. Configure el grupo de hosts
+webserver para que contenga los hosts gestionados para el play.
+Defina las siguientes variables de play:
+RH294-RHEL9.0-es-3-20240620
+125
+
+
+capítulo 3 |  Administración de variables y datos
+Variable
+Valores
+firewall_pkg
+firewalld
+firewall_svc
+firewalld
+web_pkg
+httpd
+web_svc
+httpd
+ssl_pkg
+mod_ssl
+httpdconf_src
+files/httpd.conf
+httpdconf_dest
+/etc/httpd/conf/httpd.conf
+htaccess_src
+files/.htaccess
+secrets_dir
+/etc/httpd/secrets
+secrets_src
+files/htpasswd
+secrets_dest
+"{{ secrets_dir }}/htpasswd"
+web_root
+/var/www/html
+2.
+Agregue una sección tasks al play. Escriba una tarea que garantice que esté instalada la
+última versión de los paquetes necesarios. Estos paquetes están definidos por las variables
+firewall_pkg, web_pkg y ssl_pkg.
+3.
+Agregue una segunda tarea al play que garantice que el archivo especificado por la variable
+httpdconf_src ha sido copiado (con el módulo ansible.builtin.copy) en la
+ubicación especificada por la variable httpdconf_dest en el host gestionado. El archivo
+debe ser propiedad del usuario root y el grupo root. Establezca 0644 como los permisos
+de archivo.
+4.
+Agregue una tercera tarea que use el módulo ansible.builtin.file para crear el
+directorio especificado por la variable secrets_dir en el host gestionado. Este directorio
+contiene los archivos de contraseña usados para la autenticación básica de los servicios web.
+El directorio debe ser propiedad del usuario apache y el grupo apache. Defina 0500 como
+los permisos del directorio.
+5.
+Agregue una cuarta tarea que use el módulo ansible.builtin.copy para colocar un
+archivo htpasswd que se usará para la autenticación básica de los usuarios web. El origen
+debe estar definido por la variable secrets_src. El destino debe estar definido por
+la variable secrets_dest. El archivo debe ser propiedad del usuario y grupo apache.
+Establezca 0400 como los permisos de archivo.
+6.
+Agregue una quinta tarea que use el módulo ansible.builtin.copy para crear un
+archivo .htaccess en el directorio root del documento del servidor web. Copie el archivo
+especificado por la variable htaccess_src en {{ web_root }}/.htaccess. El archivo
+debe ser propiedad del usuario apache y el grupo apache. Establezca 0400 como los
+permisos de archivo.
+7.
+Agregue una tercera tarea que use el módulo ansible.builtin.copy para crear el
+archivo de contenido web, index.html, en el directorio especificado por la variable
+web_root. El archivo debe contener el mensaje HOSTNAME (IPADDRESS) has been
+customized by Ansible., donde HOSTNAME es el nombre de host completamente
+126
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+calificado del host gestionado y IPADDRESS es su dirección IP IPv4. Use la opción content
+con el módulo ansible.builtin.copy para especificar el contenido del archivo y los
+datos de Ansible para especificar el nombre de host y la dirección IP.
+8.
+Agregue una séptima tarea que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio de firewall en el host gestionado.
+9.
+Agregue una octava tarea que use el módulo ansible.posix.firewalld para permitir
+el acceso al servicio https necesario para que los usuarios accedan a servicios web en
+el host gestionado. Este cambio de firewall debe ser permanente y debe tener lugar
+inmediatamente.
+10.
+Agregue una tarea final que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio web en el host gestionado para que todos los cambios de configuración se
+hagan efectivos. El nombre del servicio web está definido por la variable web_svc.
+11.
+Defina un segundo play en el archivo playbook.yml que usa la máquina workstation
+como host gestionado para probar la autenticación en el servidor web. No necesita aumento
+de privilegios. Defina una variable denominada web_user con el valor guest.
+12.
+Agregue una directiva al play que agregue variables adicionales de un archivo de variables
+llamado vars/secret.yml. Este archivo contiene una variable denominada web_pass que
+especifica la contraseña para el usuario web. Crea este archivo más adelante en el trabajo de
+laboratorio.
+Defina el inicio de la lista de tareas.
+13.
+Agregue dos tareas al segundo play.
+La primera tarea usa el módulo ansible.builtin.uri para solicitar contenido de
+https://serverb.lab.example.com mediante la autenticación básica. Use las variables
+web_user y web_pass para autenticarse en el servidor web. La tarea debe verificar un
+código de estado HTTP de retorno de 200. Registre el resultado de la tarea en una variable
+denominada auth_test.
+Tenga en cuenta que el certificado presentado por serverb no será de confianza, por lo que
+deberá evitar la validación de certificados.
+La segunda tarea usa el módulo ansible.builtin.debug para imprimir el contenido
+devuelto desde el servidor web, contenido en la variable auth_test.
+14.
+Cree un archivo vars/secret.yml, cifrado con Ansible Vault. Use la contraseña redhat
+para cifrarlo. Debe establecer la variable web_pass en redhat, que será la contraseña del
+usuario web.
+15.
+Ejecute el playbook playbook.yml. Verifique que el contenido se haya devuelto
+correctamente desde el servidor web y que coincida con lo que se configuró en una tarea
+anterior.
+Evaluación
+En workstation, ejecute el comando lab grade data-review para confirmar que ha realizado
+correctamente este ejercicio. Corrija los errores informados y vuelva a ejecutar el script hasta
+obtener un resultado satisfactorio.
+[student@workstation ~]$ lab grade data-review
+RH294-RHEL9.0-es-3-20240620
+127
+
+
+capítulo 3 |  Administración de variables y datos
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-review
+128
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Solución
+Administración de variables y datos
+Escribir y ejecutar un playbook de Ansible que use variables, secretos y datos.
+Resultados
+• Debe ser capaz de definir variables y usar datos en un playbook, así como usar variables
+definidas en un archivo cifrado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+El host gestionado serverb.lab.example.com está definido en este inventario como
+miembro del grupo de hosts webserver. Un desarrollador le ha pedido que escriba un
+playbook de Ansible para automatizar la configuración de un entorno de servidor web
+en serverb.lab.example.com, que controla el acceso de los usuarios a su sitio web
+mediante autenticación básica.
+El subdirectorio files contiene los siguientes archivos:
+• Un archivo de configuración httpd.conf para el servicio web Apache para autenticación
+básica
+• Un archivo .htaccess que se usa para controlar el acceso al directorio raíz de
+documentos del servidor web.
+• Un archivo htpasswd que contiene credenciales para los usuarios permitidos
+[student@workstation ~]$ lab start data-review
+Instrucciones
+1.
+En el directorio de trabajo, cree el playbook playbook.yml. En el playbook, comience a
+crear un play para instalar y configurar los hosts del servidor web con un servidor HTTP
+de Apache que tenga habilitada la autenticación básica. Configure el grupo de hosts
+webserver para que contenga los hosts gestionados para el play.
+Defina las siguientes variables de play:
+RH294-RHEL9.0-es-3-20240620
+129
+
+
+capítulo 3 |  Administración de variables y datos
+Variable
+Valores
+firewall_pkg
+firewalld
+firewall_svc
+firewalld
+web_pkg
+httpd
+web_svc
+httpd
+ssl_pkg
+mod_ssl
+httpdconf_src
+files/httpd.conf
+httpdconf_dest
+/etc/httpd/conf/httpd.conf
+htaccess_src
+files/.htaccess
+secrets_dir
+/etc/httpd/secrets
+secrets_src
+files/htpasswd
+secrets_dest
+"{{ secrets_dir }}/htpasswd"
+web_root
+/var/www/html
+1.1.
+Cambie al directorio /home/student/data-review.
+[student@workstation ~]$ cd ~/data-review
+[student@workstation data-review]$
+1.2.
+Cree el archivo de playbook playbook.yml y edítelo en un editor de texto. El inicio
+del archivo debe aparecer de la siguiente manera:
+---
+- name: Install and configure webserver with basic auth
+  hosts: webserver
+  vars:
+    firewall_pkg: firewalld
+    firewall_svc: firewalld
+    web_pkg: httpd
+    web_svc: httpd
+    ssl_pkg: mod_ssl
+    httpdconf_src: files/httpd.conf
+    httpdconf_dest: /etc/httpd/conf/httpd.conf
+    htaccess_src: files/.htaccess
+    secrets_dir: /etc/httpd/secrets
+    secrets_src: files/htpasswd
+    secrets_dest: "{{ secrets_dir }}/htpasswd"
+    web_root: /var/www/html
+2.
+Agregue una sección tasks al play. Escriba una tarea que garantice que esté instalada la
+última versión de los paquetes necesarios. Estos paquetes están definidos por las variables
+firewall_pkg, web_pkg y ssl_pkg.
+130
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+2.1.
+Defina el comienzo de la sección tasks agregando la siguiente línea al play:
+  tasks:
+2.2.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.dnf para instalar los paquetes necesarios.
+    - name: Latest version of necessary packages installed
+      ansible.builtin.dnf:
+        name:
+          - "{{ firewall_pkg }}"
+          - "{{ web_pkg }}"
+          - "{{ ssl_pkg }}"
+        state: latest
+3.
+Agregue una segunda tarea al play que garantice que el archivo especificado por la variable
+httpdconf_src ha sido copiado (con el módulo ansible.builtin.copy) en la
+ubicación especificada por la variable httpdconf_dest en el host gestionado. El archivo
+debe ser propiedad del usuario root y el grupo root. Establezca 0644 como los permisos
+de archivo.
+Agregue las siguientes líneas al play para definir una tarea que usa el módulo
+ansible.builtin.copy para copiar el contenido del archivo definido por la variable
+httpdconf_src en la ubicación especificada por la variable httpdconf_dest.
+    - name: Configure web service
+      ansible.builtin.copy:
+        src: "{{ httpdconf_src }}"
+        dest: "{{ httpdconf_dest }}"
+        owner: root
+        group: root
+        mode: 0644
+4.
+Agregue una tercera tarea que use el módulo ansible.builtin.file para crear el
+directorio especificado por la variable secrets_dir en el host gestionado. Este directorio
+contiene los archivos de contraseña usados para la autenticación básica de los servicios web.
+El directorio debe ser propiedad del usuario apache y el grupo apache. Defina 0500 como
+los permisos del directorio.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.file para crear el directorio definido por la variable secrets_dir.
+    - name: Secrets directory exists
+      ansible.builtin.file:
+        path: "{{ secrets_dir }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: 0500
+5.
+Agregue una cuarta tarea que use el módulo ansible.builtin.copy para colocar un
+archivo htpasswd que se usará para la autenticación básica de los usuarios web. El origen
+debe estar definido por la variable secrets_src. El destino debe estar definido por
+RH294-RHEL9.0-es-3-20240620
+131
+
+
+capítulo 3 |  Administración de variables y datos
+la variable secrets_dest. El archivo debe ser propiedad del usuario y grupo apache.
+Establezca 0400 como los permisos de archivo.
+    - name: htpasswd file exists
+      ansible.builtin.copy:
+        src: "{{ secrets_src }}"
+        dest: "{{ secrets_dest }}"
+        owner: apache
+        group: apache
+        mode: 0400
+6.
+Agregue una quinta tarea que use el módulo ansible.builtin.copy para crear un
+archivo .htaccess en el directorio root del documento del servidor web. Copie el archivo
+especificado por la variable htaccess_src en {{ web_root }}/.htaccess. El archivo
+debe ser propiedad del usuario apache y el grupo apache. Establezca 0400 como los
+permisos de archivo.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.copy para crear el archivo .htaccess definido por la variable
+htaccess_src.
+    - name: .htaccess file installed in docroot
+      ansible.builtin.copy:
+        src: "{{ htaccess_src }}"
+        dest: "{{ web_root }}/.htaccess"
+        owner: apache
+        group: apache
+        mode: 0400
+7.
+Agregue una tercera tarea que use el módulo ansible.builtin.copy para crear el
+archivo de contenido web, index.html, en el directorio especificado por la variable
+web_root. El archivo debe contener el mensaje HOSTNAME (IPADDRESS) has been
+customized by Ansible., donde HOSTNAME es el nombre de host completamente
+calificado del host gestionado y IPADDRESS es su dirección IP IPv4. Use la opción content
+con el módulo ansible.builtin.copy para especificar el contenido del archivo y los
+datos de Ansible para especificar el nombre de host y la dirección IP.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.copy para crear el archivo index.html directorio definido por la
+variable web_root. Rellene el archivo con el contenido especificado usando los datos de
+Ansible ansible_facts['fqdn'] y ansible_facts['default_ipv4']['address']
+recuperados del host gestionado.
+    - name: Create index.html
+      ansible.builtin.copy:
+        content: >
+          {{ ansible_facts['fqdn'] }}
+          ({{ ansible_facts['default_ipv4']['address'] }})
+          has been customized by Ansible.
+        dest: "{{ web_root }}/index.html"
+132
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+8.
+Agregue una séptima tarea que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio de firewall en el host gestionado.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.builtin.service para habilitar e iniciar el servicio de firewall.
+    - name: Firewall service enabled and started
+      ansible.builtin.service:
+        name: "{{ firewall_svc }}"
+        state: started
+        enabled: true
+9.
+Agregue una octava tarea que use el módulo ansible.posix.firewalld para permitir
+el acceso al servicio https necesario para que los usuarios accedan a servicios web en
+el host gestionado. Este cambio de firewall debe ser permanente y debe tener lugar
+inmediatamente.
+Agregue las siguientes líneas al play para definir una tarea que use el módulo
+ansible.posix.firewalld para abrir el puerto HTTPS para el servicio web.
+    - name: Open the port for the web server
+      ansible.posix.firewalld:
+        service: https
+        state: enabled
+        immediate: true
+        permanent: true
+10.
+Agregue una tarea final que use el módulo ansible.builtin.service para habilitar e
+iniciar el servicio web en el host gestionado para que todos los cambios de configuración se
+hagan efectivos. El nombre del servicio web está definido por la variable web_svc.
+    - name: Web service enabled and started
+      ansible.builtin.service:
+        name: "{{ web_svc }}"
+        state: started
+        enabled: true
+11.
+Defina un segundo play en el archivo playbook.yml que usa la máquina workstation
+como host gestionado para probar la autenticación en el servidor web. No necesita aumento
+de privilegios. Defina una variable denominada web_user con el valor guest.
+11.1.
+Agregue la siguiente línea para definir el comienzo de un segundo play. Tenga en
+cuenta que no hay sangría.
+- name: Test web server with basic auth
+11.2.
+Agregue la siguiente línea para indicar que el play se aplica al host gestionado
+workstation.
+  hosts: workstation
+11.3.
+Agregue la siguiente línea para deshabilitar el aumento de privilegios.
+RH294-RHEL9.0-es-3-20240620
+133
+
+
+capítulo 3 |  Administración de variables y datos
+  become: false
+11.4.
+Agregue las siguientes líneas para definir la variable del play web_user.
+  vars:
+    web_user: guest
+12.
+Agregue una directiva al play que agregue variables adicionales de un archivo de variables
+llamado vars/secret.yml. Este archivo contiene una variable denominada web_pass que
+especifica la contraseña para el usuario web. Crea este archivo más adelante en el trabajo de
+laboratorio.
+Defina el inicio de la lista de tareas.
+12.1.
+Con la palabra clave vars_files, agregue las siguientes líneas al play para indicar
+a Ansible que use las variables que se encuentran en el archivo de variables vars/
+secret.yml.
+  vars_files:
+    - vars/secret.yml
+12.2. Agregue la siguiente línea para definir el comienzo de la lista tasks.
+  tasks:
+13.
+Agregue dos tareas al segundo play.
+La primera tarea usa el módulo ansible.builtin.uri para solicitar contenido de
+https://serverb.lab.example.com mediante la autenticación básica. Use las variables
+web_user y web_pass para autenticarse en el servidor web. La tarea debe verificar un
+código de estado HTTP de retorno de 200. Registre el resultado de la tarea en una variable
+denominada auth_test.
+Tenga en cuenta que el certificado presentado por serverb no será de confianza, por lo que
+deberá evitar la validación de certificados.
+La segunda tarea usa el módulo ansible.builtin.debug para imprimir el contenido
+devuelto desde el servidor web, contenido en la variable auth_test.
+13.1.
+Agregue las siguientes líneas para crear la tarea a fin de verificar el servicio web del
+nodo de control. Asegúrese de aplicar una sangría de cuatro espacios a la primera línea.
+    - name: Connect to web server with basic auth
+      ansible.builtin.uri:
+        url: https://serverb.lab.example.com
+        validate_certs: false
+        force_basic_auth: true
+        user: "{{ web_user }}"
+        password: "{{ web_pass }}"
+        return_content: true
+        status_code: 200
+      register: auth_test
+134
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+13.2. Cree la segunda tarea usando el módulo ansible.builtin.debug. El contenido
+devuelto desde el servidor web se agrega a la variable registrada como la clave
+content.
+    - name: Display auth_test content
+      ansible.builtin.debug:
+        var: auth_test['content']
+13.3. El playbook completo debe incluir el siguiente contenido:
+---
+- name: Install and configure webserver with basic auth
+  hosts: webserver
+  vars:
+    firewall_pkg: firewalld
+    firewall_svc: firewalld
+    web_pkg: httpd
+    web_svc: httpd
+    ssl_pkg: mod_ssl
+    httpdconf_src: files/httpd.conf
+    httpdconf_dest: /etc/httpd/conf/httpd.conf
+    htaccess_src: files/.htaccess
+    secrets_dir: /etc/httpd/secrets
+    secrets_src: files/htpasswd
+    secrets_dest: "{{ secrets_dir }}/htpasswd"
+    web_root: /var/www/html
+  tasks:
+    - name: Latest version of necessary packages installed
+      ansible.builtin.dnf:
+        name:
+          - "{{ firewall_pkg }}"
+          - "{{ web_pkg }}"
+          - "{{ ssl_pkg }}"
+        state: latest
+    - name: Configure web service
+      ansible.builtin.copy:
+        src: "{{ httpdconf_src }}"
+        dest: "{{ httpdconf_dest }}"
+        owner: root
+        group: root
+        mode: 0644
+    - name: Secrets directory exists
+      ansible.builtin.file:
+        path: "{{ secrets_dir }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: 0500
+    - name: htpasswd file exists
+      ansible.builtin.copy:
+        src: "{{ secrets_src }}"
+RH294-RHEL9.0-es-3-20240620
+135
+
+
+capítulo 3 |  Administración de variables y datos
+        dest: "{{ secrets_dest }}"
+        owner: apache
+        group: apache
+        mode: 0400
+    - name: .htaccess file installed in docroot
+      ansible.builtin.copy:
+        src: "{{ htaccess_src }}"
+        dest: "{{ web_root }}/.htaccess"
+        owner: apache
+        group: apache
+        mode: 0400
+    - name: Create index.html
+      ansible.builtin.copy:
+        content: >
+          {{ ansible_facts['fqdn'] }}
+          ({{ ansible_facts['default_ipv4']['address'] }})
+          has been customized by Ansible.
+        dest: "{{ web_root }}/index.html"
+    - name: Firewall service enabled and started
+      ansible.builtin.service:
+        name: "{{ firewall_svc }}"
+        state: started
+        enabled: true
+    - name: Open the port for the web server
+      ansible.posix.firewalld:
+        service: https
+        state: enabled
+        immediate: true
+        permanent: true
+    - name: Web service enabled and started
+      ansible.builtin.service:
+        name: "{{ web_svc }}"
+        state: started
+        enabled: true
+- name: Test web server with basic auth
+  hosts: workstation
+  become: false
+  vars:
+    web_user: guest
+  vars_files:
+    - vars/secret.yml
+  tasks:
+    - name: Connect to web server with basic auth
+      ansible.builtin.uri:
+        url: https://serverb.lab.example.com
+        validate_certs: false
+        force_basic_auth: true
+        user: "{{ web_user }}"
+        password: "{{ web_pass }}"
+136
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+        return_content: true
+        status_code: 200
+      register: auth_test
+    - name: Display auth_test content
+      ansible.builtin.debug:
+        var: auth_test['content']
+13.4. Guarde y cierre el archivo playbook.yml.
+14.
+Cree un archivo vars/secret.yml, cifrado con Ansible Vault. Use la contraseña redhat
+para cifrarlo. Debe establecer la variable web_pass en redhat, que será la contraseña del
+usuario web.
+14.1.
+Cree un subdirectorio llamado vars en el directorio de trabajo.
+[student@workstation data-review]$ mkdir vars
+14.2. Cree el archivo de variables cifrado, vars/secret.yml, usando Ansible Vault.
+Establezca la contraseña para el archivo cifrado en redhat.
+[student@workstation data-review]$ ansible-vault create vars/secret.yml
+New Vault password: redhat
+Confirm New Vault password: redhat
+14.3. Agregue la siguiente definición de variables al archivo:
+web_pass: redhat
+14.4. Guarde y cierre el archivo.
+15.
+Ejecute el playbook playbook.yml. Verifique que el contenido se haya devuelto
+correctamente desde el servidor web y que coincida con lo que se configuró en una tarea
+anterior.
+15.1.
+Antes de ejecutar el playbook, ejecute ansible-navigator con la opción --
+syntax-check para verificar que su sintaxis sea correcta.
+Use --vault-id @prompt para que se le solicite la contraseña de Vault. Escriba
+redhat como contraseña cuando se le indique.
+Si informa errores, corríjalos antes de pasar al siguiente paso.
+Debe ver una salida similar a la siguiente:
+[student@workstation data-review]$ ansible-navigator run -m stdout \
+> --pae false playbook.yml --syntax-check --vault-id @prompt
+Vault password (default): redhat
+playbook: /home/student/data-review/playbook.yml
+15.2. Con el comando ansible-navigator, ejecute el playbook con la opción --vault-
+id @prompt. Escriba redhat como contraseña cuando se le indique.
+RH294-RHEL9.0-es-3-20240620
+137
+
+
+capítulo 3 |  Administración de variables y datos
+[student@workstation data-review]$ ansible-navigator run -m stdout \
+> --pae false playbook.yml --vault-id @prompt
+Vault password: redhat
+PLAY [Install and configure webserver with basic auth] *************************
+...output omitted...
+TASK [Connect to web server with basic auth] ***********************************
+ok: [workstation]
+TASK [Display auth_test content] ***********************************************
+ok: [workstation] => {
+    "auth_test['content']": "serverb.lab.example.com (172.25.250.11) has been
+ customized by Ansible.\n"
+}
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=10   changed=9    unreachable=0    failed=0  ...
+workstation                : ok=3    changed=0    unreachable=0    failed=0  ...
+Evaluación
+En workstation, ejecute el comando lab grade data-review para confirmar que ha realizado
+correctamente este ejercicio. Corrija los errores informados y vuelva a ejecutar el script hasta
+obtener un resultado satisfactorio.
+[student@workstation ~]$ lab grade data-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish data-review
+138
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3 |  Administración de variables y datos
+Resumen
+• Las variables de Ansible lo ayudan a volver a usar valores en los archivos de un proyecto
+completo de Ansible.
+• Puede definir las variables para los hosts y los grupos de hosts en el archivo de inventario.
+• Puede definir variables para plays y tareas en el playbook o en archivos externos.
+• Se definen variables extra en la línea de comandos y preceden a todas las demás variables.
+• Puede usar la palabra clave register para capturar la salida de un comando en una variable.
+• Ansible Vault proporciona una manera de proteger los datos confidenciales, como los hash de
+contraseñas y las claves privadas que usa sus playbooks de Ansible.
+• Los datos de Ansible son variables que Ansible detecta automáticamente desde un host
+gestionado.
+RH294-RHEL9.0-es-3-20240620
+139
+
+
+140
+RH294-RHEL9.0-es-3-20240620
+
+

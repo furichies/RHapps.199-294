@@ -1,0 +1,154 @@
+# Implementación de manejadores
+# Tipo: theory
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Implementación de manejadores
+Objetivos
+• Implementar una tarea que se ejecute solo cuando otra tarea cambie el host gestionado.
+Manejadores de Ansible
+Los módulos Ansible están diseñados para ser idempotentes. Esto significa que, si ejecuta un
+playbook varias veces, el resultado es siempre el mismo. Puede ejecutar plays y sus tareas varias
+veces, pero los hosts gestionados solo se modifican si esos cambios son necesarios para que los
+hosts gestionados alcancen el estado deseado.
+No obstante, algunas veces, cuando una tarea realiza un cambio en el sistema, se puede tener
+que ejecutar otra tarea. Por ejemplo, un cambio en un archivo de configuración del servicio puede
+luego requerir que el servicio se vuelva a cargar para que se aplique la configuración modificada.
+Los manejadores son tareas que responden a una notificación desencadenada por otras tareas.
+Las tareas solo notifican a sus manejadores cuando la tarea cambia algo en un host gestionado.
+Cada controlador se activa por su nombre después del bloque de tareas del play.
+Si ninguna tarea notifica al manejador por nombre, no se ejecutará el manejador. Si una o más
+tareas notifican al manejador, este se ejecutará exactamente una vez después de que todas
+las demás tareas en el play se hayan completado. Debido a que los manejadores son tareas, los
+administradores pueden usar los mismos módulos en manejadores que usarían para cualquier otra
+tarea.
+Generalmente, los manejadores se usan para reiniciar los hosts y los servicios.
+Importante
+Siempre use nombres únicos para sus manejadores. Es posible que tenga resultados
+inesperados si más de un manejador usa el mismo nombre.
+Los manejadores se pueden considerar como tareas inactive que solo se desencadenan cuando se
+las invoca explícitamente mediante una declaración notify. En el siguiente fragmento se muestra
+cómo el servidor Apache solo se reinicia mediante el manejador restart apache cuando un
+archivo de configuración se actualiza y lo notifica:
+tasks:
+  - name: copy demo.example.conf configuration template
+    ansible.builtin.template:
+      src: /var/lib/templates/demo.example.conf.template
+      dest: /etc/httpd/conf.d/demo.example.conf
+    notify:
+      - restart apache
+handlers:
+  - name: restart apache
+158
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+    ansible.builtin.service:
+      name: httpd
+      state: restarted
+La tarea que notifica al manejador.
+La declaración notify indica que la tarea debe desencadenar un manejador.
+El nombre del manejador que debe ejecutarse.
+La palabra clave handlers indica el inicio de la lista de tareas del manejador.
+El nombre del manejador invocado por las tareas.
+El módulo que usará el manejador.
+En el ejemplo anterior, el manejador restart apache se desencadena al ser notificado por
+la tarea template de que se ha producido un cambio. Una tarea puede invocar a más de un
+manejador en su sección notify. Ansible trata la declaración notify como una matriz y realiza
+iteración de los nombres del manejador:
+tasks:
+  - name: copy demo.example.conf configuration template
+    ansible.builtin.template:
+      src: /var/lib/templates/demo.example.conf.template
+      dest: /etc/httpd/conf.d/demo.example.conf
+    notify:
+      - restart mysql
+      - restart apache
+handlers:
+  - name: restart mysql
+    ansible.builtin.service:
+      name: mariadb
+      state: restarted
+  - name: restart apache
+    ansible.builtin.service:
+      name: httpd
+      state: restarted
+Descripción de los beneficios del uso de manejadores
+Como analizamos en la documentación Ansible, debemos recordar algunos aspectos importantes
+acerca del uso de manejadores:
+• Los manejadores se ejecutan siempre en el orden especificado por la sección handlers del
+play. No se ejecutan en el orden en que aparecen en la lista por la declaración notify en una
+tarea ni en el orden en que las tareas los notifican.
+• Los manejadores se ejecutan después de que se hayan completado todas las demás tareas en
+el play. Un manejador invocado por una tarea en la parte tasks del playbook no se ejecutará
+hasta que se hayan procesado todas las tareas en tasks. (Hay algunas excepciones menores a
+esto).
+RH294-RHEL9.0-es-3-20240620
+159
+
+
+capítulo 4 |  Implementación del control de tareas
+• Los nombres de los manejadores se encuentran en un espacio de nombres por play. Si
+erróneamente se asigna a dos manejadores el mismo nombre, se ejecuta solo uno de ellos.
+• Inclusive si más de una tarea notifica a un manejador, este se ejecuta una vez. Si ninguna tarea lo
+notifica, no se ejecuta el manejador.
+• Si una tarea que incluye una declaración notify no informa un resultado changed (por
+ejemplo, un paquete ya se encuentra instalado y la tarea muestra ok), no se notificará al
+manejador. Ansible notifica a los manejadores solo si la tarea muestra el estado changed.
+Importante
+Los manejadores están diseñados para realizar una acción adicional cuando una
+tarea realiza un cambio en un host gestionado. No deben usarse como sustituto de
+las tareas normales.
+Referencias
+Manejadores: ejecución de operaciones en función de los cambios:
+documentación de Ansible
+https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html
+160
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Implementación de manejadores
+Implementar manejadores en playbooks.
+Resultados
+• Debe ser capaz de definir manejadores en playbooks y notificarlos para aplicar cambios de
+configuración.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-handlers
+Instrucciones
+ 1.
+En la máquina workstation, abra un nuevo terminal y cambie al directorio /home/
+student/control-handlers.
+[student@workstation ~]$ cd ~/control-handlers
+[student@workstation control-handlers]$
+ 2.
+Edite el archivo del playbook configure_webapp.yml. Este playbook instala y configura
+un servidor de aplicaciones web. Cuando cambia la configuración del servidor de
+aplicaciones web, el playbook desencadena un reinicio del servicio correspondiente.
+2.1.
+Revise el playbook configure_webapp.yml. Comienza con la inicialización de
+algunas variables:
+---
+- name: Web application server is deployed
+  hosts: webapp
+  vars:
+    packages: 
+      - nginx
+      - php-fpm
+      - firewalld
+    web_service: nginx 
+    app_service: php-fpm 
+    firewall_service: firewalld 
+    firewall_service_rules: 
+      - http
+    web_config_src: files/nginx.conf.standard 
+RH294-RHEL9.0-es-3-20240620
+161
+
+

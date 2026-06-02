@@ -1,0 +1,147 @@
+# Trabajo de laboratorio: oratorio de configuración y administración de la seguridad del servidor
+# Tipo: lab
+# Capítulo: Capítulo 21. Revisión integral
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor 21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Configure el acceso seguro a servidores remotos, ajuste la configuración del firewall y solucione problemas de SELinux. Resultados Configurar la autenticación basada en claves SSH. Configure los ajustes del firewall. Ajuste el modo SELinux y los booleanos de SELinux. Solucionar problemas de SELinux. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review3
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Usted es responsable de implementar cambios críticos de seguridad y configuración para garantizar un acceso remoto seguro, un montaje adecuado del sistema de archivos y generación de informes basados ​​en la web. La empresa requiere acceso seguro y sin contraseña desde la máquina del servidor a la máquina del servidor para realizar transferencias de datos automatizadas. El usuario estudiante en la máquina del servidor debe poder iniciar sesión en la máquina del servidor a través de SSH sin ingresar una contraseña. En la máquina del servidor, genere un par de claves SSH para el usuario estudiante. No proteja la clave privada con una frase de contraseña. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor. Verifique que el usuario estudiante pueda iniciar sesión en la máquina del servidor desde la máquina del servidor sin ingresar una contraseña.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Está investigando posibles problemas de permisos con el directorio /user-homes/production5 en la máquina del servidor. Ha decidido relajar SELinux para la depuración. Verifique los permisos del directorio /user-homes/production5. Configure SELinux para que se ejecute en modo permisivo de forma predeterminada. Reinicie la máquina del servidor y confirme que el modo SELinux sea permisivo. La máquina servera exporta el directorio de inicio del usuario de producción5 como exportación NFS servera:/user-homes/production5. Configure el servicio autofs para montar el recurso compartido de red en el directorio /localhome/production5 en la máquina serverb. Instale el paquete requerido para configurar el servicio autofs. Configure el servicio autofs para montar la exportación NFS servera.lab.example.com:/user-homes/production5 en el directorio /localhome/production5 de la máquina serverb. En la máquina del servidor, ajuste el booleano SELinux apropiado para que el usuario de producción5 pueda usar el directorio de inicio montado en NFS después de autenticarse con una clave SSH. Utilice redhat como contraseña del usuario de producción5. En la máquina del servidor, como usuario de producción5, genere un nuevo par de claves SSH para la autenticación. Utilice redhat como contraseña para el usuario de producción5. Transfiera la clave pública del par de claves SSH al usuario de producción5 en la máquina del servidor. Utilice redhat como contraseña para el usuario de producción5. Utilice la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Verifique que el comando falle. Ajuste el booleano SELinux use_nfs_home_dirs en la máquina del servidor para permitir que NFS use directorios de inicio. Utilice redhat como contraseña. Verifique y confirme que ahora puede utilizar la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Por razones de seguridad, debe bloquear todas las solicitudes de conexión desde la máquina del servidor a la máquina del servidor. En la máquina del servidor, ajuste la configuración del firewall para bloquear todas las solicitudes de conexión que se originen en la máquina del servidor. Utilice la dirección IPv4 del servidor (172.25.250.10) para configurar la regla del firewall. Un administrador junior configuró el servidor HTTP Apache en la máquina del servidor para escuchar las conexiones en el puerto 30080/TCP. Sin embargo, el servicio no se inicia. Se le ha pedido que investigue y solucione este problema. También se le pedirá que ajuste la configuración del firewall adecuadamente para que el puerto 30080/TCP esté abierto para conexiones entrantes. Intente reiniciar el servicio web. Inspeccione los archivos de registro apropiados para determinar el motivo de la falla del servicio, incluidas posibles violaciones de la política de SELinux. Cuando lo identifique, solucione el problema y asegúrese de que se inicie el servicio. Agregue el puerto 30080/TCP a la zona pública predeterminada para permitir conexiones entrantes. Evaluación Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Nota Si la tarea no pasa el script de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review3
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review3
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la solución de seguridad del servidor Configure el acceso seguro a servidores remotos, ajuste la configuración del firewall y solucione problemas de SELinux. Resultados Configurar la autenticación basada en claves SSH. Configure los ajustes del firewall. Ajuste el modo SELinux y los booleanos de SELinux. Solucionar problemas de SELinux. Nota El tiempo asignado para esta actividad es de 30 minutos. Si necesita tiempo adicional para completar la tarea, deberá revisar el contenido del curso nuevamente o practicar más. Requisitos previos Advertencia Si anteriormente utilizó este entorno de laboratorio para trabajar en otros laboratorios, guarde cualquier trabajo de laboratorio anterior que desee conservar y luego debe eliminar el entorno de laboratorio existente y crear uno nuevo. Si ya restableció el entorno del laboratorio, entonces está listo para continuar. Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start compreview-review3
+
+Especificaciones Usted es administrador de sistemas Linux en Quasar Technologies, una empresa de servicios de TI que proporciona alojamiento administrado e infraestructura de nube a los clientes. Usted es responsable de implementar cambios críticos de seguridad y configuración para garantizar un acceso remoto seguro, un montaje adecuado del sistema de archivos y generación de informes basados ​​en la web. La empresa requiere acceso seguro y sin contraseña desde la máquina del servidor a la máquina del servidor para realizar transferencias de datos automatizadas. El usuario estudiante en la máquina del servidor debe poder iniciar sesión en la máquina del servidor a través de SSH sin ingresar una contraseña. En la máquina del servidor, genere un par de claves SSH para el usuario estudiante. No proteja la clave privada con una frase de contraseña. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor. Verifique que el usuario estudiante pueda iniciar sesión en la máquina del servidor desde la máquina del servidor sin ingresar una contraseña.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la seguridad del servidor Está investigando posibles problemas de permisos con el directorio /user-homes/production5 en la máquina del servidor. Ha decidido relajar SELinux para la depuración. Verifique los permisos del directorio /user-homes/production5. Configure SELinux para que se ejecute en modo permisivo de forma predeterminada. Reinicie la máquina del servidor y confirme que el modo SELinux sea permisivo. La máquina servera exporta el directorio de inicio del usuario de producción5 como exportación NFS servera:/user-homes/production5. Configure el servicio autofs para montar el recurso compartido de red en el directorio /localhome/production5 en la máquina serverb. Instale el paquete requerido para configurar el servicio autofs. Configure el servicio autofs para montar la exportación NFS servera.lab.example.com:/user-homes/production5 en el directorio /localhome/production5 de la máquina serverb. En la máquina del servidor, ajuste el booleano SELinux apropiado para que el usuario de producción5 pueda usar el directorio de inicio montado en NFS después de autenticarse con una clave SSH. Utilice redhat como contraseña del usuario de producción5. En la máquina del servidor, como usuario de producción5, genere un nuevo par de claves SSH para la autenticación. Utilice redhat como contraseña para el usuario de producción5. Transfiera la clave pública del par de claves SSH al usuario de producción5 en la máquina del servidor. Utilice redhat como contraseña para el usuario de producción5. Utilice la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Verifique que el comando falle. Ajuste el booleano SELinux use_nfs_home_dirs en la máquina del servidor para permitir que NFS use directorios de inicio. Utilice redhat como contraseña. Verifique y confirme que ahora puede utilizar la autenticación basada en clave pública SSH en lugar de la autenticación basada en contraseña para iniciar sesión en la máquina del servidor como usuario de producción5. Por razones de seguridad, debe bloquear todas las solicitudes de conexión desde la máquina del servidor a la máquina del servidor. En la máquina del servidor, ajuste la configuración del firewall para bloquear todas las solicitudes de conexión que se originen en la máquina del servidor. Utilice la dirección IPv4 del servidor (172.25.250.10) para configurar la regla del firewall. Un administrador junior configuró el servidor HTTP Apache en la máquina del servidor para escuchar las conexiones en el puerto 30080/TCP. Sin embargo, el servicio no se inicia. Se le ha pedido que investigue y solucione este problema. También se le pedirá que ajuste la configuración del firewall adecuadamente para que el puerto 30080/TCP esté abierto para conexiones entrantes. Intente reiniciar el servicio web. Inspeccione los archivos de registro apropiados para determinar el motivo de la falla del servicio, incluidas posibles violaciones de la política de SELinux. Cuando lo identifique, solucione el problema y asegúrese de que se inicie el servicio. Agregue el puerto 30080/TCP a la zona pública predeterminada para permitir conexiones entrantes. Solución Se proporciona una posible solución a este ejercicio. Podría utilizar un método diferente para lograr el resultado especificado.
+
+
+
+
+
+21.4. Laboratorio de configuración y administración de la seguridad del servidor Para prepararlo mejor para los desafíos del mundo real, es posible que la solución proporcionada no incluya comandos, bloques de código o pasos para todas las tareas. Si el script de calificación falla, el sistema muestra una pista sobre qué contenido revisar. Inicie sesión en la máquina del servidor como usuario estudiante. 1. Genere un par de claves SSH. No proteja la clave privada con una frase de contraseña.
+
+[student@serverb ~]$ ssh-keygen
+
+Generando par de claves públicas/privadas ed25519. Ingrese el archivo en el que guardar la clave (/home/student/.ssh/id_ed25519): Directorio creado '/home/student/.ssh'. Ingrese la frase de contraseña para "/home/student/.ssh/id_ed25519" (vacío si no hay frase de contraseña): Ingrese la misma frase de contraseña nuevamente: ... resultado omitido... 2. Envíe la clave pública del par de claves SSH recién generado al usuario estudiante en la máquina del servidor.
+
+[student@serverb ~]$ ssh-copy-id -i ~/.ssh/id_ed25519.pub student@servera
+
+...salida omitida... 3. Utilice la clave SSH recién creada para iniciar sesión en la máquina del servidor como usuario estudiante.
+
+[student@serverb ~]$ ssh student@servera
+
+... salida omitida... Último inicio de sesión: lunes 21 de julio 19:39:08 2025 desde 172.25.250.11 [student@servera ~]$ 4. En la máquina servera, establezca el parámetro SELINUX en el valor permisivo en el archivo /etc/selinux/config. Luego reinicie el sistema usando el comando de reinicio sudo systemctl. ...salida omitida... SELINUX=permisivo ...salida omitida... 5. Como usuario raíz en la máquina del servidor, instale el paquete autofs, cree los archivos de mapa autofs y reinicie el servicio autofs.
+
+[root@serverb ~]# dnf install -y autofs && \
+echo "/- /etc/auto.production5" > /etc/auto.master.d/production5.autofs
+
+...salida omitida... ¡Completo!
+
+[root@serverb ~]# getent passwd production5
+production5:x:5001:5001::/localhome/production5:/bin/bash
+[root@serverb ~]# echo \
+
+"/localhome/production5 -rw servera.lab.example.com:/user-homes/production5" \ > /etc/auto.production5 && \
+
+systemctl restart autofs
+
+6. Abra una nueva ventana de terminal e inicie sesión en la máquina del servidor como usuario estudiante. Cambie al usuario de producción5, genere un par de claves SSH sin una frase de contraseña y envíe el par de claves SSH al usuario de producción5 en la máquina del servidor. 7.
+
+
+
+
+
+21.4. Laboratorio de configuración y administración de la seguridad del servidor
+
+[student@servera ~]$ su - production5
+
+Contraseña: sombrero rojo
+
+[production5@servera ~]$ ssh-keygen
+
+...salida omitida... La imagen aleatoria de la clave es: +--[ED25519 256]--+ |      ..E=+=.. . | |       +.@=o+ X | |     o..Oo=o * o | |    o.=o+oo o .  | |   . .o*S. oo | |    ....o | |    ... . .   | |     o.     .    | |    ... | +----[SHA256]-----+
+
+[production5@servera ~]$ ssh-copy-id production5@serverb
+
+...salida omitida... Número de claves agregadas: 1 Ahora intente iniciar sesión en la máquina, con: "ssh 'production5@serverb'" y verifique que solo se hayan agregado las claves que deseaba. Salga y cierre la terminal que está conectada a la máquina del servidor como usuario de producción5. Mantenga abierta la terminal que está conectada a la máquina del servidor como usuario root. Como usuario raíz en la máquina del servidor, establezca el booleano use_nfs_home_dirs SELinux en verdadero.
+
+[root@serverb ~]# setsebool -P use_nfs_home_dirs true
+
+8. En la máquina del servidor, ajuste y vuelva a cargar la configuración del firewall para bloquear todas las solicitudes de conexión que se originen en la máquina del servidor.
+
+[root@serverb ~]# firewall-cmd --add-source=172.25.250.10/32 \
+
+--zone=bloque --permanente && \
+
+firewall-cmd --reload
+
+éxito éxito 9. En la máquina del servidor, utilice los comandos systemctl restart y systemctl status en la unidad httpd.service para investigar el problema con el servidor Apache HTTP. Luego use el comando sealert -a /var/log/audit/audit.log para determinar si una política de SELinux impide que el servicio httpd se enlace al puerto 30080/TCP. 10.
+
+
+
+
+
+21.4. Práctica de laboratorio Configurar y administrar la evaluación de la seguridad del servidor Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Nota Si la tarea no pasa el guión de calificación, recibirá sugerencias sobre qué contenido revisar.
+
+student@workstation:~$ lab grade compreview-review3
+
+Evalúe el tiempo asignado para esta actividad en comparación con el tiempo que le llevó completarla. Si utilizó más tiempo del asignado, deberá volver a visitar el contenido del curso o practicar más. Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish compreview-review3
+[root@serverb ~]# systemctl restart httpd.service
+
+El trabajo para httpd.service falló porque el proceso de control finalizó con un código de error. Consulte "systemctl status httpd.service" y "journalctl -xeu httpd.service" para obtener más detalles.
+
+[root@serverb ~]# systemctl status httpd.service
+
+× httpd.service - El servidor HTTP Apache
+
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; disabled; preset: disabled)
+     Active: failed (Result: exit-code) since Mon 2025-07-21 19:49:23 UTC; 25s ago
+
+... salida omitida... 21 de julio 19:49:23 serverb systemd[1]: Iniciando httpd.service - El servidor HTTP Apache... 21 de julio 19:49:23 serverb (httpd)[3077]: httpd.service: Se evalúa la variable de entorno referenciada pero no configurada > 21 de julio 19:49:23 serverb httpd[3077]: (13) Permiso denegado: AH00072: make_sock: no se pudo vincular a la dirección > 21 de julio 19:49:23 serverb httpd[3077]: (13) Permiso denegado: AH00072: make_sock: no se pudo vincular a la dirección > 21 de julio 19:49:23 serverb httpd[3077]: no hay sockets de escucha disponibles, apagándose el 21 de julio 19:49:23 serverb httpd[3077]: AH00015: No se pueden abrir registros el 21 de julio 19:49:23 serverb systemd[1]: httpd.service: proceso principal cerrado, código = salido, estado = 1/FALLO 21 de julio 19:49:23 serverb systemd[1]: httpd.service: error con el resultado 'código de salida'. 21 de julio 19:49:23 serverb systemd[1]: No se pudo iniciar httpd.service: el servidor HTTP Apache. Utilice los siguientes comandos para configurar el contexto SELinux apropiado, reiniciar el servicio httpd y actualizar las reglas del firewall.
+
+[root@serverb ~]# semanage port -a -t http_port_t -p tcp 30080
+[root@serverb ~]# systemctl restart httpd
+[root@serverb ~]# firewall-cmd --add-port=30080/tcp --permanent
+
+éxito
+
+[root@serverb ~]# firewall-cmd --reload
+
+éxito 11.
+
+
+
+
+

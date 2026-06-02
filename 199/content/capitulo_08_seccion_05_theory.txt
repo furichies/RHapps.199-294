@@ -1,0 +1,154 @@
+# 5.5. Gestión de permisos predeterminados y permisos especiales
+# Tipo: theory
+# Capítulo: Capítulo 5. Controlar el acceso a los archivos
+
+5.5. Gestión de permisos predeterminados y permisos especiales 5.5. Administrar permisos predeterminados y permisos especiales Objetivos Controlar los permisos predeterminados de los archivos creados por el usuario y explicar los permisos especiales de los archivos. Permisos especiales Los permisos especiales son un cuarto tipo de permiso, además de los de usuario, grupo y otros. Como su nombre lo indica, los permisos especiales brindan funciones adicionales relacionadas con el acceso más allá de lo que permiten los tipos de permisos básicos. Los permisos especiales setuid, setgid y sticky brindan control adicional sobre el comportamiento de archivos y directorios. Esta sección describe el impacto de los permisos especiales, que se resumen en la siguiente tabla. Tabla 5. Efectos de los permisos especiales en archivos y directorios u+s (suid) El archivo se ejecuta como el usuario propietario del archivo, no como el usuario que ejecutó el archivo. Ningún efecto. g+s (sgid) El archivo se ejecuta como el grupo propietario del archivo. Los archivos que se crean en el directorio tienen un propietario de grupo que coincide con el propietario del grupo del directorio. o+t (pegajoso) Sin efecto. Los usuarios con acceso de escritura al directorio no pueden eliminar ni cambiar el nombre de archivos que no sean de su propiedad. El permiso setuid en un archivo ejecutable significa que los comandos se ejecutan como el usuario propietario de ese archivo, en lugar de como el
+
+user that ran the command. One example is the passwd command:
+user@host:~$ ls -l /usr/bin/passwd
+
+-rwsr-xr-x. 1 root root 91584 4 de noviembre de 2024 /usr/bin/passwd En una lista larga, puede identificar los permisos setuid mediante un carácter s minúsculo en el lugar donde normalmente esperaría el carácter x (permisos de ejecución del propietario). Si el propietario no tiene permisos de ejecución, este carácter se reemplaza por un carácter S mayúscula. El permiso especial setgid en un directorio significa que los archivos creados en el directorio heredan la propiedad del grupo del directorio, en lugar de heredar la propiedad del grupo del usuario creador. Esta característica se usa comúnmente en directorios colaborativos para cambiar automáticamente un archivo del grupo privado predeterminado al grupo compartido, o en casos donde un grupo específico siempre debe poseer archivos en un directorio. Un ejemplo de este comportamiento es el archivo /run/log/journal
+
+directory:
+user@host:~$ ls -ld /run/log/journal
+drwxr-sr-x+ 4 root systemd-journal 80 May 29 16:55 /run/log/journal
+
+Si setgid está configurado en un archivo ejecutable, los comandos se ejecutan como el grupo propietario de ese archivo, en lugar de como el grupo principal del usuario que ejecutó el comando. Este comportamiento es similar a cómo funciona setuid. Permiso Efecto en archivos Efecto en directorios
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales Un ejemplo es el comando localizar, que es un reemplazo moderno de localizar. El permiso setgid está activado
+
+the /usr/bin/plocate binary, as shown in the following example:
+user@host:~$ ls -ld /usr/bin/plocate
+
+-rwxr-sr-x. 1 root locate 318224 14 de febrero 00:00 /usr/bin/plocate En una lista larga, puede identificar los permisos setgid mediante un carácter s minúsculo en el lugar donde normalmente esperaría el carácter x (permisos de ejecución de grupo). Si el grupo no tiene permisos de ejecución, este carácter se reemplaza por un carácter S mayúscula. Finalmente, el bit adhesivo de un directorio establece una restricción especial en la eliminación de archivos. Sólo el propietario del archivo (y el
+
+root user) can delete files in the directory. An example is the /tmp directory:
+user@host:~$ ls -ld /tmp
+drwxrwxrwt. 11 root root 4096 May 29 19:57 /tmp
+
+En una lista larga, puede identificar los permisos fijos mediante un carácter t minúscula en el lugar donde normalmente esperaría el carácter x (otros permisos de ejecución). Si otro no tiene permisos de ejecución, este carácter se reemplaza por un carácter T mayúscula. Configuración de permisos especiales Puede configurar permisos especiales utilizando notación simbólica o como un cuarto dígito en modo octal. Tabla 6. Configuración de permisos especiales setuid 4 u+s setgid 2 g+s sticky 1 o+t Ejemplos de permisos especiales Agregue el bit setgid en el directorio de ejemplo utilizando el método simbólico:
+
+user@host:~$ chmod g+s example
+
+Elimine el bit adhesivo del directorio de ejemplo utilizando el método simbólico:
+
+user@host:~$ chmod o-t example
+
+Establezca el bit setgid y agregue permisos de lectura, escritura y ejecución para usuarios y grupos, sin acceso para otros, en el
+
+example directory by using the octal method:
+user@host:~$ chmod 2770 example
+
+Elimine el bit setgid y agregue permisos de lectura, escritura y ejecución para usuarios y grupos, sin acceso para otros, en el directorio de ejemplo utilizando el método octal. Tenga en cuenta que debe agregar un 0 adicional al comienzo del Permiso Notación octal Notación simbólica
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales
+
+permissions value when removing special permissions by using the octal method:
+user@host:~$ chmod 00770 example
+
+Permisos predeterminados Además de configurar permisos especiales, también puede administrar los permisos predeterminados de nuevos archivos y directorios mediante la configuración de umask. La configuración de umask altera la configuración de permisos para archivos o directorios recién creados. A los archivos nuevos se les asignan permisos iniciales en función de dos factores: si está creando un archivo normal o un directorio. La umask actual (máscara de creación de archivos de usuario). Tabla 7. Permisos iniciales antes del archivo umask 0666 rw-rw-rw- Directorio 0777 rwxrwxrwx Siempre debe agregar explícitamente permiso de ejecución a un archivo normal. Este paso hace que sea más difícil para un atacante comprometer un sistema, crear un archivo malicioso y ejecutarlo. Efectos de umask en archivos y directorios La umask es un filtro de permisos que se aplica a los permisos predeterminados cuando se crea un archivo o directorio. Cada bit establecido en la umask elimina un permiso correspondiente de los permisos finales de nuevos archivos o directorios. Tabla 8. Ejemplos de umask 0022 rw-r--r-- rwxr-xr-x 0027 rw-r----- rwxr-x--- 0002 rw-rw-r-- rwxrwxr-x En RHEL 9 y versiones posteriores, la umask predeterminada para todos los usuarios normales es 0022. El comando umask sin argumentos
+
+displays the current value of the shell's umask:
+user@host:~$ umask
+
+0022 Puede configurar temporalmente una nueva umask para el shell actual ejecutando el comando umask con un solo argumento octal: Tipo Método octal inicial Método simbólico inicial umask Efecto en archivos Efecto en directorios
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales
+
+user@host:~$ umask 0027
+
+Puede omitir los ceros iniciales en la umask. Por ejemplo, umask 077 es lo mismo que umask 0077. Los valores de umask predeterminados del sistema para los usuarios de shell Bash se definen en el archivo /etc/login.defs y en el archivo /etc/bashrc. Los usuarios pueden anular los valores predeterminados del sistema en los archivos .bash_profile o .bashrc en sus directorios de inicio. Importante En Red Hat Enterprise Linux 8 y versiones anteriores, la máscara de usuario predeterminada es 0002 para los usuarios normales que tienen un UID de 200 o más y cuyo nombre de grupo principal coincide con su nombre de usuario. La máscara de usuario predeterminada para otros usuarios, incluido el usuario root, es 0022. Red Hat Enterprise Linux 9 y versiones posteriores aplican consistentemente una máscara de usuario predeterminada de 0022 para todos los usuarios, tanto en el shell de inicio de sesión como en el de no inicio de sesión. RHEL 9 y versiones posteriores ya no hacen excepciones a la configuración de umask predeterminada según el ID de usuario o los nombres de grupos coincidentes, lo que mejora la coherencia y simplifica las expectativas de seguridad. Ejemplos de configuración de umask En el siguiente ejemplo, el sistema otorga acceso de lectura y escritura al propietario del archivo, y acceso de solo lectura al grupo y a otros, lo que refleja una configuración típica de umask 0022 que restringe el acceso de escritura a quienes no son propietarios.
+
+user@host:~$ umask
+
+0022
+
+user@host:~$ touch default.txt
+user@host:~$ ls -l default.txt
+
+-rw-r--r--. 1 usuario usuario 0 29 de mayo 22:11 default.txt Figura 9. Ejemplo de cálculo de umask en un archivo En el siguiente ejemplo, el sistema otorga acceso completo al propietario del directorio y acceso de lectura y ejecución al grupo y otros, lo que refleja una configuración típica de umask 0022 que restringe el acceso de escritura para los no propietarios.
+
+
+
+
+
+5.5. Gestión de permisos predeterminados y permisos especiales
+
+user@host:~$ umask
+
+0022
+
+user@host:~$ mkdir default
+user@host:~$ ls -ld default
+drwxr-xr-x. 2 user user 6 May 29 22:14 default
+
+Figura 10. Ejemplo de cálculo de umask en un directorio En el siguiente ejemplo, el valor de umask se establece en 0, lo que cambia los permisos de archivo para otros de lectura a lectura y escritura. Los permisos de directorio para otros cambian de lectura y ejecución a lectura, escritura y ejecución.
+
+user@host:~$ umask 0
+user@host:~$ touch zero.txt
+user@host:~$ ls -l zero.txt
+
+-rw-rw-rw-. 1 usuario usuario 0 29 mayo 22:17 zero.txt
+
+user@host:~$ mkdir zero
+user@host:~$ ls -ld zero
+drwxrwxrwx. 2 user user 6 May 29 22:17 zero
+
+Una umask de 027 garantiza que los archivos nuevos tengan permisos de lectura y escritura para el usuario y permisos de lectura para el grupo. Los nuevos directorios tienen permisos de lectura y ejecución para grupos y ningún permiso para otros.
+
+user@host:~$ umask 027
+user@host:~$ touch two-seven.txt
+user@host:~$ ls -l two-seven.txt
+
+-rw-r-----. 1 usuario usuario 0 29 mayo 22:19 two-seven.txt
+
+user@host:~$ mkdir two-seven
+user@host:~$ ls -ld two-seven
+drwxr-x---. 2 user user 6 May 29 22:20 two-seven
+
+Referencias a las páginas man de bash(1), ls(1), chmod(1) y umask(1)
+
+
+
+
+
+5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales 5.6. Ejercicio guiado Administrar permisos predeterminados y permisos especiales Controle los permisos predeterminados de los archivos creados por el usuario y explique los permisos especiales sobre los archivos. Resultados Crear un directorio compartido donde el grupo de operadores posee automáticamente nuevos archivos. Configure el directorio para que solo el propietario del archivo (y el usuario raíz) puedan eliminar archivos. Cambie temporalmente la configuración de umask. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start perms-default
+
+Instrucciones En este ejercicio guiado, la configuración de umask se estableció en 0007, que es diferente del valor predeterminado 0022. Este cambio de configuración le permite inspeccionar los permisos establecidos para nuevos archivos y directorios. Inicie sesión en el sistema servera como usuario operador1.
+
+student@workstation:~$ ssh operator1@servera
+
+...salida omitida... [operador1@servera ~]$ 1. Cree el directorio /tmp/operators y cambie su grupo propietario a operadores. Verifique la propiedad del nuevo grupo. 2. Cree el directorio /tmp/operators.
+
+[operator1@servera ~]$ mkdir /tmp/operators
+
+2.1. Cambie la propiedad del grupo del directorio /tmp/operators al grupo de operadores.
+
+[operator1@servera ~]$ chown :operators /tmp/operators/
+
+2.2. Verifique que la propiedad del grupo de /tmp/operators/ se aplique correctamente.
+
+[operator1@servera ~]$ ls -ld /tmp/operators/
+drwxrwx---. 2 operator1 operators 6 Jun  4 03:24 /tmp/operators/
+
+2.3. Verifique el valor de máscara de usuario predeterminado del usuario operator1 y enumere los permisos del directorio /tmp/operators. 3. Enumere el valor de máscara de usuario predeterminado del usuario operador1. 3.1.
+
+
+
+
+

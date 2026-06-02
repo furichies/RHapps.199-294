@@ -1,0 +1,196 @@
+# Trabajo de laboratorio: oratorio Administrar configuración de red
+# Tipo: lab
+# Capítulo: Capítulo 11. Gestión de la configuración de red
+
+11.7. Práctica de laboratorio Administrar configuración de red 11.7. Práctica de laboratorio Administrar la configuración de red Configure interfaces y configuraciones de red en servidores Red Hat Enterprise Linux. Resultados Configure dos direcciones IPv4 estáticas para la interfaz de red principal. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-review
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña. 1. Cree una conexión que utilice una configuración de red estática utilizando la información de la siguiente tabla. Nombre de conexión perfil personalizado Nombre de interfaz Utilice la interfaz con la dirección MAC 52:54:00:00:fa:0b. Dirección IP 172.25.250.11/24 Dirección de puerta de enlace 172.25.250.254 Dirección DNS 172.25.250.254 Importante El nombre de la interfaz de red asociada con la dirección MAC proporcionada puede variar según la plataforma del curso y el hardware en uso. Esta actividad utiliza el nombre de la interfaz ens3. Localice el nombre de conexión predeterminado para el aula (como System-ens3) que está asociado con la dirección MAC proporcionada en la tabla. Utilice este nombre de conexión para reemplazar el marcador de posición System-ens3 a lo largo de este ejercicio si es diferente. 2. Configuración de parámetros Configure la conexión de perfil personalizado para que se inicie automáticamente. Para todas las demás conexiones Ethernet, desactive la configuración de conexión automática. 3.
+
+
+
+
+
+11.7. Evaluación de la configuración de administración de red de laboratorio Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade net-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish net-review
+
+Agregue la dirección IP 172.25.250.150/24 como dirección secundaria a la conexión de perfil personalizado. Verifique que la nueva configuración se aplique a la conexión. 4. Reinicie la máquina del servidor. 5. En la máquina de la estación de trabajo, verifique que la máquina del servidor esté inicializada y que reciba paquetes ICMP. La máquina del servidor debería iniciarse después de aproximadamente un minuto. 6. En la máquina de la estación de trabajo como usuario raíz, agregue una entrada al archivo /etc/hosts que asigne la dirección IP 172.25.250.150 al nombre secundario del servidor. La dirección IP secundaria de la máquina del servidor debe resolverse con ese nombre de la máquina de la estación de trabajo. 7.
+
+
+
+
+
+11.7. Lab Manage Network Configuration Solution Configure interfaces y configuraciones de red en servidores Red Hat Enterprise Linux. Resultados Configure dos direcciones IPv4 estáticas para la interfaz de red principal. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start net-review
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1. Cree una conexión que utilice una configuración de red estática utilizando la información de la siguiente tabla. Nombre de conexión perfil personalizado Nombre de interfaz Utilice la interfaz con la dirección MAC 52:54:00:00:fa:0b. Dirección IP 172.25.250.11/24 Dirección de puerta de enlace 172.25.250.254 Dirección DNS 172.25.250.254 Importante El nombre de la interfaz de red asociada con la dirección MAC proporcionada puede variar según la plataforma del curso y el hardware en uso. Esta actividad utiliza el nombre de la interfaz ens3. Localice el nombre de conexión predeterminado para el aula (como System-ens3) que está asociado con la dirección MAC proporcionada en la tabla. Utilice este nombre de conexión para reemplazar el marcador de posición System-ens3 a lo largo de este ejercicio si es diferente. 2. Configuración de parámetros
+
+
+
+
+
+11.7. Práctica de laboratorio Administrar configuración de red Enumere las interfaces de red y determine qué interfaz está asociada con la dirección MAC 52:54:00:00:fa:0b.
+
+[root@serverb ~]# ip link
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state Modo DESCONOCIDO DEFAULT grupo predeterminado qlen 1000
+
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:00:fa:0b brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname enx52540000fa0b
+
+3: ens4: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8942 qdisc fq_codel estado modo UP DEFAULT grupo predeterminado qlen 1000
+
+    link/ether 52:54:00:01:fa:28 brd ff:ff:ff:ff:ff:ff
+    altname enp0s4
+    altname enx52540001fa28
+
+La interfaz ens3 utiliza la dirección MAC 52:54:00:00:fa:0b. 2.1. Cree el perfil de conexión de perfil personalizado según la información de la tabla en las instrucciones. Asocie el perfil con la interfaz de red que utiliza la dirección MAC 52:54:00:00:fa:0b.
+
+[root@serverb ~]# nmcli con add con-name custom-profile \
+
+ifname ens3 \ type ethernet \ ipv4.method manual \ ipv4.dns '172.25.250.254' \ ipv4.addresses '172.25.250.11/24' \ ipv4.gateway '172.25.250.254' Conexión 'perfil personalizado' (7aff9d3d-aeb9-4ac9-ba51-cac24f660687) agregado con éxito. 2.2. Configure la conexión de perfil personalizado para que se inicie automáticamente. Para todas las demás conexiones Ethernet, desactive la configuración de conexión automática. 3. Busque otras conexiones Ethernet.
+
+[root@serverb ~]# nmcli con
+
+NOMBRE UUID TIPO DISPOSITIVO System-ens3 fab1e257-61a6-3526-abf9-8c50c83a28c7 ethernet ens3 lo 0ef452de-b94d-431f-86f8-f08e85fad57f loopback lo Conexión por cable 1 07284cd0-41c1-360e-bacd-477319a8e90e ethernet - perfil personalizado 7aff9d3d-aeb9-4ac9-ba51-cac24f660687 ethernet - Además de la conexión de perfil personalizado, el comando nmcli devuelve las conexiones System-ens3 y Conexión por cable 1. 3.1. Revise la conexión System-ens3 y desactive la configuración de conexión automática si es necesario.
+
+[root@serverb ~]# nmcli con show System-ens3
+connection.id:                          System-ens3
+
+...salida omitida...
+
+connection.autoconnect:                 yes
+
+...salida omitida...
+
+[root@serverb ~]# nmcli con mod System-ens3 connection.autoconnect no
+
+3.2. Revise la conexión Conexión por cable 1 y desactive la configuración de conexión automática si es necesario. 3.3.
+
+
+
+
+
+11.7. Laboratorio Administrar configuración de red
+
+[root@serverb ~]# nmcli con show "Wired connection 1"
+connection.id:                          Wired connection 1
+
+...salida omitida...
+
+connection.autoconnect:                 yes
+
+...salida omitida...
+
+[root@serverb ~]# nmcli con mod "Wired connection 1" connection.autoconnect no
+
+Agregue la dirección IP 172.25.250.150/24 como dirección secundaria a la conexión de perfil personalizado. Verifique que la nueva configuración se aplique a la conexión. 4. Agregue la dirección IP 172.25.250.150/24 como dirección secundaria a la conexión de perfil personalizado.
+
+[root@serverb ~]# nmcli con mod "custom-profile" \
+
++direcciones.ipv4 '172.25.250.150/24' 4.1. Revise la conexión de perfil personalizado. La dirección IP secundaria ahora debería aparecer en la lista.
+
+[root@serverb ~]# nmcli con show custom-profile
+connection.id:                          custom-profile
+
+...salida omitida...
+
+ipv4.addresses:                         172.25.250.11/24, 172.25.250.150/24
+ipv4.gateway:                           172.25.250.254
+
+...salida omitida... 4.2. Reinicie la máquina del servidor.
+
+[root@serverb ~]# systemctl reboot
+
+...salida omitida...
+
+student@workstation:~$
+
+5. En la máquina de la estación de trabajo, verifique que la máquina del servidor esté inicializada y que reciba paquetes ICMP. La máquina del servidor debería iniciarse después de aproximadamente un minuto.
+
+student@workstation:~$ ping -c3 serverb
+
+PING serverb.lab.example.com (172.25.250.11) 56(84) bytes de datos. 64 bytes desde serverb.lab.example.com (172.25.250.11): icmp_seq=1 ttl=64 tiempo=0.666 ms 64 bytes desde serverb.lab.example.com (172.25.250.11): icmp_seq=2 ttl=64 tiempo=0.417 ms 64 bytes desde serverb.lab.example.com (172.25.250.11): icmp_seq=3 ttl=64 tiempo=0,513 ms
+
+--- serverb.lab.example.com ping statistics ---
+
+3 paquetes transmitidos, 3 recibidos, 0% de pérdida de paquetes, tiempo 2052 ms
+
+rtt min/avg/max/mdev = 0.417/0.532/0.666/0.102 ms
+
+6. En la máquina de la estación de trabajo como usuario raíz, agregue una entrada al archivo /etc/hosts que asigne la dirección IP 172.25.250.150 al nombre secundario del servidor. La dirección IP secundaria de la máquina del servidor debe resolverse con ese nombre de la máquina de la estación de trabajo. 7. Cambie al usuario root. Utilice estudiante como contraseña.
+
+student@workstation:~$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante
+
+root@workstation:~#
+
+7.1. Edite el archivo /etc/hosts e incluya la línea secundaria serverb 172.25.250.150 al final del
+
+file. The following example shows the expected contents of the /etc/hosts file:
+
+7.2.
+
+
+
+
+
+11.7. Evaluación de la configuración de administración de red de laboratorio Como usuario estudiante en la máquina de la estación de trabajo, use el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade net-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish net-review
+
+127.0.0.1 localhost localhost.localdomain localhost4 localhost4.localdomain4 ::1 localhost localhost.localdomain localhost6 localhost6.localdomain6 172.25.254.254 aula.ejemplo.com aula 172.25.254.254 contenido.ejemplo.com contenido 172.25.254.254 materiales.ejemplo.com materiales 172.25.250.9 estación de trabajo.lab.ejemplo.com estación de trabajo 172.25.250.150 servidorb-secundario Guarde y cierre el archivo cuando haya terminado. Salir del usuario root.
+
+root@workstation:~# exit
+
+cerrar sesión 7.3. Verifique que pueda acceder a la dirección IP secundaria del servidor con el nombre secundario del servidor.
+
+student@workstation:~$ ping -c3 serverb-secondary
+
+Servidor PINGb-secundario (172.25.250.150) 56(84) bytes de datos. 64 bytes desde el servidorb-secundario (172.25.250.150): icmp_seq=1 ttl=64 tiempo=0.385 ms 64 bytes desde el servidorb-secundario (172.25.250.150): icmp_seq=2 ttl=64 tiempo=0.381 ms 64 bytes desde el servidorb-secundario (172.25.250.150): icmp_seq=3 ttl=64 tiempo=0,345 ms
+
+--- serverb-secondary ping statistics ---
+
+3 paquetes transmitidos, 3 recibidos, 0% de pérdida de paquetes, tiempo 2084 ms
+
+rtt min/avg/max/mdev = 0.345/0.370/0.385/0.018 ms
+
+7.4.
+
+
+
+
+
+11.8. Resumen 11.8. Resumen En esta lección, aprendió a administrar la configuración de red mediante el demonio NetworkManager y a administrar dispositivos y conexiones de red mediante la interfaz de línea de comandos de NetworkManager (nmcli). RHEL 10 utiliza un formato de archivo de claves estilo INI para almacenar perfiles de red en el directorio /etc/NetworkManager/system-connections. Se elimina por completo la compatibilidad con el formato de archivo ifcfg anterior para conexiones de red. Puede identificar de forma exclusiva servidores con un FQDN, que puede administrar mediante el comando hostnamectl. También aprendió a configurar y probar la resolución de nombres local.
+
+
+
+
+

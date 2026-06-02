@@ -1,0 +1,90 @@
+# Ejercicio Guiado: Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel
+# Tipo: guided_exercise
+# Capítulo: Capítulo 17. Control y solución de problemas del proceso de arranque
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel 17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel Modificar la configuración del cargador de arranque para controlar el proceso de arranque. Resultados Reinicie el sistema y examine el menú de GRUB2. Vea la configuración actual del cargador de arranque desde la línea de comando. Vuelva a configurar el cargador de arranque para seleccionar un kernel diferente como predeterminado. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start boot-grub
+
+Instrucciones Reinicie la máquina del servidor y luego inspeccione el menú de GRUB2. Seleccione la opción de inicio predeterminada. 1. Abra la consola de la máquina del servidor y luego reinicie la máquina enviando Ctrl+Alt+Supr a su sistema usando el botón o entrada de menú correspondiente. 1.1. Después de que se inicialice el cargador de arranque, presione Esc para detener el temporizador del cargador de arranque. La entrada seleccionada es el kernel predeterminado para iniciar la máquina. 1.2. Presione E para abrir el editor de los argumentos iniciales de la línea de comandos para la opción de inicio predeterminada. No realice ningún cambio en la configuración. 1.3. Presione Ctrl+X o use el teclado en pantalla para enviar F10 a la consola para iniciar el sistema con la configuración predeterminada. 1.4. Vea información sobre la configuración de arranque del kernel predeterminada. 2. Inicie sesión en la máquina del servidor como usuario root. Utilice redhat como contraseña.
+
+servera login: root
+
+Contraseña: redhat ...salida omitida... [root@servera ~]# 2.1. Obtenga el índice del kernel predeterminado usando el comando grubby:
+
+[root@servera ~]# grubby --default-index
+
+1 2.2. Ver la información del kernel en el índice 1: 2.3.
+
+
+
+
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel
+
+[root@servera ~]# grubby --info 1
+index=1
+kernel="/boot/vmlinuz-6.12.0-55.12.1.el10_0.x86_64"
+args="console=tty0 console=ttyS0,115200n8 no_timer_check crashkernel=2G-64G:256M,64G-:512M 
+
+$params_tuned"
+
+root="UUID=15507695-22bb-4c65-94e6-a438e095983f"
+initrd="/boot/initramfs-6.12.0-55.12.1.el10_0.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (6.12.0-55.12.1.el10_0.x86_64) 10.0 (Coughlan)"
+id="b70d796f931842cb9776f658cd068435-6.12.0-55.12.1.el10_0.x86_64"
+
+Utilice el comando grubby para seleccionar el kernel en el índice 0 para el arranque. Tenga en cuenta el núcleo de este índice que se utilizará en el siguiente paso.
+
+[root@servera ~]# grubby --set-default-index 0
+
+The default is /boot/loader/entries/ffffffffffffffffffffffffffffffff-6.12.0-55.9.1.el10_0.x86_64.conf with index 0 and kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 3. Use the grubby command to add the rhgb quiet kernel command-line argumento para el nuevo kernel predeterminado. Reinicie el sistema para ver los efectos. 4. Agregue el argumento de línea de comandos rhgb quiet kernel al nuevo kernel predeterminado.
+
+[root@servera ~]# grubby --update-kernel \
+/boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 --args="rhgb quiet"
+
+4.1. Reinicie la máquina del servidor.
+
+[root@servera ~]# systemctl reboot
+
+4.2. La máquina del servidor ahora arranca usando el kernel predeterminado recién configurado. Tenga en cuenta que la ronda inicial de mensajes del kernel ahora está suprimida y los primeros mensajes que ve son de la unidad systemd. 5. Revierta los cambios en los argumentos de la línea de comandos utilizando el comando sucio y vuelva al kernel más reciente. Reinicie el sistema nuevamente y verifique que arranque correctamente. 6. Inicie sesión en la máquina del servidor como usuario root. Utilice redhat como contraseña
+
+servera login: root
+
+Contraseña: redhat ...salida omitida... [root@servera ~]# 6.1. Cambie el índice del kernel predeterminado a 1. Tenga en cuenta el kernel de este índice que se utilizará en el siguiente paso.
+
+[root@servera ~]# grubby --set-default 1
+
+El valor predeterminado es /boot/loader/entries/b70d796f931842cb9776f658cd068435-6.12.0-55.12.1.el10_0.x86_64.conf con índice 1 y kernel /boot/vmlinuz-6.12.0-55.12.1.el10_0.x86_64 6.2. Revierta los cambios en el kernel /boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64.
+
+[root@servera ~]# grubby --update-kernel \
+/boot/vmlinuz-6.12.0-55.9.1.el10_0.x86_64 --remove-args="rhgb quiet"
+
+6.3. Reinicie el sistema para verificar que arranca correctamente. 6.4.
+
+
+
+
+
+17.2. Ejercicio guiado Administrar el cargador de arranque y la línea de comandos del kernel. Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish boot-grub
+[root@servera ~]# systemctl reboot
+
+Cierre la consola de la máquina del servidor. 7.
+
+
+
+
+
+17.3. Exploración del proceso de inicio y selección de un destino de inicio 17.3. Exploración del proceso de inicio y selección de un destino de inicio Objetivos Describir cómo se inicia un sistema Red Hat Enterprise Linux, cambiar el destino de inicio predeterminado e iniciar manualmente el sistema en un destino distinto al predeterminado. Inicialización del sistema en Red Hat Enterprise Linux 10 Una vez que se enciende el sistema y se inicia el cargador de arranque, comienza el proceso de inicialización del sistema. La siguiente lista ofrece una descripción general de alto nivel del proceso de inicialización del sistema en Red Hat Enterprise Linux 10. El cargador de arranque carga el kernel y la imagen initramfs desde el disco y los coloca en la memoria. La imagen initramfs es un archivo con los módulos del kernel para todo el hardware requerido en el arranque, scripts de inicialización y más. En RHEL 10, la imagen initramfs contiene un sistema de archivos raíz de arranque con un kernel en ejecución y una unidad systemd. Puede utilizar el comando lsinitrd para inspeccionar la imagen initramfs y extraer su contenido. El cargador de arranque pasa el control al kernel, junto con las opciones especificadas en la línea de comando del kernel y la ubicación de la imagen initramfs en la memoria. El kernel inicializa todo el hardware para el cual puede encontrar un controlador en la imagen initramfs y luego ejecuta el
+
+/sbin/init script from the initramfs image as PID 1. You can override this script by using the init= kernel
+
+parámetro. En RHEL 10, el script /sbin/init es un enlace simbólico a la unidad systemd. La unidad systemd de la imagen initramfs ejecuta todas las unidades para el objetivo initrd.target. Esta unidad incluye el montaje del sistema de archivos raíz en el directorio /sysroot, que aparece en el archivo /etc/fstab del disco. El kernel cambia (pivota) el sistema de archivos raíz desde la imagen initramfs al sistema de archivos raíz en el directorio /sysroot. Luego, la unidad systemd se vuelve a ejecutar utilizando la copia instalada de la unidad systemd en el disco. Entonces, la unidad systemd tiene el control total del proceso de arranque. La unidad systemd busca un destino predeterminado, que está configurado en el sistema o se pasa desde la línea de comandos del kernel. Luego, la unidad systemd inicia (y detiene) las unidades para cumplir con la configuración para ese objetivo y resuelve automáticamente las dependencias entre unidades. Estos objetivos normalmente inician un inicio de sesión basado en texto o una pantalla de inicio de sesión gráfica, completando así el proceso de inicio. Selección de un objetivo systemd Un objetivo systemd es un conjunto de unidades systemd que el sistema debe comenzar para alcanzar el estado deseado. La siguiente tabla enumera los objetivos más importantes.
+
+
+
+
+

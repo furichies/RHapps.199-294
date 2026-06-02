@@ -1,0 +1,78 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 6. Administración de plays y playbooks complejos
+
+capítulo 6 |  Administración de plays y playbooks complejos
+Resumen
+• Los patrones de host se usan para especificar los hosts gestionados a los que deben apuntar los
+plays.
+• Puede especificar una lista de múltiples patrones de host en la directiva hosts de un play.
+• Puede usar la característica import_playbook para incorporar archivos de play externos a los
+playbooks.
+• Puede usar la característica include_tasks o import_tasks para incorporar archivos de
+tareas externos a los playbooks.
+• Cuando incluye contenido, Ansible lo procesa dinámicamente a medida que se alcanza el
+contenido. Cuando importa contenido, Ansible lo preprocesa antes de que comience la
+ejecución.
+RH294-RHEL9.0-es-3-20240620
+275
+
+
+276
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 7
+Simplificación de playbooks
+con roles y Ansible Content
+Collections
+Meta
+Usar los roles de Ansible y Ansible Content
+Collections para desarrollar playbooks más
+rápidamente y volver a usar el código de Ansible.
+Objetivos
+•
+Describir el propósito de un rol de Ansible,
+su estructura y cómo se usan los roles en los
+playbooks.
+•
+Cree un rol en el directorio de proyectos de un
+playbook y ejecútelo como parte de uno de los
+plays del playbook.
+•
+Seleccionar y recuperar roles de fuentes
+externas, como repositorios de Git o Ansible
+Galaxy, y usarlos en sus playbooks.
+•
+Obtener un conjunto de roles relacionados,
+módulos suplementarios y otro contenido de
+Ansible Content Collection y usarlos en un
+playbook.
+•
+Escribir playbooks que aprovechen los roles
+del sistema de Red Hat Enterprise Linux para
+realizar operaciones estándares.
+Secciones
+•
+Descripción de la estructura del rol (y
+cuestionario)
+•
+Creación de roles (y ejercicio guiado)
+•
+Implementación de roles desde fuentes
+externas de contenido (y ejercicio guiado)
+•
+Obtención de roles y módulos de las
+colecciones de contenido (y ejercicio guiado)
+•
+Reutilización de contenido con roles de
+sistema (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Simplificación de playbooks con roles y Ansible
+Content Collections
+RH294-RHEL9.0-es-3-20240620
+277
+
+

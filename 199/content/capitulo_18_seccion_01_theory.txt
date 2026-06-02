@@ -1,0 +1,235 @@
+# 15.1. Creación y gestión de sistemas de archivos en particiones estándar
+# Tipo: theory
+# Capítulo: Capítulo 15. Gestión del almacenamiento básico
+
+15.1. Creación y gestión de sistemas de archivos en particiones estándar 15.1. Creación y administración de sistemas de archivos en particiones estándar Objetivos Administrar el almacenamiento creando particiones de almacenamiento, formateándolas con sistemas de archivos y montando los sistemas de archivos para su uso. Partición de disco La partición de disco divide un disco duro en múltiples particiones de almacenamiento lógicas. Puedes usar particiones para dividir el almacenamiento.
+
+based on different requirements, and this division provides many benefits:
+
+Limite el espacio disponible para aplicaciones o usuarios. Separe los archivos del sistema operativo y del programa de los archivos del usuario. Cree un área separada para el intercambio de memoria. Limite el uso del espacio en disco para mejorar el rendimiento de las herramientas de diagnóstico y las imágenes de respaldo. En los sistemas x86, los dos esquemas de partición principales son Master Boot Record (MBR) y GUID Partition Table (GPT). Esquema de partición del Registro de arranque maestro (MBR) El esquema de partición del Registro de arranque maestro (MBR) es el estándar en los sistemas que ejecutan firmware del Sistema básico de entrada/salida (BIOS). Este esquema admite un máximo de cuatro particiones primarias. En los sistemas Linux, con particiones lógicas y extendidas, puede crear hasta 15 particiones. Con un tamaño de partición de 32 bits, los discos particionados con MBR pueden tener un tamaño de hasta 2 TiB. Figura 20. Partición MBR del dispositivo de almacenamiento /dev/sdb El límite de tamaño de partición y disco de 2 TiB es ahora una limitación común y restrictiva. En consecuencia, el esquema de partición MBR heredado es reemplazado por el esquema de partición GUID Partition Table (GPT). Esquema de partición de tabla de particiones GUID (GPT) Para los sistemas que ejecutan firmware de interfaz de firmware extensible unificada (UEFI), el esquema de partición GUID (GPT) es el estándar para la partición de discos y aborda las limitaciones del esquema MBR. El esquema GPT proporciona un máximo de 128 particiones. El esquema GPT asigna 64 bits para direcciones de bloques lógicos para admitir particiones y discos de hasta ocho zebibytes (ZiB) u ocho mil millones de tebibytes (TiB).
+
+
+
+
+
+15.1. Creación y administración de sistemas de archivos en particiones estándar Figura 21. Partición GPT del dispositivo de almacenamiento /dev/sdb El esquema GPT proporciona características y beneficios adicionales en comparación con el esquema MBR. El esquema GPT utiliza un Identificador único global (GUID) para identificar cada disco y partición. Este esquema hace que la tabla de particiones sea redundante, con la partición primaria en la cabecera del disco y una partición secundaria de respaldo al final del disco. Este esquema utiliza una suma de verificación para detectar errores en el encabezado GPT y la tabla de particiones. Administrar particiones Un administrador puede usar un programa de edición de particiones para cambiar las particiones de un disco, por ejemplo creando y eliminando particiones, y cambiando los tipos de partición. Red Hat Enterprise Linux proporciona el comando parted como editor de particiones de línea de comandos estándar. Puede utilizar el editor de particiones divididas con almacenamiento que utilice el esquema de partición MBR o el esquema de partición GPT. El comando parted toma como primer argumento el nombre del dispositivo que representa todo el dispositivo de almacenamiento o disco a modificar, seguido de los subcomandos. El siguiente ejemplo utiliza el subcomando imprimir para mostrar la tabla de particiones en el disco que es /dev/sda
+
+block device (the first QEMU disk that the system detects):
+root@host:~# parted /dev/sda print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sda: 53,7 GB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: msdos Banderas de disco: Número Inicio Fin Tamaño Tipo Sistema de archivos Banderas 1 1049 kB 10,7 GB 10,7 GB primario arranque xfs 2 10,7 GB 53,7 GB 42,9 GB primario xfs Para iniciar una sesión interactiva, ejecute el comando parted como usuario root y especifique el nombre del dispositivo de disco como un
+
+argument:
+root@host:~# parted /dev/sda
+
+GNU Parted 3.6 Usando /dev/sda ¡Bienvenido a GNU Parted! Escriba "ayuda" para ver una lista de comandos. Utilice el subcomando imprimir para mostrar la tabla de particiones:
+
+
+
+
+
+15.1. Creación y administración de sistemas de archivos en particiones estándar (particiones) Modelo de impresión: QEMU QEMU HARDDISK (scsi) Disco /dev/sda: 53,7 GB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: msdos Banderas de disco: Número Inicio Fin Tamaño Tipo Sistema de archivos Banderas 1 1049 kB 10,7 GB 10,7 GB arranque xfs primario 2 10,7 GB 53,7 GB 42,9 GB xfs primario Para salir de la sesión de partición interactiva, utilice el comando quit: (parted) quit
+
+root@host:~#
+
+De forma predeterminada, el comando dividido muestra tamaños en potencias de 10 (KB, MB, GB). Puede cambiar el tamaño de la unidad con el
+
+unit parameter, which accepts the following values:
+
+s para el sector B para el byte MiB, GiB o TiB (potencias de 2) MB, GB o TB (potencias de 10) El siguiente ejemplo muestra la tabla de particiones para el dispositivo /dev/sda en sectores:
+
+root@host:~# parted /dev/sda unit s print
+
+Modelo: QEMU QEMU DISCO DURO (scsi) Disco /dev/sda: 104857600s Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: msdos Banderas de disco: Número Inicio Fin Tamaño Tipo Sistema de archivos Banderas 1 2048s 20971486s 20969439s arranque xfs primario 2 20971520s 104857535s 83886016s xfs primarios Puede especificar varios subcomandos en la misma línea, como los subcomandos unit e print en el ejemplo anterior. Escriba la tabla de particiones en un disco nuevo Para particionar una unidad nueva, primero escriba una etiqueta de disco. La etiqueta del disco indica qué esquema de partición utilizar. Utilice el comando parted para escribir una etiqueta de disco MBR:
+
+root@host:~# parted /dev/sdb mklabel msdos
+
+Utilice el comando parted para escribir una etiqueta de disco GPT:
+
+root@host:~# parted /dev/sdb mklabel gpt
+
+Advertencia El subcomando mklabel borra la tabla de particiones existente. Utilice el subcomando mklabel para reutilizar el disco sin tener en cuenta los datos existentes. Si una nueva etiqueta mueve los límites de la partición, todos los datos de los sistemas de archivos existentes se vuelven inaccesibles.
+
+
+
+
+
+15.1. Creación y administración de sistemas de archivos en particiones estándar Creación de particiones MBR Las siguientes instrucciones crean una partición de disco MBR. Especifique el dispositivo de disco en el que crear la partición. Para iniciar una sesión interactiva, ejecute el comando parted como usuario raíz y especifique el nombre del dispositivo de disco como
+
+argument:
+root@host:~# parted /dev/sdb
+
+GNU Parted 3.6 Usando /dev/sdb ¡Bienvenido a GNU Parted! Escriba "ayuda" para ver una lista de comandos. (partido) Utilice el subcomando mkpart para crear una partición. El subcomando help mkpart muestra la sintaxis y los elementos disponibles.
+
+options for each argument:
+
+(separado) ayuda mkpart
+
+  mkpart PART-TYPE [FS-TYPE] START END     make a partition
+        PART-TYPE is one of: primary, logical, extended
+        FS-TYPE is one of: udf, btrfs, nilfs2, ext4, ext3, ext2, f2fs, fat32, fat16,
+        hfsx, hfs+, hfs, jfs, swsusp, linux-swap(v1), linux-swap(v0), ntfs, reiserfs,
+        hp-ufs, sun-ufs, xfs, apfs2, apfs1, asfs, amufs5, amufs4, amufs3, amufs2,
+        amufs1, amufs0, amufs, affs7, affs6, affs5, affs4, affs3, affs2, affs1, affs0,
+        linux-swap, linux-swap(new), linux-swap(old)
+        START and END are disk locations, such as 4GB or 10%.  Negative values count
+        from the end of the disk.  For example, -1s specifies exactly the last sector.
+        'mkpart' makes a partition without creating a new file system on the partition.
+        FS-TYPE may be specified to set an appropriate partition ID.
+
+Cree una partición primaria o extendida. (partido) mkpart ¿Tipo de partición?  primario/extendido? primaria Nota Si necesita más de cuatro particiones en un disco particionado con MBR, cree tres particiones primarias y una partición extendida. La partición extendida sirve como contenedor dentro del cual puede crear múltiples particiones lógicas. A continuación, se le solicitará que ingrese la etiqueta para el tipo de sistema de archivos. Para enumerar los tipos de sistemas de archivos admitidos, presione Tab
+
+twice:
+
+¿Tipo de sistema de archivos?  [ext2]? Tab Tab affs0 affs4 amufs amufs3 apfs2 ext3 fat32 hp-ufs linux-swap(antiguo) ntfs udf affs1 affs5 amufs0 amufs4 asfs ext4 hfs jfs linux-swap(v0) reiserfs xfs affs2 affs6 amufs1 amufs5 btrfs f2fs hfs+ linux-swap linux-swap(v1) sun-ufs affs3 affs7 amufs2 apfs1 ext2 fat16 hfsx linux-swap(new) nilfs2 swsusp Introduzca el tipo de sistema de archivos que se utilizará en la partición, como xfs o ext4. Este valor solo se utiliza como etiqueta de tipo de partición y no crea el sistema de archivos. ¿Tipo de sistema de archivos?  [ext2]? xfs Especifique el sector del disco donde comienza la partición.
+
+
+
+
+
+15.1. Creación y gestión de sistemas de archivos en particiones estándar ¿Comenzar? 2048s El sufijo s proporciona el valor en sectores, o puede utilizar los sufijos MiB, GiB, TiB, MB, GB o TB. El comando dividido tiene por defecto el sufijo MB. Las rondas de comando divididas proporcionaron valores para satisfacer las restricciones del disco. Cuando se inicia el comando parted, recupera la topología del disco del dispositivo, como el tamaño del bloque físico del disco. El comando parted garantiza que la posición inicial que proporcione alinee correctamente la partición con la estructura del disco para optimizar el rendimiento. Si la posición inicial da como resultado una partición desalineada, entonces el comando partidod muestra una advertencia. En la mayoría de los discos, un sector de inicio que sea múltiplo de 2048 es seguro. Especifique el sector del disco donde termina la partición. Puede especificar el final como tamaño o como ubicación final. Cuando proporciona la posición final, el comando parted actualiza la tabla de particiones en el disco con los detalles de la nueva partición. ¿Fin? 1000 MB Salga del comando parted: (parted) quit Información: Es posible que necesite actualizar /etc/fstab.
+
+root@host:~#
+
+Una vez creada la partición, el sistema detecta la nueva partición y crea el archivo de dispositivo asociado en el directorio /dev. Ejecute el comando udevadm SET para esperar hasta que el archivo del dispositivo que representa esa partición esté disponible en el directorio /dev.
+
+root@host:~# udevadm settle
+
+Como alternativa al uso del modo interactivo, puede crear una partición con un único comando no interactivo:
+
+root@host:~# parted /dev/sdb mkpart primary xfs 2048s 1000MB
+
+Crear particiones GPT El esquema GPT también utiliza el comando parted para crear particiones. Especifique el dispositivo de disco en el que crear la partición. Para iniciar una sesión interactiva, ejecute el comando parted como usuario root y especifique el nombre del dispositivo de disco como
+
+argument:
+root@host:~# parted /dev/sdb
+
+GNU Parted 3.6 Usando /dev/sdb ¡Bienvenido a GNU Parted! Escriba "ayuda" para ver una lista de comandos. (partido) Utilice el subcomando mkpart para comenzar a crear la partición. Con el esquema GPT, cada partición recibe un nombre. (partido) mkpart ¿Nombre de la partición?  []? userdata Introduzca el tipo de sistema de archivos que se utilizará en la partición, como xfs o ext4. Este valor solo se utiliza como etiqueta de tipo de partición y no crea el sistema de archivos.
+
+
+
+
+
+15.1. Creación y gestión de sistemas de archivos en particiones estándar ¿Tipo de sistema de archivos?  [ext2]? xfs Especifique el sector del disco donde comienza la partición: ¿Iniciar? 2048s Especifique el sector del disco donde termina la partición. Cuando proporciona la posición final, el comando parted actualiza la partición GPT en el disco con los detalles de la nueva partición. ¿Fin? 1000 MB Salga del comando dividido. (separado) salir Información: Es posible que necesite actualizar /etc/fstab.
+
+root@host:~#
+
+Ejecute el comando udevadm set. Este comando espera a que el sistema detecte la nueva partición y cree el archivo de dispositivo asociado en el directorio /dev.
+
+root@host:~# udevadm settle
+
+Como alternativa al uso del modo interactivo, puede crear una partición con un solo comando:
+
+root@host:~# parted /dev/sdb mkpart userdata xfs 2048s 1000MB
+
+Eliminación de particiones Las siguientes instrucciones se aplican a los esquemas de partición MBR y GPT. Especifique el disco que contiene la partición que desea eliminar. Ejecute el comando parted con el dispositivo de disco como único argumento:
+
+root@host:~# parted /dev/sdb
+
+GNU Parted 3.6 Usando /dev/sdb ¡Bienvenido a GNU Parted! Escriba "ayuda" para ver una lista de comandos. (partido) Identifique el número de partición de la partición a eliminar: (partido) imprimir Modelo: QEMU QEMU HARDDISK (scsi) Disco /dev/sdb: 5369MB Tamaño del sector (lógico/físico): 512B/512B Tabla de particiones: gpt Banderas de disco: Número Inicio Fin Tamaño Sistema de archivos Nombre Banderas 1 1049kB 1000MB 999MB xfs userdata Elimine la partición. El subcomando rm elimina inmediatamente la partición de la tabla de particiones del disco. (partido) rm 1 Salga del comando partido:
+
+
+
+
+
+15.1. Creación y administración de sistemas de archivos en particiones estándar (partidas) quit Información: Es posible que necesite actualizar /etc/fstab.
+
+root@host:~#
+
+Como alternativa al uso del modo interactivo, puede eliminar una partición con un solo comando:
+
+root@host:~# parted /dev/sdb rm 1
+
+Creación de sistemas de archivos Después de que la herramienta de partición crea la partición como un nuevo dispositivo de bloque, el siguiente paso es agregarle un sistema de archivos. Red Hat Enterprise Linux admite varios tipos de sistemas de archivos y XFS es el valor predeterminado recomendado. Como usuario root, utilice el comando mkfs.xfs para formatear la partición con el sistema de archivos XFS:
+
+root@host:~# mkfs.xfs /dev/sdb1
+meta-data=/dev/sdb1         isize=512    agcount=4, agsize=60992 blks
+         =                  sectsz=512   attr=2, projid32bit=1
+         =                  crc=1        finobt=1, sparse=1, rmapbt=1
+         =                  reflink=1    bigtime=1 inobtcount=1 nrext64=1
+         =                  exchange=0
+data     =                  bsize=4096   blocks=243968, imaxpct=25
+         =                  sunit=0      swidth=0 blks
+naming   =version 2         bsize=4096   ascii-ci=0, ftype=1, parent=0
+log      =internal log      bsize=4096   blocks=1566, version=2
+         =                  sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none              extsz=4096   blocks=0, rtextents=0
+
+Descartando bloques... Listo. Para agregar un sistema de archivos ext4, use el comando mkfs.ext4. Montaje de sistemas de archivos Después de agregar el sistema de archivos, el último paso es montar el sistema de archivos en un directorio en la estructura de directorios. cuando tu
+
+mount a file system to the directory hierarchy, user-space utilities can access or write files on the device.
+
+Montar sistemas de archivos manualmente Utilice el comando mount para conectar manualmente un dispositivo a una ubicación de directorio de punto de montaje. El comando de montaje requiere un dispositivo y un punto de montaje, y puede incluir opciones de montaje del sistema de archivos. Las opciones del sistema de archivos personalizan el comportamiento del sistema de archivos.
+
+root@host:~# mount /dev/sdb1 /mnt
+
+También puede utilizar el comando mount para ver los sistemas de archivos actualmente montados, los puntos de montaje y sus opciones. Para mostrar el resultado del comando de montaje, no proporcione una barra diagonal junto a la partición.
+
+root@host:~# mount | grep sdb1
+/dev/sdb1 on /mnt type xfs (rw,relatime,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+Montar sistemas de archivos de forma persistente Montar manualmente un sistema de archivos es una buena manera de verificar que se pueda acceder a un dispositivo formateado y que funcione como se esperaba. Sin embargo, cuando el servidor se reinicia, el sistema no vuelve a montar automáticamente el sistema de archivos.
+
+
+
+
+
+15.1. Creación y administración de sistemas de archivos en particiones estándar Para configurar el sistema para que monte automáticamente el sistema de archivos durante el inicio del sistema, agregue una entrada al archivo /etc/fstab. Este archivo de configuración enumera los sistemas de archivos que se montarán en el inicio del sistema. El archivo /etc/fstab es un archivo delimitado por espacios en blanco con seis campos por línea.
+
+root@host:~# cat /etc/fstab
+
+UUID=a8063676-44dd-409a-b584-68be2c9f5570 / xfs defaults 0 0 UUID=7a20315d-ed8b-4e75-a5b6-24ff9e1f9838 /dbdata xfs defaults 0 0 El primer campo especifica el dispositivo. Este ejemplo utiliza un UUID para especificar el dispositivo. Los sistemas de archivos crean y almacenan el UUID en el superbloque de partición en el momento de la creación. Alternativamente, puede utilizar el archivo del dispositivo, como /dev/sdb1. El segundo campo es el punto de montaje, que es el directorio especificado donde se puede acceder al dispositivo de bloque. el monte
+
+point must exist; if not, then create it with the mkdir command.
+
+El tercer campo muestra el tipo de sistema de archivos, como xfs o ext4. El cuarto campo es la lista de opciones separadas por comas para aplicar al dispositivo. La opción predeterminada es un conjunto de opciones de uso común. La página del manual de mount(8) documenta las otras opciones disponibles. El quinto campo lo utiliza el comando de volcado para realizar una copia de seguridad del dispositivo. Otras aplicaciones de copia de seguridad no suelen utilizar este campo. El último campo, el campo de orden fsck, determina si se debe ejecutar el comando fsck en el inicio del sistema para verificar que los sistemas de archivos estén limpios. El valor en este campo indica el orden en el que se debe ejecutar el comando fsck. Para los sistemas de archivos XFS, establezca este campo en 0, porque XFS no utiliza el comando fsck para verificar el estado de su sistema de archivos. Para sistemas de archivos ext4, configúrelo en 1 para el sistema de archivos raíz y en 2 para los otros sistemas de archivos ext4. Al utilizar esta notación, el comando fsck procesa primero el sistema de archivos raíz y luego verifica los sistemas de archivos en discos separados al mismo tiempo y los sistemas de archivos en el mismo disco en secuencia. Nota Una entrada incorrecta en el archivo /etc/fstab podría hacer que la máquina no pueda iniciarse. Verifique que una entrada sea válida desmontando manualmente el nuevo sistema de archivos y luego usando el comando mount para leer el archivo /etc/fstab y vuelva a montar el sistema de archivos con las opciones de montaje de esa entrada. Si el comando de montaje devuelve un error, corríjalo antes de reiniciar la máquina. Alternativamente, use la opción --verify del comando findmnt para analizar el archivo /etc/fstab para determinar la usabilidad de la partición. Cuando agregue o elimine una entrada en el archivo /etc/fstab, ejecute el comando systemctl daemon-reload o reinicie el servidor para asegurarse de que el demonio systemd cargue y utilice la nueva configuración.
+
+root@host:~# systemctl daemon-reload
+
+Red Hat recomienda el uso de UUID para montar sistemas de archivos de forma persistente. Los nombres de los dispositivos de bloque pueden cambiar en ciertos escenarios, como si un proveedor de nube cambia la capa de almacenamiento subyacente de una máquina virtual o si los discos se detectan en un orden diferente en el inicio del sistema. El nombre del archivo del dispositivo de bloque puede cambiar, pero el UUID permanece constante en el superbloque del sistema de archivos. Utilice la opción --fs del comando lsblk para escanear los dispositivos de bloque que están conectados a una máquina y recuperar los UUID del sistema de archivos.
+
+
+
+
+
+15.1. Creación y gestión de sistemas de archivos en particiones estándar
+
+root@host:~# lsblk --fs
+
+NOMBRE FSTYPE FSVER ETIQUETA UUID FSAVAIL FSUSE% PUNTOS DE MONTAJE sda1 └─sda sda2 xfs boot 49dd...75fdf 312M 37% /boot └─sda sda3 xfs root 8a90...ce0da 4.8G 48% / sdb sdc sdd sr0 iso9660 Joliet Extension config-2 2025-06-24-19-28-21-00 Referencias info parted (Manual de usuario de GNU Parted) páginas man parted(8), mkfs(8), mount(8), lsblk(8) y fstab(5) Para obtener más información, consulte la guía Administración de sistemas de archivos en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+único/managing_file_systems/index
+
+
+
+
+
+15.2. Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar 15.2. Ejercicio guiado Crear y administrar sistemas de archivos en particiones estándar Cree particiones de almacenamiento, formatéelas con sistemas de archivos y monte los sistemas de archivos cuando se inicie la computadora. Resultados Cree una partición utilizando el esquema de partición MBR. Formatee la partición con el sistema de archivos XFS. Montar persistentemente el sistema de archivos. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start storage-partitions
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Cree el esquema de partición MBR en el dispositivo /dev/sdb.
+
+[root@servera ~]# parted /dev/sdb mklabel msdos
+
+Información: Es posible que necesite actualizar /etc/fstab. 2. Cree una partición primaria de 1 GB. Para una alineación correcta, inicie la partición en el sector 2048. Establezca el tipo de sistema de archivos de partición en XFS. Utilice el comando parted en modo interactivo para crear la partición. Alternativamente, puede realizar la misma operación usando el comando no interactivo parted /dev/sdb mkpart primario xfs 2048s 1001 MB. 3. Utilice el comando parted para crear la partición en el disco /dev/sdb.
+
+[root@servera ~]# parted /dev/sdb
+
+GNU Parted 3.6 Usando /dev/sdb ¡Bienvenido a GNU Parted! Escriba "ayuda" para ver una lista de comandos. 3.1. Utilice el subcomando mkpart para crear una partición primaria. (partido) mkpart ¿Tipo de partición?  primario/extendido? primaria 3.2. Establezca la etiqueta de tipo de sistema de archivos en xfs. 3.3.
+
+
+
+
+

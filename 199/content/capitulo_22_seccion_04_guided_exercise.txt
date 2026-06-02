@@ -1,0 +1,164 @@
+# Ejercicio Guiado: Ejercicio guiado Etiquetado de puertos SELinux
+# Tipo: guided_exercise
+# Capítulo: Capítulo 19. Gestión de la seguridad de la red
+
+19.4. Ejercicio guiado Etiquetado de puertos SELinux 19.4. Ejercicio guiado Etiquetado de puertos SELinux Verifique y ajuste las etiquetas SELinux en puertos de red específicos para que los servicios de red permitidos puedan vincularse a esos puertos para escuchar las conexiones de los clientes. Resultados Configure un servidor web para alojar contenido utilizando un puerto no estándar. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start netsecurity-ports
+
+Instrucciones Su organización está implementando una nueva aplicación web personalizada, que se ejecuta en un puerto no estándar, el puerto 82/TCP. Un administrador junior ya configuró la aplicación en la máquina del servidor. Sin embargo, no se puede acceder al contenido del servidor web. Resuelva el problema de acceso al servidor web. Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Intente solucionar el problema del contenido web reiniciando el servicio httpd. 2. Reinicie el servicio httpd. Este comando falla.
+
+[root@servera ~]# systemctl restart httpd
+
+El trabajo para httpd.service falló porque el proceso de control finalizó con un código de error. Consulte "systemctl status httpd.service" y "journalctl -xeu httpd.service" para obtener más detalles. 2.1. Ver el estado del servicio httpd. Observe el error de permiso denegado. Presione Q para salir de la sesión. 2.2.
+
+
+
+
+
+19.4. Ejercicio guiado Etiquetado de puertos SELinux
+
+[root@servera ~]# systemctl status -l httpd
+
+× httpd.service - El servidor HTTP Apache
+
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; disabled; preset: disabled)
+     Active: failed (Result: exit-code) since Sun 2025-06-29 20:27:35 UTC; 56s ago
+
+Invocación: 70d8f71da2694aba94b4f0a2612d9e2e
+
+       Docs: man:httpd.service(8)
+    Process: 5998 ExecStart=/usr/sbin/httpd $OPTIONS -DFOREGROUND (code=exited, status=1/FAILURE)
+   Main PID: 5998 (code=exited, status=1/FAILURE)
+     Status: "Reading configuration..."
+   Mem peak: 3.8M
+        CPU: 54ms
+
+29 de junio 20:27:35 servera systemd[1]: Iniciando httpd.service - El servidor HTTP Apache... 29 de junio 20:27:35 servera (httpd)[5998]: httpd.service: variable de entorno referenciada pero no configurada
+
+evaluates to an empty string: OPTIONS
+
+29 de junio 20:27:35 servera httpd[5998]: (13)Permiso denegado: AH00072: make_sock: no se pudo vincular a
+
+address [::]:82
+
+29 de junio 20:27:35 servera httpd[5998]: (13)Permiso denegado: AH00072: make_sock: no se pudo vincular a
+
+address 0.0.0.0:82
+
+29 de junio 20:27:35 servera httpd[5998]: no hay sockets de escucha disponibles, apagándose 29 de junio 20:27:35 servera httpd[5998]: AH00015: No se pueden abrir registros 29 de junio 20:27:35 servera systemd[1]: httpd.service: proceso principal cerrado, código = salido,
+
+status=1/FAILURE
+
+29 de junio 20:27:35 servera systemd[1]: httpd.service: Error con el resultado 'código de salida'. 29 de junio 20:27:35 servera systemd[1]: No se pudo iniciar httpd.service: el servidor HTTP Apache. Verifique si SELinux está bloqueando el enlace del servicio httpd al puerto 82/TCP.
+
+[root@servera ~]# sealert -a /var/log/audit/audit.log
+
+100% hecho, se encontraron 1 alertas en /var/log/audit/audit.log
+
+--------------------------------------------------------------------------------
+
+SELinux impide que /usr/sbin/httpd acceda a name_bind en el puerto tcp_socket 82. ***** El complemento bind_ports (confianza del 99,5) sugiere ************************* Si desea permitir que /usr/sbin/httpd se enlace al puerto de red 82, entonces necesita modificar el tipo de puerto. Hacer
+
+# semanage port -a -t PORT_TYPE -p tcp 82
+    where PORT_TYPE is one of the following: http_cache_port_t, http_port_t, 
+
+jboss_management_port_t, jboss_messaging_port_t, ntop_port_t, puppet_port_t. ...salida omitida... Mensajes de auditoría sin procesar
+
+type=AVC msg=audit(1751228855.940:1271): avc:  denied  { name_bind } for  pid=5998 comm="httpd" 
+src=82 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:reserved_port_t:s0 
+tclass=tcp_socket permissive=0
+
+...salida omitida... 2.3. Configure SELinux para permitir que el servicio httpd se enlace al puerto 82/TCP y luego reinicie el servicio httpd. 3. Encuentre un tipo de puerto apropiado para el puerto 82/TCP. La etiqueta de contexto http_port_t incluye los puertos HTTP 80/TCP y 443/TCP predeterminados. Este tipo es el tipo de puerto correcto para el servidor web. 3.1.
+
+
+
+
+
+19.4. Ejercicio guiado Etiquetado de puertos SELinux Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[root@servera ~]# semanage port -l | grep http
+
+http_cache_port_t tcp 8080, 8118, 8123, 10001-10010 http_cache_port_t udp 3130 http_port_t tcp 80, 81, 443, 488, 8008, 8009, 8443, 9000 pegasus_http_port_t tcp 5988 pegasus_https_port_t tcp 5989 Asigne el puerto 82/TCP con la etiqueta de contexto http_port_t.
+
+[root@servera ~]# semanage port -a -t http_port_t -p tcp 82
+
+3.2. Reinicie el servicio httpd.
+
+[root@servera ~]# systemctl restart httpd.service
+
+3.3. Verifique que ahora pueda acceder al servidor web que se ejecuta en el puerto 82/TCP.
+
+[root@servera ~]# curl http://servera.lab.example.com:82
+
+Hola 4. Abra otra ventana de terminal en la máquina de peoración. Intente acceder al nuevo servicio web desde la máquina de la estación de trabajo.
+
+student@workstation:~$ curl http://servera.lab.example.com:82
+curl: (7) Failed to connect to servera.lab.example.com port 82 after 2 ms: Could not connect to server
+
+5. En la máquina del servidor, abra el puerto 82/TCP en el firewall. 6. Abra el puerto 82/TCP de forma persistente, para la zona predeterminada en el firewall.
+
+[root@servera ~]# firewall-cmd --permanent --add-port=82/tcp
+
+éxito 6.1. Cargue el servicio firewalld con los cambios.
+
+[root@servera ~]# firewall-cmd --reload
+
+éxito 6.2. En la máquina de la estación de trabajo, verifique que pueda acceder al servidor web.
+
+student@workstation:~$ curl http://servera.lab.example.com:82
+
+Hola 7. Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+8.
+
+
+
+
+
+19.4. Ejercicio guiado Etiquetado de puertos SELinux
+
+student@workstation:~$ lab finish netsecurity-ports
+
+
+
+
+
+19.5. Laboratorio Administrar la seguridad de la red 19.5. Práctica de laboratorio Administrar la seguridad de la red Controle las conexiones de red a los servicios mediante el firewall del sistema y los servicios que pueden vincularse a puertos particulares mediante SELinux. Resultados Configurar el firewall y SELinux para un servidor web. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start netsecurity-review
+
+Instrucciones Su empresa decidió ejecutar una nueva aplicación web. Esta aplicación escucha en los puertos 80/TCP y 1001/TCP. Todos los cambios que realice deben persistir durante el reinicio. Importante El entorno de Red Hat Online Learning necesita que el puerto 5900/TCP permanezca disponible para utilizar la interfaz gráfica. Este puerto también está presente en el servicio vnc-server. Si accidentalmente se bloquea y no puede acceder a la máquina del servidor, puede intentar recuperarse utilizando el comando ssh en su máquina del servidor desde su estación de trabajo. La configuración de sus máquinas ya incluye una zona personalizada llamada ROL que abre estos puertos. En la máquina de la estación de trabajo, intente acceder al servidor web en http://serverb.lab.example.com y al
+
+virtual host at http://serverb.lab.example.com:1001. The index files are provisioned for each host, but the
+
+Las pruebas actualmente fallan. 1. En la máquina del servidor, verifique los problemas que podrían estar impidiendo el acceso al servidor web. 2. Configure SELinux para permitir que el servicio httpd escuche en el puerto 1001/TCP. 3. Abra otra ventana de terminal desde la máquina de la estación de trabajo. Intente acceder al servidor web utilizando el
+
+http://serverb.lab.example.com and http://serverb.lab.example.com:1001 URLs.
+
+4. En la máquina del servidor, determine si se agregaron los puertos correctos en el servicio firewalld. 5. Agregue el puerto 1001/TCP a la configuración permanente para la zona de red pública. 6. Regrese a la máquina de la estación de trabajo como usuario estudiante. 7.
+
+
+
+
+

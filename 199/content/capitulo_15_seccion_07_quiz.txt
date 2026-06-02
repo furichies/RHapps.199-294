@@ -1,0 +1,74 @@
+# Cuestionario: Tareas de usuario de programación de pruebas
+# Tipo: quiz
+# Capítulo: Capítulo 12. Programación de tareas del sistema
+
+12.7. Programación de pruebas de tareas de usuario 12.7. Prueba de programación de tareas de usuario Elija las respuestas correctas a las siguientes preguntas: ¿Qué directorio se utiliza para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor para el servicio systemd-tmpfiles-clean? 1. /usr/lib/tmpfiles.d/ a. /var/tmpfiles.d/ b. /etc/tmpfiles.d/ c. /run/tmpfiles.d/ d. ¿Qué archivo de configuración define las configuraciones para los trabajos del sistema que se ejecutan diariamente, semanalmente y mensualmente? 2. /etc/crontab a. /etc/anacrontab b. /etc/inittab c. /etc/sysconfig/crond d. ¿Qué unidad systemd activa periódicamente la limpieza de archivos temporales? 3. systemd-tmpfiles-clean.timer a. systemd-tmpfiles-clean.servicio b.
+
+dnf-makecache.timer
+
+do. temporizador-anclaje-independiente d. ¿Qué comando habilita e inicia una unidad systemd en un solo paso? 4. systemd --enable --start a.
+
+systemctl --now
+
+b.
+
+systemctl enable --now
+
+do. system.d habilitar --start d. ¿Qué comando garantiza que el demonio systemd cargue una nueva configuración? 5. recarga de sysctl a.
+
+systemctl daemon --reload
+
+b. demonio de recarga systemd c.
+
+systemctl daemon-reload
+
+d. ¿En qué directorio se colocan los archivos crontab personalizados? 6. /etc/crontab.d a. /etc/cron.db. /etc/cron.personalizado c. /etc/crontab d.
+
+
+
+
+
+12.7. Programación de pruebas Tareas de usuario ¿Qué notación de archivo crontab indica un valor de paso de 7? 7. */7a. siete b. 7c. 7 * * * * re.
+
+
+
+
+
+12.7. Prueba Programación de tareas de usuario Solución ¿Qué directorio se utiliza para configurar ubicaciones temporales personalizadas y para anular los valores predeterminados proporcionados por el proveedor para el servicio systemd-tmpfiles-clean? 1. /usr/lib/tmpfiles.d/ a. /var/tmpfiles.d/ b. /etc/tmpfiles.d/ c. /run/tmpfiles.d/ d. ¿Qué archivo de configuración define las configuraciones para los trabajos del sistema que se ejecutan diariamente, semanalmente y mensualmente? 2. /etc/crontab a. /etc/anacrontab b. /etc/inittab c. /etc/sysconfig/crond d. ¿Qué unidad systemd activa periódicamente la limpieza de archivos temporales? 3. systemd-tmpfiles-clean.timer a. systemd-tmpfiles-clean.servicio b.
+
+dnf-makecache.timer
+
+do. temporizador-anclaje-independiente d. ¿Qué comando habilita e inicia una unidad systemd en un solo paso? 4. systemd --enable --start a.
+
+systemctl --now
+
+b.
+
+systemctl enable --now
+
+do. system.d habilitar --start d. ¿Qué comando garantiza que el demonio systemd cargue una nueva configuración? 5. recarga de sysctl a.
+
+systemctl daemon --reload
+
+b. demonio de recarga systemd c.
+
+systemctl daemon-reload
+
+d. ¿En qué directorio se colocan los archivos crontab personalizados? 6. /etc/crontab.d a. /etc/cron.db. /etc/cron.personalizado c. /etc/crontab d.
+
+
+
+
+
+12.7. Programación de pruebas Tareas de usuario ¿Qué notación de archivo crontab indica un valor de paso de 7? 7. */7a. siete b. 7c. 7 * * * * re.
+
+
+
+
+
+12.8. Resumen 12.8. Resumen En esta lección, aprendió sobre los métodos que se utilizan para ejecutar tareas recurrentes del sistema automáticamente. La mayoría de las tareas recurrentes del sistema ahora utilizan unidades de temporizador systemd. Las unidades temporizadoras activan otros tipos de unidades, generalmente unidades de servicio, para realizar tareas en fechas y horas o intervalos específicos. La herramienta systemd-tmpfiles proporciona una forma estructurada de administrar directorios y archivos temporales. Limpiar y mantener archivos temporales es crucial para ayudar a prevenir problemas de espacio en disco y mantener actualizados los datos de trabajo. El demonio crond monitorea los archivos crontab para ejecutar tareas recurrentes y urgentes en sistemas que siempre están en ejecución. El demonio crond también está configurado para usar el comando anacron para ayudar a garantizar que los trabajos programados no se omitan debido a que el sistema no se ejecuta en un momento específico y, en general, para ejecutar trabajos estandarizados del sistema en un cronograma preestablecido.
+
+
+
+
+

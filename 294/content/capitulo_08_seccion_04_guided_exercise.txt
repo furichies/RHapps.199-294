@@ -1,0 +1,351 @@
+# Ejercicio Guiado: Solución de problemas en hosts gestionados de Ansible
+# Tipo: guided_exercise
+# Capítulo: Capítulo 8. Solución de problemas de Ansible
+
+capítulo 8 |  Solución de problemas de Ansible
+Ejercicio Guiado
+Solución de problemas en hosts
+gestionados de Ansible
+Resolver las fallas de tareas que se produzcan en uno de sus hosts gestionados cuando
+ejecuta un playbook.
+Resultados
+• Debería poder solucionar problemas de los hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-host
+Instrucciones
+ 1.
+Cambie al directorio /home/student/troubleshoot-host/.
+[student@workstation ~]$ cd ~/troubleshoot-host/
+[student@workstation troubleshoot-host]$
+ 2.
+Ejecute el playbook mailrelay.yml en modo de verificación.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout mailrelay.yml --check
+PLAY [Create mail relay servers] ***********************************************
+...output omitted...
+TASK [Check main.cf file] ******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify main.cf file exists] **********************************************
+ok: [servera.lab.example.com]  => {
+    "msg": "The main.cf file exists"
+}
+...output omitted...
+TASK [Start and enable mail services] ******************************************
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg": "Could not
+ find the requested service postfix: host"}
+RH294-RHEL9.0-es-3-20240620
+387
+
+
+capítulo 8 |  Solución de problemas de Ansible
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=5    changed=2    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+La tarea Verify main.cf file exists usa el módulo ansible.builtin.stat.
+Confirma que main.cf existe en el host servera.lab.example.com.
+La tarea Start and enable mail services falló. No pudo iniciar el servicio postfix
+porque ejecutó el playbook usando el modo de verificación y, por lo tanto, el play no instaló
+el paquete postfix.
+Importante
+La tarea falló porque las tareas anteriores en el play no aseguraron que postfix
+estuviera instalado en el host servera, porque ejecutó el playbook en el modo de
+verificación. Este error ocurrió porque el playbook en realidad no realizó cambios en
+el host que normalmente haría si lo ejecutara normalmente.
+ 3.
+Vuelva a ejecutar el playbook, pero no especifique el modo de verificación. El error en la
+tarea Start and enable mail services debería desaparecer y el playbook debería
+ejecutarse correctamente.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout mailrelay.yml
+PLAY [Create mail relay servers] ***********************************************
+...output omitted...
+TASK [Check main.cf file] ******************************************************
+ok: [servera.lab.example.com]
+TASK [Verify main.cf file exists] **********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The main.cf file exists"
+}
+TASK [Start and enable mail services] ******************************************
+changed: [servera.lab.example.com]
+...output omitted...
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=5    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+388
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ 4.
+Edite el playbook mailrelay.yml y agregue una tarea para habilitar el servicio smtp en el
+firewall. Agregue la tarea como la última tarea, antes de los controladores.
+...output omitted...
+    - name: Postfix firewalld config
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: smtp
+...output omitted...
+ 5.
+Ejecute el playbook mailrelay.yml. La tarea Postfix firewalld config se ejecuta
+sin errores.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout mailrelay.yml
+PLAY [Create mail relay servers] ***********************************************
+...output omitted...
+TASK [Postfix firewalld config] ************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=2    unreachable=0    failed=0   
+ skipped=1    rescued=0    ignored=0
+ 6.
+Use telnet para probar si el servicio SMTP está escuchando en el puerto TCP/25 en el
+host servera.lab.example.com. Desconéctese cuando haya terminado.
+[student@workstation troubleshoot-host]$ telnet servera.lab.example.com 25
+Trying 172.25.250.10...
+Connected to servera.lab.example.com.
+Escape character is '^]'.
+220 servera.lab.example.com ESMTP Postfix
+quit
+221 2.0.0 Bye
+Connection closed by foreign host.
+ 7.
+Ejecute el playbook samba.yml. La primera tarea falla con un error relacionado con un
+problema de conexión SSH.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+fatal: [servera.lab.exammple.com]: UNREACHABLE! => {"changed": false,
+ "msg": "Failed to connect to the host via ssh: ssh: connect to host
+ servera.lab.exammple.com port 22: Connection timed out", "unreachable": true}
+RH294-RHEL9.0-es-3-20240620
+389
+
+
+capítulo 8 |  Solución de problemas de Ansible
+PLAY RECAP *********************************************************************
+servera.lab.exammple.com   : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+ 8.
+Asegúrese de que puede conectarse al host gestionado servera.lab.example.com
+como el usuario devops usando SSH, y que las claves SSH correctas estén instaladas.
+Vuelva a cerrar la sesión cuando haya terminado.
+[student@workstation troubleshoot-host]$ ssh devops@servera.lab.example.com
+...output omitted...
+[devops@servera ~]$ exit
+logout
+Connection to servera.lab.example.com closed.
+Eso está funcionando normalmente.
+ 9.
+Pruebe para ver si puede ejecutar módulos en el host gestionado
+servera.lab.example.com mediante un comando ad hoc que ejecuta el módulo
+ansible.builtin.ping.
+[student@workstation troubleshoot-host]$ ansible servera.lab.example.com \
+> -m ansible.builtin.ping
+servera.lab.example.com | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+Según la salida anterior, eso también funciona y se conecta correctamente al host
+gestionado.
+Esto debería sugerirle que el problema no está con la configuración y las credenciales
+de SSH, ni con el comando ad hoc que usó. Entonces, la pregunta ahora es por qué el
+comando ad hoc funcionó y el comando ansible-navigator no. Puede haber un
+problema con el play en el playbook o con el inventario.
+ 10. Vuelva a ejecutar el playbook samba.yml con -vvvv para obtener más información
+acerca de la ejecución. Se emite un error, ya que no se puede acceder al host gestionado
+servera.lab.example.com.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout -vvvv samba.yml
+ansible-playbook [core 2.13.0]
+  config file = /home/student/troubleshoot-host/ansible.cfg
+  configured module search path = ['/home/runner/.ansible/plugins/modules', '/usr/
+share/ansible/plugins/modules']
+  ansible python module location = /usr/lib/python3.9/site-packages/ansible
+  ansible collection location = /home/runner/.ansible/collections:/usr/share/
+ansible/collections
+  executable location = /usr/bin/ansible-playbook
+390
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+  python version = 3.9.7 (default, Sep 13 2021, 08:18:39) [GCC 8.5.0 20210514 (Red
+ Hat 8.5.0-3)]
+  jinja version = 3.0.3
+  libyaml = True
+Using /home/student/troubleshoot-host/ansible.cfg as config file
+...output omitted...
+PLAYBOOK: samba.yml ************************************************************
+Positional arguments: /home/student/troubleshoot-host/samba.yml
+verbosity: 4
+connection: smart
+timeout: 10
+become_method: sudo
+tags: ('all',)
+inventory: ('/home/student/troubleshoot-host/inventory',)
+forks: 5
+1 plays in /home/student/troubleshoot-host/samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+task path: /home/student/troubleshoot-host/samba.yml:2
+<servera.lab.exammple.com> ESTABLISH SSH CONNECTION FOR USER: devops
+...output omitted...
+fatal: [servera.lab.exammple.com]: UNREACHABLE! => {
+    "changed": false,
+    "msg": "Failed to connect to the host via ssh: OpenSSH_8.0p1, OpenSSL 1.1.1k
+  FIPS 25 Mar 2021\r\ndebug1: Reading configuration data /home/runner/.ssh/
+config\r\ndebug1: /home/runner/.ssh/config line 1: Applying options for *\r
+\ndebug1: Reading configuration data /etc/ssh/ssh_config\r\ndebug3: /etc/ssh/
+ssh_config line 52: Including file /etc/ssh/ssh_config.d/05-redhat.conf depth
+ 0\r\ndebug1: Reading configuration data /etc/ssh/ssh_config.d/05-redhat.conf\r
+\ndebug2: checking match for 'final all' host servera.lab.exammple.com originally
+ servera.lab.exammple.com\r\ndebug3: /etc/ssh/ssh_config.d/05-redhat.conf
+ line 3: not matched 'final'\r\ndebug2: match not found\r\ndebug3: /etc/ssh/
+ssh_config.d/05-redhat.conf line 5: Including file /etc/crypto-policies/back-
+ends/openssh.config depth 1 (parse only)\r\ndebug1: Reading configuration
+ data /etc/crypto-policies/back-ends/openssh.config\r\ndebug3: gss kex names ok:
+ [gss-curve25519-sha256-,gss-nistp256-sha256-,gss-group14-sha256-,gss-group16-
+sha512-,gss-gex-sha1-,gss-group14-sha1-]\r\ndebug3: kex names ok: [curve25519-
+sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-
+sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-
+sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-
+hellman-group-exchange-sha1,diffie-hellman-group14-sha1]\r\ndebug1: configuration
+ requests final Match pass\r\ndebug1: re-parsing configuration\r\ndebug1: Reading
+ configuration data /home/runner/.ssh/config\r\ndebug1: /home/runner/.ssh/
+config line 1: Applying options for *\r\ndebug2: add_identity_file: ignoring
+ duplicate key ~/.ssh/lab_rsa\r\ndebug1: Reading configuration data /etc/ssh/
+ssh_config\r\ndebug3: /etc/ssh/ssh_config line 52: Including file /etc/ssh/
+ssh_config.d/05-redhat.conf depth 0\r\ndebug1: Reading configuration data /etc/
+ssh/ssh_config.d/05-redhat.conf\r\ndebug2: checking match for 'final all' host
+ servera.lab.exammple.com originally servera.lab.exammple.com\r\ndebug3: /etc/
+ssh/ssh_config.d/05-redhat.conf line 3: matched 'final'\r\ndebug2: match found
+\r\ndebug3: /etc/ssh/ssh_config.d/05-redhat.conf line 5: Including file /etc/
+crypto-policies/back-ends/openssh.config depth 1\r\ndebug1: Reading configuration
+RH294-RHEL9.0-es-3-20240620
+391
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ data /etc/crypto-policies/back-ends/openssh.config\r\ndebug3: gss kex names ok:
+ [gss-curve25519-sha256-,gss-nistp256-sha256-,gss-group14-sha256-,gss-group16-
+sha512-,gss-gex-sha1-,gss-group14-sha1-]\r\ndebug3: kex names ok: [curve25519-
+sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-
+sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-
+sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-
+group-exchange-sha1,diffie-hellman-group14-sha1]\r\ndebug1: auto-mux: Trying
+ existing master\r\ndebug1: Control socket \"/home/runner/.ansible/cp/d4775f48c9\"
+ does not exist\r\ndebug2: resolving \"servera.lab.exammple.com\" port 22\r
+\ndebug2: ssh_connect_direct\r\ndebug1: Connecting to servera.lab.exammple.com
+ [3.130.253.23] port 22.\r\ndebug2: fd 3 setting O_NONBLOCK\r\ndebug1: connect
+ to address 3.130.253.23 port 22: Connection timed out\r\ndebug1: Connecting
+ to servera.lab.exammple.com [3.130.204.160] port 22.\r\ndebug2: fd 3 setting
+ O_NONBLOCK\r\ndebug1: connect to address 3.130.204.160 port 22: Connection timed
+ out\r\nssh: connect to host servera.lab.exammple.com port 22: Connection timed
+ out",
+    "unreachable": true
+}
+PLAY RECAP *********************************************************************
+servera.lab.exammple.com   : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+ 11.
+Investigue el archivo inventory en busca de errores.
+Si observa el grupo [samba_servers], servera.lab.example.com está mal escrito
+(con un m adicional). Corrija este error como se muestra a continuación:
+[samba_servers]
+servera.lab.example.com
+...output omitted...
+ 12. Ejecute el playbook nuevamente y todas las tareas deberían realizarse correctamente.
+[student@workstation troubleshoot-host]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install samba] ***********************************************************
+changed: [servera.lab.example.com]
+TASK [Install firewalld] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Debug install_state variable] ********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The state for the samba service is installed"
+}
+392
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+TASK [Start firewalld] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Configure firewall for samba] ********************************************
+changed: [servera.lab.example.com]
+TASK [Deliver samba config] ****************************************************
+changed: [servera.lab.example.com]
+TASK [Start samba] *************************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=4    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish troubleshoot-host
+RH294-RHEL9.0-es-3-20240620
+393
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Trabajo de laboratorio
+Solución de problemas de Ansible
+Solucionar los problemas que surjan cuando intente ejecutar un playbook que se le
+proporcionó.
+Resultados
+• Solucionar problemas de playbooks.
+• Solucionar problemas de hosts gestionados.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-review
+Este comando garantiza que Ansible esté instalado en la máquina workstation. También
+crea el directorio /home/student/troubleshoot-review/ y lo completa con los
+archivos ansible.cfg, inventory, index.html, secure-web.yml y vhosts.conf.
+Instrucciones
+En el directorio /home/student/troubleshoot-review, hay un playbook denominado
+secure-web.yml. Este playbook contiene un play que se supone que configura Apache
+HTTPD con TLS/SSL para los hosts en el grupo webservers. Se supone que el nodo
+serverb.lab.example.com es el único host en el grupo webservers en este momento.
+Ansible puede conectarse a ese host mediante la cuenta remota devops y las claves SSH que ya
+se han configurado. Ese usuario también puede convertirse en root en el host gestionado sin una
+contraseña sudo.
+Desafortunadamente, existen varios problemas que debe corregir antes de poder ejecutar
+correctamente el playbook.
+1.
+Desde el directorio /home/student/troubleshoot-review, valide la sintaxis del
+playbook secure-web.yml. Corrija el problema que se informa.
+2.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Todavía tiene un problema.
+Corrija el problema que se informa.
+3.
+Valide la sintaxis del playbook secure-web.yml nuevamente. Se detecta otro problema.
+Corrija el problema que se informa.
+4.
+Valide la sintaxis del playbook secure-web.yml por cuarta vez. No debería mostrar errores
+de sintaxis.
+394
+RH294-RHEL9.0-es-3-20240620
+
+

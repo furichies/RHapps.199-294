@@ -1,0 +1,181 @@
+# Trabajo de laboratorio: Análisis de laboratorio y registros de almacenamiento
+# Tipo: lab
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.11. Análisis de laboratorio y almacenamiento de registros 13.11. Análisis de laboratorio y almacenamiento de registros Configure el sistema para actualizar la zona horaria. Configure el diario del sistema para almacenar de forma persistente los registros de eventos después de un reinicio. Configure el servicio syslog para redirigir todos los eventos de registro de una prioridad específica a un archivo. Resultados Actualizar la zona horaria en un servidor existente. Configure los diarios del sistema para que persistan en el almacenamiento y roten con más frecuencia. Configure un nuevo archivo de registro para almacenar todos los mensajes de fallas de autenticación. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Suponga que la máquina del servidor está reubicada en Jamaica y que debe actualizar a la zona horaria de América/Jamaica. Eleve los privilegios del usuario estudiante para ejecutar el comando timedatectl para actualizar la zona horaria. Utilice estudiante como contraseña. Verifique que haya configurado correctamente la zona horaria adecuada. 1. Vea los eventos de registro grabados en los 30 minutos anteriores. 2. Como usuario raíz, configure diarios persistentes con rotación automática. Verifique que el diario sea persistente después de reiniciar. 3. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Configure el servicio rsyslog para escribir mensajes en el archivo /var/log/auth-errors. Utilice la función authpriv con la prioridad de alerta en el archivo de configuración. Introduzca el mensaje de registro de prueba de registro authpriv.alert en el registro del sistema utilizando la función authpriv con la prioridad de alerta. Utilice estudiante como contraseña. 4. Regrese al sistema de la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+student@workstation:~$ lab grade logs-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-review
+
+
+
+
+
+13.11. Solución de análisis y almacenamiento de registros de laboratorio Configure el sistema para actualizar la zona horaria. Configure el diario del sistema para almacenar de forma persistente los registros de eventos después de un reinicio. Configure el servicio syslog para redirigir todos los eventos de registro de una prioridad específica a un archivo. Resultados Actualizar la zona horaria en un servidor existente. Configure los diarios del sistema para que persistan en el almacenamiento y roten con más frecuencia. Configure un nuevo archivo de registro para almacenar todos los mensajes de fallas de autenticación. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-review
+
+Instrucciones Imagina que la máquina del servidor está reubicada en Jamaica y que debes actualizar a la zona horaria de América/Jamaica. Eleve los privilegios del usuario estudiante para ejecutar el comando timedatectl para actualizar la zona horaria. Utilice estudiante como contraseña. Verifique que haya configurado correctamente la zona horaria adecuada. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida... [estudiante@servidor ~]$ 1.1. Seleccione la zona horaria apropiada para Jamaica. 1.2.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+[student@serverb ~]$ tzselect
+
+Identifique una ubicación para que las reglas de zona horaria se puedan configurar correctamente. Seleccione un continente, océano, "coord" o "TZ". 1) África 2) América 3) Antártida 4) Asia 5) Océano Atlántico 6) Australia 7) Europa 8) Océano Índico 9) Océano Pacífico 10) coord: quiero usar coordenadas geográficas. 11) TZ: quiero especificar la zona horaria utilizando el formato Posix TZ. #? 2 Seleccione un país cuyos relojes coincidan con los suyos. 1) Anguila 19) República Dominicana 37) Perú 2) Antigua y Barbuda 20) Ecuador 38) Puerto Rico 3) Argentina 21) El Salvador 39) San Bartolomé 4) Aruba 22) Guayana Francesa 40) San Cristóbal y Nieves 5) Bahamas 23) Groenlandia 41) Santa Lucía 6) Barbados 24) Granada 42) Sint Maarten (holandés) 7) Belice 25) Guadalupe 43) San Martín (francés) 8) Bolivia 26) Guatemala 44) San Pedro y Miquelón 9) Brasil 27) Guyana 45) San Vicente 10) Canadá 28) Haití 46) Surinam 11) Caribe NL 29) Honduras 47) Trinidad y Tobago 12) Islas Caimán 30) Jamaica 48) Islas Turcas y Caicos 13) Chile 31) Martinica 49) Estados Unidos 14) Colombia 32) México 50) Uruguay 15) Costa Rica 33) Montserrat 51) Venezuela 16) Cuba 34) Nicaragua 52) Islas Vírgenes (Reino Unido) 17) Curazao 35) Panamá 53) Islas Vírgenes (EE.UU.) 18) Dominica 36) Paraguay #? 30 Se ha proporcionado la siguiente información:
+
+        Jamaica
+
+Por lo tanto, se utilizará TZ='América/Jamaica'. La hora seleccionada es ahora: lunes 9 de junio a las 11:50:06 EST de 2025. La hora universal es ahora: lunes 9 de junio a las 16:50:06 UTC de 2025. ¿Está bien la información anterior? 1) Sí 2) No #? 1 Puedes hacer que este cambio sea permanente añadiendo la línea
+
+        TZ='America/Jamaica'; export TZ
+to the file '.profile' in your home directory; then log out and log in again.
+
+Aquí está nuevamente el valor TZ, esta vez en salida estándar para que pueda
+
+can use the /usr/bin/tzselect command in shell scripts:
+
+América/Jamaica Aumente los privilegios de usuario estudiantil para actualizar la zona horaria a América/Jamaica. Utilice estudiante como contraseña.
+
+[student@serverb ~]$ sudo timedatectl set-timezone America/Jamaica
+
+[sudo] contraseña para estudiante: estudiante [estudiante@servidor ~]$ 1.3. Verifique que haya configurado correctamente la zona horaria en América/Jamaica. 1.4.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+[student@serverb ~]$ timedatectl
+               Local time: Mon 2025-06-09 11:51:02 EST
+           Universal time: Mon 2025-06-09 16:51:02 UTC
+                 RTC time: Mon 2025-06-09 16:51:02
+                Time zone: America/Jamaica (EST, -0500)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Vea los eventos de registro grabados en los 30 minutos anteriores.
+
+[student@serverb ~]$ journalctl --since "-30min"
+
+... salida omitida... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4336] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4372] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <información> [1749486323.4372] ... 09 de junio 11:25:23 servidorb NetworkManager[1034]: <información> [1749486323.4372] ... 09 de junio 11:25:23 servidorb NetworkManager[1034]: <información> [1749486323.4384] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4386] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4387] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4389] ... líneas 1-44/44 q 2. Como usuario raíz, configure diarios persistentes con rotación automática. Verifique que el diario sea persistente después de reiniciar. 3. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 3.1. Cree el directorio /var/log/journal.
+
+[root@serverb ~]# mkdir /var/log/journal
+
+3.2. Vacíe el diario actual al almacenamiento.
+
+[root@serverb ~]# journalctl --flush
+
+3.3. Reinicie el servicio systemd-journald para aplicar los cambios de configuración.
+
+[root@serverb ~]# systemctl restart systemd-journald
+
+3.4. Reinicie la máquina del servidor. La conexión SSH finaliza tan pronto como reinicia la máquina del servidor.
+
+[root@serverb ~]# systemctl reboot
+
+...salida omitida... Conexión al servidor cerrada.
+
+student@workstation:~$
+
+3.5. Espere a que la máquina del servidor se reinicie y luego inicie sesión en la máquina del servidor como usuario estudiante. 3.6.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida... [estudiante@servidor ~]$ Verifique que los archivos del diario estén almacenados de manera persistente en el almacenamiento local. El nombre del subdirectorio de la revista puede ser diferente al que se muestra aquí.
+
+[student@serverb ~]$ ls -l /var/log/journal
+
+total 4... root systemd-journal 53 10 de junio 22:30 da54d37671ac4429bcdfacfe7bebb5a1 3.7. Verifique el contenido del directorio hexadecimal.
+
+[student@serverb ~]$ ls -l /var/log/journal/da54d37671ac4429bcdfacfe7bebb5a1
+
+total 16388... 1 raíz systemd-journal 8388608 10 de junio 22:35 system.journal... 1 raíz raíz 8388608 10 de junio 22:35 user-1000.journal 3.8. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Configure el servicio rsyslog para escribir mensajes en el archivo /var/log/auth-errors. Utilice la función authpriv con la prioridad de alerta en el archivo de configuración. Introduzca el mensaje de registro de prueba de registro authpriv.alert en el registro del sistema utilizando la función authpriv con la prioridad de alerta. Utilice estudiante como contraseña. 4. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 4.1. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Especifique el nuevo archivo /var/log/auth-errors como destino para los mensajes de autenticación y seguridad. El archivo debe aparecer de la siguiente manera: authpriv.alert /var/log/auth-errors 4.2. Reinicie el servicio rsyslog para aplicar los cambios del archivo de configuración.
+
+[root@serverb ~]# systemctl restart rsyslog
+
+4.3. Utilice el comando logger -p para escribir el mensaje authpriv.alert de prueba de registro en el archivo /var/log/auth-errors. Utilice la función authpriv con prioridad de alerta.
+
+[root@serverb ~]# logger -p authpriv.alert "Logging test authpriv.alert"
+
+4.4. Verifique que el archivo /var/log/auth-errors contenga una entrada de registro con el mensaje que especificó anteriormente.
+
+[root@serverb ~]# tail /var/log/auth-errors
+
+9 de junio 11:53:41 raíz del servidor [4058]: prueba de registro authpriv.alert 4.5. Regrese al sistema de la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+13.11. Análisis de laboratorio y evaluación de registros de almacenamiento Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade logs-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-review
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+13.12. Resumen 13.12. Resumen En esta lección, aprendió a utilizar varios servicios de registro para ayudar con el monitoreo, la auditoría y la resolución de problemas. Además, aprendió a sincronizar el reloj de un servidor para mantener una fecha y hora precisas y consistentes con otros sistemas. Esta sincronización es importante para registrar con precisión la línea de tiempo de los eventos registrados. Los servicios systemd-journald y rsyslog recopilan, procesan y almacenan mensajes de registro que el sistema y
+
+applications generate. Most log files are stored in the /var/log directory; the rsyslog service can also write log
+
+mensajes a otras ubicaciones, incluidas bases de datos, cuentas de usuario y servidores remotos. De forma predeterminada, los diarios de systemd se almacenan temporalmente y no persisten durante el reinicio, aunque si crea un directorio /var/log/journal y actualiza el servicio, se pueden almacenar de forma persistente. El sistema rota periódicamente el diario del sistema systemd-journald y los archivos de registro rsyslog para evitar que consuman todo el almacenamiento en sus sistemas de archivos. El servicio chronyd ayuda a sincronizar el reloj de un servidor con diferentes fuentes horarias. Puede ajustar la zona horaria del servidor según su ubicación o cualquier otra ubicación según corresponda.
+
+
+
+
+

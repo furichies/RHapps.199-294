@@ -1,0 +1,67 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 2. Implementación de un playbook de Ansible
+
+capítulo 2 |  Implementación de un playbook de Ansible
+Resumen
+• Un play es una lista ordenada de tareas que se ejecutan respecto de hosts seleccionados del
+inventario.
+• Un playbook es un archivo de texto que contiene una lista de uno o más plays para ejecutar en
+orden.
+• Los playbooks de Ansible se escriben en formato YAML.
+• Los plays de Ansible son idempotentes, lo que significa que evitan realizar cambios si detectan
+que el estado actual coincide con el estado final deseado.
+• Los archivos YAML están estructurados mediante la sangría de espacio para representar la
+jerarquía de datos.
+• Las tareas se implementan mediante el código estandarizado incluido como módulos Ansible.
+• Los módulos de Ansible se empaquetan en Ansible Content Collections, que son un formato
+de distribución para el contenido de Ansible que puede incluir playbooks, roles, módulos y
+complementos (plug-ins).
+• El comando ansible-navigator doc puede enumerar módulos en sus entornos de
+ejecución de automatización y brindar documentación y fragmentos de códigos a modo de
+ejemplo de cómo usarlos en playbooks.
+• El comando ansible-navigator run se usa para ejecutar playbooks y validar la sintaxis del
+playbook.
+82
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 3
+Administración de variables y
+datos
+Meta
+Escribir playbooks que usen variables para
+simplificar la administración del playbook y datos
+para hacer referencia a información sobre los hosts
+gestionados.
+Objetivos
+•
+Crear variables que afecten a hosts particulares
+o grupos de hosts, el play o el entorno global,
+y hacer referencia a ellas, y describir cómo
+funciona la prioridad de variables.
+•
+Cifrar las variables confidenciales usando
+Ansible Vault y ejecutar playbooks que hagan
+referencia a archivos de variables cifradas por
+Vault.
+•
+Hacer referencia a los datos sobre hosts
+gestionados que usan datos de Ansible y
+configurar datos personalizados en hosts
+gestionados.
+Secciones
+•
+Gestión de variables (y ejercicio guiado)
+•
+Gestión de secretos (y ejercicio guiado)
+•
+Gestión de datos (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Administración de variables y datos
+RH294-RHEL9.0-es-3-20240620
+83
+
+

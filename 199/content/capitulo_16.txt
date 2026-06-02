@@ -1,0 +1,1182 @@
+# Capítulo 13. Análisis y almacenamiento de registros
+
+## 13.1. La arquitectura de registro del sistema
+
+13.1. La arquitectura de registro del sistema 13.1. Los objetivos de la arquitectura de registro del sistema Describir los mecanismos principales que registran eventos del sistema en Red Hat Enterprise Linux: Rsyslog y el diario del sistema. Registro del sistema El núcleo del sistema operativo y otros procesos registran un registro de eventos que ocurren cuando el sistema se está ejecutando. Estos registros se utilizan para auditar el sistema y solucionar problemas. Puede utilizar utilidades de texto como los comandos less y tail para inspeccionar estos registros. Red Hat Enterprise Linux utiliza un sistema de registro estándar basado en el protocolo syslog para registrar los mensajes del sistema. Muchos programas utilizan el sistema de registro para registrar eventos y organizarlos en archivos de registro. Los servicios systemd-journald y rsyslog manejan los mensajes de syslog en Red Hat Enterprise Linux. El servicio systemd-journald está en el corazón de la arquitectura de registro de eventos del sistema operativo. El servicio systemd-journald recopila mensajes de eventos de muchas fuentes: Kernel del sistema Salida de las primeras etapas del proceso de arranque Salida estándar y error estándar de los demonios Los eventos syslog El servicio systemd-journald reestructura los registros en un formato estándar y los escribe en un diario del sistema estructurado e indexado. De forma predeterminada, este diario se almacena en un sistema de archivos que no persiste tras los reinicios. El servicio rsyslog lee los mensajes syslog que el servicio systemd-journald recibe del diario cuando llegan. Luego, el servicio rsyslog procesa los eventos syslog y los registra en sus archivos de registro o los reenvía a otros servicios según su propia configuración. Nota En RHEL 10, el sistema operativo envía los mensajes syslog locales al archivo /dev/log, que es un enlace simbólico a un archivo de socket especial leído por el servicio systemd-journald. El servicio systemd-journald registra esos mensajes en el diario del sistema. Mientras tanto, el servicio rsyslog no lee el archivo /dev/log directamente. En cambio, el servicio rsyslog utiliza su módulo imjournal para leer los mensajes syslog del diario del sistema a medida que llegan y luego guarda esos mensajes de registro en archivos basados ​​en los archivos de configuración. El servicio rsyslog clasifica y escribe los mensajes de syslog en los archivos de registro que persisten durante los reinicios en el directorio /var/log. El servicio rsyslog también clasifica los mensajes syslog en archivos de registro específicos según el tipo de programa que envió cada mensaje y la prioridad de cada mensaje. Además de los archivos de mensajes syslog, el directorio /var/log contiene archivos de registro de otros servicios del sistema. La siguiente tabla enumera algunos archivos útiles en el directorio /var/log:
+
+
+
+
+
+13.1. La arquitectura de registro del sistema Tabla 17. Archivos de registro del sistema seleccionados /var/log/messages La mayoría de los mensajes de syslog se registran aquí. Las excepciones incluyen mensajes sobre autenticación y procesamiento de correo electrónico, ejecución de trabajos programados y mensajes puramente relacionados con la depuración. /var/log/secure Mensajes sobre eventos de seguridad y autenticación /var/log/maillog Mensajes sobre el servidor de correo /var/log/cron Mensajes sobre la ejecución de trabajos programados /var/log/boot.log Mensajes de la consola sobre el inicio del sistema que están ocultos en la pantalla gráfica de inicio y los mensajes de syslog que se envían a la instalación local7. El registro de inicio almacenado en el archivo /var/log/boot.log se puede completar desde dos fuentes. La pantalla de presentación, que proporciona la aplicación Plymouth y que se muestra cuando se inicia el sistema, oculta muchos mensajes de diagnóstico de forma predeterminada. Plymouth vuelca estos mensajes de diagnóstico en el archivo /var/log/boot.log. El servicio rsyslog también guarda cualquier mensaje de registro que se envía a su instalación local7 (normalmente mensajes sobre el proceso de arranque) como una línea en el mismo archivo /var/log/boot.log. Algunas aplicaciones no utilizan el servicio syslog para administrar sus mensajes de registro. Por ejemplo, el servidor HTTP Apache guarda los mensajes de registro en archivos en un subdirectorio del directorio /var/log. Referencias páginas man systemd-journald.service(8), rsyslogd(8) y rsyslog.conf(5) Para obtener más información, consulte el capítulo Solución de problemas mediante el uso de archivos de registro de la guía Red Hat Enterprise Linux 10 Risk Reduction and Recovery Operations en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/risk_reduction_and_recovery_operatives/index#troubleshooting-problems-by-using-log-files Archivo de registro Tipo de mensajes almacenados
+
+
+
+
+
+13.2. Prueba la arquitectura de registro del sistema 13.2. Cuestionario sobre la arquitectura de registro del sistema Elija las respuestas correctas a las siguientes preguntas: ¿Qué archivo de registro almacena la mayoría de los mensajes de syslog, excepto los relacionados con autenticación, correo, trabajos programados y depuración? 1. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué archivo de registro almacena mensajes de syslog sobre operaciones de seguridad y autenticación en el sistema? 2. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué servicio clasifica y organiza los mensajes de syslog en archivos en el directorio /var/log? 3.
+
+rsyslog
+
+a. diario systemd b. registro del sistema c. sintonizado d. ¿Qué directorio alberga los archivos syslog legibles por humanos? 4. /sys/kernel/debug a. /var/log/diario b. /ejecutar/log/diario c. /var/log d. ¿Qué archivo almacena mensajes syslog sobre el servidor de correo? 5. /var/log/lastlog a. /var/log/maillog b. /var/log/tallylogc. /var/log/boot.log d. ¿Qué archivo almacena mensajes de syslog sobre trabajos programados? 6. /var/log/cron a. /var/log/tallylogb. /var/log/spooler c. /var/log/secure d.
+
+
+
+
+
+
+
+## Cuestionario: Prueba la arquitectura de registro del sistema
+
+13.2. Prueba la arquitectura de registro del sistema 13.2. Cuestionario sobre la arquitectura de registro del sistema Elija las respuestas correctas a las siguientes preguntas: ¿Qué archivo de registro almacena la mayoría de los mensajes de syslog, excepto los relacionados con autenticación, correo, trabajos programados y depuración? 1. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué archivo de registro almacena mensajes de syslog sobre operaciones de seguridad y autenticación en el sistema? 2. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué servicio clasifica y organiza los mensajes de syslog en archivos en el directorio /var/log? 3.
+
+rsyslog
+
+a. diario systemd b. registro del sistema c. sintonizado d. ¿Qué directorio alberga los archivos syslog legibles por humanos? 4. /sys/kernel/debug a. /var/log/diario b. /ejecutar/log/diario c. /var/log d. ¿Qué archivo almacena mensajes syslog sobre el servidor de correo? 5. /var/log/lastlog a. /var/log/maillog b. /var/log/tallylogc. /var/log/boot.log d. ¿Qué archivo almacena mensajes de syslog sobre trabajos programados? 6. /var/log/cron a. /var/log/tallylogb. /var/log/spooler c. /var/log/secure d.
+
+
+
+
+
+13.2. Cuestionario sobre la arquitectura del registro del sistema ¿Qué archivo almacena los mensajes de la consola sobre el inicio del sistema? 7. /var/log/messages a. /var/log/cron b. /var/log/boot.logc. /var/log/secure d.
+
+
+
+
+
+13.2. Cuestionario sobre la solución de arquitectura de registro del sistema ¿Qué archivo de registro almacena la mayoría de los mensajes de syslog, excepto los relacionados con autenticación, correo, trabajos programados y depuración? 1. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué archivo de registro almacena mensajes de syslog sobre operaciones de seguridad y autenticación en el sistema? 2. /var/log/maillog a. /var/log/boot.log b. /var/log/mensajes c. /var/log/secure d. ¿Qué servicio clasifica y organiza los mensajes de syslog en archivos en el directorio /var/log? 3.
+
+rsyslog
+
+a. diario systemd b. registro del sistema c. sintonizado d. ¿Qué directorio alberga los archivos syslog legibles por humanos? 4. /sys/kernel/debug a. /var/log/diario b. /ejecutar/log/diario c. /var/log d. ¿Qué archivo almacena mensajes syslog sobre el servidor de correo? 5. /var/log/lastlog a. /var/log/maillog b. /var/log/tallylogc. /var/log/boot.log d. ¿Qué archivo almacena mensajes de syslog sobre trabajos programados? 6. /var/log/cron a. /var/log/tallylogb. /var/log/spooler c. /var/log/secure d.
+
+
+
+
+
+13.2. Cuestionario sobre la arquitectura del registro del sistema ¿Qué archivo almacena los mensajes de la consola sobre el inicio del sistema? 7. /var/log/messages a. /var/log/cron b. /var/log/boot.logc. /var/log/secure d.
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog 13.3. Interpretación y gestión de eventos de Syslog Objetivos Encontrar los archivos de registro de syslog, interpretar los mensajes de syslog y configurar qué mensajes de syslog se graban en qué archivos u otros destinos. Registrar eventos en el sistema Muchos programas utilizan el protocolo syslog para registrar eventos en el sistema. Cada mensaje de registro se clasifica por instalación (el subsistema que produce el mensaje) y prioridad (la gravedad del mensaje). La siguiente tabla enumera las funciones de syslog estándar: Tabla 18. Descripción general de las funciones de Syslog 0 kern Mensajes del kernel 1 usuario Mensajes de nivel de usuario 2 mail Mensajes del sistema de correo 3 demonio Mensajes del demonio del sistema 4 auth Mensajes de autenticación y seguridad 5 syslog Mensajes de syslog internos 6 lpr Mensajes de impresora 7 news Mensajes de noticias de red 8 uucp Mensajes del protocolo UUCP 9 cron Mensajes del demonio de reloj 10 authpriv Mensajes de autorización no del sistema 11 ftp Mensajes del protocolo FTP 16-23 local0 a local7 Mensajes locales personalizados Código Instalación Descripción de la instalación
+
+
+
+
+
+
+
+## 13.3. Interpretación y gestión de eventos Syslog
+
+13.3. Interpretación y gestión de eventos Syslog 13.3. Interpretación y gestión de eventos de Syslog Objetivos Encontrar los archivos de registro de syslog, interpretar los mensajes de syslog y configurar qué mensajes de syslog se graban en qué archivos u otros destinos. Registrar eventos en el sistema Muchos programas utilizan el protocolo syslog para registrar eventos en el sistema. Cada mensaje de registro se clasifica por instalación (el subsistema que produce el mensaje) y prioridad (la gravedad del mensaje). La siguiente tabla enumera las funciones de syslog estándar: Tabla 18. Descripción general de las funciones de Syslog 0 kern Mensajes del kernel 1 usuario Mensajes de nivel de usuario 2 mail Mensajes del sistema de correo 3 demonio Mensajes del demonio del sistema 4 auth Mensajes de autenticación y seguridad 5 syslog Mensajes de syslog internos 6 lpr Mensajes de impresora 7 news Mensajes de noticias de red 8 uucp Mensajes del protocolo UUCP 9 cron Mensajes del demonio de reloj 10 authpriv Mensajes de autorización no del sistema 11 ftp Mensajes del protocolo FTP 16-23 local0 a local7 Mensajes locales personalizados Código Instalación Descripción de la instalación
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog La siguiente tabla enumera las prioridades estándar de Syslog en orden descendente: Tabla 19. Descripción general de las prioridades de Syslog 0 emerg El sistema no se puede utilizar 1 alerta Se debe tomar acción inmediatamente 2 crítico Condición crítica 3 err Condición de error no crítico 4 advertencia Condición de advertencia 5 aviso Evento normal pero significativo 6 información Evento informativo 7 depuración Mensaje de nivel de depuración El servicio Rsyslog El servicio rsyslog implementa syslog registro. El servicio rsyslog utiliza la función y la prioridad de los mensajes de registro para determinar cómo manejarlos. Las reglas especifican la instalación y la prioridad en el archivo /etc/rsyslog.conf y en cualquier archivo en el directorio /etc/rsyslog.d con la extensión .conf. Los paquetes de software pueden agregar reglas instalando un archivo apropiado en el directorio /etc/rsyslog.d. Cada regla de rsyslog consta de un filtro, seguido de una acción. Los filtros seleccionan un subconjunto de los mensajes de syslog mediante varios métodos. Por ejemplo, el método de filtro basado en instalaciones/prioridades indica la instalación y la prioridad de los mensajes de syslog con los que coincide la regla. Un asterisco (*) puede actuar como comodín para hacer coincidir todos los valores posibles de una instalación o prioridad. Las acciones indican cómo manejar los mensajes que coinciden con el filtro especificado. Hay muchas acciones posibles disponibles y una regla puede tener más de una acción. Por ejemplo, una acción puede indicar en qué archivo guardar el mensaje de registro. La siguiente regla en el archivo /etc/rsyslog.conf guarda los mensajes que se envían a la función authpriv de cualquier
+
+priority to the /var/log/secure file:
+
+authpriv.* /var/log/secure Si especifica una prioridad para el selector de una regla, todos los mensajes a esa instalación con la prioridad especificada o superior se registran en la acción asociada con la regla. Código Prioridad Descripción de prioridad
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog La siguiente regla en el archivo /etc/rsyslog.conf guarda los mensajes que se envían a la función authpriv con un
+
+priority of warning or higher (including the err, crit, alert, and emerg priorities) to the /var/log/secure file:
+
+authpriv.warning /var/log/secure A veces, los mensajes de registro coinciden con más de una regla en el archivo rsyslog.conf. En tales casos, el mensaje se almacena en
+
+more than one log file. The none keyword in the priority field indicates that no messages for the indicated facility are
+
+almacenado en el archivo dado, para limitar los mensajes almacenados. En lugar de registrarse en un archivo, los mensajes de syslog también se pueden imprimir en los terminales de todos los usuarios que hayan iniciado sesión. El
+
+rsyslog.conf file has a setting to print all the syslog messages with the emerg priority to the terminals of all
+
+usuarios registrados. Reglas de muestra del servicio Rsyslog #### REGLAS ####
+
+# Log all kernel messages to the console.
+# Logging much else clutters up the screen.
+
+#kern.* /dev/consola
+
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+
+*.info;mail.none;authpriv.none;cron.none /var/log/messages
+
+# The authpriv file has restricted access.
+
+authpriv.* /var/log/secure
+
+# Log all the mail messages in one place.
+
+correo.* -/var/log/maillog
+
+# Log cron stuff
+
+cron.* /var/log/cron
+
+# Everybody gets emergency messages
+
+*.emerg :omusrmsg:*
+
+# Save news errors of level crit and higher in a special file.
+
+uucp,noticias.crit /var/log/spooler
+
+# Save boot messages also to boot.log
+
+local7.* /var/log/boot.log Nota El subsistema syslog tiene muchas más funciones que van más allá del alcance de este curso. Para explorar más, consulte la página de manual rsyslog.conf(5) y la extensa documentación HTML en /usr/share/doc/rsyslog/html/index.html que proporciona el paquete rsyslog-doc. Rotación de archivos de registro El comando logrotate es activado por una unidad de temporizador systemd y rota los archivos de registro para evitar que ocupen demasiado espacio en el directorio /var/log. Cuando se rota un archivo de registro, se le cambia el nombre con una extensión que indica la fecha de rotación.
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog Por ejemplo, se cambió el nombre del archivo /var/log/messages a /var/log/messages-20250620 cuando se rotó el 2025-06-20. Después de rotar el archivo de registro anterior, se crea un nuevo archivo de registro y se notifica al servicio asociado al archivo de registro. Después de aproximadamente cuatro semanas de rotaciones de archivos de registro, el archivo de registro más antiguo se descarta para recuperar espacio en el disco. Un trabajo programado ejecuta el comando logrotate diariamente para verificar los requisitos de rotación de varios archivos de registro. La mayoría de los archivos de registro se rotan semanalmente. El comando logrotate puede rotar los archivos de registro más rápidamente, más lentamente o cuando los archivos de registro alcanzan un tamaño específico. Analizar una entrada de registro Los mensajes de registro comienzan con el mensaje más antiguo al inicio del archivo de registro y el último mensaje al final del archivo de registro. El servicio rsyslog utiliza un formato estándar para registrar entradas en archivos de registro. El siguiente ejemplo ilustra la anatomía de un mensaje de registro en el archivo de registro /var/log/secure. 20 de marzo 20:11:48 localhost sshd[1433]: contraseña fallida para el estudiante del puerto 172.25.0.10 59344 ssh2 20 de marzo 20:11:48: la marca de tiempo de la entrada del registro
+
+localhost: The host that sent the log message
+sshd[1433]: The program or process name and PID number that sent the log message
+
+Contraseña fallida para: El mensaje que se envió Monitorear eventos de registro Monitorear archivos de registro para eventos es útil para reproducir problemas. El comando tail -f /ruta/al/archivo genera las últimas diez líneas del archivo especificado y continúa generando líneas recién escritas en el archivo. Por ejemplo, puede monitorear los intentos de inicio de sesión utilizando una sesión de terminal en dos servidores. Un terminal es para la máquina hostA y el otro terminal es para la máquina hostB. Desde la máquina hostA en la primera terminal, ejecute el comando tail -f y observe el archivo de registro /var/log/secure:
+
+root@hostA:~# tail -f /var/log/secure
+
+...salida omitida... Desde la máquina hostB en la segunda terminal, ejecute el comando ssh y conéctese a la máquina hostA como
+
+root user:
+root@hostB:~# ssh root@hostA
+root@hostA's password: password
+
+...salida omitida...
+
+root@hostA:~#
+
+Los mensajes de registro para el inicio de sesión del usuario root desde la máquina hostB son visibles en el primer terminal del hostA.
+
+machine:
+
+
+
+
+
+13.3. Interpretación y gestión de eventos Syslog... salida omitida... 20 de marzo 09:01:13 hostA sshd[2712]: Contraseña aceptada para root desde 172.25.254.254 puerto 56801 ssh2 20 de marzo 09:01:13 hostA sshd[2712]: pam_unix(sshd:session): sesión abierta para el usuario root por (uid=0) Enviar mensajes de registro manualmente El comando logger envía mensajes al servicio rsyslog. De forma predeterminada, el comando logger envía el mensaje del tipo de usuario con la prioridad de aviso (user.notice) a menos que se especifique lo contrario con la opción -p. El comando logger es útil para probar cambios en la configuración del servicio rsyslog. Por ejemplo, los mensajes de registro que coinciden con la función local7.* o el filtro de prioridad se guardan en el archivo /var/log/boot.log, según una regla establecida en el archivo predeterminado /etc/rsyslog.conf. Por lo tanto, para enviar un mensaje al servicio rsyslog
+
+and to record the message in the /var/log/boot.log log file, execute the following logger command:
+root@host:~# logger -p local7.notice "Log entry created on host"
+
+Nota El comando logger también puede enviar entradas de diario estructuradas al diario del sistema. Para obtener más información, consulte la documentación de la opción --journald en la página del manual de logger(1). Referencias a las páginas man de logger(1), tail(1), rsyslog.conf(5) y logrotate(8)
+
+rsyslog Manual
+
+La documentación HTML en /usr/share/doc/rsyslog/html/index.html, que el
+
+rsyslog-doc package provides.
+
+Para obtener más información, consulte el capítulo Solución de problemas mediante el uso de archivos de registro en la guía de operaciones de recuperación y reducción de riesgos de Red Hat Enterprise Linux 10 en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/operaciones_de_reducción_de_riesgo_y_recuperación/index#solución-de-problemas-mediante-el-uso-de-archivos-de-registro
+
+
+
+
+
+13.4. Ejercicio guiado Interpretar y gestionar eventos Syslog 13.4. Ejercicio guiado Interpretar y administrar eventos Syslog Configure el archivo de registro syslog para redirigir todos los mensajes de registro de una prioridad especificada a un archivo de registro. Resultados Configure el archivo de registro syslog para utilizar el servicio rsyslog para escribir todos los mensajes de registro con prioridad de depuración en un archivo de registro. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-syslog
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice el estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio rsyslog para registrar todos los mensajes con depuración o prioridad superior para cualquier servicio en el archivo de registro /var/log/messages-debug cambiando el archivo de configuración /etc/rsyslog.d/debug.conf. 2. Cree el archivo /etc/rsyslog.d/debug.conf con las entradas necesarias para redirigir todos los mensajes de registro con prioridad de depuración o mayor al archivo de registro /var/log/messages-debug. Esta línea de configuración registra los mensajes de syslog con cualquier función y con el nivel de depuración o de prioridad superior: *.debug /var/log/messages-debug 2.1. El comodín (*) en el campo de facilidad de la línea de configuración indica cualquier facilidad de mensajes de registro. El servicio rsyslog escribe los mensajes coincidentes en el archivo de registro /var/log/messages-debug. Reinicie el servicio rsyslog.
+
+[root@servera ~]# systemctl restart rsyslog
+
+2.2. Verifique que todos los mensajes de registro con prioridad de depuración aparezcan en el archivo de registro /var/log/messages-debug. 3. Genere un mensaje de registro con el tipo de usuario y la prioridad de depuración.
+
+[root@servera ~]# logger -p user.debug "Debug Message Test"
+
+3.1. Vea los últimos 10 mensajes de registro del archivo de registro /var/log/messages-debug y verifique que ve el mensaje de prueba de mensaje de depuración entre los demás mensajes de registro. 3.2.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado de interpretación y gestión de eventos de Syslog
+
+13.4. Ejercicio guiado Interpretar y gestionar eventos Syslog 13.4. Ejercicio guiado Interpretar y administrar eventos Syslog Configure el archivo de registro syslog para redirigir todos los mensajes de registro de una prioridad especificada a un archivo de registro. Resultados Configure el archivo de registro syslog para utilizar el servicio rsyslog para escribir todos los mensajes de registro con prioridad de depuración en un archivo de registro. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-syslog
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice el estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio rsyslog para registrar todos los mensajes con depuración o prioridad superior para cualquier servicio en el archivo de registro /var/log/messages-debug cambiando el archivo de configuración /etc/rsyslog.d/debug.conf. 2. Cree el archivo /etc/rsyslog.d/debug.conf con las entradas necesarias para redirigir todos los mensajes de registro con prioridad de depuración o mayor al archivo de registro /var/log/messages-debug. Esta línea de configuración registra los mensajes de syslog con cualquier función y con el nivel de depuración o de prioridad superior: *.debug /var/log/messages-debug 2.1. El comodín (*) en el campo de facilidad de la línea de configuración indica cualquier facilidad de mensajes de registro. El servicio rsyslog escribe los mensajes coincidentes en el archivo de registro /var/log/messages-debug. Reinicie el servicio rsyslog.
+
+[root@servera ~]# systemctl restart rsyslog
+
+2.2. Verifique que todos los mensajes de registro con prioridad de depuración aparezcan en el archivo de registro /var/log/messages-debug. 3. Genere un mensaje de registro con el tipo de usuario y la prioridad de depuración.
+
+[root@servera ~]# logger -p user.debug "Debug Message Test"
+
+3.1. Vea los últimos 10 mensajes de registro del archivo de registro /var/log/messages-debug y verifique que ve el mensaje de prueba de mensaje de depuración entre los demás mensajes de registro. 3.2.
+
+
+
+
+
+13.4. Ejercicio guiado Interpretar y administrar eventos Syslog Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-syslog
+[root@servera ~]# tail /var/log/messages-debug
+
+13 de febrero 18:22:38 servera systemd[1]: Deteniendo el servicio de registro del sistema... 13 de febrero 18:22:38 servera rsyslogd[25176]: [origin software="rsyslogd"... 13 de febrero 18:22:38 servera systemd[1]: Servicio de registro del sistema detenido. 13 de febrero 18:22:38 servera systemd[1]: iniciando el servicio de registro del sistema... 13 de febrero 18:22:38 servera rsyslogd[25410]: la variable de entorno TZ es... 13 de febrero 18:22:38 servera systemd[1]: se inició el servicio de registro del sistema. 13 de febrero 18:22:38 servera rsyslogd[25410]: [origin software="rsyslogd"... 13 de febrero 18:27:58 servera root[25416]: Prueba de mensaje de depuración Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+4.
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas de registro del diario del sistema 13.5. Búsqueda e interpretación de entradas de registro del diario del sistema Objetivos Buscar e interpretar entradas de registro en el diario del sistema para revisar el estado del sistema. Buscar eventos en el diario del sistema El servicio systemd-journald almacena datos de registro en un archivo binario estructurado e indexado que se conoce como diario. Estos datos incluyen información adicional sobre el evento de registro. Por ejemplo, para los eventos syslog, esta información incluye la prioridad del mensaje original y la función, que es un valor que el servicio syslog asigna para rastrear el proceso que originó un mensaje. Importante En Red Hat Enterprise Linux, el directorio /run/log basado en memoria contiene el diario del sistema de forma predeterminada. El contenido del directorio /run/log se pierde cuando se apaga el sistema. Puede cambiar el directorio de diario a una ubicación persistente, lo cual se analiza más adelante en esta lección. Para recuperar mensajes de registro del diario, utilice el comando journalctl. Puede utilizar el comando journalctl para ver todos los mensajes del diario o buscar eventos específicos según opciones y criterios. Si ejecuta el comando como usuario root, tendrá acceso completo al diario. Aunque los usuarios habituales también pueden utilizar el comando journalctl, el sistema les impide ver ciertos mensajes.
+
+root@host:~# journalctl
+
+... salida omitida... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de tabla FACP en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla DSDT en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla FACS en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando Memoria de la tabla APIC en... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de la tabla WAET en... 09 de junio 12:56:12 kernel localhost: No se encontró configuración NUMA líneas 1-44 q El comando journalctl resalta mensajes de registro importantes; Los mensajes con prioridad de aviso o advertencia están en negrita, mientras que los mensajes con prioridad de error o superior están en texto rojo. La clave para el uso exitoso de la revista para la resolución de problemas y la auditoría es limitar las búsquedas de la revista para mostrar solo resultados relevantes. De forma predeterminada, la opción -n del comando journalctl muestra las últimas 10 entradas del registro. Puede ajustar la cantidad de entradas de registro con un argumento opcional que especifica cuántas entradas de registro mostrar. Por ejemplo, para revisar las últimas cinco entradas del registro, puede ejecutar el siguiente comando journalctl:
+
+
+
+
+
+
+
+## 13.5. Búsqueda e interpretación de entradas de registro del diario del sistema
+
+13.5. Búsqueda e interpretación de entradas de registro del diario del sistema 13.5. Búsqueda e interpretación de entradas de registro del diario del sistema Objetivos Buscar e interpretar entradas de registro en el diario del sistema para revisar el estado del sistema. Buscar eventos en el diario del sistema El servicio systemd-journald almacena datos de registro en un archivo binario estructurado e indexado que se conoce como diario. Estos datos incluyen información adicional sobre el evento de registro. Por ejemplo, para los eventos syslog, esta información incluye la prioridad del mensaje original y la función, que es un valor que el servicio syslog asigna para rastrear el proceso que originó un mensaje. Importante En Red Hat Enterprise Linux, el directorio /run/log basado en memoria contiene el diario del sistema de forma predeterminada. El contenido del directorio /run/log se pierde cuando se apaga el sistema. Puede cambiar el directorio de diario a una ubicación persistente, lo cual se analiza más adelante en esta lección. Para recuperar mensajes de registro del diario, utilice el comando journalctl. Puede utilizar el comando journalctl para ver todos los mensajes del diario o buscar eventos específicos según opciones y criterios. Si ejecuta el comando como usuario root, tendrá acceso completo al diario. Aunque los usuarios habituales también pueden utilizar el comando journalctl, el sistema les impide ver ciertos mensajes.
+
+root@host:~# journalctl
+
+... salida omitida... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de tabla FACP en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla DSDT en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla FACS en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando Memoria de la tabla APIC en... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de la tabla WAET en... 09 de junio 12:56:12 kernel localhost: No se encontró configuración NUMA líneas 1-44 q El comando journalctl resalta mensajes de registro importantes; Los mensajes con prioridad de aviso o advertencia están en negrita, mientras que los mensajes con prioridad de error o superior están en texto rojo. La clave para el uso exitoso de la revista para la resolución de problemas y la auditoría es limitar las búsquedas de la revista para mostrar solo resultados relevantes. De forma predeterminada, la opción -n del comando journalctl muestra las últimas 10 entradas del registro. Puede ajustar la cantidad de entradas de registro con un argumento opcional que especifica cuántas entradas de registro mostrar. Por ejemplo, para revisar las últimas cinco entradas del registro, puede ejecutar el siguiente comando journalctl:
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas de registro del diario del sistema
+
+root@host:~# journalctl -n 5
+
+09 de junio 21:03:58 host sshd-session[9202]: Conexión cerrada... 09 de junio 21:04:00 host systemd[1]: status-api.service: Programado... 09 de junio 21:04:00 host systemd[1]: Iniciando status-api.service... 09 de junio 21:04:10 host sshd-session[9204]: Conexión cerrada por... 09 de junio 21:04:23 host sshd-session[9205]: Conexión cerrada por... Similar al comando tail, la opción -f del comando journalctl genera las últimas diez líneas del diario del sistema y continúa generando nuevas entradas de diario cuando el diario las agrega. Para salir de la opción -f del comando journalctl, utilice la combinación de teclas Ctrl+C.
+
+root@host:~# journalctl -f
+
+09 de junio 21:05:01 host bash[9243]: % Total % % recibido %... 09 de junio 21:05:01 host bash[9243]:... 09 de junio 21:05:01 host bash[9243]: [datos de blob 158B] 09 de junio 21:05:01 host bash[9243]: { 09 de junio 21:05:01 host bash[9243]: "msg": "Estado recibido y... 09 de junio 21:05:01 host bash[9243]: } 09 de junio 21:05:01 host systemd[1]: status-api.service: Desactivado exitosamente. 09 de junio 21:05:11 host sshd-session[9247]: Conexión cerrada por... junio 09 21:05:24 host sshd-session[9255]: Conexión cerrada por... Jun 09 21:05:36 host sshd-session[9258]: Conexión cerrada por... Jun 09 21:05:48 host sshd-session[9260]: Conexión cerrada por... Ctrl+C Para ayudar a solucionar problemas, puede filtrar la salida del diario por la prioridad del diario entradas.
+
+journalctl command -p option shows the journal entries with a specified priority level (by name or by number) or
+
+más alto. El comando journalctl procesa los niveles de prioridad de depuración, información, aviso, advertencia, error, crítico, alerta y emergencia, en orden de prioridad ascendente. Como ejemplo, ejecute el siguiente comando journalctl para enumerar las entradas del diario con prioridad de error o superior:
+
+root@host:~# journalctl -p err
+
+... salida omitida... 09 de junio 12:56:23 estación de trabajo systemd[1206]: Error al iniciar app-gnome... 09 de junio 12:56:23 estación de trabajo systemd[1206]: Error al iniciar app-gnome... 09 de junio 12:56:23 estación de trabajo systemd[1206]: Error al iniciar app-gnome... 09 de junio 12:56:26 estación de trabajo (d-subman)[1493]: org.gnome.SettingsDaemon... 09 de junio 12:56:26 estación de trabajo systemd[1206]: Error al iniciar org.gnome... ...salida omitida... Puede mostrar mensajes para una unidad systemd específica usando la opción -u del comando journalctl y el nombre de la unidad.
+
+root@host:~# journalctl -u sshd.service
+
+... salida omitida... 09 de junio 12:56:22 host systemd[1]: sshd.service iniciado - OpenSSH... 09 de junio 12:56:31 host sshd-session[2078]: Conexión cerrada por... 09 de junio 12:57:21 host systemd[1]: Deteniendo sshd.service - OpenSSH... 09 de junio 12:57:21 host sshd[1163]: Señal recibida 15; terminando. 09 de junio 12:57:21 host systemd [1]: sshd.service: desactivado correctamente. 09 de junio 12:57:21 host systemd[1]: sshd.service detenido - servidor OpenSSH... 09 de junio 12:57:21 host systemd[1]: iniciando sshd.service - servidor OpenSSH... ...salida omitida... líneas 1-44 q Al usar el comando journalctl para buscar eventos específicos, puede limitar la salida a un rango de tiempo específico
+
+using the --since option or the --until option. Both options take a time argument in the "YYYY-MM-DD hh:mm:ss"
+
+formato. Las comillas dobles son necesarias para preservar el espacio dentro del valor de cada opción.
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas del registro de diario del sistema El comando journalctl utiliza el formato 00:00:00 cuando se omite el argumento de hora y utiliza el día actual cuando se omite el argumento de día. Ambas opciones de journalctl admiten ayer, hoy y mañana como argumentos válidos además de la fecha y la hora. Como ejemplo, ejecute el siguiente comando journalctl para enumerar todas las entradas de diario de los registros de hoy:
+
+root@host:~# journalctl --since today
+
+... salida omitida... 9 de junio 12:56:12 kernel localhost: fuente de reloj: kvm-clock: máscara: 0xfffffff... 9 de junio 12:56:12 kernel localhost: tsc: Procesador de 2494,172 MHz detectado 9 de junio 12:56:12 kernel localhost: e820: actualización [mem 0x00000000-0x00000fff]... 09 de junio 12:56:12 kernel de localhost: e820: eliminar [mem 0x000a0000-0x000fffff]... 09 de junio 12:56:12 kernel de host local: last_pfn = 0x1c0000 max_arch_pfn =... 09 de junio 12:56:12 kernel de localhost: mapa MTRR: 4 entradas (3 fijas + 1... 9 de junio 12:56:12 kernel de localhost: x86/PAT: Configuración [0-7]: WB WC... 9 de junio 12:56:12 kernel de localhost: last_pfn = 0xbffdb max_arch_pfn =... 9 de junio 12:56:12 kernel de localhost: encontrado Tabla MP SMP en [mem 0x000f5bc0-... ...salida omitida... líneas 1996-2043/2043 (END) q Ejecute el siguiente comando journalctl para enumerar todos los diarios desde 2025-06-01 20:30 y hasta 2025-06-04 10:00:
+
+root@host:~# journalctl --since "2025-06-01 20:30" --until "2025-06-04 10:00"
+
+...salida omitida... También puede especificar todas las entradas desde un tiempo relativo hasta el presente. Por ejemplo, para especificar todas las entradas desde la última hora, puede utilizar el siguiente comando:
+
+root@host:~# journalctl --since "-1 hour"
+
+...salida omitida... Nota Puede utilizar otras especificaciones de tiempo más sofisticadas con las opciones --since y --until. Para ver algunos ejemplos, consulte la página del comando man systemd.time(7). Además de la salida del diario predeterminada, puede ver todos los campos de cada registro del diario especificando la opción detallada. La salida detallada es útil para ayudar a encontrar información más específica sobre los eventos del diario. También puede especificar cualquier nombre de campo y valor para filtrar la salida del diario.
+
+root@host:~# journalctl -o verbose
+
+Lunes 2025-06-09 12:56:12.962826 UTC [s=ef6b97242c5140218987a8b063034712...
+
+    _SOURCE_BOOTTIME_TIMESTAMP=0
+    _SOURCE_MONOTONIC_TIMESTAMP=0
+    _TRANSPORT=kernel
+    PRIORITY=5
+    SYSLOG_FACILITY=0
+    SYSLOG_IDENTIFIER=kernel
+    MESSAGE=Linux version 6.12.0-55.12.1.el10_0.x86_64 (mockbuild@...
+    _BOOT_ID=d7f2dbc620504aa08585be2d04c4c596
+    _MACHINE_ID=d676b38fd6a747d989b1e2dd98c0ffe8
+    _HOSTNAME=localhost
+    _RUNTIME_SCOPE=initrd
+
+...salida omitida... líneas 1-44 q Puede combinar múltiples campos del diario del sistema para formar una consulta de búsqueda granular con el comando journalctl.
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas del registro del diario del sistema La siguiente lista muestra algunos campos del diario del sistema para buscar líneas relevantes para un proceso o evento en particular: _COMM El nombre del comando _EXE La ruta al archivo ejecutable para el proceso _PID El PID del proceso _UID El UID del usuario que ejecuta el proceso _SYSTEMD_UNIT La unidad systemd que inició el proceso Por ejemplo, el siguiente comando journalctl muestra todas las entradas del diario relacionadas con el servicio sshd.service con
+
+the 2188 PID:
+root@host:~# journalctl _SYSTEMD_UNIT=sshd.service _PID=2188
+
+09 de junio 12:57:21 estación de trabajo (sshd)[2188]: sshd.service: referenciado pero... 09 de junio 12:57:21 estación de trabajo sshd[2188]: Servidor escuchando en 0.0.0.0 puerto 22. 09 de junio 12:57:21 estación de trabajo sshd[2188]: Servidor escuchando en :: puerto 22. Nota Para obtener una lista de campos de diario, consulte la página del manual systemd.journal-fields(7). Referencias
+
+journalctl(1), systemd.journal-fields(7), and systemd.time(7) man pages
+
+Para obtener más información, consulte el capítulo Solución de problemas mediante el uso de archivos de registro de la guía de operaciones de recuperación y reducción de riesgos de Red Hat Enterprise Linux 10 en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/operaciones_de_reducción_de_riesgo_y_recuperación/index#solución-de-problemas-mediante-el-uso-de-archivos-de-registro
+
+
+
+
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema 13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema Encuentre entradas de registro del diario del sistema utilizando diferentes criterios para revisar el estado del sistema. Resultados Busque en el diario del sistema entradas para registrar eventos según diferentes criterios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-systemd
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Utilice la opción _PID=1 del comando journalctl para mostrar solo los eventos de registro que se originan en el proceso systemd PID 1. Para salir del comando journalctl, presione q. El siguiente resultado puede diferir en su sistema:
+
+[student@servera ~]$ journalctl _PID=1
+
+05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-sysctl.service... 05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-tmpfiles-setup-dev... 05 de junio 18:46:37 localhost systemd[1]: iniciando systemd-sysusers.service... 05 de junio 18:46:38 localhost systemd[1]: finalizado systemd-vconsole-setup... 05 de junio 18:46:38 localhost systemd[1]: dracut-cmdline-ask.service - dracut... 05 de junio 18:46:38 localhost systemd[1]: iniciando dracut-cmdline.service... 05 de junio 18:46:38 localhost systemd[1]: terminado systemd-sysusers.service... líneas 1-5 q 2. Utilice la opción del comando journalctl _UID=81 para mostrar todos los eventos de registro que se originaron en un servicio del sistema con un UID de 81.
+
+[student@servera ~]$ journalctl _UID=81
+
+05 de junio 18:46:47 servera.lab.example.com dbus-broker-launch[907]: Listo 3. Utilice la opción de advertencia -p del comando journalctl para mostrar eventos de registro con la advertencia o una prioridad más alta. 4.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema 13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema Encuentre entradas de registro del diario del sistema utilizando diferentes criterios para revisar el estado del sistema. Resultados Busque en el diario del sistema entradas para registrar eventos según diferentes criterios. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-systemd
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [student@servera ~]$ 1. Utilice la opción _PID=1 del comando journalctl para mostrar solo los eventos de registro que se originan en el proceso systemd PID 1. Para salir del comando journalctl, presione q. El siguiente resultado puede diferir en su sistema:
+
+[student@servera ~]$ journalctl _PID=1
+
+05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-sysctl.service... 05 de junio 18:46:37 localhost systemd[1]: finalizado systemd-tmpfiles-setup-dev... 05 de junio 18:46:37 localhost systemd[1]: iniciando systemd-sysusers.service... 05 de junio 18:46:38 localhost systemd[1]: finalizado systemd-vconsole-setup... 05 de junio 18:46:38 localhost systemd[1]: dracut-cmdline-ask.service - dracut... 05 de junio 18:46:38 localhost systemd[1]: iniciando dracut-cmdline.service... 05 de junio 18:46:38 localhost systemd[1]: terminado systemd-sysusers.service... líneas 1-5 q 2. Utilice la opción del comando journalctl _UID=81 para mostrar todos los eventos de registro que se originaron en un servicio del sistema con un UID de 81.
+
+[student@servera ~]$ journalctl _UID=81
+
+05 de junio 18:46:47 servera.lab.example.com dbus-broker-launch[907]: Listo 3. Utilice la opción de advertencia -p del comando journalctl para mostrar eventos de registro con la advertencia o una prioridad más alta. 4.
+
+
+
+
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+[student@servera ~]$ journalctl -p warning
+
+05 de junio 18:46:37 kernel localhost: acpi PNP0A03:00: no se puede agregar MMCONFIG... 05 de junio 18:46:38 kernel de localhost: device-mapper: core: CONFIG_IMA++... 05 de junio 18:46:38 localhost rpc.idmapd[450]: Configuración del nivel de registro en 0 05 de junio 18:46:38 localhost rpc.idmapd[450]: libnfsidmap: No se puede determinar... _...salida omitida... 05 de junio 18:46:47 servera.lab.example.com (qbalance)[935]: irqbalance.service:... 05 de junio 18:46:47 servera.lab.example.com chronyd[955]: directiva commandkey... 05 de junio 18:46:47 servera.lab.example.com chronyd[955]: generarcommandkey... 05 de junio 18:46:47 servera.lab.example.com chronyd[955]: No se pudo abrir el archivo clave... líneas 1-14 q Muestra todos los eventos de registro registrados en los últimos 10 minutos desde la hora actual.
+
+[student@servera ~]$ journalctl --since "-10min"
+
+05 de junio 19:02:41 servera sshd-session[2261]: Conexión cerrada por 172.25.250.254 puerto 57114 05 de junio 19:02:53 servera NetworkManager[1029]: <info> [1749150173.4104]... 05 de junio 19:02:53 servera NetworkManager[1029]: <info> [1749150173.4118]... ...salida omitida... 05 de junio 19:03:38 servera NetworkManager[1029]: <info> [1749150218.4063]... 05 de junio 19:03:38 servera NetworkManager[1029]: <advertir> [1749150218.4075]... 05 de junio 19:03:38 servera NetworkManager[1029]: <info> [1749150218.4077]... líneas 1-14 q 5. Utilice el comando journalctl --since y _SYSTEMD_UNIT="sshd.service" opciones para mostrar todas las opciones
+
+recorded log events that originated from the sshd service since 09:00:00 this morning.
+
+Nota Las aulas en línea normalmente se ejecutan en la zona horaria UTC. Para obtener resultados que comiencen a las 9:00:00 a. m. en su zona horaria local, ajuste su valor --since por la cantidad de su compensación de UTC. Alternativamente, ignorar
+
+your local time and use a value of 9:00 to locate journal entries that occurred since 9:00:00 in the time
+
+zona (probablemente UTC) que utilizó la máquina del servidor.
+
+[student@servera ~]$ journalctl --since 9:00:00 _SYSTEMD_UNIT="sshd.service"
+
+05 de junio 18:47:54 servera (sshd)[1409]: sshd.service: referenciado pero no configurado... 05 de junio 18:47:54 servera sshd[1409]: Servidor escuchando en 0.0.0.0 puerto 22. 05 de junio 18:47:54 servera sshd[1409]: Servidor escuchando en :: puerto 22. Jun 05 18:48:02 servera sshd-session[1463]: Conexión cerrada por 172.25.... 05 de junio 18:48:14 servera sshd-session[1470]: Conexión cerrada por 172.25.... 05 de junio 18:48:39 servera sshd-session[1492]: Conexión cerrada por 172.25.... 05 de junio 18:48:51 servera sshd-session[1499]: Conexión cerrada por 172.25.... ...salida omitida... líneas 1-14 q 6. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+7.
+
+
+
+
+
+13.6. Ejercicio guiado Buscar e interpretar entradas de registro del diario del sistema
+
+student@workstation:~$ lab finish logs-systemd
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente 13.7. Configuración de un diario del sistema persistente Objetivos Configurar un diario del sistema para almacenar de manera persistente los eventos de registro después de un reinicio y rotar los eventos de registro automáticamente. Almacenamiento del diario del sistema De forma predeterminada, Red Hat Enterprise Linux almacena los archivos del diario del sistema en el directorio /run/log/journal y el sistema borra el diario del sistema después de reiniciar. Puede configurar el servicio systemd-journald para mantener los archivos del diario de forma persistente, de modo que pueda revisar los eventos del diario al reiniciar el sistema. Configurar un diario persistente del sistema Configure el servicio systemd-journald de la siguiente manera para conservar los diarios del sistema de manera persistente durante un reinicio: Importante Este servicio funciona porque la configuración predeterminada del parámetro Almacenamiento en la configuración del diario está establecida en Almacenamiento=auto. Este parámetro significa que si el directorio /var/log/journal existe, entonces el almacenamiento persistente se habilita automáticamente, pero si el almacenamiento no se habilita, entonces se usa el almacenamiento volátil en el directorio /run/log/journal. Los archivos de configuración del diario se analizan con más detalle más adelante en esta sección. Revisar las entradas del diario en relación con el tiempo de inicio Aunque los diarios del sistema persisten después de un reinicio, la salida del comando journalctl incluye entradas del inicio actual del sistema así como de los inicios anteriores del sistema. Para limitar la salida a un inicio del sistema específico, use Crear el directorio /var/log/journal.
+
+root@host:~# mkdir /var/log/journal
+
+1. Ejecute el comando journalctl --flush para vaciar el diario actual en el almacenamiento. Si el servicio systemd-journald vacía con éxito el diario actual, entonces el servicio crea subdirectorios en el directorio /var/log/journal.
+
+root@host:~# journalctl --flush
+
+2. El subdirectorio del directorio /var/log/journal tiene caracteres hexadecimales en su nombre largo y contiene archivos con la extensión .journal.
+
+root@host:~# ls /var/log/journal
+
+4ec03abd2f7b40118b1b357f479b3112 3. Los archivos binarios .journal almacenan entradas de diario estructuradas e indexadas.
+
+root@host:~# ls /var/log/journal/4ec03abd2f7b40118b1b357f479b3112
+
+sistema.diario usuario-1000.diario 4.
+
+
+
+
+
+
+
+## 13.7. Configuración de un diario del sistema persistente
+
+13.7. Configuración de un diario del sistema persistente 13.7. Configuración de un diario del sistema persistente Objetivos Configurar un diario del sistema para almacenar de manera persistente los eventos de registro después de un reinicio y rotar los eventos de registro automáticamente. Almacenamiento del diario del sistema De forma predeterminada, Red Hat Enterprise Linux almacena los archivos del diario del sistema en el directorio /run/log/journal y el sistema borra el diario del sistema después de reiniciar. Puede configurar el servicio systemd-journald para mantener los archivos del diario de forma persistente, de modo que pueda revisar los eventos del diario al reiniciar el sistema. Configurar un diario persistente del sistema Configure el servicio systemd-journald de la siguiente manera para conservar los diarios del sistema de manera persistente durante un reinicio: Importante Este servicio funciona porque la configuración predeterminada del parámetro Almacenamiento en la configuración del diario está establecida en Almacenamiento=auto. Este parámetro significa que si el directorio /var/log/journal existe, entonces el almacenamiento persistente se habilita automáticamente, pero si el almacenamiento no se habilita, entonces se usa el almacenamiento volátil en el directorio /run/log/journal. Los archivos de configuración del diario se analizan con más detalle más adelante en esta sección. Revisar las entradas del diario en relación con el tiempo de inicio Aunque los diarios del sistema persisten después de un reinicio, la salida del comando journalctl incluye entradas del inicio actual del sistema así como de los inicios anteriores del sistema. Para limitar la salida a un inicio del sistema específico, use Crear el directorio /var/log/journal.
+
+root@host:~# mkdir /var/log/journal
+
+1. Ejecute el comando journalctl --flush para vaciar el diario actual en el almacenamiento. Si el servicio systemd-journald vacía con éxito el diario actual, entonces el servicio crea subdirectorios en el directorio /var/log/journal.
+
+root@host:~# journalctl --flush
+
+2. El subdirectorio del directorio /var/log/journal tiene caracteres hexadecimales en su nombre largo y contiene archivos con la extensión .journal.
+
+root@host:~# ls /var/log/journal
+
+4ec03abd2f7b40118b1b357f479b3112 3. Los archivos binarios .journal almacenan entradas de diario estructuradas e indexadas.
+
+root@host:~# ls /var/log/journal/4ec03abd2f7b40118b1b357f479b3112
+
+sistema.diario usuario-1000.diario 4.
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente
+
+journalctl command -b option.
+
+El siguiente comando journalctl recupera las entradas del primer inicio del sistema únicamente:
+
+root@host:~# journalctl -b 1
+
+...salida omitida... El siguiente comando journalctl recupera las entradas del segundo inicio del sistema únicamente. El argumento es
+
+meaningful only if the system was rebooted at least twice:
+root@host:~# journalctl -b 2
+
+...salida omitida... Puede enumerar los eventos de arranque del sistema que reconoce el comando journalctl, utilizando la opción --list-boots.
+
+root@host:~# journalctl --list-boots
+  -6 27de... Wed 2025-06-04 20:04:32 EDT—Wed 2025-06-04 21:09:36 EDT
+  -5 6a18... Tue 2025-06-26 08:32:22 EDT—Thu 2025-06-26 16:02:33 EDT
+  -4 e2d7... Thu 2025-07-04 16:02:46 EDT—Fri 2025-07-04 20:59:29 EDT
+  -3 45c3... Sat 2025-07-05 11:19:47 EDT—Sat 2025-07-05 11:53:32 EDT
+  -2 dfae... Sat 2025-07-05 13:11:13 EDT—Sat 2025-07-05 13:27:26 EDT
+  -1 e754... Sat 2025-07-05 13:58:08 EDT—Sat 2025-07-05 14:10:53 EDT
+   0 ee2c... Mon 2025-07-07 09:56:45 EDT—Mon 2025-07-07 12:57:21 EDT
+
+El siguiente comando journalctl recupera las entradas del inicio actual del sistema únicamente:
+
+root@host:~# journalctl -b
+
+...salida omitida... Nota Al depurar una falla del sistema con un diario persistente, debe limitar la consulta del diario al reinicio antes de que ocurriera la falla. Puede usar la opción -b del comando journalctl con un número negativo para indicar cuántos arranques anteriores del sistema incluir en la salida. Por ejemplo, la opción del comando journalctl -b -1 limita la salida solo al inicio anterior. Rotación de diarios del sistema La ventaja de los diarios persistentes del sistema es que los datos históricos están disponibles inmediatamente en el arranque. Sin embargo, incluso con un diario persistente, el sistema no conserva todos los datos para siempre. El diario tiene un mecanismo de rotación de registros incorporado que se activa mensualmente. Además, el sistema no permite que las revistas ocupen más del 10% del sistema de archivos en el que se encuentran, ni dejen menos del 15% del sistema de archivos libre. Puede modificar estos valores tanto para el tiempo de ejecución como para los diarios persistentes en el archivo de configuración /etc/systemd/journald.conf. El proceso systemd-journald registra los límites actuales del tamaño del diario cuando se inicia. El siguiente resultado del comando muestra las entradas del diario que reflejan los límites de tamaño actuales:
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente
+
+[user@host ~]$ journalctl | grep -E 'Runtime Journal|System Journal'
+
+10 de junio 22:22:57 localhost systemd-journald[263]: Runtime Journal (/run/log/journal/93c43a50cada46e39819e0da68f790a2) es 4,2 M, máximo 34,1 M, 29,8 M libres. 10 de junio 22:23:01 host systemd-journald[740]: Runtime Journal (/run/log/journal/da54d37671ac4429bcdfacfe7bebb5a1) es 4,2 M, máximo 34,1 M, 29,8 M libres. 10 de junio 22:30:50 host systemd-journald[740]: System Journal (/var/log/journal/da54d37671ac4429bcdfacfe7bebb5a1) es 8M, máximo 997,3M, 989,3M libres. ...salida omitida... Nota En el comando grep anterior, el símbolo de la barra vertical (|) en la expresión actúa como un operador o. Es decir, el comando grep coincide con cualquier línea con la cadena Runtime Journal o la cadena System Journal de la salida del comando journalctl. Este comando recupera los límites de tamaño actuales en el almacén de diario volátil (tiempo de ejecución) y en el almacén de diario persistente (sistema). Localización de archivos de configuración del diario Los administradores del sistema normalmente configuran los ajustes del diario editando el archivo de configuración /etc/systemd/journald.conf o agregando archivos de configuración con un sufijo .conf al directorio /etc/systemd/journald.conf.d. Sin embargo, es posible que un sistema RHEL no tenga esos archivos o ese directorio. En ese caso, se verifican las configuraciones en las ubicaciones de menor prioridad que están documentadas en la página del comando man journal.conf(5), y si ninguno de esos archivos o directorios existe, entonces se utilizan las configuraciones predeterminadas compiladas. Importante A partir de RHEL 10, el archivo /etc/systemd/journald.conf no está presente en el momento de la instalación. El servicio systemd-journald lee su configuración predeterminada del archivo de configuración /usr/lib/systemd/journald.conf. Para cambiar el comportamiento del diario, no edite el archivo de configuración /usr/lib/systemd/journald.conf directamente. En su lugar, copie el archivo /usr/lib/systemd/journald.conf al directorio /etc/systemd y luego descomente y cambie la configuración apropiada en el archivo /etc/systemd/journald.conf resultante. Los ajustes de configuración en el archivo /etc/systemd/journald.conf tienen prioridad sobre los ajustes predeterminados en el archivo /usr/lib/systemd/journald.conf. Configurar la rotación automática de diarios Para configurar la rotación automática de diarios para diarios persistentes o de solo tiempo de ejecución, establezca los siguientes parámetros en el archivo /etc/systemd/journald.conf. Prefije la configuración con Sistema para diarios persistentes en el directorio /var/log/journal. Prefije la configuración con Runtime para diarios volátiles en el directorio /run/log/journal. SystemMaxUse y RuntimeMaxUse La cantidad máxima de espacio del sistema de archivos que el diario puede utilizar. Este valor es el 10 % del espacio total del sistema de archivos de forma predeterminada y tiene un límite de 4 GB.
+
+
+
+
+
+13.7. Configuración de un diario del sistema persistente SystemMaxFileSize y RuntimeMaxFileSize El tamaño máximo de archivo de un diario antes de que rote. Este valor es un octavo del valor SystemMaxUse/RuntimeMaxUse de forma predeterminada, tiene un límite de 128 M y normalmente permite mantener siete archivos de diario rotados como historial. Si el modo compacto de diario está habilitado (el valor predeterminado), este valor tiene un límite de 4 GB. SystemKeepFree y RuntimeKeepFree El espacio libre mínimo en el sistema de archivos que debe permanecer antes de que se eliminen los diarios archivados. Al menos el 15% del espacio total del sistema de archivos siempre se mantiene libre de forma predeterminada. Este valor tiene un límite de 4 GB. Importante Sólo los archivos con los sufijos .journal o .journal~ se consideran archivos de diario. Después de editar el archivo de configuración /etc/systemd/journald.conf, reinicie el servicio systemd-journald para aplicar los cambios de configuración.
+
+root@host:~# systemctl restart systemd-journald
+
+Referencias páginas de comando man journald.conf(5) y systemd-journald.service(8) Para obtener más información, consulte el capítulo Solución de problemas mediante el uso de archivos de registro de la guía Red Hat Enterprise Linux 10 Risk Reduction and Recovery Operations en
+
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-
+
+single/operaciones_de_reducción_de_riesgo_y_recuperación/index#solución-de-problemas-mediante-el-uso-de-archivos-de-registro
+
+
+
+
+
+13.8. Ejercicio guiado Configurar un diario del sistema persistente 13.8. Ejercicio guiado Configurar un diario del sistema persistente Configure un diario del sistema para que los eventos del registro persistan después de un reinicio. Resultados Configure un diario del sistema para conservar los eventos de registro después de un reinicio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-preserve
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Confirme que el directorio /var/log/journal no existe. Debido a que el directorio /var/log/journal no existe, el servicio systemd-journald no conserva los eventos de registro después de reiniciar.
+
+[root@servera ~]# ls /var/log/journal
+ls: cannot access '/var/log/journal': No such file or directory
+
+2. Configure el servicio systemd-journald para conservar los diarios después de reiniciar. 3. Cree el directorio /var/log/journal.
+
+[root@servera ~]# mkdir /var/log/journal
+
+3.1. Vacíe el diario actual al almacenamiento.
+
+[root@servera ~]# journalctl --flush
+
+3.2. Verifique que el servicio systemd-journald conserve sus diarios para que persistan después de un reinicio. 4. Reinicie la máquina del servidor. La conexión SSH finaliza tan pronto como reinicia el servidor en una máquina. 4.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Configurar un diario del sistema persistente
+
+13.8. Ejercicio guiado Configurar un diario del sistema persistente 13.8. Ejercicio guiado Configurar un diario del sistema persistente Configure un diario del sistema para que los eventos del registro persistan después de un reinicio. Resultados Configure un diario del sistema para conservar los eventos de registro después de un reinicio. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-preserve
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Confirme que el directorio /var/log/journal no existe. Debido a que el directorio /var/log/journal no existe, el servicio systemd-journald no conserva los eventos de registro después de reiniciar.
+
+[root@servera ~]# ls /var/log/journal
+ls: cannot access '/var/log/journal': No such file or directory
+
+2. Configure el servicio systemd-journald para conservar los diarios después de reiniciar. 3. Cree el directorio /var/log/journal.
+
+[root@servera ~]# mkdir /var/log/journal
+
+3.1. Vacíe el diario actual al almacenamiento.
+
+[root@servera ~]# journalctl --flush
+
+3.2. Verifique que el servicio systemd-journald conserve sus diarios para que persistan después de un reinicio. 4. Reinicie la máquina del servidor. La conexión SSH finaliza tan pronto como reinicia el servidor en una máquina. 4.1.
+
+
+
+
+
+13.8. Ejercicio guiado Configurar un cierre de diario del sistema persistente En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-preserve
+[root@servera ~]# systemctl reboot
+
+Conexión al servidor cerrada por host remoto. Conexión a servera cerrada.
+
+student@workstation:~$
+
+Espere a que la máquina del servidor se reinicie y luego inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida... [estudiante@servera ~]$ 4.2. Verifique que exista un subdirectorio con un nombre hexadecimal largo en el directorio /var/log/journal. Puede
+
+find the journal files in that directory. The subdirectory name on your system might be different.
+[student@servera ~]$ ls /var/log/journal
+
+63b272eae8d5443ca7aaa5593479b25f 4.3. Verifique el contenido del directorio hexadecimal.
+
+[student@servera ~]$ ls /var/log/journal/63b272eae8d5443ca7aaa5593479b25f
+
+sistema.diario usuario-1000.diario 4.4. Regrese a la máquina de la estación de trabajo como usuario estudiante.
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+13.9. Mantener la hora sincronizada 13.9. Mantenimiento de objetivos de tiempo sincronizados Mantenga una sincronización horaria precisa mediante el protocolo de tiempo de red (NTP) y configure la zona horaria del sistema para garantizar marcas de tiempo correctas para los eventos registrados. Administrar relojes locales y zonas horarias La sincronización horaria del sistema es fundamental para el análisis de archivos de registro en múltiples sistemas. Para funcionar correctamente, algunos servicios también pueden requerir una sincronización horaria correcta. Las máquinas utilizan NTP para proporcionar y obtener información horaria correcta a través de Internet. Una máquina puede obtener información horaria precisa de servicios NTP públicos, como NTP Pool Project. Otra opción es configurar un sistema para que se sincronice directamente con un reloj de hardware de alta calidad, de modo que pueda proporcionar información horaria precisa a los clientes locales. El comando timedatectl muestra una descripción general de la configuración actual del sistema relacionada con la hora, incluida la hora actual, la zona horaria y la configuración de sincronización NTP del sistema.
+
+user@host:~$ timedatectl
+               Local time: Wed 2022-03-16 05:53:05 EDT
+           Universal time: Wed 2022-03-16 09:53:05 UTC
+                 RTC time: Wed 2022-03-16 09:53:05
+                Time zone: America/New_York (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Configuración de la zona horaria del sistema Puede enumerar una base de datos de zonas horarias con la opción list-timezones del comando timedatectl:
+
+user@host:~$ timedatectl list-timezones
+
+África/Abidjan África/Accra África/Addis_Ababa África/Argel África/Asmara África/Bamako... salida omitida... La Autoridad de Números Asignados de Internet (IANA) proporciona una base de datos pública de zonas horarias, y el comando timedatectl basa los nombres de las zonas horarias en esa base de datos. La IANA nombra las zonas horarias según el continente u océano y, normalmente, la ciudad más grande dentro de la región de la zona horaria. Por ejemplo, la mayor parte de la zona horaria montañosa de EE. UU. es América/Denver. Algunas localidades dentro de la zona horaria tienen diferentes reglas de horario de verano. Por ejemplo, en Estados Unidos, gran parte del estado
+
+of Arizona is in the US Mountain time zone; however it does not observe daylight saving time. Therefore, much of the
+
+El estado de Arizona utiliza la zona horaria América/Phoenix, que representa correctamente la diferencia horaria. Utilice el comando tzselect para identificar el nombre de zona horaria correcto. Este comando plantea interactivamente al usuario preguntas sobre la ubicación del sistema y genera el nombre de la zona horaria correcta. No cambia la configuración de zona horaria del sistema.
+
+
+
+
+
+
+
+## 13.9. Mantener el tiempo sincronizado
+
+13.9. Mantener la hora sincronizada 13.9. Mantenimiento de objetivos de tiempo sincronizados Mantenga una sincronización horaria precisa mediante el protocolo de tiempo de red (NTP) y configure la zona horaria del sistema para garantizar marcas de tiempo correctas para los eventos registrados. Administrar relojes locales y zonas horarias La sincronización horaria del sistema es fundamental para el análisis de archivos de registro en múltiples sistemas. Para funcionar correctamente, algunos servicios también pueden requerir una sincronización horaria correcta. Las máquinas utilizan NTP para proporcionar y obtener información horaria correcta a través de Internet. Una máquina puede obtener información horaria precisa de servicios NTP públicos, como NTP Pool Project. Otra opción es configurar un sistema para que se sincronice directamente con un reloj de hardware de alta calidad, de modo que pueda proporcionar información horaria precisa a los clientes locales. El comando timedatectl muestra una descripción general de la configuración actual del sistema relacionada con la hora, incluida la hora actual, la zona horaria y la configuración de sincronización NTP del sistema.
+
+user@host:~$ timedatectl
+               Local time: Wed 2022-03-16 05:53:05 EDT
+           Universal time: Wed 2022-03-16 09:53:05 UTC
+                 RTC time: Wed 2022-03-16 09:53:05
+                Time zone: America/New_York (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Configuración de la zona horaria del sistema Puede enumerar una base de datos de zonas horarias con la opción list-timezones del comando timedatectl:
+
+user@host:~$ timedatectl list-timezones
+
+África/Abidjan África/Accra África/Addis_Ababa África/Argel África/Asmara África/Bamako... salida omitida... La Autoridad de Números Asignados de Internet (IANA) proporciona una base de datos pública de zonas horarias, y el comando timedatectl basa los nombres de las zonas horarias en esa base de datos. La IANA nombra las zonas horarias según el continente u océano y, normalmente, la ciudad más grande dentro de la región de la zona horaria. Por ejemplo, la mayor parte de la zona horaria montañosa de EE. UU. es América/Denver. Algunas localidades dentro de la zona horaria tienen diferentes reglas de horario de verano. Por ejemplo, en Estados Unidos, gran parte del estado
+
+of Arizona is in the US Mountain time zone; however it does not observe daylight saving time. Therefore, much of the
+
+El estado de Arizona utiliza la zona horaria América/Phoenix, que representa correctamente la diferencia horaria. Utilice el comando tzselect para identificar el nombre de zona horaria correcto. Este comando plantea interactivamente al usuario preguntas sobre la ubicación del sistema y genera el nombre de la zona horaria correcta. No cambia la configuración de zona horaria del sistema.
+
+
+
+
+
+13.9. Mantenimiento de la hora sincronizada El usuario root puede cambiar la configuración del sistema para actualizar la zona horaria actual con la opción set-timezone del comando timedatectl. Por ejemplo, el siguiente comando timedatectl actualiza la zona horaria actual a América/Phoenix.
+
+root@host:~# timedatectl set-timezone America/Phoenix
+root@host:~# timedatectl
+               Local time: Wed 2025-04-02 03:05:55 MST
+           Universal time: Wed 2025-04-02 10:05:55 UTC
+                 RTC time: Wed 2025-04-02 10:05:55
+                Time zone: America/Phoenix (MST, -0700)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Nota Puede configurar la zona horaria de un servidor en Hora universal coordinada (UTC). El comando tzselect no incluye el nombre de la zona horaria UTC. Utilice la opción set-timezone del comando timedatectl para configurar la zona horaria actual del sistema en UTC. Configuración manual de la hora del sistema Utilice la opción set-time del comando timedatectl para cambiar la hora actual del sistema. Puede especificar la hora en
+
+the "YYYY-MM-DD hh:mm:ss" format, where you can omit either the date or the time.
+
+Por ejemplo, el siguiente comando timedatectl cambia la hora del sistema local a 09:00:00.
+
+root@host:~# timedatectl set-time 9:00:00
+root@host:~# timedatectl
+               Local time: Wed 2025-04-02 09:00:27 MST
+           Universal time: Wed 2025-04-02 16:00:27 UTC
+                 RTC time: Wed 2025-04-02 16:00:27
+                Time zone: America/Phoenix (MST, -0700)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Importante El ejemplo anterior puede fallar con el mensaje de error No se pudo establecer la hora: la sincronización automática de la hora está habilitada. En ese caso, primero desactive la sincronización automática de la hora antes de configurar manualmente la fecha u hora, lo cual se explica después de esta nota. La opción set-ntp del comando timedatectl habilita o deshabilita la sincronización NTP para cambios automáticos de hora. La opción set-ntp requiere un argumento verdadero o falso para activar o desactivar la sincronización NTP. Por ejemplo, el siguiente comando timedatectl desactiva la sincronización NTP.
+
+
+
+
+
+13.9. Mantener el tiempo sincronizado
+
+root@host:~# timedatectl set-ntp false
+
+Nota En Red Hat Enterprise Linux, la opción set-ntp del comando timedatectl ajusta si el servicio NTP chronyd está habilitado. Otras distribuciones de Linux pueden usar esta configuración para ajustar un servicio NTP diferente o un servicio de Protocolo simple de tiempo de red (SNTP). Habilitar o deshabilitar NTP con otras utilidades en RHEL, como en la aplicación gráfica de configuración de GNOME (que proporciona el comando gnome-control-center), también actualiza esta configuración. Configurar y monitorear el servicio Chronyd El servicio chronyd sincroniza el reloj en tiempo real (RTC) local impreciso con los servidores NTP configurados. Si no hay conectividad de red disponible, entonces el servicio chronyd calcula la deriva del reloj RTC y la registra en el archivo /var/lib/chrony/drift (que la configuración del archivo de deriva especifica en el archivo de configuración /etc/chrony.conf). Los servidores NTP también pueden ser clientes NTP. Un servidor NTP puede obtener su información horaria a partir de un hardware de reloj de referencia de alto rendimiento (que generalmente se basa en un reloj atómico o una señal de GPS), o desde un servidor NTP que podría tener acceso a dicho hardware. El estrato de la fuente horaria NTP indica su proximidad a una fuente horaria. El estrato determina el número de saltos que la máquina está alejada de un reloj de referencia de alto rendimiento. El reloj de referencia es una fuente de tiempo de "estrato 0". Un servidor NTP que está conectado directamente al reloj de referencia es una fuente de tiempo de "estrato 1". Una máquina que sincroniza la hora desde un servidor NTP de estrato 1 es una fuente de hora de "estrato 2", y así sucesivamente. Selección de fuentes de tiempo NTP Muchas organizaciones no ejecutan sus propios servidores NTP de estrato 1. Los relojes de referencia de alto rendimiento pueden ser costosos y muchas fuentes públicas de hora están disponibles en Internet. A menudo es más sencillo sincronizar la hora desde fuentes NTP públicas. Nota Esta sección no cubre cómo conectar directamente un servidor NTP a un hardware de reloj de referencia de alto rendimiento, solo a otros servidores NTP que puedan tener acceso a dicho reloj. Para obtener más información sobre la configuración del reloj de referencia de hardware, lea la documentación de la directiva refclock en la página del comando man chrony.conf(5). Si no está ejecutando un servidor Stratum 1, debe configurar su servidor NTP para obtener su hora de otra fuente de hora NTP. Aunque puede obtener la hora de una sola fuente, es mejor configurar tres o más fuentes si una de ellas no funciona correctamente y corregir mejor el retraso variable de la red. Las siguientes directivas clave agregan servidores de estrato superior a su archivo de configuración /etc/chrony.conf: La directiva del servidor agrega un único servidor NTP (puede usar esta directiva más de una vez). La directiva del grupo especifica un nombre DNS que se resuelve en varios servidores NTP y esa lista puede cambiar con el tiempo.
+
+
+
+
+
+13.9. Mantenimiento de la hora sincronizada De forma predeterminada, el servicio chronyd utiliza un grupo de servidores del Proyecto del grupo NTP para sincronizar la hora y no requiere configuración adicional. La línea iburst del grupo 2.rhel.pool.ntp.org en el archivo de configuración /etc/chrony.conf configura este servicio. Nota El nombre 2.rhel.pool.ntp.org se resuelve en las direcciones IPv4 o IPv6 de cuatro servidores NTP públicos. Estas direcciones se seleccionan al azar de un grupo más grande de servidores NTP públicos. Si sus máquinas se ejecutan en una red aislada de modo que no se puede acceder a los servidores del grupo, entonces debe configurar sus propios servidores NTP. La directiva del servidor en el archivo /etc/chrony.conf especifica un único servidor NTP. Puede definir varios servidores en el archivo de configuración de chronyd, uno por línea. El primer argumento de la línea del servidor es la dirección IP o el nombre DNS de un servidor NTP. Después de la dirección IP o el nombre del servidor, puede enumerar una serie de opciones para el servidor. Red Hat recomienda agregar la opción iburst a esta directiva, que configura chronyd para realizar de 4 a 8 mediciones rápidas para poder sincronizar el reloj más rápidamente. Para
+
+more information about the chronyd configuration file options, read the chrony.conf(5) man page.
+
+Como ejemplo, si la línea iburst del servidor ntp.example.com está en el archivo de configuración /etc/chrony.conf, el
+
+chronyd service uses the ntp.example.com server as an NTP time source.
+# Use public servers from the pool.ntp.org project.
+
+pool 2.rhel.pool.ntp.org servidor iburst ntp.example.com iburst ... salida omitida... Reinicie el servicio después de señalar el servicio chronyd a la nueva fuente de tiempo.
+
+root@host:~# systemctl restart chronyd
+
+Inspección del estado de sincronización NTP El comando chronyc actúa como cliente del servicio chronyd. Después de configurar la sincronización NTP, verifique que el sistema local esté utilizando sin problemas los nuevos servidores NTP para sincronizar el reloj del sistema, utilizando la opción de fuentes de comando chronyc. Para obtener resultados más detallados con explicaciones adicionales sobre el resultado, utilice la opción fuentes -v del comando chronyc.
+
+
+
+
+
+13.9. Mantener el tiempo sincronizado
+
+root@host:~# chronyc sources -v
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+
+| / 'x' = puede haber un error, '~' = demasiado variable, '?' = inutilizable. ||                                                 .- xxxx [ yyyy ] +/- zzzz ||      Registro de accesibilidad (octal) -.           |  xxxx = compensación ajustada, ||      Log2 (intervalo de sondeo) --.      |          |  yyyy = compensación medida, ||                                \ |          |  zzzz = error estimado. ||                                 |    |           \ Nombre de MS/dirección IP Estrato Encuesta Alcance LastRx Última muestra =============================================================================================================================================================================================================================================== -28us[ +361ns] +/- 14ms ^- 192.0.2.10 2 10 377 936 -2329us[-2329us] +/- 120ms ^+ 2001:0db8:5:1890:f888:3e> 2 10 377 1009 -777us[ -673us] +/- 27ms ^+ clock3.example.net 2 10 377 149 -1220us[-1220us] +/- 36ms ^- 2001:0db8:88:f031:3333:a> 2 10 377 767 -1300us[-1300us] +/- 118 ms El carácter de asterisco (*) en el campo Estado de la fuente (MS) indica que el servicio chronyd utiliza el servidor ntp.example.com como su mejor fuente de hora actual seleccionada para la sincronización. Las fuentes con el carácter más (+) en ese campo también contribuyen a la sincronización. Las fuentes con el carácter menos (-) en ese campo se pueden utilizar para la sincronización, pero actualmente no contribuyen a ella (probablemente haya mejores fuentes). Si hay una x o una tilde (~) en ese campo, entonces el servicio chronyd determinó que algo parece estar mal con la hora que proporcionó este servidor NTP remoto. Si hay un signo de interrogación (?) en ese campo, entonces el servidor no se puede utilizar actualmente. Se necesitan algunas consultas antes de que un nuevo servidor sea utilizable, por lo que la opción iburst es útil para iniciar rápidamente la sincronización horaria. Si un servidor permanece en ? estado durante mucho tiempo, entonces podría estar inactivo o inalcanzable. Nota Un valor en la columna Alcance inferior a 377 significa que menos de ocho de las ocho encuestas más recientes tuvieron éxito, lo que puede ayudar a diagnosticar los servidores en la zona ? estado. Consulte la sección de la página del manual de chronyc(1) sobre el subcomando fuentes para obtener más detalles. En la columna Nombre/Dirección IP, si una dirección IPv6 es larga, se trunca y el final de la dirección se marca con un carácter mayor que (>). Para mostrar la dirección completa, ejecute la opción chronyc comando -n fuentes, que desactiva la resolución de nombres DNS y muestra direcciones IP no truncadas. Este comando puede hacer que la salida del comando
+
+more difficult to read.
+
+Importante Debe especificar la opción -n entre los comandos chronyc y sources para que funcionen como se esperaba.
+
+
+
+
+
+13.9. Mantener referencias de tiempo sincronizadas
+
+timedatectl(1), tzselect(8), chronyd(8), chrony.conf(5), and chronyc(1) man pages
+
+¿Los servidores NTP rhel.pool.ntp.org son compatibles con Red Hat? Base de datos de zona horaria del proyecto NTP Pool
+
+
+
+
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado 13.10. Ejercicio guiado Mantener la hora sincronizada Configure el sistema para sincronizar la zona horaria mediante NTP. Resultados Cambiar la zona horaria en un servidor. Configure el servidor para sincronizar su hora con una fuente de hora NTP. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-maintain
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante 1. Para este ejercicio, imagine que la máquina del servidor se reubica en Haití y que necesita actualizar la zona horaria. 2. Seleccione la zona horaria adecuada para Haití. 2.1.
+
+
+
+
+
+
+
+## Ejercicio Guiado: Ejercicio guiado Mantener el tiempo sincronizado
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado 13.10. Ejercicio guiado Mantener la hora sincronizada Configure el sistema para sincronizar la zona horaria mediante NTP. Resultados Cambiar la zona horaria en un servidor. Configure el servidor para sincronizar su hora con una fuente de hora NTP. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-maintain
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante 1. Para este ejercicio, imagine que la máquina del servidor se reubica en Haití y que necesita actualizar la zona horaria. 2. Seleccione la zona horaria adecuada para Haití. 2.1.
+
+
+
+
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado
+
+[root@servera ~]# tzselect
+
+Identifique una ubicación para que las reglas de zona horaria se puedan configurar correctamente. Seleccione un continente, océano, "coord" o "TZ". 1) África 2) América 3) Antártida 4) Asia 5) Océano Atlántico 6) Australia 7) Europa 8) Océano Índico 9) Océano Pacífico 10) coord: quiero usar coordenadas geográficas. 11) TZ: quiero especificar la zona horaria utilizando el formato Posix TZ. #? 2 Seleccione un país cuyos relojes coincidan con los suyos. 1) Anguila 19) República Dominicana 37) Perú 2) Antigua y Barbuda 20) Ecuador 38) Puerto Rico 3) Argentina 21) El Salvador 39) San Bartolomé 4) Aruba 22) Guayana Francesa 40) San Cristóbal y Nieves 5) Bahamas 23) Groenlandia 41) Santa Lucía 6) Barbados 24) Granada 42) Sint Maarten (holandés) 7) Belice 25) Guadalupe 43) San Martín (francés) 8) Bolivia 26) Guatemala 44) San Pedro y Miquelón 9) Brasil 27) Guyana 45) San Vicente 10) Canadá 28) Haití 46) Surinam 11) Caribe NL 29) Honduras 47) Trinidad y Tobago 12) Islas Caimán 30) Jamaica 48) Islas Turcas y Caicos 13) Chile 31) Martinica 49) Estados Unidos 14) Colombia 32) México 50) Uruguay 15) Costa Rica 33) Montserrat 51) Venezuela 16) Cuba 34) Nicaragua 52) Islas Vírgenes (Reino Unido) 17) Curazao 35) Panamá 53) Islas Vírgenes (EE.UU.) 18) Dominica 36) Paraguay #? 28 Se ha proporcionado la siguiente información: Haití Por lo tanto, se utilizará TZ='América/Puerto Príncipe'. La hora seleccionada es ahora: viernes 6 de junio a las 13:49:36 EDT de 2025. La hora universal es ahora: viernes 6 de junio a las 17:49:36 UTC de 2025. ¿Está bien la información anterior? 1) Sí 2) No #? 1 Puede hacer que este cambio sea permanente agregando la línea TZ='America/Port-au-Prince'; exportar TZ
+
+to the file '.profile' in your home directory; then log out and log in again.
+
+Aquí está nuevamente el valor TZ, esta vez en salida estándar para que pueda
+
+can use the /usr/bin/tzselect command in shell scripts:
+
+América/Puerto Príncipe Actualiza la zona horaria de América/Puerto Príncipe.
+
+[root@servera ~]# timedatectl set-timezone America/Port-au-Prince
+
+2.2. Verifique que haya configurado correctamente la zona horaria en América/Puerto Príncipe. 2.3.
+
+
+
+
+
+13.10. Ejercicio guiado Mantener el tiempo sincronizado
+
+[root@servera ~]# timedatectl
+               Local time: Fri 2025-06-06 13:50:22 EDT
+           Universal time: Fri 2025-06-06 17:50:22 UTC
+                 RTC time: Fri 2025-06-06 17:50:22
+                Time zone: America/Port-au-Prince (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Configure el servicio chronyd para sincronizar la hora del sistema con el servidor Classroom.example.com como fuente de hora NTP. 3. Edite el archivo de configuración /etc/chrony.conf para especificar el servidor Classroom.example.com como NTP.
+
+time source. Include the iburst option to speed up initial time synchronization:
+
+...salida omitida... servidor aula.ejemplo.com iburst ...salida omitida... 3.1. Utilice el comando timedatectl para habilitar la sincronización horaria.
+
+[root@servera ~]# timedatectl set-ntp true
+
+3.2. Verifique que la configuración NTP se sincronice con la fuente de hora de aula.ejemplo.com en el entorno del aula. 4. Verifique que la sincronización horaria esté habilitada. Nota Si el resultado muestra que el reloj no está sincronizado, espere unos segundos y vuelva a ejecutar el
+
+timedatectl command. It takes a few seconds to successfully synchronize the time settings with
+
+la fuente del tiempo.
+
+[root@servera ~]# timedatectl
+               Local time: Fri 2025-06-06 13:51:13 EDT
+           Universal time: Fri 2025-06-06 17:51:13 UTC
+                 RTC time: Fri 2025-06-06 17:51:13
+                Time zone: America/Port-au-Prince (EDT, -0400)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+4.1. Verifique que la máquina del servidor sincronice actualmente su configuración de hora con la fuente de hora de Classroom.example.com. El resultado muestra un carácter de asterisco (*) en el campo de estado de origen (MS) para la fuente de hora NTP Classroom.example.com. El asterisco indica que la hora del sistema local se sincroniza correctamente con la fuente de hora NTP. 4.2.
+
+
+
+
+
+13.10. Ejercicio guiado Mantener la hora sincronizada Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-maintain
+[root@servera ~]# chronyc sources -v
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '+*' = current best, '' = combined, '-' = not combined,
+
+| / 'x' = puede haber un error, '~' = demasiado variable, '?' = inutilizable. ||                                                 .- xxxx [ yyyy ] +/- zzzz ||      Registro de accesibilidad (octal) -.           |  xxxx = compensación ajustada, ||      Log2 (intervalo de sondeo) --.      |          |  yyyy = compensación medida, ||                                \ |          |  zzzz = error estimado. ||                                 |    |           \ Nombre de MS/Dirección IP Estrato Encuesta Alcance LastRx Última muestra =========================================================================================== ^* aula.ejemplo.com 3 9 377 469 +107us[ +130us] +/- 13ms Regresa a la máquina de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+13.11. Análisis de laboratorio y almacenamiento de registros 13.11. Análisis de laboratorio y almacenamiento de registros Configure el sistema para actualizar la zona horaria. Configure el diario del sistema para almacenar de forma persistente los registros de eventos después de un reinicio. Configure el servicio syslog para redirigir todos los eventos de registro de una prioridad específica a un archivo. Resultados Actualizar la zona horaria en un servidor existente. Configure los diarios del sistema para que persistan en el almacenamiento y roten con más frecuencia. Configure un nuevo archivo de registro para almacenar todos los mensajes de fallas de autenticación. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Suponga que la máquina del servidor está reubicada en Jamaica y que debe actualizar a la zona horaria de América/Jamaica. Eleve los privilegios del usuario estudiante para ejecutar el comando timedatectl para actualizar la zona horaria. Utilice estudiante como contraseña. Verifique que haya configurado correctamente la zona horaria adecuada. 1. Vea los eventos de registro grabados en los 30 minutos anteriores. 2. Como usuario raíz, configure diarios persistentes con rotación automática. Verifique que el diario sea persistente después de reiniciar. 3. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Configure el servicio rsyslog para escribir mensajes en el archivo /var/log/auth-errors. Utilice la función authpriv con la prioridad de alerta en el archivo de configuración. Introduzca el mensaje de registro de prueba de registro authpriv.alert en el registro del sistema utilizando la función authpriv con la prioridad de alerta. Utilice estudiante como contraseña. 4. Regrese al sistema de la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+
+
+## Trabajo de laboratorio: Análisis de laboratorio y registros de almacenamiento
+
+13.11. Análisis de laboratorio y almacenamiento de registros 13.11. Análisis de laboratorio y almacenamiento de registros Configure el sistema para actualizar la zona horaria. Configure el diario del sistema para almacenar de forma persistente los registros de eventos después de un reinicio. Configure el servicio syslog para redirigir todos los eventos de registro de una prioridad específica a un archivo. Resultados Actualizar la zona horaria en un servidor existente. Configure los diarios del sistema para que persistan en el almacenamiento y roten con más frecuencia. Configure un nuevo archivo de registro para almacenar todos los mensajes de fallas de autenticación. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito. Suponga que la máquina del servidor está reubicada en Jamaica y que debe actualizar a la zona horaria de América/Jamaica. Eleve los privilegios del usuario estudiante para ejecutar el comando timedatectl para actualizar la zona horaria. Utilice estudiante como contraseña. Verifique que haya configurado correctamente la zona horaria adecuada. 1. Vea los eventos de registro grabados en los 30 minutos anteriores. 2. Como usuario raíz, configure diarios persistentes con rotación automática. Verifique que el diario sea persistente después de reiniciar. 3. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Configure el servicio rsyslog para escribir mensajes en el archivo /var/log/auth-errors. Utilice la función authpriv con la prioridad de alerta en el archivo de configuración. Introduzca el mensaje de registro de prueba de registro authpriv.alert en el registro del sistema utilizando la función authpriv con la prioridad de alerta. Utilice estudiante como contraseña. 4. Regrese al sistema de la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+student@workstation:~$ lab grade logs-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-review
+
+
+
+
+
+13.11. Solución de análisis y almacenamiento de registros de laboratorio Configure el sistema para actualizar la zona horaria. Configure el diario del sistema para almacenar de forma persistente los registros de eventos después de un reinicio. Configure el servicio syslog para redirigir todos los eventos de registro de una prioridad específica a un archivo. Resultados Actualizar la zona horaria en un servidor existente. Configure los diarios del sistema para que persistan en el almacenamiento y roten con más frecuencia. Configure un nuevo archivo de registro para almacenar todos los mensajes de fallas de autenticación. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-review
+
+Instrucciones Imagina que la máquina del servidor está reubicada en Jamaica y que debes actualizar a la zona horaria de América/Jamaica. Eleve los privilegios del usuario estudiante para ejecutar el comando timedatectl para actualizar la zona horaria. Utilice estudiante como contraseña. Verifique que haya configurado correctamente la zona horaria adecuada. 1. Inicie sesión en la máquina del servidor como usuario estudiante.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida... [estudiante@servidor ~]$ 1.1. Seleccione la zona horaria apropiada para Jamaica. 1.2.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+[student@serverb ~]$ tzselect
+
+Identifique una ubicación para que las reglas de zona horaria se puedan configurar correctamente. Seleccione un continente, océano, "coord" o "TZ". 1) África 2) América 3) Antártida 4) Asia 5) Océano Atlántico 6) Australia 7) Europa 8) Océano Índico 9) Océano Pacífico 10) coord: quiero usar coordenadas geográficas. 11) TZ: quiero especificar la zona horaria utilizando el formato Posix TZ. #? 2 Seleccione un país cuyos relojes coincidan con los suyos. 1) Anguila 19) República Dominicana 37) Perú 2) Antigua y Barbuda 20) Ecuador 38) Puerto Rico 3) Argentina 21) El Salvador 39) San Bartolomé 4) Aruba 22) Guayana Francesa 40) San Cristóbal y Nieves 5) Bahamas 23) Groenlandia 41) Santa Lucía 6) Barbados 24) Granada 42) Sint Maarten (holandés) 7) Belice 25) Guadalupe 43) San Martín (francés) 8) Bolivia 26) Guatemala 44) San Pedro y Miquelón 9) Brasil 27) Guyana 45) San Vicente 10) Canadá 28) Haití 46) Surinam 11) Caribe NL 29) Honduras 47) Trinidad y Tobago 12) Islas Caimán 30) Jamaica 48) Islas Turcas y Caicos 13) Chile 31) Martinica 49) Estados Unidos 14) Colombia 32) México 50) Uruguay 15) Costa Rica 33) Montserrat 51) Venezuela 16) Cuba 34) Nicaragua 52) Islas Vírgenes (Reino Unido) 17) Curazao 35) Panamá 53) Islas Vírgenes (EE.UU.) 18) Dominica 36) Paraguay #? 30 Se ha proporcionado la siguiente información:
+
+        Jamaica
+
+Por lo tanto, se utilizará TZ='América/Jamaica'. La hora seleccionada es ahora: lunes 9 de junio a las 11:50:06 EST de 2025. La hora universal es ahora: lunes 9 de junio a las 16:50:06 UTC de 2025. ¿Está bien la información anterior? 1) Sí 2) No #? 1 Puedes hacer que este cambio sea permanente añadiendo la línea
+
+        TZ='America/Jamaica'; export TZ
+to the file '.profile' in your home directory; then log out and log in again.
+
+Aquí está nuevamente el valor TZ, esta vez en salida estándar para que pueda
+
+can use the /usr/bin/tzselect command in shell scripts:
+
+América/Jamaica Aumente los privilegios de usuario estudiantil para actualizar la zona horaria a América/Jamaica. Utilice estudiante como contraseña.
+
+[student@serverb ~]$ sudo timedatectl set-timezone America/Jamaica
+
+[sudo] contraseña para estudiante: estudiante [estudiante@servidor ~]$ 1.3. Verifique que haya configurado correctamente la zona horaria en América/Jamaica. 1.4.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+[student@serverb ~]$ timedatectl
+               Local time: Mon 2025-06-09 11:51:02 EST
+           Universal time: Mon 2025-06-09 16:51:02 UTC
+                 RTC time: Mon 2025-06-09 16:51:02
+                Time zone: America/Jamaica (EST, -0500)
+
+Reloj del sistema sincronizado: sí
+
+              NTP service: active
+          RTC in local TZ: no
+
+Vea los eventos de registro grabados en los 30 minutos anteriores.
+
+[student@serverb ~]$ journalctl --since "-30min"
+
+... salida omitida... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4336] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4372] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <información> [1749486323.4372] ... 09 de junio 11:25:23 servidorb NetworkManager[1034]: <información> [1749486323.4372] ... 09 de junio 11:25:23 servidorb NetworkManager[1034]: <información> [1749486323.4384] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4386] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4387] ... 09 de junio 11:25:23 serverb NetworkManager[1034]: <info> [1749486323.4389] ... líneas 1-44/44 q 2. Como usuario raíz, configure diarios persistentes con rotación automática. Verifique que el diario sea persistente después de reiniciar. 3. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 3.1. Cree el directorio /var/log/journal.
+
+[root@serverb ~]# mkdir /var/log/journal
+
+3.2. Vacíe el diario actual al almacenamiento.
+
+[root@serverb ~]# journalctl --flush
+
+3.3. Reinicie el servicio systemd-journald para aplicar los cambios de configuración.
+
+[root@serverb ~]# systemctl restart systemd-journald
+
+3.4. Reinicie la máquina del servidor. La conexión SSH finaliza tan pronto como reinicia la máquina del servidor.
+
+[root@serverb ~]# systemctl reboot
+
+...salida omitida... Conexión al servidor cerrada.
+
+student@workstation:~$
+
+3.5. Espere a que la máquina del servidor se reinicie y luego inicie sesión en la máquina del servidor como usuario estudiante. 3.6.
+
+
+
+
+
+13.11. Análisis de laboratorio y registros de almacenamiento
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida... [estudiante@servidor ~]$ Verifique que los archivos del diario estén almacenados de manera persistente en el almacenamiento local. El nombre del subdirectorio de la revista puede ser diferente al que se muestra aquí.
+
+[student@serverb ~]$ ls -l /var/log/journal
+
+total 4... root systemd-journal 53 10 de junio 22:30 da54d37671ac4429bcdfacfe7bebb5a1 3.7. Verifique el contenido del directorio hexadecimal.
+
+[student@serverb ~]$ ls -l /var/log/journal/da54d37671ac4429bcdfacfe7bebb5a1
+
+total 16388... 1 raíz systemd-journal 8388608 10 de junio 22:35 system.journal... 1 raíz raíz 8388608 10 de junio 22:35 user-1000.journal 3.8. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Configure el servicio rsyslog para escribir mensajes en el archivo /var/log/auth-errors. Utilice la función authpriv con la prioridad de alerta en el archivo de configuración. Introduzca el mensaje de registro de prueba de registro authpriv.alert en el registro del sistema utilizando la función authpriv con la prioridad de alerta. Utilice estudiante como contraseña. 4. Cambie al usuario root. Utilice estudiante como contraseña.
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 4.1. Cree el archivo /etc/rsyslog.d/auth-errors.conf. Especifique el nuevo archivo /var/log/auth-errors como destino para los mensajes de autenticación y seguridad. El archivo debe aparecer de la siguiente manera: authpriv.alert /var/log/auth-errors 4.2. Reinicie el servicio rsyslog para aplicar los cambios del archivo de configuración.
+
+[root@serverb ~]# systemctl restart rsyslog
+
+4.3. Utilice el comando logger -p para escribir el mensaje authpriv.alert de prueba de registro en el archivo /var/log/auth-errors. Utilice la función authpriv con prioridad de alerta.
+
+[root@serverb ~]# logger -p authpriv.alert "Logging test authpriv.alert"
+
+4.4. Verifique que el archivo /var/log/auth-errors contenga una entrada de registro con el mensaje que especificó anteriormente.
+
+[root@serverb ~]# tail /var/log/auth-errors
+
+9 de junio 11:53:41 raíz del servidor [4058]: prueba de registro authpriv.alert 4.5. Regrese al sistema de la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+13.11. Análisis de laboratorio y evaluación de registros de almacenamiento Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade logs-review
+
+Finalizar En la máquina de la estación de trabajo, utilice el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-review
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+
+
+
+
+13.12. Resumen 13.12. Resumen En esta lección, aprendió a utilizar varios servicios de registro para ayudar con el monitoreo, la auditoría y la resolución de problemas. Además, aprendió a sincronizar el reloj de un servidor para mantener una fecha y hora precisas y consistentes con otros sistemas. Esta sincronización es importante para registrar con precisión la línea de tiempo de los eventos registrados. Los servicios systemd-journald y rsyslog recopilan, procesan y almacenan mensajes de registro que el sistema y
+
+applications generate. Most log files are stored in the /var/log directory; the rsyslog service can also write log
+
+mensajes a otras ubicaciones, incluidas bases de datos, cuentas de usuario y servidores remotos. De forma predeterminada, los diarios de systemd se almacenan temporalmente y no persisten durante el reinicio, aunque si crea un directorio /var/log/journal y actualiza el servicio, se pueden almacenar de forma persistente. El sistema rota periódicamente el diario del sistema systemd-journald y los archivos de registro rsyslog para evitar que consuman todo el almacenamiento en sus sistemas de archivos. El servicio chronyd ayuda a sincronizar el reloj de un servidor con diferentes fuentes horarias. Puede ajustar la zona horaria del servidor según su ubicación o cualquier otra ubicación según corresponda.
+
+
+
+
+
+
+
+## Resumen
+
+13.12. Resumen 13.12. Resumen En esta lección, aprendió a utilizar varios servicios de registro para ayudar con el monitoreo, la auditoría y la resolución de problemas. Además, aprendió a sincronizar el reloj de un servidor para mantener una fecha y hora precisas y consistentes con otros sistemas. Esta sincronización es importante para registrar con precisión la línea de tiempo de los eventos registrados. Los servicios systemd-journald y rsyslog recopilan, procesan y almacenan mensajes de registro que el sistema y
+
+applications generate. Most log files are stored in the /var/log directory; the rsyslog service can also write log
+
+mensajes a otras ubicaciones, incluidas bases de datos, cuentas de usuario y servidores remotos. De forma predeterminada, los diarios de systemd se almacenan temporalmente y no persisten durante el reinicio, aunque si crea un directorio /var/log/journal y actualiza el servicio, se pueden almacenar de forma persistente. El sistema rota periódicamente el diario del sistema systemd-journald y los archivos de registro rsyslog para evitar que consuman todo el almacenamiento en sus sistemas de archivos. El servicio chronyd ayuda a sincronizar el reloj de un servidor con diferentes fuentes horarias. Puede ajustar la zona horaria del servidor según su ubicación o cualquier otra ubicación según corresponda.
+
+
+
+
+
+Capítulo 14. Gestión de la seguridad con SELinux Objetivo Proteger los sistemas y gestionar la seguridad mediante SELinux. Secciones Operar SELinux (y ejercicio guiado) Controlar los contextos de archivos de SELinux (y ejercicio guiado) Ajustar la política de SELinux ajustando valores booleanos (y ejercicio guiado) Investigar y resolver problemas de SELinux (y ejercicio guiado) Laboratorio Administrar la seguridad con SELinux
+
+
+
+
+

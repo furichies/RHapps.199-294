@@ -1,0 +1,143 @@
+# Trabajo de laboratorio: Instalación de laboratorio y actualización de software con RPM
+# Tipo: lab
+# Capítulo: Capítulo 6. Instalación y actualización de software con RPM
+
+6.7. Instalación de laboratorio y actualización de software con RPM 6.7. Laboratorio de instalación y actualización de software con RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Resultados Administrar repositorios de software. Instalar y actualizar paquetes desde repositorios. Instale un paquete RPM. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-review
+
+Instrucciones Evaluación Como usuario estudiante en la máquina de la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+student@workstation:~$ lab grade software-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos. En la máquina del servidor, configure un repositorio de software personalizado para instalar paquetes específicos. Asigne un nombre a las erratas del repositorio y cree el archivo de repositorio errata.repo. Configure el archivo errata.repo para usar el
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata repository. Do not verify GPG
+
+firmas. 1. En la máquina del servidor, instale el paquete rht-system. 2. Por razones de seguridad, debe eliminar por completo todo el software relacionado con la impresión de la máquina del servidor. La desinstalación de estos paquetes elimina la funcionalidad de impresión. 3. El script de inicio de laboratorio descarga el paquete rhcsa-script-1.0.0-1.noarch.rpm en el directorio /root de la máquina del servidor. Confirme que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor e instálelo utilizando privilegios de root. Verifique que el paquete esté instalado. 4. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante. 5.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM
+
+student@workstation:~$ lab finish software-review
+
+
+
+
+
+6.7. Laboratorio de instalación y actualización de software con solución RPM Descargue, instale, actualice y administre paquetes de software desde los repositorios de paquetes de Red Hat y DNF. Resultados Administrar repositorios de software. Instalar y actualizar paquetes desde repositorios. Instale un paquete RPM. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start software-review
+
+Instrucciones En la máquina del servidor, configure un repositorio de software personalizado para instalar paquetes específicos. Asigne un nombre a las erratas del repositorio y cree el archivo de repositorio errata.repo. Configure el archivo errata.repo para usar el
+
+http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata repository. Do not verify GPG
+
+firmas. 1. Desde la máquina de la estación de trabajo, inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice estudiante como contraseña.
+
+student@workstation:~$ ssh student@serverb
+
+...salida omitida...
+
+[student@serverb ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@serverb ~]# 1.1. Cree el archivo /etc/yum.repos.d/errata.repo con el siguiente contenido: [errata]
+
+name=Custom Errata Repository
+baseurl=http://repo.example.com/rhel10.0/x86_64/rhcsa-practice/errata
+enabled=1
+gpgcheck=0
+
+1.2. En la máquina del servidor, instale el paquete rht-system. 2. Enumere el paquete rht-system para asegurarse de que esté disponible.
+
+[root@serverb ~]# dnf list rht-system
+
+... salida omitida... Última verificación de vencimiento de metadatos: hace 0:00:39 el viernes 13 de junio a las 00:18:19 de 2025. Paquetes disponibles rht-system.noarch 1.0.0-2 erratas 2.1. Instale la última versión del paquete rht-system. 2.2.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM
+
+[root@serverb ~]# dnf install rht-system
+
+...salida omitida... Dependencias resueltas. ========================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ========================================================================================== Instalación: rht-system noarch 1.0.0-2 erratas 7.5 k Resumen de transacciones ================================================================================================= Instalar 1 paquete Tamaño total de descarga: 7,5 k Tamaño instalado: 300 ¿Está bien? [s/n]: y ... salida omitida... ¡Completo! Por razones de seguridad, debe eliminar por completo todo el software relacionado con la impresión de la máquina del servidor. La desinstalación de estos paquetes elimina la funcionalidad de impresión. 3. Enumere el paquete de tazas instalado.
+
+[root@serverb ~]# dnf list cups
+
+...salida omitida... Paquetes instalados
+
+cups.x86_64        1:2.4.10-11.el10         @rhel-10.0-for-x86_64-appstream-rpms
+
+3.1. Retire el paquete de tazas y sus dependencias.
+
+[root@serverb ~]# dnf remove cups.x86_64
+
+Dependencias resueltas. ========================================================================================== Paquete Versión Arch Tamaño del repositorio ================================================================================== Eliminando:
+
+ cups        x86_64 1:2.4.10-11.el10 @rhel-10.0-for-x86_64-appstream-rpms 8.1 M
+
+Eliminación de dependencias no utilizadas: adobe-mappings-cmap
+
+             noarch 20230622-5.el10  @rhel-10.0-for-x86_64-appstream-rpms  14 M
+
+...salida omitida... Resumen de transacción ================================================================================================= Quitar 55 paquetes Espacio liberado: 114 M ¿Está bien? [s/N]: y ...salida omitida... ¡Completo! 3.2. El script de inicio de laboratorio descarga el paquete rhcsa-script-1.0.0-1.noarch.rpm en el directorio /root de la máquina del servidor. Confirme que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor e instálelo utilizando privilegios de root. Verifique que el paquete esté instalado. 4. Verifique que el paquete rhcsa-script-1.0.0-1.noarch.rpm esté disponible en la máquina del servidor. 4.1.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con evaluación RPM Como usuario estudiante en la estación de trabajo, utilice el comando de laboratorio para calificar su trabajo. Corrija cualquier error informado y vuelva a ejecutar el comando hasta que tenga éxito.
+
+[root@serverb ~]# rpm -q -p -i ~/rhcsa-script-1.0.0-1.noarch.rpm
+
+Nombre: rhcsa-script Versión: 1.0.0 Versión: 1 Arquitectura: noarch Fecha de instalación: (no instalado) Grupo: Tamaño del sistema: 593 Licencia: GPL Firma: (ninguna) RPM de origen: rhcsa-script-1.0.0-1.src.rpm Fecha de compilación: miércoles 23 de marzo 12:24:21 2022 Host de compilación: localhost Empaquetador: Bernardo Gargallo URL: http://example.com Resumen: Guión de práctica de RHCSA Descripción: Un guión de práctica de RHCSA. El paquete cambia el motd. Instale el paquete rhcsa-script-1.0.0-1.noarch.rpm.
+
+[root@serverb ~]# dnf install ~/rhcsa-script-1.0.0-1.noarch.rpm
+
+...salida omitida... Dependencias resueltas. ========================================================================================= Arquitectura del paquete Versión Tamaño del repositorio ========================================================================================= Instalación: rhcsa-script noarch 1.0.0-1 @commandline 7.5 k Resumen de transacciones ================================================================================================ Instalar 1 paquete Tamaño total: 7,5 k Tamaño instalado: 593 ¿Está bien? [s/N]: y ... salida omitida... ¡Completo! 4.2. Verifique que el paquete esté instalado.
+
+[root@serverb ~]# rpm -q rhcsa-script
+
+rhcsa-script-1.0.0-1.noarch [root@serverb ~]# 4.3. Después de completar las tareas de esta actividad, regrese a la estación de trabajo como usuario estudiante.
+
+[root@serverb ~]# exit
+
+cerrar sesión
+
+[student@serverb ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+5.
+
+
+
+
+
+6.7. Instalación de laboratorio y actualización de software con RPM
+
+student@workstation:~$ lab grade software-review
+
+Finalizar En la estación de trabajo, cambie al directorio de inicio del usuario estudiante y use el comando de laboratorio para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish software-review
+
+
+
+
+
+6.8. Resumen 6.8. Resumen En esta lección, aprendió a administrar software utilizando la herramienta rpm para el manejo de paquetes y la herramienta dnf para la administración avanzada de software, que incluye la descarga, instalación y actualización de paquetes RPM. El software RHEL está empaquetado en formato de archivo RPM y distribuido en repositorios. Puede instalar, actualizar o eliminar software utilizando las herramientas rpm y dnf. El comando rpm le permite consultar la base de datos RPM local y administrar los paquetes descargados. La utilidad dnf es una poderosa herramienta para administrar paquetes de software para instalar, actualizar, eliminar y consultar paquetes de repositorios configurados. También aprendió que Red Hat Enterprise Linux proporciona los repositorios BaseOS y Application Stream (AppStream). BaseOS proporciona el contenido principal del sistema operativo y AppStream proporciona una variedad de dependencias y paquetes de aplicaciones.
+
+
+
+
+

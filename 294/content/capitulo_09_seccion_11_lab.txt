@@ -1,0 +1,558 @@
+# Trabajo de laboratorio: Automatización de tareas de administración de Linux
+# Tipo: lab
+# Capítulo: Capítulo 9. Automatización de tareas de administración de Linux
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Trabajo de laboratorio
+Automatización de tareas de
+administración de Linux
+Realizar tareas administrativas comunes de Linux en sus hosts gestionados mediante
+técnicas que se trataron en este capítulo.
+Resultados
+• Cree playbooks para configurar un repositorio de software, usuarios y grupos, volúmenes
+lógicos, trabajos de cron e interfaces de red adicionales en un host gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-review
+Instrucciones
+1.
+Cree un playbook denominado repo_playbook.yml para que se ejecute en el grupo de
+hosts webservers que configure esos hosts gestionados para usar el repositorio interno de
+Yum ubicado en http://materials.example.com/yum/repository y luego instale el
+paquete rhelver disponible desde ese repositorio en esos hosts gestionados.
+La configuración del repositorio debe cumplir con los siguientes requisitos:
+• La configuración se encuentra en el archivo /etc/yum.repos.d/example.repo.
+• El ID del repositorio es example-internal.
+• La URL base es http://materials.example.com/yum/repository.
+• El repositorio está configurado para verificar las firmas RPM GPG.
+• La descripción del repositorio es Example Inc. Internal YUM repo.
+Los paquetes RPM están firmados con un par de claves GPG organizativas. Esa clave pública
+de GPG está disponible en http://materials.example.com/yum/repository/RPM-
+GPG-KEY-example. Debe asegurarse de que la clave esté configurada en todos los hosts
+gestionados en el grupo de hosts webservers.
+Ejecute el playbook. Debe confirmar que el playbook instaló el paquete en sus hosts
+gestionados después de su ejecución.
+2.
+Cree un playbook denominado users.yml para ejecutar en el grupo de hosts webservers
+que crea el grupo de usuarios webadmin, agrega los usuarios ops1 y ops2 y garantiza que
+ambos usuarios tengan webadmin como grupo complementario en esos hosts gestionados.
+Ejecute el playbook. Debe confirmar que los usuarios existen en los hosts gestionados y que
+tienen webadmin como grupo complementario después de que se ejecute el playbook.
+484
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+3.
+Instale la Ansible Content Collection redhat-rhel_system_roles-1.19.3.tar.gz
+proporcionada en el directorio del proyecto en el directorio collections.
+Cree un playbook denominado storage.yml para que se ejecute en el grupo de
+hosts webservers y configure esos hosts gestionados mediante el rol del sistema
+redhat.rhel_system_roles.storage, de la siguiente manera:
+• Use el dispositivo /dev/vdb como volumen físico LVM para el grupo de volúmenes
+apache-vg.
+• Crea el volumen lógico content-lv, con un tamaño de 64 MB, en el grupo de volúmenes
+apache-vg.
+• Crea el volumen lógico logs-lv, con un tamaño de 128 MB, en el grupo de volúmenes
+apache-vg.
+• Formatea cada volumen lógico con un sistema de archivos XFS.
+• Monta el volumen lógico content-lv en el directorio /var/www.
+• Monta el volumen lógico logs-lv en el directorio /var/log/httpd.
+Ejecute el playbook. Confirme que el playbook se ejecute correctamente después de
+ejecutarlo.
+4.
+Configure el playbook denominado create_crontab_file.yml para ejecutar el grupo de
+host webservers que usa el módulo ansible.builtin.cron para crear un sistema de
+archivos crontab que programa un trabajo cron recurrente. Cree el archivo /etc/cron.d/
+disk_usage con el archivo crontab del sistema. Configure el trabajo Cron del sistema de
+ese archivo de la siguiente manera:
+• Debe ejecutarse con el usuario devops.
+• Debe ejecutarse cada dos minutos de 9:00 a 16:59 de lunes a viernes.
+• Debe ejecutar el comando df >> /home/devops/disk_usage.
+Ejecute el playbook. Debe confirmar que configuró el trabajo de Cron correctamente
+después de ejecutar el playbook. Puede ver si el archivo se implementó correctamente o
+inspeccionar el archivo de registro /var/log/cron como root para ver si el trabajo se está
+ejecutando.
+5.
+Cree un playbook denominado network_playbook.yml para ejecutar el grupo de host
+webservers que use el rol redhat.rhel_system_roles.network para configurar la
+interfaz de red eth1 con la dirección IP 172.25.250.40/24.
+Ejecute el playbook. Confirme que el playbook se haya ejecutado correctamente.
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade system-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish system-review
+RH294-RHEL9.0-es-3-20240620
+485
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+486
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Solución
+Automatización de tareas de
+administración de Linux
+Realizar tareas administrativas comunes de Linux en sus hosts gestionados mediante
+técnicas que se trataron en este capítulo.
+Resultados
+• Cree playbooks para configurar un repositorio de software, usuarios y grupos, volúmenes
+lógicos, trabajos de cron e interfaces de red adicionales en un host gestionado.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start system-review
+Instrucciones
+1.
+Cree un playbook denominado repo_playbook.yml para que se ejecute en el grupo de
+hosts webservers que configure esos hosts gestionados para usar el repositorio interno de
+Yum ubicado en http://materials.example.com/yum/repository y luego instale el
+paquete rhelver disponible desde ese repositorio en esos hosts gestionados.
+La configuración del repositorio debe cumplir con los siguientes requisitos:
+• La configuración se encuentra en el archivo /etc/yum.repos.d/example.repo.
+• El ID del repositorio es example-internal.
+• La URL base es http://materials.example.com/yum/repository.
+• El repositorio está configurado para verificar las firmas RPM GPG.
+• La descripción del repositorio es Example Inc. Internal YUM repo.
+Los paquetes RPM están firmados con un par de claves GPG organizativas. Esa clave pública
+de GPG está disponible en http://materials.example.com/yum/repository/RPM-
+GPG-KEY-example. Debe asegurarse de que la clave esté configurada en todos los hosts
+gestionados en el grupo de hosts webservers.
+Ejecute el playbook. Debe confirmar que el playbook instaló el paquete en sus hosts
+gestionados después de su ejecución.
+1.1.
+Cambie al directorio /home/student/system-review.
+[student@workstation ~]$ cd ~/system-review
+[student@workstation system-review]$
+RH294-RHEL9.0-es-3-20240620
+487
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+1.2.
+Cree el playbook repo_playbook.yml que se ejecuta en los hosts gestionados en el
+grupo de hosts webservers.
+Agregue una tarea que use el módulo ansible.builtin.yum_repository para
+asegurar la configuración correcta del repositorio yum interno en el host remoto.
+La configuración debe cumplir con los siguientes requisitos:
+• La configuración se almacena en el archivo /etc/yum.repos.d/example.repo.
+• El ID del repositorio es example-internal.
+• La URL base es http://materials.example.com/yum/repository.
+• El repositorio está configurado para verificar las firmas RPM GPG.
+• La descripción del repositorio es Example Inc. Internal YUM repo.
+El playbook incluye el siguiente contenido:
+---
+- name: Repository Configuration
+  hosts: webservers
+  tasks:
+    - name: Ensure Example Repo exists
+      ansible.builtin.yum_repository:
+        name: example-internal
+        description: Example Inc. Internal YUM repo
+        file: example
+        baseurl: http://materials.example.com/yum/repository/
+        gpgcheck: true
+1.3.
+Agregue una segunda tarea al play que use el módulo ansible.builtin.rpm_key
+para asegurarse de que la clave pública del repositorio esté presente en el host remoto.
+La URL de la clave pública del repositorio es http://materials.example.com/
+yum/repository/RPM-GPG-KEY-example.
+La segunda tarea incluye el siguiente contenido:
+    - name: Ensure Repo RPM Key is Installed
+      ansible.builtin.rpm_key:
+        key: http://materials.example.com/yum/repository/RPM-GPG-KEY-example
+        state: present
+1.4.
+Agregue una tercera tarea para instalar el paquete rhelver disponible en el
+repositorio interno de Yum.
+La tercera tarea incluye el siguiente contenido:
+    - name: Install rhelver package
+      ansible.builtin.dnf:
+        name: rhelver
+        state: present
+1.5.
+Ejecute el playbook repo_playbook.yml:
+[student@workstation system-review]$ ansible-navigator run \
+> -m stdout repo_playbook.yml
+PLAY [Repository Configuration] ************************************************
+488
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [Ensure Example Repo exists] **********************************************
+changed: [serverb.lab.example.com]
+TASK [Ensure Repo RPM Key is Installed] ****************************************
+changed: [serverb.lab.example.com]
+TASK [Install rhelver package] *************************************************
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=4    changed=3    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+2.
+Cree un playbook denominado users.yml para ejecutar en el grupo de hosts webservers
+que crea el grupo de usuarios webadmin, agrega los usuarios ops1 y ops2 y garantiza que
+ambos usuarios tengan webadmin como grupo complementario en esos hosts gestionados.
+Ejecute el playbook. Debe confirmar que los usuarios existen en los hosts gestionados y que
+tienen webadmin como grupo complementario después de que se ejecute el playbook.
+2.1.
+Cree un archivo de variables vars/users_vars.yml, que define a dos usuarios,
+ops1 y ops2, que pertenecen al grupo de usuarios webadmin.
+Es posible que deba crear el subdirectorio vars.
+[student@workstation system-review]$ mkdir vars
+[student@workstation system-review]$ vim vars/users_vars.yml
+---
+users:
+  - username: ops1
+    groups: webadmin
+  - username: ops2
+    groups: webadmin
+2.2.
+Cree el playbook users.yml. Defina un solo play en el playbook que se dirija al grupo
+de hosts webservers.
+Agregue una cláusula vars_files que defina la ubicación del nombre de archivo
+vars/users_vars.yml.
+Agregue una tarea que use el módulo group para crear el grupo de usuarios webadmin
+en el host remoto.
+El playbook incluye el siguiente contenido:
+---
+- name: Create multiple local users
+  hosts: webservers
+  vars_files:
+    - vars/users_vars.yml
+  tasks:
+    - name: Add webadmin group
+RH294-RHEL9.0-es-3-20240620
+489
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+      ansible.builtin.group:
+        name: webadmin
+        state: present
+2.3.
+Agregue una segunda tarea al playbook que usa el módulo ansible.builtin.user
+para crear los usuarios.
+Agregue una cláusula loop: "{{ users }}" a la tarea para recorrer en bucle el
+archivo de variables para cada nombre de usuario encontrado en el archivo vars/
+users_vars.yml.
+Use la variable item['username'] para el valor name:. El archivo de variables podría
+contener información adicional útil para crear los usuarios, como los grupos a los que
+deberían pertenecer.
+La segunda tarea incluye el siguiente contenido:
+    - name: Create user accounts
+      ansible.builtin.user:
+        name: "{{ item['username'] }}"
+        groups: webadmin
+      loop: "{{ users }}"
+2.4.
+Ejecute el playbook users.yml:
+[student@workstation system-review]$ ansible-navigator run \
+> -m stdout users.yml
+PLAY [Create multiple local users] *********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [Add webadmin group] ******************************************************
+changed: [serverb.lab.example.com]
+TASK [Create user accounts] ****************************************************
+changed: [serverb.lab.example.com] => (item={'username': 'ops1', 'groups':
+ 'webadmin'})
+changed: [serverb.lab.example.com] => (item={'username': 'ops2', 'groups':
+ 'webadmin'})
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=3    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+3.
+Instale la Ansible Content Collection redhat-rhel_system_roles-1.19.3.tar.gz
+proporcionada en el directorio del proyecto en el directorio collections.
+Cree un playbook denominado storage.yml para que se ejecute en el grupo de
+hosts webservers y configure esos hosts gestionados mediante el rol del sistema
+redhat.rhel_system_roles.storage, de la siguiente manera:
+• Use el dispositivo /dev/vdb como volumen físico LVM para el grupo de volúmenes
+apache-vg.
+490
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+• Crea el volumen lógico content-lv, con un tamaño de 64 MB, en el grupo de volúmenes
+apache-vg.
+• Crea el volumen lógico logs-lv, con un tamaño de 128 MB, en el grupo de volúmenes
+apache-vg.
+• Formatea cada volumen lógico con un sistema de archivos XFS.
+• Monta el volumen lógico content-lv en el directorio /var/www.
+• Monta el volumen lógico logs-lv en el directorio /var/log/httpd.
+Ejecute el playbook. Confirme que el playbook se ejecute correctamente después de
+ejecutarlo.
+3.1.
+Instale la colección redhat-rhel_system_roles del archivo ~/system-review/
+redhat-rhel_system_roles-1.19.3.tar.gz en el directorio ~/system-
+review/collections.
+[student@workstation system-review]$ ansible-galaxy collection \
+> install ./redhat-rhel_system_roles-1.19.3.tar.gz -p collections
+3.2.
+Cree el subdirectorio group_vars/webservers.
+[student@workstation system-review]$ mkdir -pv group_vars/webservers
+mkdir: created directory 'group_vars'
+mkdir: created directory 'group_vars/webservers'
+3.3.
+Cree el archivo de variables ~/system-review/group_vars/webservers/
+storage_vars.yml.
+En el archivo de variables, defina una variable storage_pool con el nombre de
+conjunto (pool) apache-vg para el grupo de volúmenes en el dispositivo /dev/vdb y
+con el tipo establecido en lvm.
+Dentro del conjunto (pool) apache-vg, defina dos volúmenes lógicos:
+• Defina el volumen lógico content-lv con un tamaño de 64 MB formateado con el
+sistema de archivos XFS, montado en /var/www.
+• Defina el volumen lógico logs-lv con un tamaño de 128 MB formateado con el
+sistema de archivos XFS, montado en /var/log/httpd.
+Al completarse, el archivo de variables ~/system-review/group_vars/
+webservers/storage_vars.yml debe incluir el siguiente contenido:
+---
+storage_pools:
+  - name: apache-vg
+    type: lvm
+    disks:
+      - /dev/vdb
+    volumes:
+      - name: content-lv
+        size: 64m
+        mount_point: "/var/www"
+        fs_type: xfs
+        state: present
+      - name: logs-lv
+        size: 128m
+RH294-RHEL9.0-es-3-20240620
+491
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+        mount_point: "/var/log/httpd"
+        fs_type: xfs
+        state: present
+3.4.
+Cree el playbook storage.yml para aplicar el rol
+redhat.rhel_system_roles.storage al grupo de hosts webservers.
+Al completarse, el playbook debe incluir el siguiente contenido:
+---
+- name: Configure storage on webservers
+  hosts: webservers
+  roles:
+    - name: redhat.rhel_system_roles.storage
+3.5.
+Ejecute el playbook storage.yml.
+[student@workstation system-review]$ ansible-navigator run \
+> -m stdout storage.yml
+PLAY [Configure storage on webservers] *****************************************
+...output omitted...
+TASK [redhat.rhel_system_roles.storage : make sure blivet is available] ********
+changed: [serverb.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.storage : manage the pools and volumes to match the
+ specified state] ***
+changed: [serverb.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.storage : set up new/current mounts] ************
+changed: [serverb.lab.example.com] => (item={'src': '/dev/mapper/apache--vg-
+content--lv', 'path': '/var/www', 'fstype': 'xfs', 'opts': 'defaults', 'dump': 0,
+ 'passno': 0, 'state': 'mounted'})
+changed: [serverb.lab.example.com] => (item={'src': '/dev/mapper/apache--vg-logs--
+lv', 'path': '/var/log/httpd', 'fstype': 'xfs', 'opts': 'defaults', 'dump': 0,
+ 'passno': 0, 'state': 'mounted'})
+...output omitted...
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=21   changed=3    unreachable=0    failed=0   
+ skipped=12   rescued=0    ignored=0
+4.
+Configure el playbook denominado create_crontab_file.yml para ejecutar el grupo de
+host webservers que usa el módulo ansible.builtin.cron para crear un sistema de
+archivos crontab que programa un trabajo cron recurrente. Cree el archivo /etc/cron.d/
+492
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+disk_usage con el archivo crontab del sistema. Configure el trabajo Cron del sistema de
+ese archivo de la siguiente manera:
+• Debe ejecutarse con el usuario devops.
+• Debe ejecutarse cada dos minutos de 9:00 a 16:59 de lunes a viernes.
+• Debe ejecutar el comando df >> /home/devops/disk_usage.
+Ejecute el playbook. Debe confirmar que configuró el trabajo de Cron correctamente
+después de ejecutar el playbook. Puede ver si el archivo se implementó correctamente o
+inspeccionar el archivo de registro /var/log/cron como root para ver si el trabajo se está
+ejecutando.
+4.1.
+Cree un nuevo playbook denominado create_crontab_file.yml y agregue las
+líneas necesarias para iniciar el play. El play debe apuntar a los hosts gestionados del
+grupo webservers y habilitar el aumento de privilegios.
+---
+- name: Recurring cron job
+  hosts: webservers
+4.2.
+Defina una tarea que use el módulo ansible.builtin.cron para programar un
+trabajo cron recurrente.
+  tasks:
+    - name: Crontab file exists
+      ansible.builtin.cron:
+        name: Display disk usage
+4.3.
+Configure el trabajo para que se ejecute cada dos minutos de las 09:00 a las 16:59 de
+lunes a viernes.
+        minute: "*/2"
+        hour: 9-16
+        weekday: 1-5
+4.4.
+Use el parámetro cron_file para usar el archivo crontab del sistema /etc/
+cron.d/disk_usage en lugar del archivo crontab de un usuario individual en /var/
+spool/cron/.
+Use una ruta relativa para colocar el archivo en el directorio /etc/cron.d.
+Si se usa el parámetro cron_file, también debe especificar el parámetro user.
+        user: devops
+        job: df >> /home/devops/disk_usage
+        cron_file: disk_usage
+        state: present
+4.5.
+Al completarse, el playbook debe incluir el siguiente contenido. Revise el playbook para
+comprobar la precisión.
+---
+- name: Recurring cron job
+  hosts: webservers
+RH294-RHEL9.0-es-3-20240620
+493
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+  tasks:
+    - name: Crontab file exists
+      ansible.builtin.cron:
+        name: Display disk usage
+        minute: "*/2"
+        hour: 9-16
+        weekday: 1-5
+        user: devops
+        job: df >> /home/devops/disk_usage
+        cron_file: disk_usage
+        state: present
+4.6.
+Ejecute el playbook create_crontab_file.yml.
+[student@workstation system-review]$ ansible-navigator run \
+> -m stdout create_crontab_file.yml
+PLAY [Recurring cron job] ******************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [Crontab file exists] *****************************************************
+changed: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=2    changed=1    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+5.
+Cree un playbook denominado network_playbook.yml para ejecutar el grupo de host
+webservers que use el rol redhat.rhel_system_roles.network para configurar la
+interfaz de red eth1 con la dirección IP 172.25.250.40/24.
+Ejecute el playbook. Confirme que el playbook se haya ejecutado correctamente.
+5.1.
+Cree un playbook denominado network_playbook.yml y agregue un play orientado
+al grupo de hosts webservers.
+Incluya el rol redhat.rhel_system_roles.network en la sección roles del play.
+---
+- name: NIC Configuration
+  hosts: webservers
+  roles:
+    - redhat.rhel_system_roles.network
+5.2.
+Cree un archivo nuevo denominado network.yml para definir variables de rol.
+Como estos valores de variable se aplican a los hosts del grupo de hosts webservers,
+debe crear ese archivo en el directorio group_vars/webservers.
+Agregue definiciones de variables para soportar la configuración de la interfaz de red
+eth1.
+El archivo de variable cuenta con el siguiente contenido:
+494
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation system-review]$ vim group_vars/webservers/network.yml
+---
+network_connections:
+  - name: eth1
+    type: ethernet
+    ip:
+      address:
+        - 172.25.250.40/24
+5.3.
+Ejecute el playbook network_playbook.yml para configurar la interfaz de red eth1.
+[student@workstation system-review]$ ansible-navigator run \
+> -m stdout network_playbook.yml
+PLAY [NIC Configuration] *******************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+...output omitted...
+TASK [redhat.rhel_system_roles.network : Configure networking connection profiles]
+ ***
+changed: [serverb.lab.example.com]
+TASK [redhat.rhel_system_roles.network : Show stderr messages] *****************
+ok: [serverb.lab.example.com] => {
+    "__network_connections_result.stderr_lines": [
+        "[002] <info>  #0, state:None persistent_state:present, 'eth1': add
+ connection eth1, b2332ada-021d-4f1b-a228-0e342034f95e"
+    ]
+}
+...output omitted...
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=10   changed=1    unreachable=0    failed=0   
+ skipped=12   rescued=0    ignored=0
+Evaluación
+Con el usuario student en la máquina workstation, use el comando lab para calificar su
+trabajo. Corrija los errores informados y vuelva a ejecutar el comando hasta obtener un resultado
+satisfactorio.
+[student@workstation ~]$ lab grade system-review
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+RH294-RHEL9.0-es-3-20240620
+495
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+[student@workstation ~]$ lab finish system-review
+496
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 9 |  Automatización de tareas de administración de Linux
+Resumen
+• El módulo ansible.builtin.yum_repository configura un repositorio Yum en un host
+gestionado. Para los repositorios que usan claves públicas, puede verificar que la clave esté
+disponible con el módulo ansible.builtin.rpm_key.
+• Los módulos ansible.builtin.user y ansible.builtin.group crean usuarios y grupos
+respectivamente en un host gestionado.
+• El módulo ansible.builtin.known_hosts configura hosts conocidos SSH para un servidor
+y los módulos ansible.posix.authorized_key configuran claves autorizadas para la
+autenticación de usuarios.
+• El módulo ansible.builtin.cron configura trabajos Cron del sistema o del usuario en hosts
+gestionados.
+• El módulo ansible.posix.at configura trabajos at únicos en hosts gestionados.
+• La Ansible Content Collection redhat.rhel_system_roles certificada por Red Hat
+incluye dos roles de sistema particularmente útiles: storage, que admite la configuración de
+volúmenes lógicos LVM, y network, que permite la configuración de interfaces y conexiones de
+red.
+RH294-RHEL9.0-es-3-20240620
+497
+
+

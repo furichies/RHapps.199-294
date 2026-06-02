@@ -1,0 +1,304 @@
+# Ejercicio Guiado: Solución de problemas de playbooks
+# Tipo: guided_exercise
+# Capítulo: Capítulo 8. Solución de problemas de Ansible
+
+capítulo 8 |  Solución de problemas de Ansible
+Ejercicio Guiado
+Solución de problemas de playbooks
+Solucionar los problemas de un playbook que le fue dado y que no funciona correctamente.
+Resultados
+• Debe ser capaz de solucionar problemas y resolver problemas en los playbooks.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start troubleshoot-playbook
+Instrucciones
+ 1.
+Cambie al directorio /home/student/troubleshoot-playbook/.
+[student@workstation ~]$ cd ~/troubleshoot-playbook/
+[student@workstation troubleshoot-playbook]$
+ 2.
+Cree un archivo denominado ansible.cfg en el directorio actual. Configure el parámetro
+log_path para escribir registros Ansible en el archivo /home/student/troubleshoot-
+playbook/ansible.log. Configure el parámetro inventory para usar el archivo /
+home/student/troubleshoot-playbook/inventory implementado por el script de
+laboratorio.
+El archivo ansible.cfg completo debe incluir el siguiente contenido:
+[defaults]
+log_path = /home/student/troubleshoot-playbook/ansible.log
+inventory = /home/student/troubleshoot-playbook/inventory
+ 3.
+Ejecute el playbook samba.yml. Fallará con un error.
+Este playbook configuraría un servidor Samba si todo estuviera correcto. Sin embargo,
+la ejecución falla porque la definición de la variable random_var no está entre comillas
+dobles. (Si los dos puntos forman parte de un valor, el valor debe estar protegido por
+comillas simples o dobles). Lea el mensaje de error para ver cómo ansible-navigator
+run informa del problema. Observe que a la variable random_var se le asigna un valor que
+contiene dos puntos y no está protegida por comillas dobles.
+372
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  mapping values are not allowed in this context
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 8, column 30, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+    install_state: installed
+    random_var: This is colon: test
+                             ^ here
+ 4.
+Confirme que ansible-navigator haya registrado el error en el archivo /home/
+student/troubleshoot-playbook/ansible.log.
+[student@workstation troubleshoot-playbook]$ tail ansible.log
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 8, column 30, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+    install_state: installed
+    random_var: This is colon: test
+                             ^ here
+ 5.
+Edite el playbook samba.yml y corrija el error agregando comillas dobles a todo el valor
+que se está asignando a random_var. La versión corregida del playbook debería incluir el
+siguiente contenido:
+...output omitted...
+  vars:
+    install_state: installed
+    random_var: "This is colon: test"
+...output omitted...
+RH294-RHEL9.0-es-3-20240620
+373
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ 6.
+Verifique la sintaxis del playbook usando la opción --syntax-check. El comando
+ansible-navigator emite otro error porque hay demasiado espacio en blanco de
+sangría en la última tarea, Deliver samba config.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+Syntax Error while loading YAML.
+  did not find expected '-' indicator
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 38, column 6, but may
+be elsewhere in the file depending on the exact syntax problem.
+The offending line appears to be:
+     - name: Deliver samba config
+     ^ here
+Please review the log for errors.
+ 7.
+Edite el playbook y elimine el espacio adicional para todas las líneas en esa tarea. El
+playbook corregido debe aparecer de la siguiente manera:
+...output omitted...
+    - name: Configure firewall for samba
+      ansible.posix.firewalld:
+        state: enabled
+        permanent: true
+        immediate: true
+        service: samba
+    - name: Deliver samba config
+      ansible.builtin.template:
+        src: samba.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: 0644
+ 8.
+Ejecute el playbook usando la opción --syntax-check. El comando ansible-
+navigator emite un error porque la variable install_state se usa como parámetro
+en la tarea Install samba y no está entre comillas. (Si una expresión Jinja2 está al
+comienzo de un valor, el valor debe estar protegido por comillas dobles).
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml --syntax-check
+ERROR! We were unable to read either as JSON nor YAML, these are the errors we got
+ from each:
+JSON: Expecting value: line 1 column 1 (char 0)
+374
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Syntax Error while loading YAML.
+  found unacceptable key (unhashable type: 'AnsibleMapping')
+The error appears to be in '/home/student/troubleshoot-playbook/samba.yml': line
+ 14, column 17, but may be elsewhere in the file depending on the exact syntax
+ problem.
+The offending line appears to be:
+        name: samba
+        state: {{ install_state }}
+                ^ here
+We could be wrong, but this one looks like it might be an issue with missing
+ quotes. Always quote template expression brackets when they start a value. For
+ instance:
+    with_items:
+      - {{ foo }}
+Should be written as:
+    with_items:
+      - "{{ foo }}"
+Please review the log for errors.
+ 9.
+Edite el playbook y corrija la tarea Install samba. La referencia a la variable
+install_state debe estar entre comillas dobles. El archivo resultante debe contar con el
+siguiente contenido:
+...output omitted...
+  tasks:
+    - name: Install samba
+      ansible.builtin.dnf:
+        name: samba
+        state: "{{ install_state }}"
+...output omitted...
+ 10. Ejecute el playbook usando la opción --syntax-check. Ahora debería mostrar errores de
+sintaxis adicionales.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml --syntax-check
+playbook: /home/student/troubleshoot-playbook/samba.yml
+ 11.
+Ejecute el playbook nuevamente. La tarea Debug install_state variable devuelve
+el mensaje The state for the samba service is installed. Esta tarea hace uso
+del módulo ansible.builtin.debug y muestra el valor de la variable install_state.
+Un error también se muestra en la tarea Deliver samba config, ya que no se dispone
+RH294-RHEL9.0-es-3-20240620
+375
+
+
+capítulo 8 |  Solución de problemas de Ansible
+de ningún archivo samba.j2 en el directorio /home/student/troubleshoot-
+playbook/.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install samba] ***********************************************************
+changed: [servera.lab.example.com]
+TASK [Install firewalld] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Debug install_state variable] ********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The state for the samba service is installed"
+}
+TASK [Start firewalld] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Configure firewall for samba] ********************************************
+changed: [servera.lab.example.com]
+TASK [Deliver samba config] ****************************************************
+An exception occurred during task execution. To see the full traceback, use -vvv.
+ The error was: If you are using a module and expect the file to exist on the
+ remote, see the remote_src option
+fatal: [servera.lab.example.com]: FAILED! => {"changed": false, "msg": "Could not
+ find or access 'samba.j2'\nSearched in:\n\t/home/student/troubleshoot-playbook/
+templates/samba.j2\n\t/home/student/troubleshoot-playbook/samba.j2\n\t/home/
+student/troubleshoot-playbook/templates/samba.j2\n\t/home/student/troubleshoot-
+playbook/samba.j2 on the Ansible Controller.\nIf you are using a module and expect
+ the file to exist on the remote, see the remote_src option"}
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=6    changed=2    unreachable=0    failed=1   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+376
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+ 12. Edite el playbook y corrija el parámetro src en la tarea Deliver samba config para que
+sea samba.conf.j2. El archivo finalizado debe incluir el siguiente contenido:
+...output omitted...
+    - name: Deliver samba config
+      ansible.builtin.template:
+        src: samba.conf.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+...output omitted...
+ 13. Ejecute el playbook nuevamente y todas las tareas deberían realizarse correctamente.
+[student@workstation troubleshoot-playbook]$ ansible-navigator run \
+> -m stdout samba.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Install samba] ***********************************************************
+ok: [servera.lab.example.com]
+TASK [Install firewalld] *******************************************************
+ok: [servera.lab.example.com]
+TASK [Debug install_state variable] ********************************************
+ok: [servera.lab.example.com] => {
+    "msg": "The state for the samba service is installed"
+}
+TASK [Start firewalld] *********************************************************
+ok: [servera.lab.example.com]
+TASK [Configure firewall for samba] ********************************************
+ok: [servera.lab.example.com]
+TASK [Deliver samba config] ****************************************************
+changed: [servera.lab.example.com]
+TASK [Start samba] *************************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=8    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+RH294-RHEL9.0-es-3-20240620
+377
+
+
+capítulo 8 |  Solución de problemas de Ansible
+[student@workstation ~]$ lab finish troubleshoot-playbook
+378
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 8 |  Solución de problemas de Ansible
+Solución de problemas en hosts
+gestionados de Ansible
+Objetivos
+• Solucionar fallas en hosts gestionados cuando se ejecuta un playbook.
+Solución de problemas de conexiones
+Muchos problemas comunes al usar Ansible para administrar hosts están asociados con
+conexiones al host y con problemas de configuración relacionados con el usuario remoto y el
+aumento de privilegios.
+Problemas de autenticación en hosts gestionados
+Si tiene problemas para autenticarse en un host gestionado, asegúrese de tener remote_user
+correctamente configurado en el archivo de configuración o en el play.
+Por ejemplo, es posible que vea la siguiente salida al ejecutar un playbook diseñado para
+conectarse a la cuenta de usuario remota root:
+[student@controlnode ~]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [Install a samba server] **************************************************
+TASK [Gathering Facts] *********************************************************
+fatal: [host.lab.example.com]: UNREACHABLE! => {"changed": false, "msg":
+ "Failed to connect to the host via ssh: developer@host: Permission denied
+ (publickey,gssapi-keyex,gssapi-with-mic,password).", "unreachable": true}
+PLAY RECAP *********************************************************************
+host.lab.example.com    : ok=0    changed=0    unreachable=1    failed=0   
+ skipped=0    rescued=0    ignored=0
+Please review the log for errors.
+En este caso, ansible-navigator está intentando conectarse como la cuenta de usuario
+developer, de acuerdo con la salida anterior. Una razón por la que esto puede suceder es si
+se ha configurado ansible.cfg en el proyecto para establecer el remote_user en el usuario
+developer en lugar del usuario root.
+Otra razón por la que puede ver un error de "permiso denegado" como este es si no tiene
+configuradas las claves SSH correctas o no proporcionó la contraseña correcta para ese usuario.
+[root@controlnode ~]# ansible-navigator run \
+> -m stdout playbook.yml
+TASK [Gathering Facts] *********************************************************
+fatal: [host.lab.example.com]: UNREACHABLE! => {"changed": false, "msg": "Failed
+ to connect to the host via ssh: root@host: Permission denied (publickey,gssapi-
+keyex,gssapi-with-mic).", "unreachable": true}
+RH294-RHEL9.0-es-3-20240620
+379
+
+

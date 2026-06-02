@@ -1,0 +1,64 @@
+# Ejercicio Guiado: Ejercicio guiado de interpretación y gestión de eventos de Syslog
+# Tipo: guided_exercise
+# Capítulo: Capítulo 13. Análisis y almacenamiento de registros
+
+13.4. Ejercicio guiado Interpretar y gestionar eventos Syslog 13.4. Ejercicio guiado Interpretar y administrar eventos Syslog Configure el archivo de registro syslog para redirigir todos los mensajes de registro de una prioridad especificada a un archivo de registro. Resultados Configure el archivo de registro syslog para utilizar el servicio rsyslog para escribir todos los mensajes de registro con prioridad de depuración en un archivo de registro. Requisitos previos Como usuario estudiante en la máquina de la estación de trabajo, ejecute el siguiente comando de laboratorio para preparar su entorno para
+
+this exercise, and to ensure that all required resources are available:
+student@workstation:~$ lab start logs-syslog
+
+Instrucciones Inicie sesión en la máquina del servidor como usuario estudiante y cambie al usuario raíz. Utilice el estudiante como contraseña.
+
+student@workstation:~$ ssh student@servera
+
+...salida omitida...
+
+[student@servera ~]$ sudo -i
+
+[sudo] contraseña para estudiante: estudiante [root@servera ~]# 1. Configure el servicio rsyslog para registrar todos los mensajes con depuración o prioridad superior para cualquier servicio en el archivo de registro /var/log/messages-debug cambiando el archivo de configuración /etc/rsyslog.d/debug.conf. 2. Cree el archivo /etc/rsyslog.d/debug.conf con las entradas necesarias para redirigir todos los mensajes de registro con prioridad de depuración o mayor al archivo de registro /var/log/messages-debug. Esta línea de configuración registra los mensajes de syslog con cualquier función y con el nivel de depuración o de prioridad superior: *.debug /var/log/messages-debug 2.1. El comodín (*) en el campo de facilidad de la línea de configuración indica cualquier facilidad de mensajes de registro. El servicio rsyslog escribe los mensajes coincidentes en el archivo de registro /var/log/messages-debug. Reinicie el servicio rsyslog.
+
+[root@servera ~]# systemctl restart rsyslog
+
+2.2. Verifique que todos los mensajes de registro con prioridad de depuración aparezcan en el archivo de registro /var/log/messages-debug. 3. Genere un mensaje de registro con el tipo de usuario y la prioridad de depuración.
+
+[root@servera ~]# logger -p user.debug "Debug Message Test"
+
+3.1. Vea los últimos 10 mensajes de registro del archivo de registro /var/log/messages-debug y verifique que ve el mensaje de prueba de mensaje de depuración entre los demás mensajes de registro. 3.2.
+
+
+
+
+
+13.4. Ejercicio guiado Interpretar y administrar eventos Syslog Finalizar En la máquina de la estación de trabajo, use el comando lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de ejercicios anteriores no afecten a los próximos.
+
+student@workstation:~$ lab finish logs-syslog
+[root@servera ~]# tail /var/log/messages-debug
+
+13 de febrero 18:22:38 servera systemd[1]: Deteniendo el servicio de registro del sistema... 13 de febrero 18:22:38 servera rsyslogd[25176]: [origin software="rsyslogd"... 13 de febrero 18:22:38 servera systemd[1]: Servicio de registro del sistema detenido. 13 de febrero 18:22:38 servera systemd[1]: iniciando el servicio de registro del sistema... 13 de febrero 18:22:38 servera rsyslogd[25410]: la variable de entorno TZ es... 13 de febrero 18:22:38 servera systemd[1]: se inició el servicio de registro del sistema. 13 de febrero 18:22:38 servera rsyslogd[25410]: [origin software="rsyslogd"... 13 de febrero 18:27:58 servera root[25416]: Prueba de mensaje de depuración Regrese al sistema de la estación de trabajo como usuario estudiante.
+
+[root@servera ~]# exit
+
+cerrar sesión
+
+[student@servera ~]$ exit
+
+cerrar sesión Conexión al servidor cerrada.
+
+student@workstation:~$
+
+4.
+
+
+
+
+
+13.5. Búsqueda e interpretación de entradas de registro del diario del sistema 13.5. Búsqueda e interpretación de entradas de registro del diario del sistema Objetivos Buscar e interpretar entradas de registro en el diario del sistema para revisar el estado del sistema. Buscar eventos en el diario del sistema El servicio systemd-journald almacena datos de registro en un archivo binario estructurado e indexado que se conoce como diario. Estos datos incluyen información adicional sobre el evento de registro. Por ejemplo, para los eventos syslog, esta información incluye la prioridad del mensaje original y la función, que es un valor que el servicio syslog asigna para rastrear el proceso que originó un mensaje. Importante En Red Hat Enterprise Linux, el directorio /run/log basado en memoria contiene el diario del sistema de forma predeterminada. El contenido del directorio /run/log se pierde cuando se apaga el sistema. Puede cambiar el directorio de diario a una ubicación persistente, lo cual se analiza más adelante en esta lección. Para recuperar mensajes de registro del diario, utilice el comando journalctl. Puede utilizar el comando journalctl para ver todos los mensajes del diario o buscar eventos específicos según opciones y criterios. Si ejecuta el comando como usuario root, tendrá acceso completo al diario. Aunque los usuarios habituales también pueden utilizar el comando journalctl, el sistema les impide ver ciertos mensajes.
+
+root@host:~# journalctl
+
+... salida omitida... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de tabla FACP en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla DSDT en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando memoria de tabla FACS en... 09 de junio 12:56:12 kernel de localhost: ACPI: Reservando Memoria de la tabla APIC en... 09 de junio 12:56:12 kernel localhost: ACPI: Reservando memoria de la tabla WAET en... 09 de junio 12:56:12 kernel localhost: No se encontró configuración NUMA líneas 1-44 q El comando journalctl resalta mensajes de registro importantes; Los mensajes con prioridad de aviso o advertencia están en negrita, mientras que los mensajes con prioridad de error o superior están en texto rojo. La clave para el uso exitoso de la revista para la resolución de problemas y la auditoría es limitar las búsquedas de la revista para mostrar solo resultados relevantes. De forma predeterminada, la opción -n del comando journalctl muestra las últimas 10 entradas del registro. Puede ajustar la cantidad de entradas de registro con un argumento opcional que especifica cuántas entradas de registro mostrar. Por ejemplo, para revisar las últimas cinco entradas del registro, puede ejecutar el siguiente comando journalctl:
+
+
+
+
+

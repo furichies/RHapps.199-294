@@ -1,0 +1,58 @@
+# Resumen
+# Tipo: summary
+# Capítulo: Capítulo 3. Administración de variables y datos
+
+capítulo 3 |  Administración de variables y datos
+Resumen
+• Las variables de Ansible lo ayudan a volver a usar valores en los archivos de un proyecto
+completo de Ansible.
+• Puede definir las variables para los hosts y los grupos de hosts en el archivo de inventario.
+• Puede definir variables para plays y tareas en el playbook o en archivos externos.
+• Se definen variables extra en la línea de comandos y preceden a todas las demás variables.
+• Puede usar la palabra clave register para capturar la salida de un comando en una variable.
+• Ansible Vault proporciona una manera de proteger los datos confidenciales, como los hash de
+contraseñas y las claves privadas que usa sus playbooks de Ansible.
+• Los datos de Ansible son variables que Ansible detecta automáticamente desde un host
+gestionado.
+RH294-RHEL9.0-es-3-20240620
+139
+
+
+140
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4
+Implementación del control de
+tareas
+Meta
+Administrar el control de tareas, los manejadores y
+los errores de tareas en playbooks de Ansible.
+Objetivos
+•
+Usar bucles para escribir tareas eficientes y
+condiciones para controlar cuándo ejecutar
+tareas.
+•
+Implementar una tarea que se ejecute solo
+cuando otra tarea cambie el host gestionado.
+•
+Controlar lo que sucede cuando falla una tarea
+y qué condiciones hacen que falle una tarea.
+Secciones
+•
+Escritura de bucles y tareas condicionales (y
+ejercicio guiado)
+•
+Implementación de manejadores (y ejercicio
+guiado)
+•
+Manejo de fallas de tareas (y ejercicio guiado)
+Trabajo de
+laboratorio
+•
+Implementación del control de tareas
+RH294-RHEL9.0-es-3-20240620
+141
+
+

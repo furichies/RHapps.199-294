@@ -1,0 +1,203 @@
+# Ejercicio Guiado: Escritura de bucles y tareas condicionales
+# Tipo: guided_exercise
+# Capítulo: Capítulo 4. Implementación del control de tareas
+
+capítulo 4 |  Implementación del control de tareas
+Ejercicio Guiado
+Escritura de bucles y tareas condicionales
+Escribir un playbook que contenga tareas con condicionales y bucles.
+Resultados
+• Implementar condicionales Ansible usando la palabra clave when.
+• Implementar la iteración de tareas usando la palabra clave loop junto con condicionales.
+Antes De Comenzar
+Con el usuario student en la máquina workstation, use el comando lab para preparar su
+sistema para este ejercicio.
+Este comando prepara su entorno y garantiza que estén disponibles todos los recursos
+requeridos.
+[student@workstation ~]$ lab start control-flow
+Instrucciones
+ 1.
+En la máquina workstation, cambie al directorio /home/student/control-flow.
+[student@workstation ~]$ cd ~/control-flow
+[student@workstation control-flow]$
+ 2.
+El comando lab creó un archivo de configuración Ansible, así como un archivo de
+inventario. El archivo de inventario contiene el servidor servera.lab.example.com en el
+grupo de hosts database_dev y el servidor serverb.lab.example.com en el grupo de
+hosts database_prod. Revise el contenido del archivo antes de continuar.
+[student@workstation control-flow]$ cat inventory
+[database_dev]
+servera.lab.example.com
+[database_prod]
+serverb.lab.example.com
+ 3.
+Cree el playbook playbook.yml, que contiene un play con dos tareas. Use el grupo de
+hosts database_dev. La primera tarea instala los paquetes requeridos MariaDB y la
+segunda tarea garantiza que el servicio MariaDB se está ejecutando.
+3.1.
+Cree el playbook playbook.yml y defina la variable mariadb_packages con dos
+valores: mariadb-server y python3-PyMySQL.
+154
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+---
+- name: MariaDB server is running
+  hosts: database_dev
+  vars:
+    mariadb_packages:
+      - mariadb-server
+      - python3-PyMySQL
+3.2.
+Defina una tarea que use el módulo ansible.builtin.dnf y la variable
+mariadb_packages. La tarea usa la variable mariadb_packages para instalar los
+paquetes requeridos.
+  tasks:
+    - name: MariaDB packages are installed
+      ansible.builtin.dnf:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ mariadb_packages }}"
+Importante
+El uso de loop no es la forma más eficaz de instalar paquetes. En el código anterior,
+el módulo ansible.builtin.dnf se ejecuta una vez para cada paquete en la
+lista mariadb_packages.
+Normalmente, debe instalar todos los paquetes como una transacción, pasando la
+lista completa de paquetes al módulo, en lugar de pasarla un módulo a la vez:
+- name: MariaDB packages are installed
+  ansible.builtin.dnf:
+    name: "{{ mariadb_packages }}"
+    state: present
+Sin embargo, otros módulos como ansible.builtin.user no le permiten hacer
+esto; debe pasar ese módulo a un usuario para operar a la vez. En esos casos, loop
+es una herramienta invaluable.
+Este ejemplo es simplemente una forma de ver cómo funciona loop.
+3.3.
+Defina una segunda tarea para iniciar el servicio mariadb. El playbook completo
+debería incluir el siguiente contenido.
+- name: MariaDB server is running
+  hosts: database_dev
+  vars:
+    mariadb_packages:
+      - mariadb-server
+      - python3-PyMySQL
+  tasks:
+    - name: MariaDB packages are installed
+      ansible.builtin.dnf:
+RH294-RHEL9.0-es-3-20240620
+155
+
+
+capítulo 4 |  Implementación del control de tareas
+        name: "{{ item }}"
+        state: present
+      loop: "{{ mariadb_packages }}"
+    - name: Start MariaDB service
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: true
+ 4.
+Ejecute el playbook y observe la salida del play.
+[student@workstation control-flow]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [MariaDB server is running] ***********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [servera.lab.example.com]
+TASK [MariaDB packages are installed] ******************************************
+changed: [servera.lab.example.com] => (item=mariadb-server)
+changed: [servera.lab.example.com] => (item=python3-PyMySQL)
+TASK [Start MariaDB service] ***************************************************
+changed: [servera.lab.example.com]
+PLAY RECAP *********************************************************************
+servera.lab.example.com    : ok=3    changed=2    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+ 5.
+Actualice la primera tarea para que se ejecute solo si el host gestionado usa Red Hat
+Enterprise Linux como su sistema operativo. Actualice el play para que use el grupo de
+hosts database_prod.
+- name: MariaDB server is running
+  hosts: database_prod
+  vars:
+...output omitted...
+  tasks:
+    - name: MariaDB packages are installed
+      ansible.builtin.dnf:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ mariadb_packages }}"
+      when: ansible_facts['distribution'] == "RedHat"
+...output omitted...
+156
+RH294-RHEL9.0-es-3-20240620
+
+
+capítulo 4 |  Implementación del control de tareas
+ 6.
+Ejecute el playbook nuevamente y observe la salida del play.
+[student@workstation control-flow]$ ansible-navigator run \
+> -m stdout playbook.yml
+PLAY [MariaDB server is running] ***********************************************
+TASK [Gathering Facts] *********************************************************
+ok: [serverb.lab.example.com]
+TASK [MariaDB packages are installed] ******************************************
+ok: [serverb.lab.example.com] => (item=mariadb-server)
+ok: [serverb.lab.example.com] => (item=python3-PyMySQL)
+TASK [Start MariaDB service] ***************************************************
+ok: [serverb.lab.example.com]
+PLAY RECAP *********************************************************************
+serverb.lab.example.com    : ok=3    changed=0    unreachable=0    failed=0   
+ skipped=0    rescued=0    ignored=0
+Ansible ejecuta la tarea porque serverb.lab.example.com usa Red Hat Enterprise
+Linux.
+Finalizar
+En la máquina workstation, cambie al directorio de inicio de usuario student y use el comando
+lab para completar este ejercicio. Este paso es importante para garantizar que los recursos de
+ejercicios anteriores no impacten en los siguientes.
+[student@workstation ~]$ lab finish control-flow
+RH294-RHEL9.0-es-3-20240620
+157
+
+
+capítulo 4 |  Implementación del control de tareas
+Implementación de manejadores
+Objetivos
+• Implementar una tarea que se ejecute solo cuando otra tarea cambie el host gestionado.
+Manejadores de Ansible
+Los módulos Ansible están diseñados para ser idempotentes. Esto significa que, si ejecuta un
+playbook varias veces, el resultado es siempre el mismo. Puede ejecutar plays y sus tareas varias
+veces, pero los hosts gestionados solo se modifican si esos cambios son necesarios para que los
+hosts gestionados alcancen el estado deseado.
+No obstante, algunas veces, cuando una tarea realiza un cambio en el sistema, se puede tener
+que ejecutar otra tarea. Por ejemplo, un cambio en un archivo de configuración del servicio puede
+luego requerir que el servicio se vuelva a cargar para que se aplique la configuración modificada.
+Los manejadores son tareas que responden a una notificación desencadenada por otras tareas.
+Las tareas solo notifican a sus manejadores cuando la tarea cambia algo en un host gestionado.
+Cada controlador se activa por su nombre después del bloque de tareas del play.
+Si ninguna tarea notifica al manejador por nombre, no se ejecutará el manejador. Si una o más
+tareas notifican al manejador, este se ejecutará exactamente una vez después de que todas
+las demás tareas en el play se hayan completado. Debido a que los manejadores son tareas, los
+administradores pueden usar los mismos módulos en manejadores que usarían para cualquier otra
+tarea.
+Generalmente, los manejadores se usan para reiniciar los hosts y los servicios.
+Importante
+Siempre use nombres únicos para sus manejadores. Es posible que tenga resultados
+inesperados si más de un manejador usa el mismo nombre.
+Los manejadores se pueden considerar como tareas inactive que solo se desencadenan cuando se
+las invoca explícitamente mediante una declaración notify. En el siguiente fragmento se muestra
+cómo el servidor Apache solo se reinicia mediante el manejador restart apache cuando un
+archivo de configuración se actualiza y lo notifica:
+tasks:
+  - name: copy demo.example.conf configuration template
+    ansible.builtin.template:
+      src: /var/lib/templates/demo.example.conf.template
+      dest: /etc/httpd/conf.d/demo.example.conf
+    notify:
+      - restart apache
+handlers:
+  - name: restart apache
+158
+RH294-RHEL9.0-es-3-20240620
+
+
